@@ -21,19 +21,19 @@ if (supabaseUrl && supabaseKey) {
     console.warn('Supabase keys missing. Database features will not work.');
 }
 
-// Multer for file uploads (temporary storage)
-const upload = multer({ dest: 'uploads/' });
+// Multer for file uploads (temporary storage - using /tmp for Vercel compatibility)
+const upload = multer({ dest: '/tmp/' });
 
 app.use(express.json());
 app.use(express.static('public'));
 
 // Routes
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+    res.sendFile(path.join(process.cwd(), 'views', 'index.html'));
 });
 
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+    res.sendFile(path.join(process.cwd(), 'views', 'admin.html'));
 });
 
 // API Endpoints
@@ -317,6 +317,10 @@ app.delete('/api/users/:id', async (req, res) => {
     res.json({ success: true });
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
+}
+
+module.exports = app;
