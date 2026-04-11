@@ -1141,19 +1141,8 @@
                             <span>Notifications</span>
                             <small style="color: #6c7293; cursor: pointer;">Clear all</small>
                         </div>
-                        <div class="dropdown-item">
-                            <i class="fas fa-cloud-upload-alt item-icon" style="color: #00d25b;"></i>
-                            <div class="item-text">
-                                <h4>New Game Posted</h4>
-                                <p>Resident Evil 4 Remake is now live.</p>
-                            </div>
-                        </div>
-                        <div class="dropdown-item">
-                            <i class="fas fa-chart-line item-icon" style="color: #00f2ff;"></i>
-                            <div class="item-text">
-                                <h4>Analytics Updated</h4>
-                                <p>Today's views reached 1,200.</p>
-                            </div>
+                        <div id="notificationsList" style="text-align: center; padding: 20px; color: #6c7293; font-size: 0.8rem;">
+                            No new notifications.
                         </div>
                     </div>
                 </div>
@@ -1165,11 +1154,9 @@
                         <div class="dropdown-header">
                             <span>Messages</span>
                         </div>
-                        <div class="dropdown-item">
-                            <div class="item-text">
-                                <h4>System Alert</h4>
-                                <p>Subscription renewal in 5 days.</p>
-                            </div>
+                        <!-- messages loaded dynamically via JS if needed -->
+                        <div id="messagesList" style="text-align: center; padding: 20px; color: #6c7293; font-size: 0.8rem;">
+                            No new messages.
                         </div>
                         <div style="text-align: center; padding: 10px; color: #6c7293; font-size: 0.8rem;">
                             No new messages from users.
@@ -1192,14 +1179,14 @@
                 <div class="stat-card">
                     <div>
                         <div class="stat-label">Downloads</div>
-                        <div class="stat-val">1.2K</div>
+                        <div class="stat-val" id="totalDownloads">0</div>
                     </div>
                     <i class="fas fa-download stat-icon" style="color: var(--accent);"></i>
                 </div>
                 <div class="stat-card">
                     <div>
                         <div class="stat-label">Total Users</div>
-                        <div class="stat-val" id="totalUsersCount">--</div>
+                        <div class="stat-val" id="totalUsersCount">0</div>
                         <div class="stat-trend stable" id="userTrend">
                             <span class="stat-trend-arrow"><i class="fas fa-minus"></i></span>
                             <span class="stat-trend-text">Loading...</span>
@@ -1210,7 +1197,7 @@
                 <div class="stat-card">
                     <div>
                         <div class="stat-label">Revenue</div>
-                        <div class="stat-val">$4.5K</div>
+                        <div class="stat-val" id="totalRevenue">$0</div>
                     </div>
                     <i class="fas fa-dollar-sign stat-icon" style="color: #00ff88;"></i>
                 </div>

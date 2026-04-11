@@ -7,6 +7,12 @@
     <meta name="description" content="Discover and download the hottest games — PPSSPP, Android, PC, Tanzania Games and more. Curated for true gamers.">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00f2ff">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="icon" type="image/png" href="/icon.png">
+
+
     <style>
         :root {
             --primary: #00f2ff;
@@ -1337,6 +1343,9 @@
                                 ${category}
                                 <span class="category-count">${catGames.length}</span>
                             </div>
+                            <a href="javascript:void(0)" class="see-all" onclick="filterByCategory('${category.replace(/'/g, "\\'")}')">
+                                View All <i class="fas fa-chevron-right"></i>
+                            </a>
                         </div>
                         <div class="games-row">
                             ${catGames.map(game => renderCard(game)).join('')}
@@ -1470,6 +1479,23 @@
             // Set active based on category
             if (cat === 'HOT POST') setActiveBottom(2);
             else if (cat === 'TANZANIA GAMES') setActiveBottom(3);
+        }
+
+        function filterByCategory(cat) {
+            const input = document.getElementById('searchInput');
+            input.value = cat;
+            // Scroll to search input or top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Trigger the search logic
+            const event = new Event('input', { bubbles: true });
+            input.dispatchEvent(event);
+            
+            // Update bottom bar active state (Search)
+            setActiveBottom(1);
+            
+            // Focus input after scroll
+            setTimeout(() => input.focus(), 600);
         }
 
         function setActiveBottom(index) {
@@ -1728,6 +1754,79 @@
 
         function handleBotEnter(e) {
             if (e.key === 'Enter') sendBot();
+        }
+
+        // ===== PWA INSTALLATION SYSTEM =====
+        let deferredPrompt;
+        const pwaPopup = document.createElement('div');
+        pwaPopup.id = 'pwaInstallPopup';
+        pwaPopup.style.cssText = `
+            position: fixed; bottom: 85px; left: 20px; right: 20px;
+            background: rgba(15, 15, 25, 0.98); backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 242, 255, 0.4); border-radius: 20px;
+            padding: 18px; display: none; z-index: 10001;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 242, 255, 0.15);
+            animation: slideUpPWA 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        `;
+        pwaPopup.innerHTML = `
+            <style>
+                @keyframes slideUpPWA { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                #pwaInstallBtn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 242, 255, 0.4); filter: brightness(1.1); }
+            </style>
+            <div style="display: flex; align-items: center; gap: 15px; position: relative;">
+                <div style="position: relative;">
+                    <img src="/icon.png" style="width: 55px; height: 55px; border-radius: 14px; border: 2px solid rgba(0, 242, 255, 0.2); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);">
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-family: 'Orbitron'; font-size: 0.9rem; font-weight: 900; color: #fff; margin-bottom: 2px; letter-spacing: 1px;">CHIDY PRIME APP</div>
+                    <div style="font-size: 0.7rem; color: #a0a0b0; line-height: 1.3;">Weka kwenye Screen yako sasa upate uzoefu wa kilele wa gaming! 🔥</div>
+                </div>
+                <button id="pwaCloseBtn" style="background: rgba(255,255,255,0.05); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s;"><i class="fas fa-times"></i></button>
+            </div>
+            <button id="pwaInstallBtn" style="width: 100%; margin-top: 15px; padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, #00f2ff, #bc13fe); color: #000; font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 900; cursor: pointer; letter-spacing: 2px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 242, 255, 0.2);">INSTALL NOW</button>
+        `;
+        document.body.appendChild(pwaPopup);
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Check if already dismissed this session
+            if (!sessionStorage.getItem('pwa_dismissed')) {
+                setTimeout(() => { 
+                    pwaPopup.style.display = 'block';
+                    console.log('PWA Install Prompt Showed');
+                }, 4000);
+            }
+        });
+
+        document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    pwaPopup.style.display = 'none';
+                    localStorage.setItem('pwa_installed', 'true');
+                }
+                deferredPrompt = null;
+            } else {
+                // If trigger failed, give instructions
+                alert("Ili kuweka app, bofya option za browser yako (vidukta vitatu juu) kisha chagua 'Install App' au 'Add to Home Screen'.");
+            }
+        });
+
+        document.getElementById('pwaCloseBtn').addEventListener('click', () => {
+            pwaPopup.style.display = 'none';
+            sessionStorage.setItem('pwa_dismissed', 'true');
+        });
+
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Failed', err));
+            });
         }
 
         // ===== INIT =====
