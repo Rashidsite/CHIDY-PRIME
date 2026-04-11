@@ -232,6 +232,56 @@
             text-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
         }
 
+        /* === VIEW SPECIFIC HEADERS === */
+        .view-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 1rem clamp(1rem, 4vw, 3rem);
+            margin-bottom: 0.5rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .back-btn {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 1.1rem;
+        }
+
+        .back-btn:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        .view-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 28vw, 175px), 1fr));
+            gap: clamp(12px, 2.5vw, 20px);
+            padding: 0 clamp(1rem, 4vw, 3rem) 3rem;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
         /* === HORIZONTAL SCROLL ROW === */
         .games-row {
             display: flex;
@@ -1259,6 +1309,7 @@
     <script>
         // ===== DATA =====
         let allGames = [];
+        let currentCategory = null; // null means 'Home' view
 
         // Ordered categories from user's wireframe
         const categoryOrder = [
@@ -1331,6 +1382,22 @@
                 return;
             }
 
+            // --- CATEGORY VIEW (Vertical Grid) ---
+            if (currentCategory) {
+                const catGames = grouped[currentCategory] || [];
+                container.innerHTML = `
+                    <div class="view-header">
+                        <button class="back-btn" onclick="showHome()"><i class="fas fa-arrow-left"></i></button>
+                        <div class="view-title">${currentCategory}</div>
+                    </div>
+                    <div class="games-grid">
+                        ${catGames.map(game => renderCard(game)).join('')}
+                    </div>
+                `;
+                return;
+            }
+
+            // --- HOME VIEW (Horizontal Rows) ---
             let html = '';
             orderedKeys.forEach(category => {
                 const catGames = grouped[category];
@@ -1439,6 +1506,7 @@
         // ===== SEARCH =====
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();
+            currentCategory = null; // Clear category view when searching
             if (!query) {
                 renderCategories(allGames);
                 return;
@@ -1482,20 +1550,18 @@
         }
 
         function filterByCategory(cat) {
-            const input = document.getElementById('searchInput');
-            input.value = cat;
-            // Scroll to search input or top
+            currentCategory = cat;
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // Trigger the search logic
-            const event = new Event('input', { bubbles: true });
-            input.dispatchEvent(event);
-            
-            // Update bottom bar active state (Search)
-            setActiveBottom(1);
-            
-            // Focus input after scroll
-            setTimeout(() => input.focus(), 600);
+            renderCategories(allGames);
+            setActiveBottom(-1); // Deselect bottom bar as we are in a sub-view
+        }
+
+        function showHome() {
+            currentCategory = null;
+            document.getElementById('searchInput').value = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderCategories(allGames);
+            setActiveBottom(0);
         }
 
         function setActiveBottom(index) {
