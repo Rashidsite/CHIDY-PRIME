@@ -299,6 +299,49 @@ app.delete('/api/users/:id', async (req, res) => {
     res.json({ success: true });
 });
 
+// ============================================
+// CATEGORY ENDPOINTS
+// ============================================
+
+// GET all categories
+app.get('/api/categories', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// POST - add a new category
+app.post('/api/categories', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Category name is required' });
+    const { data, error } = await supabase
+        .from('categories')
+        .insert([{ name: name.trim().toUpperCase() }])
+        .select();
+    if (error) {
+        if (error.code === '23505') return res.status(409).json({ error: 'Category already exists' });
+        return res.status(500).json({ error: error.message });
+    }
+    res.json({ success: true, category: data[0] });
+});
+
+// DELETE - remove a category
+app.delete('/api/categories/:id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { id } = req.params;
+    const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
 if (process.env.NODE_ENV !== 'production') {
     app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}`);
