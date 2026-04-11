@@ -2,9 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-const multer = require('multer');
-const axios = require('axios');
-const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,8 +18,7 @@ if (supabaseUrl && supabaseKey) {
     console.warn('Supabase keys missing. Database features will not work.');
 }
 
-// Multer for file uploads (temporary storage - using /tmp for Vercel compatibility)
-const upload = multer({ dest: '/tmp/' });
+
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -66,46 +62,32 @@ app.get('/api/admin/games', async (req, res) => {
     res.json(data);
 });
 
-app.post('/api/games', upload.single('image'), async (req, res) => {
+app.post('/api/games', async (req, res) => {
     if (!supabase) {
         return res.status(500).json({ error: 'Supabase not configured' });
     }
     try {
-        const { title, description, rating, youtube_url, links } = req.body;
-        const imageFile = req.file;
+        const { title, description, rating, youtube_url, links, image_url, price, category } = req.body;
 
-        if (!imageFile) {
-            return res.status(400).json({ error: 'No image uploaded' });
+        if (!image_url) {
+            return res.status(400).json({ error: 'Image URL is required' });
         }
 
-        // 1. Upload to Imgbb
-        const formData = new URLSearchParams();
-        const base64Image = fs.readFileSync(imageFile.path, { encoding: 'base64' });
-        formData.append('image', base64Image);
-
-        const imgbbApiKey = process.env.IMGBB_API_KEY;
-        const imgbbResponse = await axios.post(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, formData);
-        const imageUrl = imgbbResponse.data.data.url;
-
-        // 2. Save to Supabase
         const { data, error } = await supabase
             .from('posts')
             .insert([
                 { 
                     title, 
                     description, 
-                    image_url: imageUrl, 
+                    image_url,
                     rating: parseFloat(rating),
-                    price: parseFloat(req.body.price || 0),
-                    category: req.body.category || 'HOT POST',
-                    youtube_url,
-                    links: JSON.parse(links || '[]'),
+                    price: parseFloat(price || 0),
+                    category: category || 'HOT POST',
+                    youtube_url: youtube_url || null,
+                    links: Array.isArray(links) ? links : JSON.parse(links || '[]'),
                     status: 'published'
                 }
             ]);
-
-        // Cleanup
-        fs.unlinkSync(imageFile.path);
 
         if (error) throw error;
         res.json({ success: true, data });
