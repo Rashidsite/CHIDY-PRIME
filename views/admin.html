@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chidy Admin | Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --topbar-height: 70px;
+            --sidebar-bg: #0d0d12;
+            --body-bg: #000000;
+            --card-dark: #121218;
+            --primary-color: #00f2ff;
+            --secondary-color: #bc13fe;
+            --accent: #ff00e5; 
+            --glow: 0 0 15px rgba(0, 242, 255, 0.4);
+        }
+
+        body {
+            background-color: var(--body-bg);
+            display: flex;
+            min-height: 100vh;
+            color: #ffffff;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 1.5rem;
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            font-family: 'Orbitron';
+            font-size: 1.5rem;
+            margin-bottom: 2.5rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-brand span { color: var(--primary-color); }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 0.8rem 1rem;
+            color: #6c7293;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .nav-link i { width: 20px; text-align: center; }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(188, 19, 254, 0.1);
+            color: #ffffff;
+            box-shadow: inset 3px 0 0 var(--primary-color);
+        }
+
+        .nav-link.active {
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+        }
+
+        /* Main Content */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Topbar */
+        .topbar {
+            height: var(--topbar-height);
+            background: var(--sidebar-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .search-box {
+            background: #2a2d3a;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            width: 400px;
+        }
+
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            margin-left: 10px;
+            width: 100%;
+            outline: none;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--primary-color);
+        }
+
+        /* Dashboard Content */
+        .content {
+            padding: 2rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-dark);
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: slideUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 20px rgba(0, 242, 255, 0.1);
+        }
+
+        .stat-val { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0; }
+        .stat-label { color: #6c7293; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-icon { font-size: 1.5rem; filter: drop-shadow(0 0 5px currentColor); }
+
+        /* Form Area */
+        .admin-card {
+            background: var(--card-dark);
+            border-radius: 8px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: 0.3s;
+            animation: fadeIn 0.6s ease-out backwards;
+            animation-delay: 0.5s;
+        }
+
+        .admin-card:hover { border-color: rgba(188, 19, 254, 0.3); }
+
+        .card-title {
+            font-family: 'Orbitron';
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; color: #6c7293; font-size: 0.85rem; margin-bottom: 0.5rem; }
+        input, textarea, select {
+            width: 100%;
+            background: #2a2d3a;
+            border: 1px solid #2a2d3a;
+            padding: 0.8rem;
+            border-radius: 4px;
+            color: white;
+            outline: none;
+        }
+        input:focus { border-color: var(--primary-color); }
+
+        .btn-deploy {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Orbitron';
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn-deploy:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--primary-color), 0 0 10px var(--secondary-color);
+        }
+
+        /* Table Area */
+        .game-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .game-table th {
+            text-align: left;
+            color: #6c7293;
+            font-size: 0.85rem;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .game-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+
+        .game-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .status-badge.status-published { background: rgba(0, 210, 91, 0.1); color: #00d25b; }
+        .status-badge.status-draft { background: rgba(255, 171, 0, 0.1); color: #ffab00; }
+        .status-badge.status-trash { background: rgba(255, 51, 51, 0.1); color: #ff3333; }
+        
+        .action-btn { cursor: pointer; transition: 0.2s; }
+        .action-btn:hover { transform: scale(1.2); }
+
+        .btn-filter {
+            background: #2a2d3a;
+            color: #6c7293;
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.3s;
+        }
+
+        .btn-filter.active {
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: var(--card-dark);
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 2.5rem;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 242, 255, 0.2);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            color: #6c7293;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .close-modal:hover { color: white; }
+        /* Analytics Grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .analytics-box {
+            background: var(--card-dark);
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: bounceIn 0.5s ease-out forwards;
+            opacity: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .analytics-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary-color);
+        }
+
+        .analytics-box:nth-child(1) { animation-delay: 0.1s; }
+        .analytics-box:nth-child(2) { animation-delay: 0.2s; }
+        .analytics-box:nth-child(3) { animation-delay: 0.3s; }
+        .analytics-box:nth-child(4) { animation-delay: 0.4s; }
+        .analytics-box:nth-child(5) { animation-delay: 0.5s; }
+        .analytics-box:nth-child(6) { animation-delay: 0.6s; }
+        .analytics-box:nth-child(7) { animation-delay: 0.7s; }
+
+        .analytics-box:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 20px rgba(0, 242, 255, 0.1);
+        }
+
+        .analytics-day {
+            font-size: 0.8rem;
+            color: #6c7293;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+        }
+
+        .analytics-count {
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-family: 'Orbitron';
+            margin-bottom: 0.5rem;
+        }
+
+        .analytics-trend {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .trend-up { color: #00d25b; }
+        .trend-down { color: #ff3333; }
+        .trend-stable { color: #6c7293; }
+
+        /* Stat Card Trend Arrow System */
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-trend-arrow {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            position: relative;
+        }
+
+        .stat-trend.up .stat-trend-arrow {
+            background: rgba(0, 210, 91, 0.15);
+            color: #00d25b;
+            box-shadow: 0 0 12px rgba(0, 210, 91, 0.3);
+            animation: trendBounceUp 2s infinite ease-in-out;
+        }
+
+        .stat-trend.up .stat-trend-arrow::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 210, 91, 0.4);
+            animation: trendRipple 2s infinite ease-out;
+        }
+
+        .stat-trend.down .stat-trend-arrow {
+            background: rgba(255, 51, 51, 0.15);
+            color: #ff3333;
+            box-shadow: 0 0 12px rgba(255, 51, 51, 0.3);
+            animation: trendBounceDown 2s infinite ease-in-out;
+        }
+
+        .stat-trend.down .stat-trend-arrow::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 51, 51, 0.4);
+            animation: trendRipple 2s infinite ease-out;
+        }
+
+        .stat-trend.stable .stat-trend-arrow {
+            background: rgba(108, 114, 147, 0.15);
+            color: #6c7293;
+        }
+
+        .stat-trend-text {
+            font-family: 'Orbitron';
+            font-size: 0.65rem;
+        }
+
+        .stat-trend.up .stat-trend-text { color: #00d25b; }
+        .stat-trend.down .stat-trend-text { color: #ff3333; }
+        .stat-trend.stable .stat-trend-text { color: #6c7293; }
+
+        @keyframes trendBounceUp {
+            0%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+            50% { transform: translateY(-2px); }
+            70% { transform: translateY(-4px); }
+        }
+
+        @keyframes trendBounceDown {
+            0%, 100% { transform: translateY(0); }
+            30% { transform: translateY(5px); }
+            50% { transform: translateY(2px); }
+            70% { transform: translateY(4px); }
+        }
+
+        @keyframes trendRipple {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        .stat-val.counting {
+            animation: countPulse 0.5s ease-out;
+        }
+
+        @keyframes countPulse {
+            0% { transform: scale(1.3); color: var(--primary-color); }
+            100% { transform: scale(1); color: #fff; }
+        }
+
+        /* Shooting Brand Styles */
+        .brand-shooting {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-left: 20px;
+            font-family: 'Orbitron';
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+            position: relative;
+        }
+
+        .gun-icon {
+            font-size: 1.1rem;
+            color: #6c7293;
+            position: relative;
+        }
+
+        .gun-left { transform: rotateY(0deg); }
+        .gun-right { transform: rotateY(180deg); }
+
+        .muzzle-flash {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: radial-gradient(circle, #fff 0%, #00f2ff 50%, transparent 100%);
+            border-radius: 50%;
+            top: 5px;
+            opacity: 0;
+            animation: shootFlash 0.5s infinite;
+        }
+
+        .flash-left { left: 20px; }
+        .flash-right { right: 20px; }
+
+        .bullet {
+            position: absolute;
+            width: 10px;
+            height: 2px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            box-shadow: 0 0 5px var(--primary-color);
+            opacity: 0;
+            top: 12px;
+            animation: moveBullet 0.8s infinite linear;
+        }
+
+        @keyframes shootFlash {
+            0%, 90% { opacity: 0; transform: scale(0.5); }
+            95% { opacity: 1; transform: scale(1.5); }
+            100% { opacity: 0; transform: scale(0.8); }
+        }
+
+        @keyframes moveBullet {
+            0% { left: 20px; opacity: 0; transform: translateX(0); }
+            5% { opacity: 1; }
+            50% { opacity: 1; transform: translateX(100px); }
+            100% { left: 100%; opacity: 0; transform: translateX(200px); }
+        }
+
+        .shooting-text {
+            animation: textPulse 2s infinite alternate;
+            background: linear-gradient(90deg, #fff, var(--primary-color), #bc13fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        @keyframes textPulse {
+            from { text-shadow: 0 0 5px var(--primary-color); }
+            to { text-shadow: 0 0 20px var(--primary-color), 0 0 10px var(--secondary-color); }
+        }
+
+        /* Digital Clock Styles */
+        .clock-container {
+            margin-left: 20px;
+            padding: 5px 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 2px solid var(--primary-color);
+            border-radius: 0 10px 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #digitalClock {
+            font-family: 'Orbitron';
+            font-size: 1rem;
+            color: #fff;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .clock-icon {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            animation: clockPulse 1s infinite alternate;
+        }
+
+        @keyframes clockPulse {
+            from { opacity: 0.5; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* Epic Ninja Movie Battle */
+        .ninja-movie-battle {
+            display: flex;
+            align-items: center;
+            margin-left: 20px;
+            position: relative;
+            width: 150px;
+            height: 35px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 5px;
+            border: 1px solid rgba(255,183,0,0.1);
+        }
+
+        .ninja-hero {
+            color: #ffb400; /* Golden Hero */
+            font-size: 1.3rem;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            text-shadow: 0 0 10px #ffb400;
+            animation: heroAction 4s infinite linear;
+        }
+
+        .ninja-shadow {
+            color: #ff3333; /* Red Enemies */
+            font-size: 1rem;
+            position: absolute;
+            opacity: 0;
+            filter: drop-shadow(0 0 5px #ff3333);
+        }
+
+        .shadow-1 { animation: shadow1Attack 4s infinite linear; }
+        .shadow-2 { animation: shadow2Attack 4s infinite linear; }
+        .shadow-3 { animation: shadow3Attack 4s infinite linear; }
+        .shadow-4 { animation: shadow4Attack 4s infinite linear; }
+
+        @keyframes heroAction {
+            0%, 5% { transform: translate(-50%, -50%) rotate(0); }
+            10% { transform: translate(-80%, -50%) rotate(-45deg); }
+            20% { transform: translate(-20%, -50%) rotate(45deg); }
+            40% { transform: translate(-50%, -80%) scale(1.2); }
+            60% { transform: translate(-50%, -50%) rotate(720deg); }
+            100% { transform: translate(-50%, -50%) rotate(0); }
+        }
+
+        @keyframes shadow1Attack {
+            0% { left: -20px; opacity: 0; }
+            5% { left: 10px; opacity: 1; }
+            15% { left: 35%; opacity: 1; transform: scale(1.1); }
+            20% { left: -20px; opacity: 0; transform: rotate(-90deg); }
+        }
+
+        @keyframes shadow2Attack {
+            20% { right: -20px; opacity: 0; }
+            25% { right: 10px; opacity: 1; }
+            35% { right: 35%; opacity: 1; transform: translateY(-10px); }
+            40% { right: -20px; opacity: 0; transform: rotate(90deg); }
+        }
+
+        @keyframes shadow3Attack {
+            45% { left: -20px; opacity: 0; }
+            55% { left: 40%; opacity: 1; }
+            65% { left: -20px; opacity: 0; transform: translateY(20px); }
+        }
+
+        @keyframes shadow4Attack {
+            45% { right: -20px; opacity: 0; }
+            55% { right: 40%; opacity: 1; }
+            65% { right: -20px; opacity: 0; transform: translateY(20px); }
+        }
+
+        .slash-effect {
+            position: absolute;
+            color: #fff;
+            font-size: 1.5rem;
+            opacity: 0;
+            z-index: 10;
+            animation: slashFlash 4s infinite linear;
+        }
+
+        @keyframes slashFlash {
+            10%, 12% { opacity: 1; left: 30%; top: 30%; transform: rotate(45deg); }
+            12.1%, 30% { opacity: 0; }
+            30.1%, 32% { opacity: 1; right: 30%; top: 30%; transform: rotate(-45deg); }
+            32.1%, 60% { opacity: 0; }
+            60.1%, 65% { opacity: 1; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1.5); }
+            65.1%, 100% { opacity: 0; }
+        }
+        /* Notification & Message Dropdowns */
+        .user-profile {
+            position: relative;
+            display: flex;
+            gap: 20px;
+        }
+
+        .icon-wrapper {
+            position: relative;
+            cursor: pointer;
+            color: #6c7293;
+            font-size: 1.1rem;
+            transition: 0.3s;
+        }
+
+        .icon-wrapper:hover { color: var(--primary-color); }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 8px;
+            height: 8px;
+            background: #ff3366;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff3366;
+            animation: badgePulse 1.5s infinite;
+        }
+
+        @keyframes badgePulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .dropdown-panel {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            width: 250px;
+            background: rgba(15, 20, 31, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 1000;
+            animation: fadeInDown 0.3s ease-out;
+        }
+
+        .dropdown-panel.show { display: block; }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-header {
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dropdown-item {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .dropdown-item:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .item-icon {
+            margin-top: 3px;
+            font-size: 0.8rem;
+        }
+
+        .item-text h4 { font-size: 0.9rem; margin-bottom: 2px; color: #fff; }
+        .item-text p { font-size: 0.75rem; color: #6c7293; margin: 0; }
+        /* Vault Security Overlay */
+        #vaultOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #080a0f;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: 1s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+
+        .vault-door-left, .vault-door-right {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: #0c1017;
+            border: 1px solid rgba(0, 242, 255, 0.05);
+            transition: transform 1.2s cubic-bezier(0.7, 0, 0.3, 1);
+            display: flex;
+            align-items: center;
+            z-index: 1;
+        }
+
+        .vault-door-left { left: 0; justify-content: flex-end; border-right: 2px solid var(--primary-color); }
+        .vault-door-right { right: 0; justify-content: flex-start; border-left: 2px solid var(--primary-color); }
+
+        .vault-unlocked .vault-door-left { transform: translateX(-100%); }
+        .vault-unlocked .vault-door-right { transform: translateX(100%); }
+
+        .vault-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .pin-display {
+            font-family: 'Orbitron';
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            letter-spacing: 15px;
+            height: 50px;
+            text-shadow: 0 0 15px var(--primary-color);
+        }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 15px;
+        }
+
+        .num-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            color: #fff;
+            font-family: 'Orbitron';
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .num-btn:hover {
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 20px var(--primary-color);
+        }
+
+        .num-btn:active { transform: scale(0.9); }
+
+        /* Welcome Sequence */
+        #welcomeSequence {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 9999;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+        }
+
+        .welcome-text {
+            font-family: 'Orbitron';
+            font-size: 4rem;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+            text-shadow: 0 0 30px var(--primary-color);
+            text-align: center;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-color);
+            box-shadow: 0 0 15px var(--primary-color);
+            top: -100px;
+            z-index: 10001;
+        }
+
+        @keyframes scan {
+            from { top: 0%; }
+            to { top: 100%; }
+        }
+
+        .scanning .scan-line {
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes welcomeIn {
+            0% { opacity: 0; transform: scale(0.8) skewX(20deg); filter: blur(10px); }
+            50% { opacity: 1; transform: scale(1.1) skewX(0deg); filter: blur(0); }
+            100% { opacity: 0; transform: scale(1.5) skewX(-20deg); filter: blur(20px); }
+        }
+
+        .run-welcome .welcome-text {
+            animation: welcomeIn 2s forwards;
+        }
+
+        /* Chat View Premium UI */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+            background: rgba(15, 15, 26, 0.6);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-top: 20px;
+        }
+        .chat-header {
+            padding: 20px;
+            background: linear-gradient(90deg, rgba(0, 242, 255, 0.1), transparent);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .chat-header h3 { color: #fff; font-family: 'Orbitron'; margin: 0; }
+        .chat-header .pulse-dot {
+            width: 10px; height: 10px;
+            background: #00f2ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00f2ff;
+            animation: pulseYoutube 2s infinite;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .chat-msg {
+            max-width: 70%;
+            padding: 15px;
+            border-radius: 12px;
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        .chat-msg.admin {
+            align-self: flex-end;
+            background: linear-gradient(135deg, rgba(188, 19, 254, 0.2), rgba(188, 19, 254, 0.05));
+            border: 1px solid rgba(188, 19, 254, 0.3);
+            border-bottom-right-radius: 2px;
+        }
+        .chat-msg.user {
+            align-self: flex-start;
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), rgba(0, 242, 255, 0.02));
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-bottom-left-radius: 2px;
+        }
+        .msg-sender { font-size: 0.75rem; color: var(--primary-color); margin-bottom: 5px; font-weight: bold; }
+        .chat-msg.admin .msg-sender { color: var(--secondary-color); text-align: right; }
+        .msg-text { color: #e0e0e0; font-size: 0.95rem; line-height: 1.5; }
+        .msg-time { font-size: 0.7rem; color: #6c7293; margin-top: 5px; text-align: right; }
+        .chat-input-area {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 15px;
+        }
+        .chat-input-area input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 25px;
+            color: #fff;
+            outline: none;
+            transition: 0.3s;
+        }
+        .chat-input-area input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.2);
+        }
+        .btn-send-msg {
+            background: linear-gradient(135deg, var(--secondary-color), #8a0bba);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+        }
+        .btn-send-msg:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(188, 19, 254, 0.6);
+        }
+    </style>
+</head>
+<body class="scanning">
+    <!-- Vault PIN Overlay -->
+    <div id="vaultOverlay">
+        <div class="vault-door-left"></div>
+        <div class="vault-door-right"></div>
+        <div class="scan-line"></div>
+        
+        <div class="vault-content">
+            <i class="fas fa-shield-alt" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 20px;"></i>
+            <h2 style="font-family: 'Orbitron'; color: #fff; margin-bottom: 10px; letter-spacing: 3px;">SECURE ACCESS</h2>
+            <p style="color: #6c7293; margin-bottom: 30px;">Enter Admin PIN to Unlock Platform</p>
+            
+            <div class="pin-display" id="pinOutput"></div>
+            
+            <div class="numpad">
+                <button class="num-btn" onclick="addPin('1')">1</button>
+                <button class="num-btn" onclick="addPin('2')">2</button>
+                <button class="num-btn" onclick="addPin('3')">3</button>
+                <button class="num-btn" onclick="addPin('4')">4</button>
+                <button class="num-btn" onclick="addPin('5')">5</button>
+                <button class="num-btn" onclick="addPin('6')">6</button>
+                <button class="num-btn" onclick="addPin('7')">7</button>
+                <button class="num-btn" onclick="addPin('8')">8</button>
+                <button class="num-btn" onclick="addPin('9')">9</button>
+                <button class="num-btn" onclick="addPin('C')" style="background: rgba(255, 51, 102, 0.1); border-color: #ff3366; color: #ff3366;">C</button>
+                <button class="num-btn" onclick="addPin('0')">0</button>
+                <button class="num-btn" onclick="addPin('OK')" style="background: rgba(0, 210, 91, 0.1); border-color: #00d25b; color: #00d25b;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Sequence Overlay -->
+    <div id="welcomeSequence">
+        <div class="welcome-text">
+            WELCOME<br>
+            <span style="font-size: 2rem; color: var(--primary-color); letter-spacing: 5px;">CHIDY PRIME COMMANDER</span>
+        </div>
+    </div>
+    <aside class="sidebar">
+        <div class="sidebar-brand">CHIDY<span>ADMIN</span></div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" data-view="dashboardView"><i class="fas fa-th-large"></i> Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="allGamesView"><i class="fas fa-gamepad"></i> All Games</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="usersView"><i class="fas fa-users"></i> Users</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="messagesView"><i class="fas fa-envelope"></i> Messages</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="analyticsView"><i class="fas fa-chart-pie"></i> Analytics</a>
+            </li>
+            <li class="nav-item" style="margin-top: 2rem;">
+                <a href="/" class="nav-link"><i class="fas fa-external-link-alt"></i> View Store</a>
+            </li>
+        </ul>
+    </aside>
+
+    <div class="main-wrapper">
+        <nav class="topbar">
+            <div style="display: flex; align-items: center;">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search products">
+                </div>
+                
+                <div class="brand-shooting">
+                    <div class="gun-icon gun-left">
+                        <i class="fas fa-gun"></i>
+                        <div class="muzzle-flash flash-left"></div>
+                    </div>
+                    <span class="shooting-text">CHIDY PRIME</span>
+                    <div class="gun-icon gun-right">
+                        <i class="fas fa-gun"></i>
+                        <div class="muzzle-flash flash-right"></div>
+                    </div>
+                </div>
+
+                <div class="clock-container">
+                    <i class="fas fa-clock clock-icon"></i>
+                    <div id="digitalClock">00:00:00 AM</div>
+                </div>
+
+                <div class="ninja-movie-battle">
+                    <div class="ninja-hero"><i class="fas fa-user-ninja"></i></div>
+                    <div class="ninja-shadow shadow-1"><i class="fas fa-user-ninja"></i></div>
+                    <div class="ninja-shadow shadow-2"><i class="fas fa-user-ninja"></i></div>
+                    <div class="ninja-shadow shadow-3"><i class="fas fa-user-ninja"></i></div>
+                    <div class="ninja-shadow shadow-4"><i class="fas fa-user-ninja"></i></div>
+                    <div class="slash-effect"><i class="fas fa-bolt"></i></div>
+                </div>
+            </div>
+            
+            <div class="user-profile">
+                <!-- Notifications -->
+                <div class="icon-wrapper" id="notifTrigger">
+                    <i class="fas fa-bell"></i>
+                    <div class="notification-badge"></div>
+                    <div class="dropdown-panel" id="notifDropdown">
+                        <div class="dropdown-header">
+                            <span>Notifications</span>
+                            <small style="color: #6c7293; cursor: pointer;">Clear all</small>
+                        </div>
+                        <div class="dropdown-item">
+                            <i class="fas fa-cloud-upload-alt item-icon" style="color: #00d25b;"></i>
+                            <div class="item-text">
+                                <h4>New Game Posted</h4>
+                                <p>Resident Evil 4 Remake is now live.</p>
+                            </div>
+                        </div>
+                        <div class="dropdown-item">
+                            <i class="fas fa-chart-line item-icon" style="color: #00f2ff;"></i>
+                            <div class="item-text">
+                                <h4>Analytics Updated</h4>
+                                <p>Today's views reached 1,200.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="icon-wrapper" id="msgTrigger">
+                    <i class="fas fa-envelope"></i>
+                    <div class="dropdown-panel" id="msgDropdown">
+                        <div class="dropdown-header">
+                            <span>Messages</span>
+                        </div>
+                        <div class="dropdown-item">
+                            <div class="item-text">
+                                <h4>System Alert</h4>
+                                <p>Subscription renewal in 5 days.</p>
+                            </div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; color: #6c7293; font-size: 0.8rem;">
+                            No new messages from users.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="dashboardView" class="content view-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Total Games</div>
+                        <div class="stat-val totalGamesCount" id="totalGames">0</div>
+                    </div>
+                    <i class="fas fa-gamepad stat-icon"></i>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Downloads</div>
+                        <div class="stat-val">1.2K</div>
+                    </div>
+                    <i class="fas fa-download stat-icon" style="color: var(--accent);"></i>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Total Users</div>
+                        <div class="stat-val" id="totalUsersCount">--</div>
+                        <div class="stat-trend stable" id="userTrend">
+                            <span class="stat-trend-arrow"><i class="fas fa-minus"></i></span>
+                            <span class="stat-trend-text">Loading...</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-users stat-icon" style="color: var(--secondary-color);"></i>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Revenue</div>
+                        <div class="stat-val">$4.5K</div>
+                    </div>
+                    <i class="fas fa-dollar-sign stat-icon" style="color: #00ff88;"></i>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <h3 class="card-title">Upload New Game</h3>
+                <form id="uploadForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Game Title</label>
+                            <input type="text" name="title" required placeholder="Enter game name">
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category" required>
+                                <option value="HOT POST">HOT POST</option>
+                                <option value="TANZANIA GAMES">TANZANIA GAMES</option>
+                                <option value="FREE GAMES">FREE GAMES</option>
+                                <option value="PC GAMES">PC GAMES</option>
+                                <option value="ANDROID GAMES">ANDROID GAMES</option>
+                                <option value="PPSSPP GAMES">PPSSPP GAMES</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Rating (0-5)</label>
+                            <input type="number" name="rating" step="0.1" min="0" max="5" required value="4.5">
+                        </div>
+                        <div class="form-group">
+                            <label>Price (Set 0 for FREE)</label>
+                            <input type="number" name="price" step="0.01" min="0" required value="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>YouTube Trailer URL</label>
+                            <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" rows="4" placeholder="Briefly describe the game..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Download / Payment Links</label>
+                        <div id="linksContainer">
+                            <div class="form-row link-row">
+                                <input type="text" placeholder="Link Name (e.g. Mediafire)" class="link-name">
+                                <input type="url" placeholder="URL (https://...)" class="link-url">
+                            </div>
+                        </div>
+                        <button type="button" id="addLinkBtn" style="background: rgba(188, 19, 254, 0.2); color: var(--secondary-color); font-size: 0.8rem; margin-top: 0.5rem; width: auto; padding: 0.5rem 1rem;">
+                            <i class="fas fa-plus"></i> Add Another Link
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Post Image (Imgbb)</label>
+                        <input type="file" name="image" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn-deploy" id="submitBtn">Deploy To Store</button>
+
+                    <p id="statusMsg" style="margin-top: 1rem; font-size: 0.8rem;"></p>
+                </form>
+            </div>
+        </section>
+
+        <!-- ALL GAMES VIEW -->
+        <section id="allGamesView" class="content view-section" style="display: none;">
+            <div class="admin-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3 class="card-title" style="margin: 0;" id="tableTitle">All Games</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-filter active" onclick="filterByStatus('published')">Published (<span id="count-published">0</span>)</button>
+                        <button class="btn-filter" onclick="filterByStatus('draft')">Drafts (<span id="count-draft">0</span>)</button>
+                        <button class="btn-filter" onclick="filterByStatus('trash')">Trash (<span id="count-trash">0</span>)</button>
+                        <button class="btn-deploy" onclick="showView('dashboardView')" style="padding: 0.5rem 1.5rem; font-size: 0.8rem; margin-left: 10px;">+ Add New</button>
+                    </div>
+                </div>
+                <table class="game-table">
+                    <thead>
+                        <tr>
+                            <th>Poster</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Rating</th>
+                            <th>Links</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fullGameTableBody">
+                        <!-- Loaded via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- USERS VIEW -->
+        <section id="usersView" class="content view-section" style="display: none;">
+            <div class="admin-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3 class="card-title" style="margin: 0;"><i class="fas fa-users"></i> Registered Users</h3>
+                    <div class="stat-val" style="font-size: 1.2rem; margin: 0;" id="userViewTotal">0 Total</div>
+                </div>
+                <table class="game-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone Number</th>
+                            <th>Joined Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="5" style="text-align:center;color:#6c7293;padding:20px;">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ANALYTICS VIEW -->
+        <section id="analyticsView" class="content view-section" style="display: none;">
+            <div class="admin-card">
+                <h3 class="card-title"><i class="fas fa-chart-line"></i> Platform Analytics</h3>
+                <p style="color: #6c7293; font-size: 0.9rem;">7-Day Traffic Overview & Performance Tracking</p>
+                <div class="analytics-grid" id="analyticsDataGrid">
+                    <!-- Loaded via JS -->
+                    <p style="grid-column: span 7; padding: 2rem; color: #6c7293;">Synchronizing with core network...</p>
+                </div>
+            </div>
+            
+            <div class="admin-card" style="margin-top: 2rem;">
+                <h3 class="card-title">Activity Insights</h3>
+                <p style="color: #6c7293;">Tracking visitor patterns from the Chidy Prime Storefront in real-time.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- EDIT MODAL -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" onclick="closeEditModal()"></i>
+            <h3 class="card-title" style="color: var(--primary-color);"><i class="fas fa-edit"></i> Edit Game Details</h3>
+            
+            <form id="editForm">
+                <input type="hidden" name="id" id="editGameId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Game Title</label>
+                        <input type="text" name="title" id="editTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" id="editCategory" required>
+                            <option value="HOT POST">HOT POST</option>
+                            <option value="TANZANIA GAMES">TANZANIA GAMES</option>
+                            <option value="FREE GAMES">FREE GAMES</option>
+                            <option value="PC GAMES">PC GAMES</option>
+                            <option value="ANDROID GAMES">ANDROID GAMES</option>
+                            <option value="PPSSPP GAMES">PPSSPP GAMES</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Rating (0-5)</label>
+                        <input type="number" name="rating" id="editRating" step="0.1" min="0" max="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Price (0 for FREE)</label>
+                        <input type="number" name="price" id="editPrice" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>YouTube Trailer URL</label>
+                        <input type="url" name="youtube_url" id="editYoutubeUrl" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" id="editDescription" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Download / Payment Links</label>
+                    <div id="editLinksContainer">
+                        <!-- Filled via JS -->
+                    </div>
+                    <button type="button" onclick="addEditLinkRow()" style="background: rgba(188, 19, 254, 0.2); color: var(--secondary-color); font-size: 0.8rem; margin-top: 0.5rem; width: auto; padding: 0.5rem 1rem;">
+                        <i class="fas fa-plus"></i> Add Another Link
+                    </button>
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 2rem;">
+                    <button type="submit" class="btn-deploy" id="updateBtn">Save Changes</button>
+                    <button type="button" class="btn-filter" onclick="closeEditModal()" style="padding: 1rem 2rem;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MESSAGES VIEW -->
+    <section id="messagesView" class="content view-section" style="display: none; padding: 1rem 2rem;">
+        
+        <!-- FULL PAGE AI ADVISORY PANEL -->
+        <div class="ai-advisory-panel" style="width: 100%; height: calc(100vh - 120px); background: rgba(15, 15, 26, 0.6); border: 1px solid rgba(0, 242, 255, 0.1); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            
+            <div style="padding: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.1); background: rgba(0, 242, 255, 0.02); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(0,242,255,0.1); display: flex; align-items: center; justify-content: center; color: #00f2ff; box-shadow: 0 0 15px rgba(0,242,255,0.3); font-size: 1.5rem;">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #00f2ff; font-family: 'Orbitron'; letter-spacing: 2px;">C.P.A.I <span style="font-size: 0.8rem; color: #bc13fe;">v2.0 MASTER CORE</span></h3>
+                        <p style="margin: 0; color: #6c7293; font-size: 0.85rem;">Global & System Knowledge Database</p>
+                    </div>
+                </div>
+                <div class="pulse-dot" style="width: 12px; height: 12px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 15px #00f2ff; animation: pulseYoutube 2s infinite;"></div>
+            </div>
+            
+            <div id="aiBox" style="flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; font-family: 'Poppins', sans-serif; font-size: 1rem; line-height: 1.6;">
+                <div style="color: #00f2ff; opacity: 0.9; font-family: monospace; background: rgba(0, 242, 255, 0.05); padding: 15px; border-radius: 8px; border-left: 3px solid #00f2ff; align-self: flex-start; max-width: 80%;">
+                    > [SYSTEM_INIT]: Wakati wa kuunganisha umekamilika.<br>
+                    > [C.P.A.I_READY]: Nipo tayari kusikiliza maagizo yako.<br><br>
+                    <strong>💡 Unaweza kuuliza:</strong><br>
+                    - "Tufanye nini ili tupate wateja wengi?"<br>
+                    - "Tuongeze mfumo gani / update gani?"<br>
+                    - "Playstation ilianzishwa lini?" (Taarifa za Dunia)
+                </div>
+            </div>
+            
+            <div class="chat-input-area" style="padding: 20px 30px; background: rgba(0,0,0,0.5); border-top: 1px solid rgba(0, 242, 255, 0.1); display: flex; gap: 15px; align-items: center;">
+                <input type="text" id="aiInput" placeholder="Command C.P.A.I. Uliza swali lolote kuhusu website au la duniani..." onkeypress="handleAiEnter(event)" style="font-size: 1rem; padding: 18px 25px;">
+                <button class="btn-send-msg" onclick="queryAI()" style="width: 55px; height: 55px; font-size: 1.2rem;"><i class="fas fa-satellite-dish"></i></button>
+            </div>
+        </div>
+
+    </section>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const statusMsg = document.getElementById('statusMsg');
+        const fullGameTableBody = document.getElementById('fullGameTableBody');
+        const totalGamesLabels = document.querySelectorAll('.totalGamesCount');
+        const addLinkBtn = document.getElementById('addLinkBtn');
+        const linksContainer = document.getElementById('linksContainer');
+
+        // View Switching Logic
+        const navLinks = document.querySelectorAll('.nav-link[data-view]');
+        const views = document.querySelectorAll('.view-section');
+        let currentGamesFilter = 'published';
+
+        navLinks.forEach(link => {
+            link.onclick = (e) => {
+                e.preventDefault();
+                const viewId = link.getAttribute('data-view');
+                showView(viewId);
+            };
+        });
+
+        function showView(viewId) {
+            views.forEach(v => v.style.display = 'none');
+            navLinks.forEach(l => l.classList.remove('active'));
+            
+            document.getElementById(viewId).style.display = 'block';
+            const activeLink = document.querySelector(`.nav-link[data-view="${viewId}"]`);
+            if (activeLink) activeLink.classList.add('active');
+
+            if (viewId === 'analyticsView') fetchAnalytics();
+            // loadChatMessages disabled as chatBox is now replaced by full AI Advisory
+            // if (viewId === 'messagesView') loadChatMessages();
+            if (viewId === 'usersView') loadUsers();
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const h = now.getHours() % 12 || 12;
+            const m = now.getMinutes().toString().padStart(2, '0');
+            const s = now.getSeconds().toString().padStart(2, '0');
+            const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+            document.getElementById('digitalClock').textContent = `${h}:${m}:${s} ${ampm}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Dropdown Handlers
+        document.getElementById('notifTrigger').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('notifDropdown').classList.toggle('show');
+            document.getElementById('msgDropdown').classList.remove('show');
+        });
+
+        document.getElementById('msgTrigger').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('msgDropdown').classList.toggle('show');
+            document.getElementById('notifDropdown').classList.remove('show');
+        });
+
+        window.onclick = () => {
+            document.getElementById('notifDropdown').classList.remove('show');
+            document.getElementById('msgDropdown').classList.remove('show');
+        };
+
+        // PIN Security Logic
+        let enteredPin = "";
+        const CORRECT_PIN = "2025"; // OUR SECRET PIN
+
+        function addPin(val) {
+            if (val === 'C') {
+                enteredPin = "";
+            } else if (val === 'OK') {
+                verifyPin();
+                return;
+            } else {
+                if (enteredPin.length < 4) enteredPin += val;
+            }
+            // Update display with asterisks
+            document.getElementById('pinOutput').innerText = "*".repeat(enteredPin.length);
+            
+            // Auto verify if 4 digits
+            if (enteredPin.length === 4) {
+                setTimeout(verifyPin, 300);
+            }
+        }
+
+        function verifyPin() {
+            if (enteredPin === CORRECT_PIN) {
+                unlockVault();
+            } else {
+                // Shake effect on wrong pin
+                const output = document.getElementById('pinOutput');
+                output.style.color = "#ff3366";
+                output.innerText = "ERROR";
+                setTimeout(() => {
+                    enteredPin = "";
+                    output.innerText = "";
+                    output.style.color = "var(--primary-color)";
+                }, 1000);
+            }
+        }
+
+        function unlockVault() {
+            const overlay = document.getElementById('vaultOverlay');
+            const welcome = document.getElementById('welcomeSequence');
+            
+            document.body.classList.remove('scanning');
+            overlay.classList.add('vault-unlocked');
+            
+            setTimeout(() => {
+                welcome.style.opacity = "1";
+                document.body.classList.add('run-welcome');
+                
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    welcome.style.display = "none";
+                }, 2000);
+            }, 800);
+        }
+
+        async function fetchAnalytics() {
+            const grid = document.getElementById('analyticsDataGrid');
+            try {
+                const response = await fetch('/api/analytics');
+                const data = await response.json();
+                
+                // Create a map for quick lookup
+                const statsMap = {};
+                data.forEach(d => {
+                    const dateStr = d.date.split('T')[0];
+                    statsMap[dateStr] = d.views;
+                });
+
+                // Get last 7 days
+                const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                let html = '';
+                
+                for(let i=6; i>=0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const dayKey = d.toISOString().split('T')[0];
+                    const dayName = daysOfWeek[d.getDay()];
+                    const views = statsMap[dayKey] || 0;
+                    
+                    // Simple trend calculation (previous vs current)
+                    const prevD = new Date(d);
+                    prevD.setDate(prevD.getDate() - 1);
+                    const prevKey = prevD.toISOString().split('T')[0];
+                    const prevViews = statsMap[prevKey] || 0;
+                    
+                    let trendIcon = 'fa-minus';
+                    let trendClass = 'trend-stable';
+                    let trendText = 'Stable';
+
+                    if (views > prevViews) {
+                        trendIcon = 'fa-arrow-up';
+                        trendClass = 'trend-up';
+                        trendText = '+' + (views - prevViews);
+                    } else if (views < prevViews) {
+                        trendIcon = 'fa-arrow-down';
+                        trendClass = 'trend-down';
+                        trendText = views - prevViews;
+                    }
+
+                    html += `
+                        <div class="analytics-box">
+                            <div class="analytics-day">${dayName}</div>
+                            <div class="analytics-count">${views}</div>
+                            <div class="analytics-trend ${trendClass}">
+                                <i class="fas ${trendIcon}"></i> ${trendText}
+                            </div>
+                        </div>
+                    `;
+                }
+                grid.innerHTML = html;
+            } catch (err) {
+                grid.innerHTML = `<p style="grid-column: span 7; color: #ff3333;">Error loading analytics: ${err.message}</p>`;
+            }
+        }
+
+        addLinkBtn.onclick = () => {
+            const row = document.createElement('div');
+            row.className = 'form-row link-row';
+            row.style.marginTop = '0.5rem';
+            row.innerHTML = `
+                <input type="text" placeholder="Link Name" class="link-name">
+                <input type="url" placeholder="URL" class="link-url">
+            `;
+            linksContainer.appendChild(row);
+        };
+
+        let allGamesData = [];
+
+        async function fetchAdminData() {
+            try {
+                const response = await fetch('/api/admin/games');
+                const games = await response.json();
+                
+                if (games.error) throw new Error(games.error);
+
+                allGamesData = games;
+                totalGamesLabels.forEach(el => el.innerText = games.length);
+                updateFilterCounts(); // Update the (0) numbers
+                renderFilteredGames(currentGamesFilter); // Maintain current filter
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateFilterCounts() {
+            const counts = {
+                published: allGamesData.filter(g => (g.status || 'published') === 'published').length,
+                draft: allGamesData.filter(g => g.status === 'draft').length,
+                trash: allGamesData.filter(g => g.status === 'trash').length
+            };
+            
+            document.getElementById('count-published').innerText = counts.published;
+            document.getElementById('count-draft').innerText = counts.draft;
+            document.getElementById('count-trash').innerText = counts.trash;
+        }
+
+        function filterByStatus(status) {
+            currentGamesFilter = status;
+            document.querySelectorAll('.btn-filter').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.innerText.toLowerCase().includes(status)) btn.classList.add('active');
+            });
+            renderFilteredGames(status);
+        }
+
+        function renderFilteredGames(status) {
+            const filtered = allGamesData.filter(g => (g.status || 'published') === status);
+            const titleEl = document.getElementById('tableTitle');
+            titleEl.innerText = status.charAt(0).toUpperCase() + status.slice(1) + (status === 'published' ? ' Games' : '');
+            
+            fullGameTableBody.innerHTML = filtered.map(game => `
+                    <tr>
+                        <td><img src="${game.image_url}" class="game-thumb"></td>
+                        <td style="font-weight: 600;">${game.title}</td>
+                        <td><span style="font-size: 0.75rem; background: rgba(0, 242, 255, 0.1); color: #00f2ff; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0, 242, 255, 0.2);">${game.category || 'HOT POST'}</span></td>
+                        <td style="color: ${game.price > 0 ? '#00f2ff' : '#00d25b'}; font-weight: 700;">
+                            ${game.price > 0 ? '$' + game.price : 'FREE'}
+                        </td>
+                        <td><span style="color: #ffcc00;">★ ${game.rating}</span></td>
+                        <td>
+                            ${(Array.isArray(game.links) ? game.links : []).map(l => `<span style="font-size: 0.7rem; background: rgba(255,255,255,0.05); padding: 2px 5px; border-radius: 3px; margin-right: 3px;">${l.name}</span>`).join('')}
+                        </td>
+                        <td>${new Date(game.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <span class="status-badge status-${game.status || 'published'}">
+                                ${game.status || 'published'}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 10px; font-size: 0.8rem;">
+                                ${status === 'trash' ? `
+                                    <i class="fas fa-undo action-btn" onclick="updateStatus('${game.id}', 'published')" title="Restore to Store" style="color: #00d25b;"></i>
+                                    <i class="fas fa-trash action-btn" onclick="deletePermanently('${game.id}')" title="Delete Permanently" style="color: #ff3333;"></i>
+                                ` : status === 'draft' ? `
+                                    <i class="fas fa-edit action-btn" onclick="editGame('${game.id}')" title="Edit Game" style="color: #0090e7;"></i>
+                                    <i class="fas fa-rocket action-btn" onclick="updateStatus('${game.id}', 'published')" title="Publish Now" style="color: #00d25b;"></i>
+                                    <i class="fas fa-trash action-btn" onclick="updateStatus('${game.id}', 'trash')" title="Move to Trash" style="color: #ff3333;"></i>
+                                ` : `
+                                    <i class="fas fa-edit action-btn" onclick="editGame('${game.id}')" title="Edit Game" style="color: #0090e7;"></i>
+                                    <i class="fas fa-file-alt action-btn" onclick="updateStatus('${game.id}', 'draft')" title="Move to Draft" style="color: #ffab00;"></i>
+                                    <i class="fas fa-trash action-btn" onclick="updateStatus('${game.id}', 'trash')" title="Move to Trash" style="color: #ff3333;"></i>
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('') || `<tr><td colspan="7" style="text-align: center; color: #6c7293; padding: 2rem;">No ${status} items found.</td></tr>`;
+        }
+
+        async function deletePermanently(id) {
+            if (!confirm('This will permanently delete the game from the database. Are you sure?')) return;
+            
+            try {
+                const response = await fetch(`/api/games/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    fetchAdminData();
+                    showToast('Game deleted permanently.');
+                } else alert(result.error);
+            } catch (err) {
+                alert('Error deleting: ' + err.message);
+            }
+        }
+
+        async function updateStatus(id, newStatus) {
+            try {
+                const response = await fetch(`/api/games/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    fetchAdminData();
+                    showToast(`Game moved to ${newStatus}.`);
+                } else alert(result.error);
+            } catch (err) {
+                alert('Error updating status: ' + err.message);
+            }
+        }
+
+        function editGame(id) {
+            const game = allGamesData.find(g => g.id == id);
+            if (!game) return;
+
+            document.getElementById('editGameId').value = game.id;
+            document.getElementById('editTitle').value = game.title;
+            document.getElementById('editCategory').value = game.category || 'HOT POST';
+            document.getElementById('editRating').value = game.rating;
+            document.getElementById('editPrice').value = game.price || 0;
+            document.getElementById('editDescription').value = game.description || '';
+            document.getElementById('editYoutubeUrl').value = game.youtube_url || '';
+            
+            // Fill links
+            const container = document.getElementById('editLinksContainer');
+            container.innerHTML = '';
+            const links = Array.isArray(game.links) ? game.links : [];
+            if (links.length === 0) addEditLinkRow(); // Add empty row if none
+            else {
+                links.forEach(l => addEditLinkRow(l.name, l.url));
+            }
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function addEditLinkRow(name = '', url = '') {
+            const row = document.createElement('div');
+            row.className = 'form-row link-row';
+            row.style.marginTop = '0.5rem';
+            row.innerHTML = `
+                <input type="text" placeholder="Link Name" class="link-name" value="${name}">
+                <input type="url" placeholder="URL" class="link-url" value="${url}">
+            `;
+            document.getElementById('editLinksContainer').appendChild(row);
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        document.getElementById('editForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('updateBtn');
+            const id = document.getElementById('editGameId').value;
+            
+            btn.disabled = true;
+            btn.innerText = 'Updating...';
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            data.youtube_url = document.getElementById('editYoutubeUrl').value || null;
+            
+            // Collect links
+            const linkRows = document.querySelectorAll('#editLinksContainer .link-row');
+            data.links = Array.from(linkRows).map(row => ({
+                name: row.querySelector('.link-name').value,
+                url: row.querySelector('.link-url').value
+            })).filter(l => l.name && l.url);
+
+            try {
+                const response = await fetch(`/api/games/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    closeEditModal();
+                    fetchAdminData();
+                    showToast('Game updated successfully!');
+                } else throw new Error(result.error);
+            } catch (err) {
+                alert('Update failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save Changes';
+            }
+        };
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.style.position = 'fixed';
+            toast.style.bottom = '2rem';
+            toast.style.right = '2rem';
+            toast.style.background = 'linear-gradient(45deg, #00f2ff, #bc13fe)';
+            toast.style.color = 'white';
+            toast.style.padding = '1rem 2rem';
+            toast.style.borderRadius = '8px';
+            toast.style.boxShadow = '0 10px 30px rgba(0, 242, 255, 0.4)';
+            toast.style.zIndex = '3000';
+            toast.style.fontFamily = 'Orbitron';
+            toast.style.fontSize = '0.9rem';
+            toast.style.animation = 'slideInToast 0.4s ease-out';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+            
+            document.body.appendChild(toast);
+            
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes slideInToast {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInToast 0.4s ease-in reverse forwards';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = 'Uploading...';
+            statusMsg.innerText = 'Processing your deploy...';
+
+            const formData = new FormData(form);
+            
+            // Collect dynamic links
+            const linkRows = document.querySelectorAll('.link-row');
+            const links = Array.from(linkRows).map(row => ({
+                name: row.querySelector('.link-name').value,
+                url: row.querySelector('.link-url').value
+            })).filter(link => link.name && link.url);
+
+            formData.append('links', JSON.stringify(links));
+
+            try {
+                const response = await fetch('/api/games', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    statusMsg.style.color = '#00ff00';
+                    statusMsg.innerText = 'Game deployed successfully!';
+                    form.reset();
+                    fetchAdminData();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                statusMsg.style.color = '#ff3333';
+                statusMsg.innerText = 'Error: ' + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Deploy To Store';
+            }
+        };
+
+        // Animated number counter
+        function animateCount(el, target, duration = 1200) {
+            const start = parseInt(el.innerText) || 0;
+            if (start === target) return;
+            const increment = target > start ? 1 : -1;
+            const steps = Math.abs(target - start);
+            const stepTime = Math.max(Math.floor(duration / steps), 20);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                el.innerText = current.toLocaleString();
+                if (current === target) {
+                    clearInterval(timer);
+                    el.classList.add('counting');
+                    setTimeout(() => el.classList.remove('counting'), 500);
+                }
+            }, stepTime);
+        }
+
+        // Fetch real user stats from Supabase
+        async function fetchUserStats() {
+            try {
+                const response = await fetch('/api/user-stats');
+                const data = await response.json();
+                
+                if (data.error) throw new Error(data.error);
+
+                const countEl = document.getElementById('totalUsersCount');
+                const trendEl = document.getElementById('userTrend');
+                
+                // Animate the counter
+                animateCount(countEl, data.total);
+                
+                // Update trend arrow
+                let arrowIcon, trendText, trendClass;
+                
+                if (data.trend === 'up') {
+                    arrowIcon = 'fa-arrow-up';
+                    trendText = `+${data.diff} today`;
+                    trendClass = 'up';
+                } else if (data.trend === 'down') {
+                    arrowIcon = 'fa-arrow-down';
+                    trendText = `${data.diff} today`;
+                    trendClass = 'down';
+                } else {
+                    arrowIcon = 'fa-minus';
+                    trendText = 'No change';
+                    trendClass = 'stable';
+                }
+                
+                trendEl.className = `stat-trend ${trendClass}`;
+                trendEl.innerHTML = `
+                    <span class="stat-trend-arrow"><i class="fas ${arrowIcon}"></i></span>
+                    <span class="stat-trend-text">${trendText}</span>
+                `;
+            } catch (err) {
+                console.error('User stats error:', err);
+                document.getElementById('totalUsersCount').innerText = '0';
+                const trendEl = document.getElementById('userTrend');
+                trendEl.className = 'stat-trend stable';
+                trendEl.innerHTML = `
+                    <span class="stat-trend-arrow"><i class="fas fa-minus"></i></span>
+                    <span class="stat-trend-text">Offline</span>
+                `;
+            }
+        }
+
+        fetchAdminData();
+        fetchUserStats();
+        // Auto-refresh user stats every 30 seconds
+        setInterval(fetchUserStats, 30000);
+
+        // ===== CHAT SYSTEM =====
+        async function loadChatMessages() {
+            try {
+                const res = await fetch('/api/messages');
+                const msgs = await res.json();
+                const box = document.getElementById('chatBox');
+                box.innerHTML = '';
+                if (!msgs || msgs.length === 0) {
+                    box.innerHTML = '<div style="text-align:center;color:#6c7293;margin-top:20px;">No messages yet. Say hello!</div>';
+                    return;
+                }
+                msgs.forEach(m => {
+                    const type = m.sender === 'Admin' ? 'admin' : 'user';
+                    const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    box.innerHTML += `
+                        <div class="chat-msg ${type}">
+                            <div class="msg-sender">${m.sender === 'Admin' ? 'CHIDY ADMIN' : m.sender}</div>
+                            <div class="msg-text">${m.message}</div>
+                            <div class="msg-time">${time}</div>
+                        </div>
+                    `;
+                });
+                box.scrollTop = box.scrollHeight;
+            } catch (err) {
+                console.error("Chat sync error:", err);
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            input.value = '';
+
+            try {
+                await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender: 'Admin', message })
+                });
+                loadChatMessages();
+            } catch (err) {
+                console.error("Failed to send msg:", err);
+            }
+        }
+
+        function handleChatEnter(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        // Auto-refresh chat disabled (chatBox removed for AI Advisory)
+        /*
+        setInterval(() => {
+            const activeLink = document.querySelector('.nav-link.active');
+            if (activeLink && activeLink.getAttribute('data-view') === 'messagesView') {
+                loadChatMessages();
+            }
+        }, 5000);
+        */
+        // ===== USER MANAGEMENT SYSTEM =====
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+                const tbody = document.getElementById('usersTableBody');
+                document.getElementById('userViewTotal').innerText = users.length + ' Total';
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6c7293;padding:20px;">No registered users found.</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                users.forEach((u, i) => {
+                    const date = new Date(u.created_at).toLocaleDateString([], {year: 'numeric', month: 'short', day: 'numeric'});
+                    const time = new Date(u.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    const phoneClean = u.phone.replace(/[^0-9]/g, '');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="color:#6c7293;font-size:0.8rem;">#${i + 1}</td>
+                        <td style="font-weight:bold;color:var(--primary-color);">${u.name}</td>
+                        <td><span style="background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:4px;font-family:monospace;">${u.phone}</span></td>
+                        <td>${date} <span style="color:#6c7293;font-size:0.8rem">${time}</span></td>
+                        <td style="display:flex; gap:8px;">
+                            <a href="https://wa.me/${phoneClean}" target="_blank" class="btn-filter" style="background:rgba(37,211,102,0.1);color:#25D366;border-color:rgba(37,211,102,0.3);padding:0.4rem 0.8rem;text-decoration:none;display:flex;align-items:center;gap:5px;">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </a>
+                            <a href="sms:${u.phone}" class="btn-filter" style="background:rgba(0,242,255,0.1);color:#00f2ff;border-color:rgba(0,242,255,0.3);padding:0.4rem 0.8rem;text-decoration:none;display:flex;align-items:center;gap:5px;">
+                                <i class="fas fa-sms"></i> SMS
+                            </a>
+                            <button class="btn-filter delete-user-btn" style="background:rgba(255,50,50,0.1);color:#ff4444;border-color:rgba(255,50,50,0.3);padding:0.4rem 0.8rem;display:flex;align-items:center;gap:5px;" data-id="${u.id}" data-name="${u.name}">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Failed to load users:", err);
+            }
+        }
+
+        async function handleDeleteUser(id, name) {
+            if (!confirm(`Uko uhakika unataka kumfuta mteja "${name}"? Hii itamfanya asajiliwe upya akifungua website!`)) return;
+            
+            try {
+                const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(`Mteja ${name} amefutwa kabisa.`);
+                    loadUsers();
+                    fetchUserStats();
+                } else {
+                    alert("Imeshindwa kufuta: " + (result.error || "Unknown error"));
+                }
+            } catch (err) {
+                console.error("Failed to delete user:", err);
+                alert("Hitilafu imetokea wakati wa mawasiliano na server.");
+            }
+        }
+
+        // Global Event Delegation for dynamic buttons
+        document.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-user-btn');
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                const name = deleteBtn.dataset.name;
+                handleDeleteUser(id, name);
+            }
+        });
+        // ===== AI CONSULTANT LOGIC =====
+        function handleAiEnter(e) {
+            if (e.key === 'Enter') queryAI();
+        }
+
+        async function queryAI() {
+            const inputEl = document.getElementById('aiInput');
+            const query = inputEl.value.trim();
+            if (!query) return;
+            inputEl.value = '';
+
+            const aiBox = document.getElementById('aiBox');
+            
+            // Print user query
+            aiBox.innerHTML += `<div style="color: #fff; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; align-self: flex-end; max-width: 80%; border-left: 3px solid #bc13fe;">
+                <span style="color: #bc13fe; font-weight: bold; font-size: 0.8rem;">ADMIN_REQ:</span><br> ${query}
+            </div>`;
+            aiBox.scrollTop = aiBox.scrollHeight;
+
+            // Loading state
+            const loadingId = 'ai-loading-' + Date.now();
+            aiBox.innerHTML += `<div id="${loadingId}" style="color: #00f2ff; max-width: 80%; padding: 15px;">
+                <i class="fas fa-sync fa-spin"></i> C.P.A.I inachakata data...
+            </div>`;
+            aiBox.scrollTop = aiBox.scrollHeight;
+
+            const qLower = query.toLowerCase();
+            let responseHtml = "";
+
+            // Wait a moment for effect
+            await new Promise(r => setTimeout(r, 1000));
+
+            // INTERNAL SYSTEM KNOWLEDGE
+            if (qLower.includes('pata watu') || qLower.includes('wateja') || qLower.includes('marketing') || qLower.includes('watumiaji') || qLower.includes('kutangaza')) {
+                responseHtml = `<strong>Mkakati wa Kuongeza Wateja na Kutangaza Website (Traffic Strategy):</strong><br><br>
+                1. <strong>SEO Boost:</strong> Ongeza maneno makuu (keywords) kwenye description za games zako (Mfano: "Download free PPSSPP games Tanzania").<br>
+                2. <strong>Social Media:</strong> Tumia link za TikTok na Instagram Reels zinazoonyesha gameplay za "Hot Posts" kisha andika link ya Chidy Prime kwenye Bio yako.<br>
+                3. <strong>Push Notifications:</strong> Wapigie / watumie WhatsApp wale wateja waliosignup ukiwaambia kuna toleo jipya la GTA au FIFA. (Umepata wateja ${document.getElementById('userViewTotal').innerText} tayari kwenye Database).<br>
+                4. <strong>Offer za Muda:</strong> Weka punguzo la bei kwenye game zinazolipiwa ili kuwavutia sana.` ;
+            }
+            else if (qLower.includes('update') || qLower.includes('mabadiliko') || qLower.includes('tufanye nini')) {
+                responseHtml = `<strong>Ushauri wa System Update:</strong><br><br>
+                <i class="fas fa-check-circle" style="color:#00d25b;"></i> Mfumo wa Admin & Users uko stable 100% kutokana na Data za Supabase.<br>
+                <strong>Ninachoshuri Kwa Sasa:</strong><br>
+                - Weka games nyingi zaidi za "Tanzania" au "PPSSPP" kwasababu ndizo zinazotafutwa sana.<br>
+                - Hakikisha kila Post mpya unayoweka unapachika na Trailer ya YouTube (Hii inaongeza muda wa mteja kukaa kwenye website yako).`;
+            }
+            else if (qLower.includes('hujambo') || qLower.includes('mambo') || qLower.includes('hello')) {
+                responseHtml = "Sijambo Kaka! C.P.A.I (Chidy Prime Artificial Intelligence) ipo tayari kukuhudumia. Niulize kuhusu mbinu za website au swali lolote la ufahamu wa dunia.";
+            }
+            else {
+                // EXTERNAL WORLD KNOWLEDGE (Wikipedia API via English or Swahili)
+                try {
+                    const res = await fetch(`https://sw.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
+                    const data = await res.json();
+                    
+                    if (data.query.search.length > 0) {
+                        const snippet = data.query.search[0].snippet + '...';
+                        responseHtml = `<strong>Matokeo Kutoka Kwenye Data za Dunia:</strong><br><br>` + snippet.replace(/<[^>]*>?/gm, ''); // remove HTML from snippet
+                    } else {
+                        // Fallback to english wiki
+                        const resEn = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
+                        const dataEn = await resEn.json();
+                        if (dataEn.query.search.length > 0) {
+                            const snippet = dataEn.query.search[0].snippet + '...';
+                            responseHtml = `<strong>World Database Result:</strong><br><br>` + snippet.replace(/<[^>]*>?/gm, '');
+                        } else {
+                            responseHtml = "Samahani, sijapata taarifa kuhusu jambo hilo kwenye kanzidata yangu. Unaweza kuuliza kwa maneno tofauti?";
+                        }
+                    }
+                } catch (e) {
+                    responseHtml = "Samahani, kumetokea hitilafu ya mtandao wakati wa kutafuta taarifa za dunia. Angalia connection yako.";
+                }
+            }
+
+            // Remove loading and append result with typing effect wrapper
+            document.getElementById(loadingId).remove();
+            
+            const msgHtml = `<div style="color: #00f2ff; background: rgba(0,242,255,0.02); padding: 15px; border-radius: 10px; align-self: flex-start; max-width: 80%; border-left: 3px solid #00f2ff; box-shadow: 0 0 10px rgba(0,242,255,0.05);">
+                <span style="color: #00f2ff; font-weight: bold; font-size: 0.8rem;">C.P.A.I RESPONSE:</span><br> 
+                <span style="display:inline-block; margin-top: 10px;">${responseHtml}</span>
+            </div>`;
+            
+            aiBox.innerHTML += msgHtml;
+            aiBox.scrollTop = aiBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
