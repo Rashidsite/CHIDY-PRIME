@@ -1395,6 +1395,13 @@
 
             // --- HOME VIEW (Horizontal Rows) ---
             let html = '';
+            
+            // Limit items based on screen size for horizontal scrolling
+            const screenWidth = window.innerWidth;
+            let displayLimit = 7;
+            if (screenWidth >= 1024) displayLimit = 14;
+            else if (screenWidth >= 600) displayLimit = 10;
+
             orderedKeys.forEach(category => {
                 const catGames = grouped[category];
                 const icon = categoryIcons[category] || 'fa-folder';
@@ -1411,7 +1418,7 @@
                             </a>
                         </div>
                         <div class="games-row">
-                            ${catGames.map(game => renderCard(game)).join('')}
+                            ${catGames.slice(0, displayLimit).map(game => renderCard(game)).join('')}
                         </div>
                     </section>
                 `;
@@ -1894,6 +1901,14 @@
         // ===== INIT =====
         checkSignupStatus();
         fetchGames();
+
+        // Update view on resize if in home view
+        window.addEventListener('resize', () => {
+            const searchQuery = document.getElementById('searchInput').value;
+            if (!currentCategory && !searchQuery && allGames.length > 0) {
+                renderCategories(allGames);
+            }
+        });
     </script>
     
     <div class="bot-overlay" id="botOverlay">
