@@ -29,11 +29,11 @@ app.use(express.static('public'));
 
 // Routes
 app.get('/', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'views', 'index.html'));
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'views', 'admin.html'));
+    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
 // API Endpoints
