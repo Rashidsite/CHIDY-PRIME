@@ -1680,7 +1680,7 @@
                         if (result.exists) {
                             // Still exists in DB, hide overlay
                             document.getElementById('signupOverlay').classList.add('hidden');
-                            return;
+                            return true;
                         }
                     }
                 } catch (e) {
@@ -1693,6 +1693,7 @@
             
             // If no visitor or deleted from DB, ensure overlay is shown
             document.getElementById('signupOverlay').classList.remove('hidden');
+            return false;
         }
 
         // Create floating particles for welcome screen
@@ -1759,6 +1760,10 @@
                     overlay.classList.remove('show');
                     overlay.style.opacity = '';
                     overlay.style.transition = '';
+                    
+                    if (window.isMaintenanceMode) {
+                        document.getElementById('maintenanceOverlay').classList.add('show');
+                    }
                 }, 1000);
             }, 4500);
         }
@@ -1986,19 +1991,27 @@
 
         // ===== INIT =====
         async function initializeApp() {
+            window.isMaintenanceMode = false;
             try {
                 const res = await fetch('/api/settings/maintenance');
                 const data = await res.json();
                 if (data.value === 'true') {
-                    // Show maintenance, hide header/footer/bottom bar if you want, but overlay covers screen
-                    document.getElementById('maintenanceOverlay').classList.add('show');
-                    return; // Stop initialization, don't fetch games
+                    window.isMaintenanceMode = true;
                 }
             } catch (e) {
                 console.error('Failed to check maintenance status', e);
             }
             
-            checkSignupStatus();
+            const isRegistered = await checkSignupStatus();
+            
+            if (window.isMaintenanceMode) {
+                if (isRegistered) {
+                    // Show maintenance immediately since user is established
+                    document.getElementById('maintenanceOverlay').classList.add('show');
+                }
+                return; // Stop initialization, don't fetch games
+            }
+            
             fetchGames();
         }
 
