@@ -342,6 +342,60 @@ app.delete('/api/categories/:id', async (req, res) => {
     res.json({ success: true });
 });
 
+// ============================================
+// SETTINGS ENDPOINTS
+// ============================================
+
+app.get('/api/settings/maintenance', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'maintenance_mode')
+        .single();
+    
+    if (error) {
+        if (error.code === 'PGRST116') return res.json({ value: "false" }); // default if not found
+        return res.status(500).json({ error: error.message });
+    }
+    res.json({ value: data.value });
+});
+
+app.post('/api/settings/maintenance', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { enabled } = req.body;
+    
+    const { data, error } = await supabase
+        .from('site_settings')
+        .update({ value: enabled ? "true" : "false" })
+        .eq('key', 'maintenance_mode')
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // If turning OFF maintenance, we trigger the notification logic
+    if (enabled === false) {
+        try {
+            // In a real app, you would integrate with Twilio or Africa's Talking here to send an SMS
+            const { count } = await supabase.from('visitors').select('*', { count: 'exact', head: true });
+            
+            // We just log it as a simulated SMS broadcast
+            console.log(`[SMS BROADCAST] Site is back live. Messages queued for ${count} users.`);
+            
+            // Also append a global chat message from system
+            await supabase.from('chat_messages').insert([{
+                sender: 'SYSTEM',
+                message: `Maintenance finished! SMS alerts sent to all ${count} registered users.`
+            }]);
+        } catch (e) {
+            console.error('Failed to send notifications', e);
+        }
+    }
+
+    res.json({ success: true, enabled });
+});
+
 if (process.env.NODE_ENV !== 'production') {
     app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}`);

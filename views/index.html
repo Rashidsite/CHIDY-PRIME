@@ -1215,7 +1215,6 @@
         </div>
     </div>
 
-    <!-- WELCOME SEQUENCE -->
     <div class="welcome-overlay" id="welcomeOverlay">
         <div class="welcome-scan"></div>
         <div class="welcome-particles" id="welcomeParticles"></div>
@@ -1227,6 +1226,93 @@
             <div class="welcome-brand">— CHIDY PRIME —</div>
         </div>
     </div>
+
+    <!-- MAINTENANCE OVERLAY -->
+    <div class="maintenance-overlay" id="maintenanceOverlay">
+        <div class="maint-content">
+            <div class="yoyo-container">
+                <div class="yoyo-string"></div>
+                <div class="yoyo-body">
+                    <div class="yoyo-inner"></div>
+                </div>
+            </div>
+            <h1 class="maint-title">SYSTEM UPGRADE</h1>
+            <p class="maint-text">Tunauboresha mfumo wetu ili kukupa uzoefu mzuri zaidi wa gaming. <br>Tutarudi hewani hivi punde!</p>
+            <div class="maint-loading">
+                <div class="maint-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .maintenance-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 20000; display: none;
+            align-items: center; justify-content: center;
+            background-image: radial-gradient(circle at center, #1a0b2e 0%, #000 100%);
+        }
+        .maintenance-overlay.show { display: flex; }
+        .maint-content { text-align: center; color: #fff; padding: 2rem; max-width: 500px; }
+        
+        /* Yo-Yo Animation */
+        .yoyo-container { position: relative; height: 150px; width: 100%; display: flex; justify-content: center; margin-bottom: 2rem; }
+        .yoyo-string {
+            position: absolute; top: -50px; width: 2px; height: 0; background: rgba(255,255,255,0.3);
+            animation: stringDrop 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .yoyo-body {
+            position: absolute; top: -50px; width: 60px; height: 60px;
+            background: linear-gradient(135deg, #00f2ff, #bc13fe);
+            border-radius: 50%; box-shadow: 0 0 30px rgba(188, 19, 254, 0.6), inset 0 0 10px #000;
+            display: flex; align-items: center; justify-content: center;
+            animation: yoyoMove 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid #fff;
+        }
+        .yoyo-inner {
+            width: 20px; height: 20px; background: #fff; border-radius: 50%;
+            animation: yoyoSpin 0.5s infinite linear;
+            box-shadow: 0 0 10px #fff;
+        }
+        
+        @keyframes stringDrop {
+            0%, 5% { height: 0; }
+            50% { height: 120px; }
+            95%, 100% { height: 0; }
+        }
+        @keyframes yoyoMove {
+            0%, 5% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(120px) rotate(1080deg); }
+            95%, 100% { transform: translateY(0) rotate(0deg); }
+        }
+        @keyframes yoyoSpin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .maint-title {
+            font-family: 'Orbitron'; font-size: 2.5rem; letter-spacing: 5px;
+            background: linear-gradient(90deg, #fff, #bc13fe, #00f2ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem; text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+        .maint-text {
+            color: #a0a0b0; line-height: 1.6; font-size: 1rem; margin-bottom: 2rem;
+        }
+        .maint-loading {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.1);
+            border-radius: 10px; overflow: hidden; position: relative;
+        }
+        .maint-bar {
+            height: 100%; width: 30%; background: linear-gradient(90deg, #00f2ff, #bc13fe);
+            border-radius: 10px; position: absolute; left: 0;
+            animation: loadingBar 2s infinite ease-in-out;
+            box-shadow: 0 0 15px #bc13fe;
+        }
+        @keyframes loadingBar {
+            0% { left: -30%; width: 30%; }
+            50% { width: 50%; }
+            100% { left: 100%; width: 30%; }
+        }
+    </style>
 
     <div class="ambient-glow"></div>
 
@@ -1899,8 +1985,24 @@
         }
 
         // ===== INIT =====
-        checkSignupStatus();
-        fetchGames();
+        async function initializeApp() {
+            try {
+                const res = await fetch('/api/settings/maintenance');
+                const data = await res.json();
+                if (data.value === 'true') {
+                    // Show maintenance, hide header/footer/bottom bar if you want, but overlay covers screen
+                    document.getElementById('maintenanceOverlay').classList.add('show');
+                    return; // Stop initialization, don't fetch games
+                }
+            } catch (e) {
+                console.error('Failed to check maintenance status', e);
+            }
+            
+            checkSignupStatus();
+            fetchGames();
+        }
+
+        initializeApp();
 
         // Update view on resize if in home view
         window.addEventListener('resize', () => {

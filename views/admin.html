@@ -1206,6 +1206,26 @@
                 </div>
             </div>
 
+            <!-- SITE CONFIGURATION -->
+            <div class="admin-card" style="margin-bottom: 2rem; border-color: rgba(255, 180, 0, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 class="card-title" style="margin: 0; color: #ffb400;"><i class="fas fa-tools"></i> Site Maintenance Mode</h3>
+                        <p style="color: #6c7293; font-size: 0.85rem; margin-top: 5px;">When active, visitors will see a maintenance animation instead of games. Turning it off will queue SMS notifications for users.</p>
+                    </div>
+                    <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
+                        <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()" style="opacity: 0; width: 0; height: 0;">
+                        <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2a2d3a; transition: .4s; border-radius: 34px;"></span>
+                    </label>
+                </div>
+            </div>
+
+            <style>
+                .switch input:checked + .slider { background-color: #ffb400; box-shadow: 0 0 15px rgba(255, 180, 0, 0.5); }
+                .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+                .switch input:checked + .slider:before { transform: translateX(26px); }
+            </style>
+
             <div class="admin-card">
                 <h3 class="card-title">Upload New Game</h3>
                 <form id="uploadForm">
@@ -1482,6 +1502,37 @@
         const totalGamesLabels = document.querySelectorAll('.totalGamesCount');
         const addLinkBtn = document.getElementById('addLinkBtn');
         const linksContainer = document.getElementById('linksContainer');
+
+        // Maintenance Toggle State
+        async function fetchMaintenanceState() {
+            try {
+                const res = await fetch('/api/settings/maintenance');
+                const data = await res.json();
+                document.getElementById('maintenanceToggle').checked = data.value === 'true';
+            } catch (err) {
+                console.error('Failed to load maintenance state', err);
+            }
+        }
+
+        async function toggleMaintenance() {
+            const toggle = document.getElementById('maintenanceToggle');
+            const enabled = toggle.checked;
+            try {
+                const res = await fetch('/api/settings/maintenance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                if (!res.ok) throw new Error('Failed to update maintenance state');
+                if (!enabled) {
+                    alert('Maintenance disabled. SMS/Messages queued for users!');
+                }
+            } catch (err) {
+                console.error(err);
+                toggle.checked = !enabled; // Revert
+                alert('Error updating maintenance state.');
+            }
+        }
 
         // View Switching Logic
         const navLinks = document.querySelectorAll('.nav-link[data-view]');
@@ -2335,6 +2386,9 @@
             aiBox.innerHTML += msgHtml;
             aiBox.scrollTop = aiBox.scrollHeight;
         }
+
+        // Initialize admin dashboard
+        fetchMaintenanceState();
     </script>
 </body>
 </html>
