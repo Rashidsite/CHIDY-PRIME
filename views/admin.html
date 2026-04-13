@@ -145,6 +145,70 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Responsive Improvements */
+        @media (max-width: 991px) {
+            :root { --sidebar-width: 70px; }
+            .sidebar-brand span { display: none; }
+            .sidebar-brand { font-size: 1.2rem; justify-content: center; padding: 0; margin-left: -10px; }
+            .nav-link span { display: none; }
+            .nav-link { justify-content: center; padding: 1rem; }
+            .search-box { width: 200px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .form-row { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 576px) {
+            :root { --sidebar-width: 0px; }
+            .sidebar { transform: translateX(-100%); transition: 0.3s; }
+            .sidebar.active { transform: translateX(0); width: 240px; }
+            .sidebar.active .nav-link span { display: block; }
+            .sidebar.active .sidebar-brand span { display: inline; }
+            .main-wrapper { margin-left: 0; width: 100%; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .topbar { padding: 0 1rem; }
+            .search-box { display: none; }
+            .mobile-toggle { display: block !important; }
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Orders View Styles */
+        .order-card {
+            background: #1a1a24;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .order-info { flex: 1; min-width: 200px; }
+        .order-info h4 { font-family: 'Orbitron'; color: var(--primary-color); margin-bottom: 5px; }
+        .order-meta { font-size: 0.8rem; color: #6c7293; }
+        .order-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-pending { background: rgba(255, 171, 0, 0.1); color: #ffab00; }
+        .status-approved { background: rgba(0, 210, 91, 0.1); color: #00d25b; }
+        .status-rejected { background: rgba(255, 51, 51, 0.1); color: #ff3333; }
+        .order-actions { display: flex; gap: 10px; }
+        .btn-order-approve { background: #00d25b; color: #000; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-order-reject { background: #ff3333; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -1082,7 +1146,10 @@
                 <a href="#" class="nav-link" data-view="allGamesView"><i class="fas fa-gamepad"></i> All Games</a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" data-view="usersView"><i class="fas fa-users"></i> Users</a>
+                <a href="#" class="nav-link" data-view="usersView"><i class="fas fa-users"></i> <span>Users</span></a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="ordersView"><i class="fas fa-shopping-cart"></i> <span>Orders</span></a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" data-view="messagesView"><i class="fas fa-envelope"></i> Messages</a>
@@ -1091,7 +1158,7 @@
                 <a href="#" class="nav-link" data-view="analyticsView"><i class="fas fa-chart-pie"></i> Analytics</a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" data-view="categoriesView"><i class="fas fa-tags"></i> Categories</a>
+                <a href="#" class="nav-link" data-view="categoriesView"><i class="fas fa-tags"></i> <span>Categories</span></a>
             </li>
             <li class="nav-item" style="margin-top: 2rem;">
                 <a href="/" class="nav-link"><i class="fas fa-external-link-alt"></i> View Store</a>
@@ -1102,6 +1169,7 @@
     <div class="main-wrapper">
         <nav class="topbar">
             <div style="display: flex; align-items: center;">
+                <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" placeholder="Search products">
@@ -1471,6 +1539,21 @@
                 <div id="categoriesList" style="display: flex; flex-wrap: wrap; gap: 12px;">
                     <div style="color: #6c7293; font-size: 0.9rem;">Loading categories...</div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ORDERS VIEW -->
+    <section id="ordersView" class="content view-section" style="display: none;">
+        <div class="admin-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 15px;">
+                <h3 class="card-title" style="margin: 0;"><i class="fas fa-shopping-cart"></i> Payment Orders</h3>
+                <button class="btn-filter" onclick="fetchOrders()" style="min-width: 150px;">
+                    <i class="fas fa-sync-alt"></i> Refresh Orders
+                </button>
+            </div>
+            <div id="ordersList">
+                <p style="text-align: center; color: #6c7293; padding: 2rem;">Loading orders...</p>
             </div>
         </div>
     </section>
@@ -2408,6 +2491,118 @@
 
         // Initialize admin dashboard
         fetchMaintenanceState();
+
+        // Mobile Sidebar Toggle
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        }
+
+        // Navigation Logic
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.dataset.view) return;
+                e.preventDefault();
+                
+                // Update active link
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show view
+                const viewId = this.dataset.view;
+                document.querySelectorAll('.view-section').forEach(view => {
+                    view.style.display = 'none';
+                });
+                const activeView = document.getElementById(viewId);
+                if (activeView) {
+                    activeView.style.display = 'block';
+                    // Trigger view-specific loads
+                    if (viewId === 'usersView') loadUsers();
+                    if (viewId === 'ordersView') fetchOrders();
+                    if (viewId === 'analyticsView') updateAnalytics();
+                    if (viewId === 'categoriesView') loadCategories();
+                }
+
+                // Close sidebar on mobile after click
+                if (window.innerWidth <= 576) {
+                    document.querySelector('.sidebar').classList.remove('active');
+                }
+            });
+        });
+
+        async function fetchOrders() {
+            const list = document.getElementById('ordersList');
+            list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading orders...</p>';
+            
+            try {
+                const res = await fetch('/api/admin/orders');
+                const orders = await res.json();
+                
+                if (orders.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;">Hauna oda yoyote kwa sasa.</p>';
+                    return;
+                }
+
+                list.innerHTML = orders.map(order => {
+                    const statusClass = `status-${order.status}`;
+                    const date = new Date(order.created_at).toLocaleString();
+                    
+                    return `
+                        <div class="order-card">
+                            <div class="order-info">
+                                <h4>${order.post_title}</h4>
+                                <div class="order-meta">
+                                    <span><i class="fas fa-user"></i> ${order.visitor_name}</span> | 
+                                    <span><i class="fas fa-phone"></i> ${order.phone_number}</span> | 
+                                    <span><i class="fas fa-money-bill-wave"></i> TSh ${order.amount}</span>
+                                </div>
+                                <div style="font-size: 0.7rem; color: #4b4b56; margin-top: 5px;">${date}</div>
+                            </div>
+                            <div>
+                                <span class="order-status ${statusClass}">${order.status}</span>
+                            </div>
+                            <div class="order-actions">
+                                ${order.status === 'pending' ? `
+                                    <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'approved')">Approve</button>
+                                    <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')">Reject</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Update Revenue statistic in dashboard (simple sum of approved orders)
+                const approvedTotal = orders
+                    .filter(o => o.status === 'approved')
+                    .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
+                document.getElementById('totalRevenue').innerText = `TSh ${approvedTotal.toLocaleString()}`;
+
+            } catch (err) {
+                list.innerHTML = '<p style="text-align: center; color: #ff3333; padding: 2rem;">Error sync orders.</p>';
+            }
+        }
+
+        async function updateOrderStatus(orderId, status) {
+            if (!confirm(`Are you sure you want to ${status} this order?`)) return;
+            
+            try {
+                const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    showToast(`Order has been ${status}! Access granted if approved.`);
+                    fetchOrders();
+                    fetchUserStats(); // Refresh stats
+                } else {
+                    alert('Failed: ' + result.error);
+                }
+            } catch (err) {
+                alert('Network error.');
+            }
+        }
     </script>
 </body>
 </html>

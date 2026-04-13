@@ -478,15 +478,164 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         const expiresAt = new Date(data.expires_at);
         const hasAccess = expiresAt > now;
         
-        res.json({
-            has_access: hasAccess,
-            expires_at: data.expires_at,
-            granted_at: data.granted_at,
-            expired: !hasAccess
+        if (hasAccess) {
+            return res.json({ has_access: true, expires_at: data.expires_at });
+        }
+        
+        // If expired or no access, check if there's a pending order
+        const { data: orderData } = await supabase
+            .from('payment_orders')
+            .select('status')
+            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', post_id)
+            .eq('status', 'pending');
+
+        res.json({ 
+            has_access: false, 
+            expired: true,
+            pending_order: orderData && orderData.length > 0
         });
+    } catch (err) {
+        // Even if error in user_access (no record found), check for pending order
+        try {
+            const { visitor_id, post_id } = req.params;
+            const { data: orderData } = await supabase
+                .from('payment_orders')
+                .select('status')
+                .eq('visitor_id', parseInt(visitor_id))
+                .eq('post_id', post_id)
+                .eq('status', 'pending');
+
+            res.json({ 
+                has_access: false,
+                pending_order: orderData && orderData.length > 0 
+            });
+        } catch (innerErr) {
+            res.json({ has_access: false });
+        }
+    }
+});
+
+// ============================================
+// PAYMENT ORDER ENDPOINTS
+// ============================================
+
+// Create a new manual payment order
+app.post('/api/orders', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    const { visitor_id, post_id, amount, phone_number } = req.body;
+    if (!visitor_id || !post_id || !amount || !phone_number) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('payment_orders')
+            .insert([{
+                visitor_id: parseInt(visitor_id),
+                post_id,
+                amount: parseFloat(amount),
+                phone_number: phone_number.trim(),
+                status: 'pending'
+            }])
+            .select();
+        
+        if (error) throw error;
+        
+        // Notify admin via chat (as a simple notification system)
+        await supabase.from('chat_messages').insert([{
+            sender: 'SYSTEM',
+            message: `New Order! 💰 Number: ${phone_number}, Amount: TSh ${amount}. Check Admin Dashboard to approve.`
+        }]);
+
+        res.json({ success: true, order: data[0] });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// Admin - Fetch all orders
+app.get('/api/admin/orders', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    const { data, error } = await supabase
+        .from('payment_orders')
+        .select(`
+            *,
+            visitors (name, phone),
+            posts (title)
+        `)
+        .order('created_at', { ascending: false });
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Admin - Approve or Reject order
+app.post('/api/admin/orders/:id/status', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    try {
+        // 1. Update order status
+        const { data: order, error: orderErr } = await supabase
+            .from('payment_orders')
+            .update({ status, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+        
+        if (orderErr) throw orderErr;
+        
+        // 2. If approved, grant access to the game
+        if (status === 'approved') {
+            // Reusing logic from grant-access endpoint indirectly
+            const { post_id, visitor_id } = order;
+            
+            // Get duration
+            const { data: game } = await supabase.from('posts').select('duration_days').eq('id', post_id).single();
+            const durationDays = game.duration_days || 0;
+            
+            let expiresAt;
+            if (durationDays > 0) {
+                expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + durationDays);
+            } else {
+                expiresAt = new Date('2099-12-31T23:59:59Z');
+            }
+            
+            await supabase.from('user_access').upsert({
+                visitor_id,
+                post_id,
+                granted_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString()
+            }, { onConflict: 'visitor_id,post_id' });
+        }
+        
+        res.json({ success: true, order });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get payment settings info
+app.get('/api/settings/payment', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'admin_payment_info')
+        .single();
+    
+    if (error) return res.json({ mpesa_number: "07XXXXXXXX", mpesa_name: "CHIDY PRIME" });
+    res.json(data.value);
 });
 
 if (process.env.NODE_ENV !== 'production') {

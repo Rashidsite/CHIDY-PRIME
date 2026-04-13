@@ -741,6 +741,98 @@
             }
         }
 
+        /* === PAYMENT MODAL === */
+        .payment-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .payment-overlay.show { display: flex; }
+        .payment-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            max-width: 450px;
+            width: 100%;
+            padding: 2rem;
+            position: relative;
+            text-align: center;
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .payment-card h3 {
+            font-family: 'Orbitron';
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        .payment-info-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .payment-step {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+        .step-num {
+            background: var(--primary);
+            color: #000;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+        .payment-input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .payment-input-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+        .payment-input-group input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px;
+            color: #fff;
+            outline: none;
+            transition: 0.3s;
+        }
+        .payment-input-group input:focus { border-color: var(--primary); }
+        .payment-confirm-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00f2ff, #bc13fe);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .payment-confirm-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 242, 255, 0.3); }
+
         /* Large Desktop */
         @media (min-width: 1400px) {
             .game-card {
@@ -1559,7 +1651,7 @@
                     const accessData = await res.json();
 
                     if (accessData.has_access) {
-                        // Active access - show links + expiry info
+                        // ... Active access code ... (lines 1655-1675)
                         const expiryDate = new Date(accessData.expires_at);
                         const formattedExpiry = expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
                         const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
@@ -1581,8 +1673,27 @@
                                 ${links.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name}</a>`).join('')}
                             </div>
                         `;
+                    } else if (accessData.pending_order) {
+                        // Pending approval
+                        accessHtml = `
+                            <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1px solid rgba(255,171,0,0.3); border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
+                                <div style="width:45px; height:45px; border-radius:50%; background:rgba(255,171,0,0.2); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; color:#ffab00; font-size:1.2rem;">
+                                    <i class="fas fa-clock fa-spin"></i>
+                                </div>
+                                <h4 style="color:#ffab00; margin:0 0 5px; font-family:'Orbitron'; font-size:0.85rem;">MALIPO YANAHAKIKIWA</h4>
+                                <p style="color:#a0a0b0; font-size:0.8rem; margin:0; line-height:1.4;">Tumepokea taarifa za malipo yako. Admin anahakiki sasa hivi. Ukurasa huu utajifungua wenyewe mara baada ya kuhakikiwa.</p>
+                                <button class="dl-btn" disabled style="width:100%;margin-top:15px;opacity:0.6;background:#333;color:#777;cursor:not-allowed;">TALAFADHALI SUBIRI...</button>
+                            </div>
+                            ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                        `;
+                        // Auto refresh detail modal after 10 seconds to check if approved
+                        setTimeout(() => { 
+                            if (document.getElementById('detailOverlay').style.display === 'flex') {
+                                openDetail(id); 
+                            }
+                        }, 10000);
                     } else if (accessData.expired) {
-                        // Access expired
+                        // ... Expired code ... (lines 1679-1690)
                         accessHtml = `
                             <div style="background: linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,51,51,0.05)); border: 1px solid rgba(255,51,51,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
                                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -1598,15 +1709,29 @@
                         `;
                     } else {
                         // No access yet
-                        accessHtml = `
-                            <div style="background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.05)); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-lock" style="color:#ffb400;"></i> Game hii ina access ya siku <strong style="color:#fff;">${game.duration_days}</strong>. Bofya hapa chini kupata access.</p>
-                            </div>
-                            ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                            <button class="dl-btn" onclick="grantAccess('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#00f2ff,#bc13fe);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                <i class="fas fa-unlock-alt"></i> PATA ACCESS (Siku ${game.duration_days})
-                            </button>
-                        `;
+                        if (game.price && game.price > 0) {
+                            // Paid game
+                            accessHtml = `
+                                <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                    <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
+                                </div>
+                                ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
+                                    <i class="fas fa-credit-card"></i> NUNUA ACCESS (TSh ${game.price || 0})
+                                </button>
+                            `;
+                        } else {
+                            // Free game with duration
+                            accessHtml = `
+                                <div style="background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.05)); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                    <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-lock" style="color:#ffb400;"></i> Game hii ina access ya siku <strong style="color:#fff;">${game.duration_days}</strong>. Bofya hapa chini kupata access.</p>
+                                </div>
+                                ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                                <button class="dl-btn" onclick="grantAccess('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#00f2ff,#bc13fe);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
+                                    <i class="fas fa-unlock-alt"></i> PATA ACCESS (Siku ${game.duration_days})
+                                </button>
+                            `;
+                        }
                     }
                 } catch (e) {
                     console.error('Access check failed:', e);
@@ -1637,6 +1762,88 @@
 
             overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
+        }
+
+        // Initiate payment flow
+        async function initiatePayment(postId) {
+            const game = allGames.find(g => g.id == postId);
+            if (!game) return;
+
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) {
+                alert('Tafadhali jisajili kwanza!');
+                document.getElementById('signupOverlay').classList.remove('hidden');
+                return;
+            }
+
+            try {
+                // Get payment info from settings
+                const res = await fetch('/api/settings/payment');
+                const settings = await res.json();
+                
+                document.getElementById('payAmount').textContent = 'TSh ' + game.price;
+                document.getElementById('payNumber').textContent = settings.mpesa_number;
+                document.getElementById('payName').textContent = settings.mpesa_name;
+                document.getElementById('payPostId').value = postId;
+                
+                // Prefill phone if visitor has it
+                const visitor = JSON.parse(visitorStr);
+                document.getElementById('paySenderNumber').value = visitor.phone || '';
+
+                document.getElementById('paymentOverlay').classList.add('show');
+            } catch (e) {
+                alert('Tafadhali jaribu tena baadae.');
+            }
+        }
+
+        function closePayment() {
+            document.getElementById('paymentOverlay').classList.remove('show');
+        }
+
+        async function submitPaymentOrder() {
+            const postId = document.getElementById('payPostId').value;
+            const phoneNumber = document.getElementById('paySenderNumber').value.trim();
+            const btn = document.getElementById('confirmPayBtn');
+            
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            const visitor = JSON.parse(visitorStr);
+
+            const game = allGames.find(g => g.id == postId);
+
+            if (!phoneNumber) {
+                alert('Tafadhali ingiza namba uliyotumia kulipia!');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
+
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        visitor_id: visitor.id,
+                        post_id: postId,
+                        amount: game.price,
+                        phone_number: phoneNumber
+                    })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    alert('✅ Oda yako imepokelewa! Tafadhali subiri Admin athibitishe malipo yako. Utapata taarifa hivi punde.');
+                    closePayment();
+                    openDetail(postId); // Refresh view to show pending status or similar
+                } else {
+                    alert('Imeshindikana: ' + result.error);
+                }
+            } catch (err) {
+                alert('Kuna tatizo la mtandao.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✅ NIMETUMA PESA';
+            }
         }
 
         function buildDirectLinks(game, links) {
@@ -2137,6 +2344,34 @@
         });
     </script>
     
+    <!-- PAYMENT MODAL -->
+    <div class="payment-overlay" id="paymentOverlay">
+        <div class="payment-card">
+            <button class="close-detail" onclick="closePayment()"><i class="fas fa-times"></i></button>
+            <h3>MAAGIZO YA MALIPO</h3>
+            <div class="payment-info-box">
+                <div class="payment-step">
+                    <div class="step-num">1</div>
+                    <div>Tuma kiasi cha <strong id="payAmount" style="color:var(--primary);">...</strong> kwenda M-Pesa: <strong id="payNumber" style="color:var(--primary);">...</strong> (<span id="payName">...</span>)</div>
+                </div>
+                <div class="payment-step">
+                    <div class="step-num">2</div>
+                    <div>Ukishatuma, ingiza namba ya simu uliyotumia chini kisha bofya <strong>NIMETUMA PESA</strong>.</div>
+                </div>
+                <div class="payment-step">
+                    <div class="step-num">3</div>
+                    <div>Subiri Admin athibitishe malipo yako. Utapata email kisha download itafunguka mara moja!</div>
+                </div>
+            </div>
+            <div class="payment-input-group">
+                <label>Namba uliyotumia kulipia:</label>
+                <input type="tel" id="paySenderNumber" placeholder="Mfano: 07XXXXXXXX">
+            </div>
+            <input type="hidden" id="payPostId">
+            <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()">✅ NIMETUMA PESA</button>
+        </div>
+    </div>
+
     <div class="bot-overlay" id="botOverlay">
         <div class="bot-container">
             <div class="bot-header">
