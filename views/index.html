@@ -667,21 +667,38 @@
 
         /* === BOTTOM NAVIGATION BAR === */
         .bottom-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: var(--bottom-bar-height);
-            background: rgba(8, 8, 14, 0.92);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            z-index: 500;
-            padding: 0 1rem;
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            height: var(--bottom-bar-height); background: rgba(8, 8, 14, 0.95);
+            backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex; align-items: center; justify-content: space-around;
+            z-index: 500; padding: 0 1rem;
         }
+
+        .wa-btn-container { position: relative; display: flex; flex-direction: column; align-items: center; z-index: 501; }
+        .wa-pulse-btn {
+            width: 50px; height: 50px; background: #25d366; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #fff;
+            font-size: 1.5rem; box-shadow: 0 0 20px rgba(37, 211, 102, 0.4);
+            animation: waPulse 2s infinite; cursor: pointer; border: none;
+            margin-bottom: -15px; transform: translateY(-20px);
+        }
+        @keyframes waPulse {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); transform: translateY(-20px) scale(1); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); transform: translateY(-20px) scale(1.1); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); transform: translateY(-20px) scale(1); }
+        }
+
+        .wa-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 10000;
+            display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px);
+        }
+        .wa-card {
+            background: #111119; border: 1px solid #25d366; border-radius: 25px;
+            padding: 30px; max-width: 400px; width: 100%; text-align: center;
+            animation: waBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes waBounce { from { opacity: 0; transform: scale(0.5) translateY(50px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
         .bottom-item {
             display: flex;
@@ -1548,21 +1565,33 @@
     <nav class="bottom-bar">
         <div class="bottom-item active" onclick="scrollToTop()">
             <i class="fas fa-home"></i>
-            <span>Home</span>
+            <span>Nyumbani</span>
         </div>
-        <div class="bottom-item" onclick="scrollToCategory('HOT POST')">
-            <i class="fas fa-fire"></i>
-            <span>Hot</span>
-        </div>
-        <div class="bottom-item" onclick="scrollToCategory('TANZANIA GAMES')">
-            <i class="fas fa-globe-africa"></i>
-            <span>TZ</span>
+        <div class="wa-btn-container" onclick="openWaInvite()">
+            <button class="wa-pulse-btn"><i class="fab fa-whatsapp"></i></button>
+            <span style="font-size: 0.6rem; color: #25d366; font-weight: 700; margin-top: 5px;">JOINS CHANNEL</span>
         </div>
         <div class="bottom-item" onclick="openBotChat()">
-            <i class="fas fa-headset" style="color:var(--primary);"></i>
-            <span style="color:var(--primary); font-weight:bold;">Msaada</span>
+            <i class="fas fa-headset"></i>
+            <span>Msaada</span>
         </div>
     </nav>
+
+    <!-- WHATSAPP INVITE MODAL -->
+    <div class="wa-modal" id="waModal">
+        <div class="wa-card">
+            <div style="width: 70px; height: 70px; background: #25d366; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 2rem; box-shadow: 0 0 30px rgba(37, 211, 102, 0.5);">
+                <i class="fab fa-whatsapp"></i>
+            </div>
+            <h2 style="color: #fff; margin-bottom: 15px; font-family: 'Orbitron'; font-size: 1.2rem;">JIUNGE NA CHANNEL YETU! 🔥</h2>
+            <p style="color: #a0a0b0; font-size: 0.9rem; margin-bottom: 25px; line-height: 1.6;">Kuwa wa kwanza kupata games mpya na mod za Tanzania kila siku moja kwa moja kwenye channel yetu ya WhatsApp!</p>
+            <a href="https://whatsapp.com/channel/0029VaDKe8j72WTmz2iJEc2J" target="_blank" class="dl-btn" 
+                style="width: 100%; background: #25d366; color: #000; padding: 16px; border-radius: 12px; font-weight: 900; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                JIUNGE SASA BONYEZA HAPA <i class="fas fa-external-link-alt"></i>
+            </a>
+            <button onclick="closeWaModal()" style="margin-top: 20px; background: none; border: none; color: #6c7293; font-size: 0.8rem; cursor: pointer;">Baadae (Close)</button>
+        </div>
+    </div>
 
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
@@ -2383,6 +2412,13 @@
             }
             
             fetchGames();
+        }
+
+        function openWaInvite() {
+            document.getElementById('waModal').style.display = 'flex';
+        }
+        function closeWaModal() {
+            document.getElementById('waModal').style.display = 'none';
         }
 
         // Initialize
