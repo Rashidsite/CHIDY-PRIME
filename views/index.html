@@ -1857,7 +1857,7 @@
                         <span style="color: var(--gold);"><i class="fas fa-star"></i> ${game.rating || 'N/A'}</span>
                         <span style="color: var(--primary);">${game.category || 'HOT POST'}</span>
                         <span style="color: ${game.price > 0 ? 'var(--primary)' : '#00d25b'}; font-weight: 700;">
-                            ${game.price > 0 ? '$' + game.price : 'FREE'}
+                            ${game.price > 0 ? 'TSh ' + parseInt(game.price).toLocaleString() : 'FREE'}
                         </span>
                         ${hasDuration ? `<span style="color:#ffb400;font-size:0.8rem;"><i class="fas fa-clock"></i> Siku ${game.duration_days}</span>` : ''}
                     </div>
