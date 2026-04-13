@@ -1252,6 +1252,15 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
+                            <label><i class="fas fa-clock" style="color:#ffb400;"></i> Duration (Siku) <span style="color:#6c7293;font-size:0.75rem;">(0 = Permanent)</span></label>
+                            <input type="number" name="duration_days" min="0" value="0" placeholder="Mfano: 7 = siku 7 za access">
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;">
+                            <p style="color:#6c7293;font-size:0.8rem;margin:0;padding-bottom:0.8rem;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Ukiweka 0 mteja atadownload milele. Ukiweka namba mfano 7, mteja atakuwa na siku 7 tu baada ya kupata access.</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
                             <label>YouTube Trailer URL</label>
                             <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
                         </div>
@@ -1387,6 +1396,15 @@
                     <div class="form-group">
                         <label>Price (0 for FREE)</label>
                         <input type="number" name="price" id="editPrice" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-clock" style="color:#ffb400;"></i> Duration (Siku) <span style="color:#6c7293;font-size:0.75rem;">(0 = Permanent)</span></label>
+                        <input type="number" name="duration_days" id="editDurationDays" min="0" value="0">
+                    </div>
+                    <div class="form-group" style="display:flex;align-items:flex-end;">
+                        <p style="color:#6c7293;font-size:0.8rem;margin:0;padding-bottom:0.8rem;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Siku za mteja kuwa na access baada ya malipo/download.</p>
                     </div>
                 </div>
                 <div class="form-row">
@@ -1947,6 +1965,7 @@
             document.getElementById('editCategory').value = game.category || 'HOT POST';
             document.getElementById('editRating').value = game.rating;
             document.getElementById('editPrice').value = game.price || 0;
+            document.getElementById('editDurationDays').value = game.duration_days || 0;
             document.getElementById('editDescription').value = game.description || '';
             document.getElementById('editYoutubeUrl').value = game.youtube_url || '';
             document.getElementById('editImageUrl').value = game.image_url || '';

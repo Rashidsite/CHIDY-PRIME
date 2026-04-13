@@ -85,7 +85,8 @@ app.post('/api/games', async (req, res) => {
                     category: category || 'HOT POST',
                     youtube_url: youtube_url || null,
                     links: Array.isArray(links) ? links : JSON.parse(links || '[]'),
-                    status: 'published'
+                    status: 'published',
+                    duration_days: parseInt(req.body.duration_days || 0)
                 }
             ]);
 
@@ -394,6 +395,98 @@ app.post('/api/settings/maintenance', async (req, res) => {
     }
 
     res.json({ success: true, enabled });
+});
+
+// ============================================
+// USER ACCESS / DURATION ENDPOINTS
+// ============================================
+
+// Grant access to a game for a visitor
+app.post('/api/grant-access', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    const { visitor_id, post_id } = req.body;
+    if (!visitor_id || !post_id) return res.status(400).json({ error: 'visitor_id and post_id are required' });
+    
+    try {
+        // Get the game's duration_days
+        const { data: game, error: gameErr } = await supabase
+            .from('posts')
+            .select('duration_days, title')
+            .eq('id', post_id)
+            .single();
+        
+        if (gameErr || !game) return res.status(404).json({ error: 'Game not found' });
+        
+        const durationDays = game.duration_days || 0;
+        
+        // Calculate expiry date
+        let expiresAt;
+        if (durationDays > 0) {
+            expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + durationDays);
+        } else {
+            // Permanent access - set to far future
+            expiresAt = new Date('2099-12-31T23:59:59Z');
+        }
+        
+        // Upsert access record (update if exists, insert if new)
+        const { data, error } = await supabase
+            .from('user_access')
+            .upsert({
+                visitor_id: parseInt(visitor_id),
+                post_id,
+                granted_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString()
+            }, { onConflict: 'visitor_id,post_id' })
+            .select();
+        
+        if (error) throw error;
+        
+        res.json({
+            success: true,
+            access: data[0],
+            game_title: game.title,
+            duration_days: durationDays,
+            expires_at: expiresAt.toISOString(),
+            is_permanent: durationDays === 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Check if a visitor has active access to a game
+app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    const { visitor_id, post_id } = req.params;
+    
+    try {
+        const { data, error } = await supabase
+            .from('user_access')
+            .select('*')
+            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', post_id)
+            .single();
+        
+        if (error || !data) {
+            return res.json({ has_access: false });
+        }
+        
+        const now = new Date();
+        const expiresAt = new Date(data.expires_at);
+        const hasAccess = expiresAt > now;
+        
+        res.json({
+            has_access: hasAccess,
+            expires_at: data.expires_at,
+            granted_at: data.granted_at,
+            expired: !hasAccess
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 if (process.env.NODE_ENV !== 'production') {
