@@ -1269,6 +1269,14 @@
                     </div>
                     <i class="fas fa-users stat-icon" style="color: var(--secondary-color);"></i>
                 </div>
+                <div class="stat-card" style="border-left: 5px solid #ffb400;">
+                    <div>
+                        <div class="stat-label">Pending Orders</div>
+                        <div class="stat-val" id="pendingOrdersCount">0</div>
+                        <div style="font-size: 0.7rem; color: #6c7293; margin-top: 5px;">Needs Approval</div>
+                    </div>
+                    <i class="fas fa-clock stat-icon" style="color: #ffb400;"></i>
+                </div>
                 <div class="stat-card">
                     <div>
                         <div class="stat-label">Revenue</div>
@@ -2249,15 +2257,19 @@
                     <span class="stat-trend-arrow"><i class="fas ${arrowIcon}"></i></span>
                     <span class="stat-trend-text">${trendText}</span>
                 `;
+                
+                // Fetch pending orders count
+                const ordersRes = await fetch('/api/admin/orders');
+                const orders = await ordersRes.json();
+                const pending = orders.filter(o => o.status === 'pending').length;
+                document.getElementById('pendingOrdersCount').innerText = pending;
+                if (pending > 0) {
+                    document.getElementById('pendingOrdersCount').parentElement.parentElement.style.borderColor = '#ffb400';
+                } else {
+                    document.getElementById('pendingOrdersCount').parentElement.parentElement.style.borderColor = 'rgba(255,255,255,0.06)';
+                }
             } catch (err) {
                 console.error('User stats error:', err);
-                document.getElementById('totalUsersCount').innerText = '0';
-                const trendEl = document.getElementById('userTrend');
-                trendEl.className = 'stat-trend stable';
-                trendEl.innerHTML = `
-                    <span class="stat-trend-arrow"><i class="fas fa-minus"></i></span>
-                    <span class="stat-trend-text">Offline</span>
-                `;
             }
         }
 
