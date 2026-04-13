@@ -1458,6 +1458,252 @@
             border-radius: 8px; padding: 8px; margin-top: 8px; text-decoration: none; color: #00f2ff;
             font-size: 0.85rem; font-weight: bold; text-align: center;
         }
+
+        /* ===== WHATSAPP CHANNEL BUTTON ===== */
+        .wa-channel-btn {
+            position: relative;
+        }
+        .wa-icon-wrap {
+            position: relative;
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .wa-icon-wrap i {
+            font-size: 1.3rem;
+            color: #25D366;
+            position: relative; z-index: 2;
+            filter: drop-shadow(0 0 6px rgba(37,211,102,0.6));
+            animation: waBounce 2s ease-in-out infinite;
+        }
+        @keyframes waBounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-3px) scale(1.1); }
+        }
+        .wa-pulse-ring {
+            position: absolute;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(37,211,102,0.5);
+            animation: waPulse 2s ease-out infinite;
+            z-index: 1;
+        }
+        .wa-pulse-ring-2 {
+            animation-delay: 0.8s;
+            border-color: rgba(37,211,102,0.3);
+        }
+        @keyframes waPulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+        .wa-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #25D366 !important;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 8px rgba(37,211,102,0.5);
+        }
+        .wa-channel-btn:hover .wa-icon-wrap i {
+            filter: drop-shadow(0 0 12px rgba(37,211,102,1));
+        }
+
+        /* ===== WHATSAPP CHANNEL MODAL ===== */
+        .wa-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.88);
+            backdrop-filter: blur(15px);
+            z-index: 9999;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0;
+        }
+        .wa-modal-overlay.show {
+            display: flex;
+            animation: waOverlayIn 0.3s ease-out;
+        }
+        @keyframes waOverlayIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .wa-modal-card {
+            background: linear-gradient(170deg, #0d1f15 0%, #0a0a10 60%, #0d1a0d 100%);
+            border: 1px solid rgba(37,211,102,0.25);
+            border-radius: 28px 28px 0 0;
+            padding: 40px 24px 36px;
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: waSlideUp 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 -20px 60px rgba(37,211,102,0.15), 0 0 0 1px rgba(37,211,102,0.1);
+        }
+        @keyframes waSlideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .wa-modal-bg-glow {
+            position: absolute;
+            top: -60px; left: 50%;
+            transform: translateX(-50%);
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(37,211,102,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        /* Floating WA icon */
+        .wa-float-icon {
+            position: relative;
+            width: 80px; height: 80px;
+            margin: -60px auto 16px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #128C7E, #25D366);
+            border-radius: 50%;
+            border: 4px solid #0a0a10;
+            box-shadow: 0 0 30px rgba(37,211,102,0.5), 0 0 60px rgba(37,211,102,0.2);
+            animation: waIconFloat 3s ease-in-out infinite;
+            z-index: 2;
+        }
+        .wa-float-icon i { font-size: 2.2rem; color: #fff; }
+        @keyframes waIconFloat {
+            0%, 100% { transform: translateY(0); box-shadow: 0 0 30px rgba(37,211,102,0.5); }
+            50% { transform: translateY(-8px); box-shadow: 0 10px 40px rgba(37,211,102,0.7); }
+        }
+        .wa-icon-ring {
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(37,211,102,0.4);
+            animation: waRingExpand 2s ease-out infinite;
+        }
+        .wa-ring-2 { animation-delay: 1s; border-color: rgba(37,211,102,0.2); }
+        @keyframes waRingExpand {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+        /* Stars */
+        .wa-modal-stars {
+            display: flex; justify-content: center; gap: 8px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+        .wa-modal-stars span {
+            color: #25D366;
+            animation: starTwinkle 1.5s ease-in-out infinite alternate;
+        }
+        .wa-modal-stars span:nth-child(2) { animation-delay: 0.3s; color: #ffb400; }
+        .wa-modal-stars span:nth-child(3) { animation-delay: 0.6s; }
+        .wa-modal-stars span:nth-child(4) { animation-delay: 0.9s; color: #ffb400; }
+        .wa-modal-stars span:nth-child(5) { animation-delay: 1.2s; }
+        @keyframes starTwinkle {
+            from { opacity: 0.4; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1.2); }
+        }
+        .wa-modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1rem, 4vw, 1.3rem);
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #25D366, #128C7E, #25D366);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: waTextShimmer 2s linear infinite;
+            margin-bottom: 8px;
+        }
+        @keyframes waTextShimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .wa-modal-subtitle {
+            color: #a0b0a0;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .wa-benefits {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 20px;
+            border: 1px solid rgba(37,211,102,0.15);
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: rgba(37,211,102,0.04);
+        }
+        .wa-benefits li {
+            color: #d0e8d0;
+            font-size: 0.82rem;
+            padding: 6px 0;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .wa-benefits li:last-child { border-bottom: none; }
+        .wa-benefits li i {
+            color: #25D366;
+            width: 16px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        .wa-member-count {
+            font-size: 0.75rem;
+            color: #6c9c6c;
+            margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            animation: waMemberPulse 2s ease-in-out infinite;
+        }
+        @keyframes waMemberPulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; color: #25D366; }
+        }
+        /* JOIN BUTTON */
+        .wa-join-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #25D366, #128C7E, #075E54);
+            background-size: 200% 100%;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(37,211,102,0.4), 0 0 0 1px rgba(37,211,102,0.3);
+            transition: all 0.3s ease;
+            animation: waJoinGlow 2.5s ease-in-out infinite alternate;
+            margin-bottom: 14px;
+        }
+        @keyframes waJoinGlow {
+            from { box-shadow: 0 8px 25px rgba(37,211,102,0.3); }
+            to { box-shadow: 0 12px 40px rgba(37,211,102,0.7), 0 0 20px rgba(37,211,102,0.3); }
+        }
+        .wa-join-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+        }
+        .wa-join-btn i { font-size: 1.3rem; }
+        .wa-btn-shine {
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            transform: skewX(-20deg);
+            animation: waBtnShine 2.5s ease-in-out infinite;
+        }
+        @keyframes waBtnShine {
+            0% { left: -100%; }
+            60%, 100% { left: 150%; }
+        }
+        .wa-modal-note {
+            font-size: 0.65rem;
+            color: #4a6a4a;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1659,19 +1905,51 @@
             <i class="fas fa-home"></i>
             <span>Home</span>
         </div>
-        <div class="bottom-item" onclick="scrollToCategory('HOT POST')">
-            <i class="fas fa-fire"></i>
-            <span>Hot</span>
-        </div>
-        <div class="bottom-item" onclick="scrollToCategory('TANZANIA GAMES')">
-            <i class="fas fa-globe-africa"></i>
-            <span>TZ</span>
+        <!-- WhatsApp Channel Button -->
+        <div class="bottom-item wa-channel-btn" id="waChannelBtn" onclick="openWaChannelModal()">
+            <div class="wa-icon-wrap">
+                <i class="fab fa-whatsapp"></i>
+                <span class="wa-pulse-ring"></span>
+                <span class="wa-pulse-ring wa-pulse-ring-2"></span>
+            </div>
+            <span class="wa-label">Channel</span>
         </div>
         <div class="bottom-item" onclick="openBotChat()">
             <i class="fas fa-headset" style="color:var(--primary);"></i>
             <span style="color:var(--primary); font-weight:bold;">Msaada</span>
         </div>
     </nav>
+
+    <!-- WHATSAPP CHANNEL MODAL -->
+    <div class="wa-modal-overlay" id="waModalOverlay" onclick="closeWaModal(event)">
+        <div class="wa-modal-card" id="waModalCard">
+            <div class="wa-modal-bg-glow"></div>
+            <!-- Floating WhatsApp logo -->
+            <div class="wa-float-icon">
+                <i class="fab fa-whatsapp"></i>
+                <div class="wa-icon-ring"></div>
+                <div class="wa-icon-ring wa-ring-2"></div>
+            </div>
+            <div class="wa-modal-stars">
+                <span>★</span><span>✦</span><span>★</span><span>✦</span><span>★</span>
+            </div>
+            <h2 class="wa-modal-title">JIUNGE NA CHANNEL YETU 🔥</h2>
+            <p class="wa-modal-subtitle">Pata Updates za kwanza kabla ya watu wote!</p>
+            <ul class="wa-benefits">
+                <li><i class="fas fa-bolt"></i> Games Mpya — Kwanza kabisa</li>
+                <li><i class="fas fa-gift"></i> Offers &amp; Deals za Exclusive</li>
+                <li><i class="fas fa-crown"></i> Tips za Gaming — Pro Level</li>
+                <li><i class="fas fa-bell"></i> Update za Chidy Prime moja kwa moja</li>
+            </ul>
+            <div class="wa-member-count"><i class="fas fa-users"></i> Wanachama wanaongezeka kila siku...</div>
+            <a href="https://whatsapp.com/channel/0029VaDKe8j72WTmz2iJEc2J" target="_blank" class="wa-join-btn" onclick="closeWaModal()">
+                <i class="fab fa-whatsapp"></i>
+                JIUNGE SASA — BURE KABISA!
+                <span class="wa-btn-shine"></span>
+            </a>
+            <p class="wa-modal-note">Bonyeza nje kufunga</p>
+        </div>
+    </div>
 
     <script>
         // ===== DATA =====
@@ -2710,6 +2988,18 @@
                 dropdown.style.display = 'none';
             }
         });
+
+        // ===== WHATSAPP CHANNEL MODAL =====
+        function openWaChannelModal() {
+            document.getElementById('waModalOverlay').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeWaModal(e) {
+            if (!e || e.target === document.getElementById('waModalOverlay')) {
+                document.getElementById('waModalOverlay').classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        }
     </script>
 </body>
 </html>
