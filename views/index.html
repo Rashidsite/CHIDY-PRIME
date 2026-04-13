@@ -242,6 +242,36 @@
         .hamburger-btn:hover .ham-line:nth-child(1) { width: 85%; }
         .hamburger-btn:hover .ham-line:nth-child(2) { width: 100%; }
         .hamburger-btn:hover .ham-line:nth-child(3) { width: 70%; }
+        
+        /* --- Profile Dropdown --- */
+        .profile-dropdown {
+            position: absolute;
+            top: 115%;
+            right: 0;
+            background: #15151a;
+            border: 1px solid rgba(0,242,255,0.2);
+            border-radius: 12px;
+            width: 180px;
+            padding: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(0,242,255,0.1);
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .profile-dropdown.show { display: flex; }
+        .p-drop-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; color: #d0d0e8; font-size: 0.85rem;
+            cursor: pointer; border-radius: 8px; transition: all 0.2s;
+        }
+        .p-drop-item i { font-size: 1rem; color: #a0a0c0; }
+        .p-drop-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .p-drop-item.logout { color: #ff4444; }
+        .p-drop-item.logout i { color: #ff4444; }
+        .p-drop-item.logout:hover { background: rgba(255,68,68,0.1); }
+
         .notif-dropdown {
             position: fixed;
             top: 70px;
@@ -1704,6 +1734,49 @@
             color: #4a6a4a;
             margin-top: 4px;
         }
+
+        /* ===== LOGOUT VERIFICATION MODAL ===== */
+        .logout-verify-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px); z-index: 9999; display: none;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .logout-verify-overlay.show { display: flex; animation: fadeIn 0.3s; }
+        .logout-verify-card {
+            background: #15151a; border: 1px solid rgba(255,68,68,0.3);
+            border-radius: 20px; padding: 30px; max-width: 400px; width: 100%;
+            text-align: center; position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255,68,68,0.1);
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .logout-icon {
+            width: 60px; height: 60px; background: rgba(255,68,68,0.1);
+            color: #ff4444; font-size: 1.8rem; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;
+            box-shadow: 0 0 15px rgba(255,68,68,0.2);
+        }
+        .logout-title { color: #fff; font-family: 'Orbitron'; font-size: 1.2rem; margin-bottom: 10px; }
+        .logout-desc { color: #a0a0b0; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5; }
+        .verify-input-group { margin-bottom: 20px; text-align: left; }
+        .verify-input-group label { display: block; font-size: 0.8rem; color: #a0a0b0; margin-bottom: 8px; }
+        .verify-input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 15px; border-radius: 10px; color: #fff; outline: none; transition: 0.3s; font-size: 1rem;
+        }
+        .verify-input:focus { border-color: #ff4444; box-shadow: 0 0 10px rgba(255,68,68,0.2); }
+        .logout-actions { display: flex; gap: 10px; }
+        .btn-cancel-logout {
+            flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px;
+            color: #d0d0e8; font-weight: 600; cursor: pointer; transition: 0.3s;
+        }
+        .btn-cancel-logout:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-confirm-logout {
+            flex: 1; padding: 12px; background: linear-gradient(135deg, #ff4444, #cc0000); border: none; border-radius: 10px;
+            color: #fff; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .btn-confirm-logout:hover { filter: brightness(1.1); box-shadow: 0 5px 15px rgba(255,68,68,0.3); }
+        .btn-confirm-logout:disabled { opacity: 0.6; cursor: not-allowed; }
+        .logout-error { color: #ff4444; font-size: 0.8rem; margin-bottom: 15px; display: none; }
     </style>
 </head>
 <body>
@@ -1845,9 +1918,16 @@
                 <span class="notif-badge" id="notifBadge"></span>
             </div>
             <!-- Premium User Pill -->
-            <div class="user-profile" onclick="openLogin()" title="Profile">
+            <div class="user-profile" id="userProfileBtn" onclick="toggleProfileDropdown(event)" title="Profile">
                 <div class="user-avatar" id="userAvatar">C</div>
                 <span class="user-name-text" id="userName">User</span>
+                
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="p-drop-item"><i class="fas fa-user-circle"></i> View Profile</div>
+                    <div class="p-drop-item"><i class="fas fa-history"></i> Order History</div>
+                    <div class="p-drop-item logout" onclick="openLogoutModal()"><i class="fas fa-sign-out-alt"></i> Logout / Futa</div>
+                </div>
             </div>
             <!-- Premium Hamburger -->
             <div class="hamburger-btn menu-toggle" onclick="toggleSidebar()" title="Menu">
@@ -2888,6 +2968,27 @@
         </div>
     </div>
 
+    <!-- LOGOUT VERIFICATION MODAL -->
+    <div class="logout-verify-overlay" id="logoutVerifyOverlay">
+        <div class="logout-verify-card">
+            <div class="logout-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="logout-title">ONDOA AKAUNTI YAKO</h3>
+            <p class="logout-desc">Kuhakikisha ni wewe, tafadhali ingiza namba ya simu uliyotumia kujisajili hapa Chidy Prime.</p>
+            
+            <div class="logout-error" id="logoutError"></div>
+            
+            <div class="verify-input-group">
+                <label>Namba yako ya Simu:</label>
+                <input type="tel" id="logoutVerifyPhone" class="verify-input" placeholder="Mfano: 0712345678">
+            </div>
+            
+            <div class="logout-actions">
+                <button class="btn-cancel-logout" onclick="closeLogoutModal()">GHAIRI</button>
+                <button class="btn-confirm-logout" id="confirmLogoutBtn" onclick="processLogout()">THIBITISHA KUJIONDOA</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ... (Existing Logic)
         let notifications = [];
@@ -2980,14 +3081,99 @@
         setTimeout(fetchNotifications, 2000);
         setInterval(fetchNotifications, 30000); // Check every 30s
 
-        // Close dropdown when clicking outside
+        // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('notifDropdown');
-            const bell = document.getElementById('notifBell');
-            if (dropdown.style.display === 'block' && !dropdown.contains(e.target) && !bell.contains(e.target)) {
-                dropdown.style.display = 'none';
+            const notifDropdown = document.getElementById('notifDropdown');
+            const notifBell = document.getElementById('notifBell');
+            if (notifDropdown.style.display === 'block' && !notifDropdown.contains(e.target) && !notifBell.contains(e.target)) {
+                notifDropdown.style.display = 'none';
+            }
+
+            const profileDropdown = document.getElementById('profileDropdown');
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            if (profileDropdown && profileDropdown.classList.contains('show') && !userProfileBtn.contains(e.target)) {
+                profileDropdown.classList.remove('show');
             }
         });
+
+        // ===== PROFILE DROPDOWN =====
+        function toggleProfileDropdown(e) {
+            // Only toggle drop-down if user is authenticated (signed up)
+            if (!localStorage.getItem('chidy_visitor')) {
+                openLogin();
+                return;
+            }
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // ===== SECURE LOGOUT FLOW =====
+        function openLogoutModal() {
+            document.getElementById('logoutVerifyPhone').value = '';
+            document.getElementById('logoutError').style.display = 'none';
+            document.getElementById('logoutVerifyOverlay').classList.add('show');
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutVerifyOverlay').classList.remove('show');
+        }
+
+        async function processLogout() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return closeLogoutModal();
+            
+            const visitor = JSON.parse(visitorStr);
+            const inputPhone = document.getElementById('logoutVerifyPhone').value.trim();
+            const btn = document.getElementById('confirmLogoutBtn');
+            const errorEl = document.getElementById('logoutError');
+            
+            if (!inputPhone) {
+                errorEl.textContent = 'Tafadhali ingiza namba ya simu.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'INATHIBITISHA...';
+            errorEl.style.display = 'none';
+
+            try {
+                // Verify with backend
+                const res = await fetch('/api/verify-phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visitor_id: visitor.id, phone: inputPhone })
+                });
+                
+                const result = await res.json();
+                
+                if (result.valid) {
+                    // Fully remove user info
+                    localStorage.removeItem('chidy_visitor');
+                    closeLogoutModal();
+                    
+                    // Show a goodbye toast/alert if desired, then reload or open signup
+                    alert('Akaunti yako imeondolewa kikamilifu. Karibu tena!');
+                    setUserDisplay(''); // Reset header name
+                    document.getElementById('profileDropdown').classList.remove('show');
+                    
+                    // Re-open signup overlay to pretend they are new
+                    openLogin();
+                    document.getElementById('signupName').value = '';
+                    document.getElementById('signupPhone').value = '';
+                } else {
+                    errorEl.textContent = result.message || 'Namba si sahihi. Imeshindwa kujiondoa.';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                errorEl.textContent = 'Kuna tatizo la mtandao. Jaribu tena.';
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'THIBITISHA KUJIONDOA';
+            }
+        }
 
         // ===== WHATSAPP CHANNEL MODAL =====
         function openWaChannelModal() {

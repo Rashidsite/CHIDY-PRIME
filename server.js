@@ -300,6 +300,33 @@ app.delete('/api/users/:id', async (req, res) => {
     res.json({ success: true });
 });
 
+// Verify phone number matches visitor ID (for secure logout)
+app.post('/api/verify-phone', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id, phone } = req.body;
+    if (!visitor_id || !phone) return res.status(400).json({ error: 'visitor_id and phone required' });
+
+    try {
+        const { data, error } = await supabase
+            .from('visitors')
+            .select('id, name, phone')
+            .eq('id', visitor_id)
+            .single();
+
+        if (error || !data) return res.json({ valid: false, message: 'Mtumiaji hakupatikana.' });
+
+        // Normalize phone for comparison
+        const storedPhone = data.phone.replace(/\s+/g, '');
+        const inputPhone = phone.trim().replace(/\s+/g, '');
+        const match = storedPhone === inputPhone;
+
+        res.json({ valid: match, name: match ? data.name : null, message: match ? 'OK' : 'Namba ya simu haifanani na akaunti yako.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // ============================================
 // CATEGORY ENDPOINTS
 // ============================================
