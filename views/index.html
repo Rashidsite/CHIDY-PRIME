@@ -818,7 +818,11 @@
             outline: none;
             transition: 0.3s;
         }
-        .payment-input-group input:focus { border-color: var(--primary); }
+        .payment-input-group input:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
         .payment-confirm-btn {
             width: 100%;
             padding: 14px;
@@ -1786,9 +1790,10 @@
                 document.getElementById('payName').textContent = settings.mpesa_name;
                 document.getElementById('payPostId').value = postId;
                 
-                // Prefill phone if visitor has it
-                const visitor = JSON.parse(visitorStr);
-                document.getElementById('paySenderNumber').value = visitor.phone || '';
+                // Clear prefill to ensure user knows they must enter it
+                document.getElementById('paySenderNumber').value = '';
+                // Set a custom placeholder that includes a prompt
+                document.getElementById('paySenderNumber').placeholder = "Andika namba yako hapa...";
 
                 document.getElementById('paymentOverlay').classList.add('show');
             } catch (e) {
@@ -2364,8 +2369,8 @@
                 </div>
             </div>
             <div class="payment-input-group">
-                <label>Namba uliyotumia kulipia:</label>
-                <input type="tel" id="paySenderNumber" placeholder="Mfano: 07XXXXXXXX">
+                <label>Namba uliyotumia kulipia (M-Pesa):</label>
+                <input type="tel" id="paySenderNumber" placeholder="Mfano: 0796XXXXXX">
             </div>
             <input type="hidden" id="payPostId">
             <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()">✅ NIMETUMA PESA</button>
