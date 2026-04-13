@@ -113,6 +113,100 @@
             text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
         }
 
+        /* Notifications & User Actions */
+        .user-actions { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+        }
+        .header-icon-btn {
+            position: relative;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #fff;
+            padding: 8px;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .header-icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .notif-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #ff3333;
+            color: #fff;
+            font-size: 0.65rem;
+            min-width: 14px;
+            height: 14px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-family: sans-serif;
+            border: 2px solid #000;
+        }
+        .notif-dropdown {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            width: 320px;
+            background: #1a1a1f;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 2100;
+            display: none;
+            overflow: hidden;
+            animation: slideDown 0.3s ease-out;
+        }
+        .notif-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.02);
+        }
+        .notif-body {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .notif-item {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .notif-item:hover { background: rgba(255,255,255,0.04); }
+        .notif-item.unread { border-left: 3px solid var(--primary); }
+        .notif-item h5 { margin: 0 0 5px; color: #fff; font-size: 0.9rem; }
+        .notif-item p { margin: 0; font-size: 0.8rem; color: #a0a0b0; line-height: 1.4; }
+        .notif-item .time { font-size: 0.7rem; color: #6c7293; margin-top: 5px; display: block; }
+
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s;
+        }
+        .user-profile:hover {
+            background: var(--primary);
+            color: #000;
+            border-color: transparent;
+        }
+        .user-profile i { font-size: 1.1rem; }
+        .user-profile span { font-size: 0.8rem; font-weight: 600; }
+
         /* === HERO SEARCH BAR (Desktop) === */
         .hero-section {
             padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 3rem);
@@ -1232,7 +1326,7 @@
         @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .bot-header {
             background: #202c33; padding: 12px 15px;
-            display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #2a3942;
+            border-bottom: 1px solid #2a3942;
         }
         .bot-header .bot-avatar {
             width: 45px; height: 45px; border-radius: 50%;
@@ -1418,8 +1512,16 @@
             <span class="brand-chidy">CHIDY</span>
             <span class="brand-prime">PRIME</span>
         </div>
-        <div class="header-actions">
-            <!-- Admin link removed -->
+        <div class="user-actions">
+            <div class="header-icon-btn" id="notifBell" onclick="toggleNotifDropdown()">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notifBadge"></span>
+            </div>
+            <div class="user-profile" onclick="openLogin()">
+                <i class="fas fa-user-circle"></i>
+                <span id="userName">User</span>
+            </div>
+            <div class="header-icon-btn menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
         </div>
     </header>
 
@@ -1611,7 +1713,7 @@
 
         // ===== RENDER SINGLE CARD =====
         function renderCard(game) {
-            const priceLabel = game.price > 0 ? `$${game.price}` : 'FREE';
+            const priceLabel = game.price > 0 ? `${parseInt(game.price).toLocaleString()}/-` : 'FREE';
             const priceClass = game.price > 0 ? '' : 'free';
 
             return `
@@ -2398,5 +2500,117 @@
             </div>
         </div>
     </div>
+    <!-- Notification Dropdown -->
+    <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header">
+            <span style="font-weight: 700; font-family: 'Orbitron'; font-size: 0.8rem;">TAARIFA MPYA</span>
+            <span style="font-size: 0.7rem; color: var(--primary); cursor: pointer;" onclick="markAllRead()">Mark All Read</span>
+        </div>
+        <div class="notif-body" id="notifBody">
+            <!-- Notifications will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        // ... (Existing Logic)
+        let notifications = [];
+
+        async function fetchNotifications() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
+
+            try {
+                const res = await fetch(`/api/notifications/${visitor.id}`);
+                const data = await res.json();
+                
+                // Compare with old to see if we have new ones
+                const lastCount = notifications.length;
+                notifications = data;
+                
+                renderNotifications();
+                
+                // Show toast for newest notification if it's new and unread
+                if (data.length > lastCount && data[0].visitor_id) {
+                    showBigNotification(data[0]);
+                }
+            } catch (err) {
+                console.error("Notif sync error:", err);
+            }
+        }
+
+        function renderNotifications() {
+            const body = document.getElementById('notifBody');
+            const badge = document.getElementById('notifBadge');
+            
+            const unread = notifications.filter(n => !n.is_read).length;
+            if (unread > 0) {
+                badge.innerText = unread;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            if (notifications.length === 0) {
+                body.innerHTML = '<p style="text-align:center;color:#6c7293;padding:20px;font-size:0.85rem;">Hakuna taarifa mpya kwa sasa.</p>';
+                return;
+            }
+
+            body.innerHTML = notifications.map(n => {
+                const time = new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                return `
+                    <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}')">
+                        <h5>${n.title}</h5>
+                        <p>${n.message}</p>
+                        <span class="time">${time}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleNotifDropdown() {
+            const dropdown = document.getElementById('notifDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function showBigNotification(notif) {
+            // Simple overlay for important success messages
+            const overlay = document.createElement('div');
+            overlay.className = 'big-notif-overlay';
+            overlay.innerHTML = `
+                <div class="big-notif-card" style="animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    <div style="background:var(--primary); width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:-30px auto 15px; box-shadow:0 0 20px rgba(0,242,255,0.4);">
+                        <i class="fas ${notif.type === 'success' ? 'fa-check' : 'fa-info'}" style="color:#000; font-size:1.5rem;"></i>
+                    </div>
+                    <h3 style="color:#fff; text-align:center; font-family:'Orbitron'; font-size:1rem; margin-bottom:10px;">${notif.title}</h3>
+                    <p style="color:#a0a0b0; text-align:center; font-size:0.9rem; margin-bottom:20px; line-height:1.5;">${notif.message}</p>
+                    <button onclick="this.closest('.big-notif-overlay').remove()" style="width:100%; border:none; padding:12px; border-radius:8px; background:linear-gradient(135deg,#00f2ff,#bc13fe); color:#000; font-weight:700; cursor:pointer;">ELEWA (SAWA)</button>
+                </div>
+            `;
+            
+            const styles = `
+                .big-notif-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; }
+                .big-notif-card { background:#15151a; border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:30px; max-width:400px; width:100%; box-shadow:0 10px 50px rgba(0,0,0,0.8); }
+                @keyframes bounceIn { from { opacity:0; transform:scale(0.3); } to { opacity:1; transform:scale(1); } }
+            `;
+            const styleSheet = document.createElement("style");
+            styleSheet.innerText = styles;
+            document.head.appendChild(styleSheet);
+            document.body.appendChild(overlay);
+        }
+
+        // Initialize and poll
+        setTimeout(fetchNotifications, 2000);
+        setInterval(fetchNotifications, 30000); // Check every 30s
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('notifDropdown');
+            const bell = document.getElementById('notifBell');
+            if (dropdown.style.display === 'block' && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>

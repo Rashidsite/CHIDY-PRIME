@@ -596,11 +596,10 @@ app.post('/api/admin/orders/:id/status', async (req, res) => {
         
         // 2. If approved, grant access to the game
         if (status === 'approved') {
-            // Reusing logic from grant-access endpoint indirectly
             const { post_id, visitor_id } = order;
             
             // Get duration
-            const { data: game } = await supabase.from('posts').select('duration_days').eq('id', post_id).single();
+            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', post_id).single();
             const durationDays = game.duration_days || 0;
             
             let expiresAt;
@@ -617,9 +616,54 @@ app.post('/api/admin/orders/:id/status', async (req, res) => {
                 granted_at: new Date().toISOString(),
                 expires_at: expiresAt.toISOString()
             }, { onConflict: 'visitor_id,post_id' });
+
+            // 3. Auto-notify the user
+            await supabase.from('notifications').insert({
+                visitor_id,
+                title: 'Malipo Yamekubaliwa! ✅',
+                message: `Malipo yako ya game "${game.title}" yamehakikiwa. Sasa unaweza kuanza kudownload. Furahia mchezo wako!`,
+                type: 'success'
+            });
         }
         
         res.json({ success: true, order });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Notifications API
+app.get('/api/notifications/:visitor_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id } = req.params;
+    
+    try {
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .or(`visitor_id.eq.${visitor_id},visitor_id.is.null`)
+            .order('created_at', { ascending: false })
+            .limit(10);
+            
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/notifications/broadcast', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { title, message, type } = req.body;
+    
+    try {
+        const { data, error } = await supabase
+            .from('notifications')
+            .insert({ title, message, type: type || 'info' })
+            .select();
+            
+        if (error) throw error;
+        res.json({ success: true, data });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

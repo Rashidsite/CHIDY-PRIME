@@ -1155,7 +1155,11 @@
                 <a href="#" class="nav-link" data-view="messagesView"><i class="fas fa-envelope"></i> Messages</a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" data-view="analyticsView"><i class="fas fa-chart-pie"></i> Analytics</a>
+                <a href="#" class="nav-link" data-view="messagesView">
+                <i class="fas fa-bullhorn"></i> <span>Broadcast Msg</span>
+            </a>
+            <a href="#" class="nav-link" data-view="analyticsView">
+<i class="fas fa-chart-pie"></i> Analytics</a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" data-view="categoriesView"><i class="fas fa-tags"></i> <span>Categories</span></a>
@@ -1435,6 +1439,39 @@
                 <p style="color: #6c7293;">Tracking visitor patterns from the Chidy Prime Storefront in real-time.</p>
             </div>
         </section>
+
+        <!-- BROADCAST MESSAGES VIEW -->
+        <section id="messagesView" class="content view-section" style="display: none;">
+            <div class="admin-card">
+                <h3 class="card-title"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
+                <p style="color: #6c7293; margin-bottom: 2rem;">Tuma ujumbe huu kwa wateja WOTE watakapoingia kwenye website yako.</p>
+                
+                <form id="broadcastForm" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="input-group">
+                        <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: block;">Title</label>
+                        <input type="text" id="bcTitle" placeholder="Mfano: Offer ya Leo!" 
+                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none;">
+                    </div>
+                    <div class="input-group">
+                        <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: block;">Message Content</label>
+                        <textarea id="bcMessage" rows="4" placeholder="Andika ujumbe wako hapa..." 
+                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none; resize: none;"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: block;">Notification Type</label>
+                        <select id="bcType" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none;">
+                            <option value="info">Information (Blue)</option>
+                            <option value="success">Success (Green)</option>
+                            <option value="warning">Alert (Orange)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" style="padding: 15px; border-radius: 10px; font-weight: 700; background: linear-gradient(45deg, var(--primary), var(--secondary)); border: none; color: #000; cursor: pointer;">
+                        <i class="fas fa-paper-plane"></i> Tuma Ujumbe Sasa
+                    </button>
+                    <div id="bcStatus" style="text-align: center; font-size: 0.8rem;"></div>
+                </form>
+            </div>
+        </section>
     </div>
 
     <!-- EDIT MODAL -->
@@ -1558,44 +1595,6 @@
         </div>
     </section>
 
-    <!-- MESSAGES VIEW -->
-    <section id="messagesView" class="content view-section" style="display: none; padding: 1rem 2rem;">
-        
-        <!-- FULL PAGE AI ADVISORY PANEL -->
-        <div class="ai-advisory-panel" style="width: 100%; height: calc(100vh - 120px); background: rgba(15, 15, 26, 0.6); border: 1px solid rgba(0, 242, 255, 0.1); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            
-            <div style="padding: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.1); background: rgba(0, 242, 255, 0.02); display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(0,242,255,0.1); display: flex; align-items: center; justify-content: center; color: #00f2ff; box-shadow: 0 0 15px rgba(0,242,255,0.3); font-size: 1.5rem;">
-                        <i class="fas fa-brain"></i>
-                    </div>
-                    <div>
-                        <h3 style="margin: 0; color: #00f2ff; font-family: 'Orbitron'; letter-spacing: 2px;">C.P.A.I <span style="font-size: 0.8rem; color: #bc13fe;">v2.0 MASTER CORE</span></h3>
-                        <p style="margin: 0; color: #6c7293; font-size: 0.85rem;">Global & System Knowledge Database</p>
-                    </div>
-                </div>
-                <div class="pulse-dot" style="width: 12px; height: 12px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 15px #00f2ff; animation: pulseYoutube 2s infinite;"></div>
-            </div>
-            
-            <div id="aiBox" style="flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; font-family: 'Poppins', sans-serif; font-size: 1rem; line-height: 1.6;">
-                <div style="color: #00f2ff; opacity: 0.9; font-family: monospace; background: rgba(0, 242, 255, 0.05); padding: 15px; border-radius: 8px; border-left: 3px solid #00f2ff; align-self: flex-start; max-width: 80%;">
-                    > [SYSTEM_INIT]: Wakati wa kuunganisha umekamilika.<br>
-                    > [C.P.A.I_READY]: Nipo tayari kusikiliza maagizo yako.<br><br>
-                    <strong>💡 Unaweza kuuliza:</strong><br>
-                    - "Tufanye nini ili tupate wateja wengi?"<br>
-                    - "Tuongeze mfumo gani / update gani?"<br>
-                    - "Playstation ilianzishwa lini?" (Taarifa za Dunia)
-                </div>
-            </div>
-            
-            <div class="chat-input-area" style="padding: 20px 30px; background: rgba(0,0,0,0.5); border-top: 1px solid rgba(0, 242, 255, 0.1); display: flex; gap: 15px; align-items: center;">
-                <input type="text" id="aiInput" placeholder="Command C.P.A.I. Uliza swali lolote kuhusu website au la duniani..." onkeypress="handleAiEnter(event)" style="font-size: 1rem; padding: 18px 25px;">
-                <button class="btn-send-msg" onclick="queryAI()" style="width: 55px; height: 55px; font-size: 1.2rem;"><i class="fas fa-satellite-dish"></i></button>
-            </div>
-        </div>
-
-    </section>
-
     <script>
         const form = document.getElementById('uploadForm');
         const statusMsg = document.getElementById('statusMsg');
@@ -1658,8 +1657,6 @@
 
             if (viewId === 'analyticsView') fetchAnalytics();
             if (viewId === 'categoriesView') loadCategories();
-            // loadChatMessages disabled as chatBox is now replaced by full AI Advisory
-            // if (viewId === 'messagesView') loadChatMessages();
             if (viewId === 'usersView') loadUsers();
         }
 
@@ -2270,65 +2267,6 @@
         // Auto-refresh user stats every 30 seconds
         setInterval(fetchUserStats, 30000);
 
-        // ===== CHAT SYSTEM =====
-        async function loadChatMessages() {
-            try {
-                const res = await fetch('/api/messages');
-                const msgs = await res.json();
-                const box = document.getElementById('chatBox');
-                box.innerHTML = '';
-                if (!msgs || msgs.length === 0) {
-                    box.innerHTML = '<div style="text-align:center;color:#6c7293;margin-top:20px;">No messages yet. Say hello!</div>';
-                    return;
-                }
-                msgs.forEach(m => {
-                    const type = m.sender === 'Admin' ? 'admin' : 'user';
-                    const time = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    box.innerHTML += `
-                        <div class="chat-msg ${type}">
-                            <div class="msg-sender">${m.sender === 'Admin' ? 'CHIDY ADMIN' : m.sender}</div>
-                            <div class="msg-text">${m.message}</div>
-                            <div class="msg-time">${time}</div>
-                        </div>
-                    `;
-                });
-                box.scrollTop = box.scrollHeight;
-            } catch (err) {
-                console.error("Chat sync error:", err);
-            }
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            if (!message) return;
-            input.value = '';
-
-            try {
-                await fetch('/api/messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sender: 'Admin', message })
-                });
-                loadChatMessages();
-            } catch (err) {
-                console.error("Failed to send msg:", err);
-            }
-        }
-
-        function handleChatEnter(e) {
-            if (e.key === 'Enter') sendChatMessage();
-        }
-
-        // Auto-refresh chat disabled (chatBox removed for AI Advisory)
-        /*
-        setInterval(() => {
-            const activeLink = document.querySelector('.nav-link.active');
-            if (activeLink && activeLink.getAttribute('data-view') === 'messagesView') {
-                loadChatMessages();
-            }
-        }, 5000);
-        */
         // ===== USER MANAGEMENT SYSTEM =====
         async function loadUsers() {
             try {
@@ -2402,92 +2340,41 @@
                 handleDeleteUser(id, name);
             }
         });
-        // ===== AI CONSULTANT LOGIC =====
-        function handleAiEnter(e) {
-            if (e.key === 'Enter') queryAI();
-        }
 
-        async function queryAI() {
-            const inputEl = document.getElementById('aiInput');
-            const query = inputEl.value.trim();
-            if (!query) return;
-            inputEl.value = '';
+        // BROADCAST MESSAGE LOGIC
+        document.getElementById('broadcastForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('bcTitle').value;
+            const message = document.getElementById('bcMessage').value;
+            const type = document.getElementById('bcType').value;
+            const statusBox = document.getElementById('bcStatus');
 
-            const aiBox = document.getElementById('aiBox');
-            
-            // Print user query
-            aiBox.innerHTML += `<div style="color: #fff; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; align-self: flex-end; max-width: 80%; border-left: 3px solid #bc13fe;">
-                <span style="color: #bc13fe; font-weight: bold; font-size: 0.8rem;">ADMIN_REQ:</span><br> ${query}
-            </div>`;
-            aiBox.scrollTop = aiBox.scrollHeight;
+            if (!title || !message) return alert("Tafadhali jaza title na ujumbe!");
 
-            // Loading state
-            const loadingId = 'ai-loading-' + Date.now();
-            aiBox.innerHTML += `<div id="${loadingId}" style="color: #00f2ff; max-width: 80%; padding: 15px;">
-                <i class="fas fa-sync fa-spin"></i> C.P.A.I inachakata data...
-            </div>`;
-            aiBox.scrollTop = aiBox.scrollHeight;
+            statusBox.style.color = '#00f2ff';
+            statusBox.innerText = 'Inatuma...';
 
-            const qLower = query.toLowerCase();
-            let responseHtml = "";
-
-            // Wait a moment for effect
-            await new Promise(r => setTimeout(r, 1000));
-
-            // INTERNAL SYSTEM KNOWLEDGE
-            if (qLower.includes('pata watu') || qLower.includes('wateja') || qLower.includes('marketing') || qLower.includes('watumiaji') || qLower.includes('kutangaza')) {
-                responseHtml = `<strong>Mkakati wa Kuongeza Wateja na Kutangaza Website (Traffic Strategy):</strong><br><br>
-                1. <strong>SEO Boost:</strong> Ongeza maneno makuu (keywords) kwenye description za games zako (Mfano: "Download free PPSSPP games Tanzania").<br>
-                2. <strong>Social Media:</strong> Tumia link za TikTok na Instagram Reels zinazoonyesha gameplay za "Hot Posts" kisha andika link ya Chidy Prime kwenye Bio yako.<br>
-                3. <strong>Push Notifications:</strong> Wapigie / watumie WhatsApp wale wateja waliosignup ukiwaambia kuna toleo jipya la GTA au FIFA. (Umepata wateja ${document.getElementById('userViewTotal').innerText} tayari kwenye Database).<br>
-                4. <strong>Offer za Muda:</strong> Weka punguzo la bei kwenye game zinazolipiwa ili kuwavutia sana.` ;
-            }
-            else if (qLower.includes('update') || qLower.includes('mabadiliko') || qLower.includes('tufanye nini')) {
-                responseHtml = `<strong>Ushauri wa System Update:</strong><br><br>
-                <i class="fas fa-check-circle" style="color:#00d25b;"></i> Mfumo wa Admin & Users uko stable 100% kutokana na Data za Supabase.<br>
-                <strong>Ninachoshuri Kwa Sasa:</strong><br>
-                - Weka games nyingi zaidi za "Tanzania" au "PPSSPP" kwasababu ndizo zinazotafutwa sana.<br>
-                - Hakikisha kila Post mpya unayoweka unapachika na Trailer ya YouTube (Hii inaongeza muda wa mteja kukaa kwenye website yako).`;
-            }
-            else if (qLower.includes('hujambo') || qLower.includes('mambo') || qLower.includes('hello')) {
-                responseHtml = "Sijambo Kaka! C.P.A.I (Chidy Prime Artificial Intelligence) ipo tayari kukuhudumia. Niulize kuhusu mbinu za website au swali lolote la ufahamu wa dunia.";
-            }
-            else {
-                // EXTERNAL WORLD KNOWLEDGE (Wikipedia API via English or Swahili)
-                try {
-                    const res = await fetch(`https://sw.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
-                    const data = await res.json();
-                    
-                    if (data.query.search.length > 0) {
-                        const snippet = data.query.search[0].snippet + '...';
-                        responseHtml = `<strong>Matokeo Kutoka Kwenye Data za Dunia:</strong><br><br>` + snippet.replace(/<[^>]*>?/gm, ''); // remove HTML from snippet
-                    } else {
-                        // Fallback to english wiki
-                        const resEn = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`);
-                        const dataEn = await resEn.json();
-                        if (dataEn.query.search.length > 0) {
-                            const snippet = dataEn.query.search[0].snippet + '...';
-                            responseHtml = `<strong>World Database Result:</strong><br><br>` + snippet.replace(/<[^>]*>?/gm, '');
-                        } else {
-                            responseHtml = "Samahani, sijapata taarifa kuhusu jambo hilo kwenye kanzidata yangu. Unaweza kuuliza kwa maneno tofauti?";
-                        }
-                    }
-                } catch (e) {
-                    responseHtml = "Samahani, kumetokea hitilafu ya mtandao wakati wa kutafuta taarifa za dunia. Angalia connection yako.";
+            try {
+                const res = await fetch('/api/admin/notifications/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, message, type })
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    statusBox.style.color = '#00ff00';
+                    statusBox.innerText = 'Ujumbe umetumwa kwa wateja WOTE!';
+                    document.getElementById('broadcastForm').reset();
+                    setTimeout(() => statusBox.innerText = '', 5000);
+                } else {
+                    throw new Error(result.error);
                 }
+            } catch (err) {
+                statusBox.style.color = '#ff3333';
+                statusBox.innerText = 'Imefeli: ' + err.message;
             }
-
-            // Remove loading and append result with typing effect wrapper
-            document.getElementById(loadingId).remove();
-            
-            const msgHtml = `<div style="color: #00f2ff; background: rgba(0,242,255,0.02); padding: 15px; border-radius: 10px; align-self: flex-start; max-width: 80%; border-left: 3px solid #00f2ff; box-shadow: 0 0 10px rgba(0,242,255,0.05);">
-                <span style="color: #00f2ff; font-weight: bold; font-size: 0.8rem;">C.P.A.I RESPONSE:</span><br> 
-                <span style="display:inline-block; margin-top: 10px;">${responseHtml}</span>
-            </div>`;
-            
-            aiBox.innerHTML += msgHtml;
-            aiBox.scrollTop = aiBox.scrollHeight;
-        }
+        };
 
         // Initialize admin dashboard
         fetchMaintenanceState();
