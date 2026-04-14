@@ -1172,7 +1172,7 @@
                 <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search products">
+                    <input type="text" id="adminSearchInput" placeholder="Search / Filter data...">
                 </div>
                 
                 <div class="brand-shooting">
@@ -1668,6 +1668,23 @@
         const addLinkBtn = document.getElementById('addLinkBtn');
         const linksContainer = document.getElementById('linksContainer');
 
+        let currentActiveViewId = 'dashboardView';
+
+        // GLOBAL SEARCH HANDLER
+        document.getElementById('adminSearchInput').addEventListener('input', () => {
+            if (currentActiveViewId === 'allGamesView') {
+                renderFilteredGames(currentGamesFilter);
+            } else if (currentActiveViewId === 'usersView') {
+                renderUsersList();
+            } else if (currentActiveViewId === 'ordersView') {
+                renderOrdersList();
+            } else if (document.getElementById('adminSearchInput').value.length > 0) {
+                // If they search while on Dashboard or somewhere else, switch to Games
+                const gamesLink = document.querySelector('.nav-link[data-view="allGamesView"]');
+                if (gamesLink) gamesLink.click();
+            }
+        });
+
         // Maintenance Toggle State
         async function fetchMaintenanceState() {
             try {
@@ -1713,6 +1730,7 @@
         });
 
         function showView(viewId) {
+            currentActiveViewId = viewId;
             views.forEach(v => v.style.display = 'none');
             navLinks.forEach(l => l.classList.remove('active'));
             
@@ -2042,7 +2060,16 @@
         }
 
         function renderFilteredGames(status) {
-            const filtered = allGamesData.filter(g => (g.status || 'published') === status);
+            let filtered = allGamesData.filter(g => (g.status || 'published') === status);
+            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            
+            if (query) {
+                filtered = filtered.filter(g => 
+                    (g.title || '').toLowerCase().includes(query) ||
+                    (g.category || '').toLowerCase().includes(query)
+                );
+            }
+
             const titleEl = document.getElementById('tableTitle');
             titleEl.innerText = status.charAt(0).toUpperCase() + status.slice(1) + (status === 'published' ? ' Games' : '');
             
@@ -2354,20 +2381,36 @@
         setInterval(fetchUserStats, 30000);
 
         // ===== USER MANAGEMENT SYSTEM =====
+        let allUsersData = [];
+
         async function loadUsers() {
             try {
                 const res = await fetch('/api/users');
-                const users = await res.json();
-                const tbody = document.getElementById('usersTableBody');
-                document.getElementById('userViewTotal').innerText = users.length + ' Total';
-                
-                if (users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6c7293;padding:20px;">No registered users found.</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = '';
-                users.forEach((u, i) => {
+                allUsersData = await res.json();
+                renderUsersList();
+            } catch (err) {
+                console.error("Failed to load users:", err);
+            }
+        }
+
+        function renderUsersList() {
+            const users = allUsersData;
+            const tbody = document.getElementById('usersTableBody');
+            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            
+            const filteredUsers = query 
+                ? users.filter(u => u.name.toLowerCase().includes(query) || u.phone.includes(query))
+                : users;
+
+            document.getElementById('userViewTotal').innerText = filteredUsers.length + ' Total';
+            
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6c7293;padding:20px;">No registered users found.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            filteredUsers.forEach((u, i) => {
                     const date = new Date(u.created_at).toLocaleDateString([], {year: 'numeric', month: 'short', day: 'numeric'});
                     const time = new Date(u.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     
@@ -2392,9 +2435,10 @@
                     `;
                     tbody.appendChild(tr);
                 });
-            } catch (err) {
-                console.error("Failed to load users:", err);
-            }
+                    `;
+                    tbody.appendChild(tr);
+                });
+        }
         }
 
         async function handleDeleteUser(id, name) {
@@ -2551,20 +2595,44 @@
             });
         });
 
+        let allOrdersData = [];
+
         async function fetchOrders() {
             const list = document.getElementById('ordersList');
             list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading orders...</p>';
             
             try {
                 const res = await fetch('/api/admin/orders');
-                const orders = await res.json();
+                allOrdersData = await res.json();
                 
-                if (orders.length === 0) {
-                    list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;">Hauna oda yoyote kwa sasa.</p>';
-                    return;
-                }
+                // Update Revenue statistic
+                const approvedTotal = allOrdersData
+                    .filter(o => o.status === 'approved')
+                    .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
+                document.getElementById('totalRevenue').innerText = \`TSh \${approvedTotal.toLocaleString()}\`;
 
-                list.innerHTML = orders.map(order => {
+                renderOrdersList();
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<p style="text-align: center; color: #ff3333; padding: 2rem;">Error sync orders.</p>';
+            }
+        }
+
+        function renderOrdersList() {
+            const list = document.getElementById('ordersList');
+            const orders = allOrdersData;
+            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            
+            const filteredOrders = query 
+                ? orders.filter(o => o.post_title.toLowerCase().includes(query) || o.visitor_name.toLowerCase().includes(query) || o.phone_number.includes(query))
+                : orders;
+                
+            if (filteredOrders.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;">Hauna oda yoyote kwa sasa.</p>';
+                return;
+            }
+
+            list.innerHTML = filteredOrders.map(order => {
                     const statusClass = `status-${order.status}`;
                     const date = new Date(order.created_at).toLocaleString();
                     
@@ -2591,16 +2659,6 @@
                         </div>
                     `;
                 }).join('');
-
-                // Update Revenue statistic in dashboard (simple sum of approved orders)
-                const approvedTotal = orders
-                    .filter(o => o.status === 'approved')
-                    .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
-                document.getElementById('totalRevenue').innerText = `TSh ${approvedTotal.toLocaleString()}`;
-
-            } catch (err) {
-                list.innerHTML = '<p style="text-align: center; color: #ff3333; padding: 2rem;">Error sync orders.</p>';
-            }
         }
 
         async function updateOrderStatus(orderId, status) {
