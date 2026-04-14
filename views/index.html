@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chidy Prime | Premium Gaming Hub</title>
     <meta name="description" content="Discover and download the hottest games — PPSSPP, Android, PC, Tanzania Games and more. Curated for true gamers.">
+
+    <!-- PERFORMANCE: Preconnect to CDNs (saves ~200ms per resource) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- PERFORMANCE: Load fonts with display=swap (prevents invisible text) -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="manifest" href="/manifest.json">
@@ -417,11 +424,11 @@
         }
 
         .category-section:nth-child(1) { animation-delay: 0.1s; }
-        .category-section:nth-child(2) { animation-delay: 0.25s; }
-        .category-section:nth-child(3) { animation-delay: 0.4s; }
-        .category-section:nth-child(4) { animation-delay: 0.55s; }
-        .category-section:nth-child(5) { animation-delay: 0.7s; }
-        .category-section:nth-child(6) { animation-delay: 0.85s; }
+        .category-section:nth-child(2) { animation-delay: 0.15s; }
+        .category-section:nth-child(3) { animation-delay: 0.2s; }
+        .category-section:nth-child(4) { animation-delay: 0.25s; }
+        .category-section:nth-child(5) { animation-delay: 0.3s; }
+        .category-section:nth-child(6) { animation-delay: 0.35s; }
 
         @keyframes fadeInSection {
             from { opacity: 0; transform: translateY(25px); }
@@ -579,13 +586,27 @@
             width: 100%;
             aspect-ratio: 2 / 3;
             overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%);
+            background-size: 400% 100%;
+            animation: skeletonPulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes skeletonPulse {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         .card-image-wrap img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
+            transition: transform 0.5s ease, opacity 0.4s ease;
+            image-rendering: -webkit-optimize-contrast;
+            content-visibility: auto;
+        }
+
+        .card-image-wrap img.loaded {
+            animation: none;
         }
 
         .game-card:hover .card-image-wrap img {
@@ -2096,6 +2117,61 @@
         let allGames = [];
         let currentCategory = null; // null means 'Home' view
 
+        // === PERFORMANCE UTILITIES ===
+        function debounce(fn, delay) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        function throttle(fn, delay) {
+            let last = 0;
+            let timer;
+            return function(...args) {
+                const now = Date.now();
+                const remaining = delay - (now - last);
+                clearTimeout(timer);
+                if (remaining <= 0) {
+                    last = now;
+                    fn.apply(this, args);
+                } else {
+                    timer = setTimeout(() => {
+                        last = Date.now();
+                        fn.apply(this, args);
+                    }, remaining);
+                }
+            };
+        }
+
+        // === LAZY IMAGE LOADING ===
+        const imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src) {
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        img.addEventListener('load', () => {
+                            img.classList.add('loaded');
+                            img.closest('.card-image-wrap').style.animation = 'none';
+                        }, { once: true });
+                    }
+                    imageObserver.unobserve(img);
+                }
+            });
+        }, {
+            rootMargin: '200px 0px', // Start loading 200px before visible
+            threshold: 0.01
+        });
+
+        function observeImages() {
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                imageObserver.observe(img);
+            });
+        }
+
         // Ordered categories from user's wireframe
         const categoryOrder = [
             'HOT POST',
@@ -2179,6 +2255,7 @@
                         ${catGames.map(game => renderCard(game)).join('')}
                     </div>
                 `;
+                observeImages();
                 return;
             }
 
@@ -2217,6 +2294,9 @@
             
             // Populate the Sidebar
             populateSidebarCategories(orderedKeys);
+
+            // PERFORMANCE: Observe lazy images
+            observeImages();
         }
 
         // ===== RENDER SINGLE CARD =====
@@ -2225,9 +2305,9 @@
             const priceClass = game.price > 0 ? '' : 'free';
 
             return `
-                <div class="game-card" onclick="openDetail('${game.id}')">
+                <div class="game-card" data-game-id="${game.id}">
                     <div class="card-image-wrap">
-                        <img src="${game.image_url}" alt="${game.title}" loading="lazy">
+                        <img data-src="${game.image_url}" alt="${game.title}" loading="lazy" decoding="async" width="175" height="263">
                         <div class="price-badge ${priceClass}">${priceLabel}</div>
                         <div class="card-rating">
                             <i class="fas fa-star"></i> ${game.rating || '0'}
@@ -2525,10 +2605,18 @@
             if (e.key === 'Escape') closeDetail();
         });
 
-        // ===== SEARCH =====
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase().trim();
-            currentCategory = null; // Clear category view when searching
+        // === PERFORMANCE: Event delegation for game card clicks ===
+        // One listener replaces hundreds of inline onclick handlers
+        document.getElementById('categoriesContainer').addEventListener('click', (e) => {
+            const card = e.target.closest('.game-card[data-game-id]');
+            if (card) {
+                openDetail(card.dataset.gameId);
+            }
+        });
+
+        // ===== SEARCH (DEBOUNCED for performance) =====
+        const debouncedSearch = debounce((query) => {
+            currentCategory = null;
             if (!query) {
                 renderCategories(allGames);
                 return;
@@ -2541,6 +2629,10 @@
             );
 
             renderCategories(filtered);
+        }, 300);
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            debouncedSearch(e.target.value.toLowerCase().trim());
         });
 
         // Clear search on 'search' event (for 'x' button in search inputs)
@@ -2962,13 +3054,13 @@
 
         initializeApp();
 
-        // Update view on resize if in home view
-        window.addEventListener('resize', () => {
+        // Update view on resize if in home view (THROTTLED for performance)
+        window.addEventListener('resize', throttle(() => {
             const searchQuery = document.getElementById('searchInput').value;
             if (!currentCategory && !searchQuery && allGames.length > 0) {
                 renderCategories(allGames);
             }
-        });
+        }, 250));
     </script>
     
     <!-- PAYMENT MODAL -->

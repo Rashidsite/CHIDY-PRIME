@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
+const compression = require('compression');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -40,8 +41,26 @@ if (supabaseUrl && supabaseKey) {
 
 
 
+// === PERFORMANCE: Gzip compression (reduces response size 60-80%) ===
+app.use(compression());
+
 app.use(express.json());
-app.use(express.static('public'));
+
+// === PERFORMANCE: Static file caching (1 week for assets) ===
+app.use(express.static('public', {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true,
+    immutable: false
+}));
+
+// === PERFORMANCE: In-memory cache for games API ===
+let gamesCache = { data: null, timestamp: 0 };
+const CACHE_TTL = 30 * 1000; // 30 seconds
+
+function invalidateGamesCache() {
+    gamesCache = { data: null, timestamp: 0 };
+}
 
 // Login Endpoint
 app.post('/api/admin/login', (req, res) => {
@@ -69,6 +88,15 @@ app.get('/api/games', async (req, res) => {
     if (!supabase) {
         return res.status(500).json({ error: 'Supabase not configured' });
     }
+
+    // Serve from cache if still fresh
+    const now = Date.now();
+    if (gamesCache.data && (now - gamesCache.timestamp) < CACHE_TTL) {
+        res.set('X-Cache', 'HIT');
+        res.set('Cache-Control', 'public, max-age=30');
+        return res.json(gamesCache.data);
+    }
+
     const { data, error } = await supabase
         .from('posts')
         .select('*')
@@ -76,6 +104,11 @@ app.get('/api/games', async (req, res) => {
         .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: error.message });
+
+    // Update cache
+    gamesCache = { data, timestamp: now };
+    res.set('X-Cache', 'MISS');
+    res.set('Cache-Control', 'public, max-age=30');
     res.json(data);
 });
 
@@ -122,6 +155,7 @@ app.post('/api/games', verifyAdmin, async (req, res) => {
             ]);
 
         if (error) throw error;
+        invalidateGamesCache();
         res.json({ success: true, data });
 
     } catch (err) {
@@ -143,6 +177,7 @@ app.patch('/api/games/:id', verifyAdmin, async (req, res) => {
         .eq('id', id);
 
     if (error) return res.status(500).json({ error: error.message });
+    invalidateGamesCache();
     res.json({ success: true, data });
 });
 
@@ -159,6 +194,7 @@ app.delete('/api/games/:id', verifyAdmin, async (req, res) => {
         .eq('id', id);
 
     if (error) return res.status(500).json({ error: error.message });
+    invalidateGamesCache();
     res.json({ success: true, data });
 });
 
