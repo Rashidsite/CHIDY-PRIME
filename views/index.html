@@ -166,7 +166,7 @@
             border: 1px solid rgba(255,255,255,0.08);
             transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
-            overflow: hidden;
+            overflow: visible;
         }
         .user-profile::before {
             content: '';
@@ -3098,6 +3098,7 @@
 
         // ===== PROFILE DROPDOWN =====
         function toggleProfileDropdown(e) {
+            e.stopPropagation();
             // Only toggle drop-down if user is authenticated (signed up)
             if (!localStorage.getItem('chidy_visitor')) {
                 openLogin();
