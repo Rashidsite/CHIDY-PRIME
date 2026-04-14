@@ -1446,34 +1446,72 @@
 
         <!-- BROADCAST MESSAGES VIEW -->
         <section id="messagesView" class="content view-section" style="display: none;">
+            <style>
+                .broadcast-container {
+                    display: grid; 
+                    grid-template-columns: 1.2fr 0.8fr; 
+                    gap: 30px; 
+                    align-items: start;
+                }
+                @media (max-width: 768px) {
+                    .broadcast-container {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
             <div class="admin-card">
                 <h3 class="card-title"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
                 <p style="color: #6c7293; margin-bottom: 2rem;">Tuma ujumbe huu kwa wateja WOTE watakapoingia kwenye website yako.</p>
                 
-                <form id="broadcastForm" style="display: flex; flex-direction: column; gap: 15px;">
-                    <div class="input-group">
-                        <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: block;">Title</label>
-                        <input type="text" id="bcTitle" placeholder="Mfano: Offer ya Leo!" 
-                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none;">
+                <div class="broadcast-container">
+                    <!-- FORM SIDE -->
+                    <form id="broadcastForm" style="display: flex; flex-direction: column; gap: 15px;">
+                        <div class="input-group">
+                            <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: flex; justify-content: space-between;">
+                                <span>Title</span>
+                                <span id="titleCounter" style="color: #6c7293; font-size: 0.7rem;">0/40</span>
+                            </label>
+                            <input type="text" id="bcTitle" placeholder="Mfano: Offer ya Leo!" maxlength="40"
+                                style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none; transition: 0.3s;"
+                                onfocus="this.style.borderColor='var(--primary-color)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        </div>
+                        <div class="input-group">
+                            <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: flex; justify-content: space-between;">
+                                <span>Message Content</span>
+                                <span id="msgCounter" style="color: #6c7293; font-size: 0.7rem;">0/150</span>
+                            </label>
+                            <textarea id="bcMessage" rows="4" maxlength="150" placeholder="Andika ujumbe wako hapa..." 
+                                style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none; resize: none; transition: 0.3s;"
+                                onfocus="this.style.borderColor='var(--primary-color)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: block;">Notification Type</label>
+                            <select id="bcType" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none;">
+                                <option value="info">🔵 Information (Blue)</option>
+                                <option value="success">🟢 Success (Green)</option>
+                                <option value="warning">🟠 Alert (Orange)</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="bcSubmitBtn" class="btn-primary" style="padding: 15px; border-radius: 10px; font-weight: 700; background: linear-gradient(45deg, var(--primary), var(--secondary)); border: none; color: #000; cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 10px;">
+                            <i class="fas fa-paper-plane" id="bcIcon"></i> <span id="bcBtnText">Tuma Ujumbe Sasa</span>
+                        </button>
+                    </form>
+
+                    <!-- PREVIEW SIDE -->
+                    <div style="background: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 15px; height: fit-content;">
+                        <h4 style="color: #6c7293; margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-eye"></i> Live Preview
+                        </h4>
+                        <div style="padding: 15px; border-radius: 10px; background: rgba(0, 242, 255, 0.1); border-left: 4px solid #00f2ff; position: relative; transition: all 0.3s ease;" id="livePreviewBox">
+                            <h4 id="previewTitle" style="margin: 0 0 5px 0; color: #fff; font-size: 0.95rem; word-wrap: break-word;">Offer ya Leo!</h4>
+                            <p id="previewText" style="margin: 0; color: #ccc; font-size: 0.85rem; line-height: 1.4; word-wrap: break-word;">Andika ujumbe wako hapa...</p>
+                            <span style="position: absolute; top: 15px; right: 15px; font-size: 0.7rem; color: #6c7293;">Sasa Hivi</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #6c7293; margin: 0; font-style: italic;">
+                            <i class="fas fa-info-circle"></i> Hivi ndivyo ujumbe utaonekana kwenye simu za wateja kwenye sehemu yao ya notification.
+                        </p>
                     </div>
-                    <div class="input-group">
-                        <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: block;">Message Content</label>
-                        <textarea id="bcMessage" rows="4" placeholder="Andika ujumbe wako hapa..." 
-                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none; resize: none;"></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label style="color: #fff; font-size: 0.8rem; margin-bottom: 5px; display: block;">Notification Type</label>
-                        <select id="bcType" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; outline: none;">
-                            <option value="info">Information (Blue)</option>
-                            <option value="success">Success (Green)</option>
-                            <option value="warning">Alert (Orange)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-primary" style="padding: 15px; border-radius: 10px; font-weight: 700; background: linear-gradient(45deg, var(--primary), var(--secondary)); border: none; color: #000; cursor: pointer;">
-                        <i class="fas fa-paper-plane"></i> Tuma Ujumbe Sasa
-                    </button>
-                    <div id="bcStatus" style="text-align: center; font-size: 0.8rem;"></div>
-                </form>
+                </div>
             </div>
         </section>
     </div>
@@ -2389,18 +2427,63 @@
             }
         });
 
-        // BROADCAST MESSAGE LOGIC
+        // BROADCAST MESSAGE LOGIC & LIVE PREVIEW
+        const bcTitleInput = document.getElementById('bcTitle');
+        const bcMessageInput = document.getElementById('bcMessage');
+        const bcTypeSelect = document.getElementById('bcType');
+        
+        const previewBox = document.getElementById('livePreviewBox');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewText = document.getElementById('previewText');
+        const titleCounter = document.getElementById('titleCounter');
+        const msgCounter = document.getElementById('msgCounter');
+
+        const typeColorMap = {
+            'info': { bg: 'rgba(0, 242, 255, 0.1)', border: '#00f2ff' },
+            'success': { bg: 'rgba(0, 255, 136, 0.1)', border: '#00ff88' },
+            'warning': { bg: 'rgba(255, 180, 0, 0.1)', border: '#ffb400' }
+        };
+
+        function updatePreview() {
+            const tVal = bcTitleInput.value;
+            const mVal = bcMessageInput.value;
+            const tType = bcTypeSelect.value;
+            
+            previewTitle.innerText = tVal || 'Offer ya Leo!';
+            previewText.innerText = mVal || 'Andika ujumbe wako hapa...';
+            
+            const styles = typeColorMap[tType];
+            previewBox.style.background = styles.bg;
+            previewBox.style.borderLeftColor = styles.border;
+            
+            titleCounter.innerText = `${tVal.length}/40`;
+            titleCounter.style.color = tVal.length >= 40 ? '#ff3366' : '#6c7293';
+            
+            msgCounter.innerText = `${mVal.length}/150`;
+            msgCounter.style.color = mVal.length >= 150 ? '#ff3366' : '#6c7293';
+        }
+
+        bcTitleInput.addEventListener('input', updatePreview);
+        bcMessageInput.addEventListener('input', updatePreview);
+        bcTypeSelect.addEventListener('change', updatePreview);
+
         document.getElementById('broadcastForm').onsubmit = async (e) => {
             e.preventDefault();
-            const title = document.getElementById('bcTitle').value;
-            const message = document.getElementById('bcMessage').value;
-            const type = document.getElementById('bcType').value;
-            const statusBox = document.getElementById('bcStatus');
+            const title = bcTitleInput.value;
+            const message = bcMessageInput.value;
+            const type = bcTypeSelect.value;
+            
+            const submitBtn = document.getElementById('bcSubmitBtn');
+            const icon = document.getElementById('bcIcon');
+            const btnText = document.getElementById('bcBtnText');
 
             if (!title || !message) return alert("Tafadhali jaza title na ujumbe!");
 
-            statusBox.style.color = '#00f2ff';
-            statusBox.innerText = 'Inatuma...';
+            // Loading state
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.7';
+            icon.className = 'fas fa-spinner fa-spin';
+            btnText.innerText = 'Inatuma...';
 
             try {
                 const res = await fetch('/api/admin/notifications/broadcast', {
@@ -2411,16 +2494,20 @@
                 const result = await res.json();
                 
                 if (result.success) {
-                    statusBox.style.color = '#00ff00';
-                    statusBox.innerText = 'Ujumbe umetumwa kwa wateja WOTE!';
+                    alert('✅ Safi kabisa! Ujumbe wako umetumwa kwa wateja wote kwa mafanikio.');
                     document.getElementById('broadcastForm').reset();
-                    setTimeout(() => statusBox.innerText = '', 5000);
+                    updatePreview(); // Reset preview
                 } else {
                     throw new Error(result.error);
                 }
             } catch (err) {
-                statusBox.style.color = '#ff3333';
-                statusBox.innerText = 'Imefeli: ' + err.message;
+                alert('❌ Imeshindikana: ' + err.message);
+            } finally {
+                // Restore button
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                icon.className = 'fas fa-paper-plane';
+                btnText.innerText = 'Tuma Ujumbe Sasa';
             }
         };
 
