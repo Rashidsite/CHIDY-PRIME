@@ -1600,6 +1600,29 @@
     </section>
 
     <script>
+        // Intercept all fetch requests to add the Admin Token automatically
+        const originalFetch = window.fetch;
+        window.fetch = async function () {
+            let [resource, config] = arguments;
+            if (typeof resource === 'string' && resource.startsWith('/api/') && resource !== '/api/admin/login') {
+                config = config || {};
+                config.headers = config.headers || {};
+                const token = localStorage.getItem('adminToken');
+                if (token) {
+                    config.headers['Authorization'] = 'Bearer ' + token;
+                }
+            }
+            const response = await originalFetch(resource, config);
+            if (response.status === 401 || response.status === 403) {
+                // Token invalid or expired, locking vault
+                localStorage.removeItem('adminToken');
+                document.getElementById('vaultOverlay').style.display = 'flex';
+                document.getElementById('vaultOverlay').classList.remove('vault-unlocked');
+                document.body.classList.add('scanning');
+            }
+            return response;
+        };
+
         const form = document.getElementById('uploadForm');
         const statusMsg = document.getElementById('statusMsg');
         const fullGameTableBody = document.getElementById('fullGameTableBody');
@@ -1820,19 +1843,36 @@
         }
 
         function verifyPin() {
-            if (enteredPin === CORRECT_PIN) {
-                unlockVault();
-            } else {
-                // Shake effect on wrong pin
-                const output = document.getElementById('pinOutput');
-                output.style.color = "#ff3366";
-                output.innerText = "ERROR";
-                setTimeout(() => {
-                    enteredPin = "";
-                    output.innerText = "";
-                    output.style.color = "var(--primary-color)";
-                }, 1000);
-            }
+            fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: enteredPin })
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    localStorage.setItem('adminToken', result.token);
+                    unlockVault();
+                } else {
+                    handleWrongPin();
+                }
+            })
+            .catch(err => {
+                console.error("Login failed:", err);
+                handleWrongPin();
+            });
+        }
+
+        function handleWrongPin() {
+            // Shake effect on wrong pin
+            const output = document.getElementById('pinOutput');
+            output.style.color = "#ff3366";
+            output.innerText = "ERROR";
+            setTimeout(() => {
+                enteredPin = "";
+                output.innerText = "";
+                output.style.color = "var(--primary-color)";
+            }, 1000);
         }
 
         function unlockVault() {

@@ -2,9 +2,29 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+const JWT_SECRET = process.env.JWT_SECRET || 'chidy_prime_super_secret_2025';
+const ADMIN_PIN = process.env.ADMIN_PIN || '2025';
+
+// Admin Auth Middleware
+const verifyAdmin = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    
+    const token = authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized: Malformed token' });
+
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(403).json({ error: 'Forbidden: Invalid token' });
+        if (decoded.role !== 'admin') return res.status(403).json({ error: 'Forbidden: Not an admin' });
+        req.admin = decoded;
+        next();
+    });
+};
 
 // Supabase Setup
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -22,6 +42,17 @@ if (supabaseUrl && supabaseKey) {
 
 app.use(express.json());
 app.use(express.static('public'));
+
+// Login Endpoint
+app.post('/api/admin/login', (req, res) => {
+    const { pin } = req.body;
+    if (pin === ADMIN_PIN) {
+        const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+        res.json({ success: true, token });
+    } else {
+        res.status(401).json({ success: false, error: 'Invalid PIN' });
+    }
+});
 
 // Routes
 app.get('/', (req, res) => {
@@ -49,7 +80,7 @@ app.get('/api/games', async (req, res) => {
 });
 
 // Admin - show all statuses
-app.get('/api/admin/games', async (req, res) => {
+app.get('/api/admin/games', verifyAdmin, async (req, res) => {
     if (!supabase) {
         return res.status(500).json({ error: 'Supabase not configured' });
     }
@@ -62,7 +93,7 @@ app.get('/api/admin/games', async (req, res) => {
     res.json(data);
 });
 
-app.post('/api/games', async (req, res) => {
+app.post('/api/games', verifyAdmin, async (req, res) => {
     if (!supabase) {
         return res.status(500).json({ error: 'Supabase not configured' });
     }
@@ -99,7 +130,7 @@ app.post('/api/games', async (req, res) => {
 });
 
 // Update game details or status
-app.patch('/api/games/:id', async (req, res) => {
+app.patch('/api/games/:id', verifyAdmin, async (req, res) => {
     if (!supabase) {
         return res.status(500).json({ error: 'Supabase not configured' });
     }
@@ -116,7 +147,7 @@ app.patch('/api/games/:id', async (req, res) => {
 });
 
 // Delete game permanently
-app.delete('/api/games/:id', async (req, res) => {
+app.delete('/api/games/:id', verifyAdmin, async (req, res) => {
     if (!supabase) {
         return res.status(500).json({ error: 'Supabase not configured' });
     }
@@ -277,7 +308,7 @@ app.get('/api/check-user/:id', async (req, res) => {
 });
 
 // GET all users
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { data, error } = await supabase
         .from('visitors')
@@ -289,7 +320,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // DELETE a user
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { error } = await supabase
         .from('visitors')
@@ -343,7 +374,7 @@ app.get('/api/categories', async (req, res) => {
 });
 
 // POST - add a new category
-app.post('/api/categories', async (req, res) => {
+app.post('/api/categories', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { name } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Category name is required' });
@@ -359,7 +390,7 @@ app.post('/api/categories', async (req, res) => {
 });
 
 // DELETE - remove a category
-app.delete('/api/categories/:id', async (req, res) => {
+app.delete('/api/categories/:id', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { id } = req.params;
     const { error } = await supabase
@@ -374,6 +405,7 @@ app.delete('/api/categories/:id', async (req, res) => {
 // SETTINGS ENDPOINTS
 // ============================================
 
+// GET Settings
 app.get('/api/settings/maintenance', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { data, error } = await supabase
@@ -389,7 +421,7 @@ app.get('/api/settings/maintenance', async (req, res) => {
     res.json({ value: data.value });
 });
 
-app.post('/api/settings/maintenance', async (req, res) => {
+app.post('/api/settings/maintenance', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { enabled } = req.body;
     
@@ -583,7 +615,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Admin - Fetch all orders
-app.get('/api/admin/orders', async (req, res) => {
+app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
     const { data, error } = await supabase
@@ -600,7 +632,7 @@ app.get('/api/admin/orders', async (req, res) => {
 });
 
 // Admin - Approve or Reject order
-app.post('/api/admin/orders/:id/status', async (req, res) => {
+app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
     const { id } = req.params;
@@ -679,7 +711,7 @@ app.get('/api/notifications/:visitor_id', async (req, res) => {
     }
 });
 
-app.post('/api/admin/notifications/broadcast', async (req, res) => {
+app.post('/api/admin/notifications/broadcast', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { title, message, type } = req.body;
     
