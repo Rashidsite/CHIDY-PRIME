@@ -1974,7 +1974,7 @@
                         <td style="font-weight: 600;">${game.title}</td>
                         <td><span style="font-size: 0.75rem; background: rgba(0, 242, 255, 0.1); color: #00f2ff; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0, 242, 255, 0.2);">${game.category || 'HOT POST'}</span></td>
                         <td style="color: ${game.price > 0 ? '#00f2ff' : '#00d25b'}; font-weight: 700;">
-                            ${game.price > 0 ? '$' + game.price : 'FREE'}
+                            ${game.price > 0 ? 'TSh ' + parseInt(game.price).toLocaleString() : 'FREE'}
                         </td>
                         <td><span style="color: #ffcc00;">★ ${game.rating}</span></td>
                         <td>
