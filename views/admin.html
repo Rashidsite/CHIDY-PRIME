@@ -129,10 +129,12 @@
         }
 
         .user-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: var(--primary-color);
+            width: 40px; height: 40px; border-radius: 50%;
+            background: url('/assets/admin-avatar.png');
+            background-size: cover; background-position: center;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
+            cursor: pointer;
         }
 
         /* Dashboard Content */
@@ -1418,7 +1420,7 @@
                 <div class="admin-card" style="margin-bottom: 0;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3 class="card-title" style="margin: 0;"><i class="fas fa-broadcast-tower" style="color: #00f2ff;"></i> Live Network Feed</h3>
-                        <div class="pulse-dot"></div>
+                        <div class="user-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: url('assets/admin-avatar.png') center/cover; box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);"></div>
                     </div>
                     <div id="liveActivityList" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px;">
                         <!-- Loaded via JS -->

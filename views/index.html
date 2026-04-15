@@ -353,16 +353,12 @@
         }
         .user-profile:hover::before { opacity: 1; }
         .user-avatar {
-            width: 28px; height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.75rem; font-weight: 800; color: #000;
-            flex-shrink: 0;
-            box-shadow: 0 0 10px rgba(0,242,255,0.4);
-            transition: box-shadow 0.3s;
-            letter-spacing: 0;
-            font-family: 'Orbitron', sans-serif;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: url('/assets/admin-avatar.png');
+            background-size: cover; background-position: center;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 15px rgba(255, 180, 0, 0.4);
+            cursor: pointer;
         }
         .user-profile:hover .user-avatar {
             box-shadow: 0 0 18px rgba(0,242,255,0.7), 0 0 8px rgba(188,19,254,0.5);
@@ -2199,7 +2195,7 @@
             </div>
             <!-- Premium User Pill -->
             <div class="user-profile" id="userProfileBtn" onclick="toggleProfileDropdown(event)" title="Profile">
-                <div class="user-avatar" id="userAvatar">C</div>
+                <div class="user-avatar" id="userAvatar" style="background-image: url('/assets/admin-avatar.png'); background-size: cover; background-position: center; border: 1.5px solid var(--gold); box-shadow: 0 0 10px rgba(255,180,0,0.3);"></div>
                 <div style="display:flex; flex-direction:column; align-items:flex-start;">
                     <span class="user-name-text" id="userName" style="font-size: 0.85rem;">User</span>
                     <span id="userLevelBadge" style="font-size: 0.55rem; color: var(--primary); font-weight: 800; letter-spacing: 0.5px;">ROOKIE GAMER</span>
