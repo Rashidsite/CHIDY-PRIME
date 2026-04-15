@@ -3389,8 +3389,8 @@
             
             fetchGames();
         }
-
-        initializeApp();
+        
+        // Logic initialized at the end of script
 
         // Update view on resize if in home view (THROTTLED for performance)
         window.addEventListener('resize', throttle(() => {
@@ -3912,16 +3912,23 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            startGenesisEngine();
+        // Wrap the card rendering to include Tilt
+        const originalRenderCategories = renderCategories;
+        window.renderCategories = function(games) {
+            originalRenderCategories(games);
+            // Apply tilt to new cards
+            document.querySelectorAll('.game-card').forEach(init3DTilt);
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeApp(); // Ensure games are fetched
+            startGenesisEngine(); // Start visual logic
             
-            // Initial Data fetch for stats
             const visitorStr = localStorage.getItem('chidy_visitor');
             if (visitorStr) {
                 refreshUserStats();
             }
 
-            // Fetch Announcement
             fetch('/api/settings/announcement')
                 .then(r => r.json())
                 .then(d => {
@@ -3931,14 +3938,6 @@
                     }
                 }).catch(e => console.log("Announcement skipped"));
 
-            // Start Pulse interval
-            setInterval(showPulseNotification, 15000); // Every 15 seconds
-        });
-
-        // Wrap the card rendering to include Tilt
-        const originalRenderCategories = renderCategories;
-        window.renderCategories = function(games) {
-            originalRenderCategories(games);
             // Apply tilt to new cards
             document.querySelectorAll('.game-card').forEach(init3DTilt);
         };
