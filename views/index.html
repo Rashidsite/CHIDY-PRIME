@@ -1637,20 +1637,24 @@
 
         /* AI Bot Chat Modal (WhatsApp Style) */
         .bot-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 10000;
-            display: none; align-items: center; justify-content: center;
-            backdrop-filter: blur(5px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000;
+            display: none; align-items: flex-end; justify-content: flex-end;
+            backdrop-filter: blur(8px); padding: 20px;
         }
         .bot-overlay.show { display: flex; }
         .bot-container {
-            width: 100%; max-width: 450px; height: 85vh; max-height: 800px;
-            background: #0b141a; border-radius: 12px;
+            width: 100%; max-width: 400px; height: 75vh; max-height: 600px;
+            background: #0b141a; border-radius: 20px;
             display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            animation: slideUp 0.3s ease forwards;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            animation: slideUpBot 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @media (max-width: 768px) {
+            .bot-overlay { padding: 0; }
+            .bot-container { height: 90vh; max-height: 100%; border-radius: 20px 20px 0 0; }
+        }
+        @keyframes slideUpBot { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .bot-header {
             background: #202c33; padding: 12px 15px;
             border-bottom: 1px solid #2a3942;
@@ -2016,8 +2020,8 @@
     </div>
 
     <!-- CYBER ORB -->
-    <div class="cyber-orb" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
-        <i class="fas fa-bolt" style="color: #fff; font-size: 1.2rem;"></i>
+    <div class="cyber-orb" onclick="toggleBotChat()">
+        <i class="fas fa-robot" style="color: #fff; font-size: 1.2rem;"></i>
     </div>
     <!-- SIGNUP OVERLAY (First-time visitors) -->
     <div class="signup-overlay" id="signupOverlay">
@@ -2250,7 +2254,7 @@
             </div>
             <span class="wa-label">Channel</span>
         </div>
-        <div class="bottom-item" onclick="openBotChat()">
+        <div class="bottom-item" onclick="toggleBotChat()">
             <i class="fas fa-headset" style="color:var(--primary);"></i>
             <span style="color:var(--primary); font-weight:bold;">Msaada</span>
         </div>
@@ -3424,23 +3428,24 @@
             display: block; text-decoration: none; margin-top: 10px;
         }
     </style>
+    <!-- AI CHAT BOT MODAL -->
+    <div id="botChatOverlay" class="bot-overlay" onclick="if(event.target === this) toggleBotChat()">
         <div class="bot-container">
             <div class="bot-header">
                 <div class="bot-avatar"><i class="fas fa-robot"></i></div>
                 <div class="bot-header-info">
                     <div class="bot-name">Chidy AI Assistant</div>
-                    <div class="bot-status"><i class="fas fa-circle" style="font-size:0.5rem;"></i> Online</div>
+                    <div class="bot-status"><i class="fas fa-circle" style="font-size:0.5rem; color:#00a884;"></i> Online</div>
                 </div>
-                <button class="bot-close" onclick="closeBotChat()"><i class="fas fa-times"></i></button>
+                <button class="bot-close" onclick="toggleBotChat()"><i class="fas fa-times"></i></button>
             </div>
-            <div class="bot-body" id="botMessages">
+            <div class="bot-body" id="botBody">
                 <!-- Messages appended here -->
             </div>
             <div class="bot-input-area">
-                <button class="bot-icon-btn"><i class="far fa-smile"></i></button>
-                <button class="bot-icon-btn"><i class="fas fa-paperclip"></i></button>
-                <input type="text" id="botInputUrl" placeholder="Type a message..." onkeypress="handleBotEnter(event)">
-                <button class="bot-btn" onclick="sendBot()"><i class="fas fa-paper-plane"></i></button>
+                <button class="bot-icon-btn" onclick="openWhatsAppSupport()"><i class="fab fa-whatsapp"></i></button>
+                <input type="text" id="botInputUrl" placeholder="Andika ujumbe..." onkeypress="if(event.key === 'Enter') sendBotMessage()">
+                <button class="bot-btn" onclick="sendBotMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
@@ -3716,7 +3721,54 @@
         }
 
         // SMART HELP LOGIC
-        function openBotChat() {
+        function toggleBotChat() {
+            const botOverlay = document.getElementById('botChatOverlay');
+            if (botOverlay) {
+                if (botOverlay.classList.contains('show')) {
+                    botOverlay.classList.remove('show');
+                } else {
+                    botOverlay.classList.add('show');
+                    // If no message, start with a greeting
+                    const body = document.getElementById('botBody');
+                    if (body && body.innerHTML.trim() === '') {
+                        addBotMessage("Habari! Mimi ni Chidy AI Assistant. Naweza kukusaidia kupata game unayohitaji au kutatua tatizo la malipo. Unahitaji msaada gani?");
+                    }
+                }
+            }
+        }
+
+        function addBotMessage(text, type = 'bot') {
+            const body = document.getElementById('botBody');
+            const msg = document.createElement('div');
+            msg.className = `b-msg ${type}`;
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            msg.innerHTML = `${text}<span class="time">${time}</span>`;
+            body.appendChild(msg);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        async function sendBotMessage() {
+            const input = document.getElementById('botInputUrl');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addBotMessage(text, 'user');
+            input.value = '';
+
+            // Simple Auto-responses for the premium feel
+            setTimeout(() => {
+                if (text.toLowerCase().includes('malipo') || text.toLowerCase().includes('lipa')) {
+                    addBotMessage("Ili kufanya malipo, chagua game unayotaka kisha bonyeza kitufe cha 'Download'. Fuata maelekezo ya kulipia namba iliyowekwa.");
+                } else if (text.toLowerCase().includes('game') || text.toLowerCase().includes('mchezo')) {
+                    addBotMessage("Tuna games nyingi za PPSSPP, Android, na PC. Unaweza kutumia search bar juu upate game unayotaka haraka.");
+                } else {
+                    addBotMessage("Samahani, sijakuelewa vizuri. Unaweza pia kubonyeza kitufe cha WhatsApp hapo chini ili kuongea na msimamizi moja kwa moja.");
+                }
+            }, 1000);
+        }
+
+        // Keep existing openBotChat for real WhatsApp fallback if needed inside the bot
+        function openWhatsAppSupport() {
             const visitorStr = localStorage.getItem('chidy_visitor');
             const visitor = visitorStr ? JSON.parse(visitorStr) : null;
             
