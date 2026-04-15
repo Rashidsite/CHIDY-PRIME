@@ -3787,6 +3787,26 @@
                     </div>
                 `;
             });
+
+            // FREE GAMES external link
+            html += `
+                <div style="margin: 10px 15px 0; height: 1px; background: rgba(255,255,255,0.05);"></div>
+                <a href="https://www.chidygaming.online/" target="_blank" rel="noopener"
+                   onclick="toggleSidebar()"
+                   style="display:flex; align-items:center; gap:12px; padding:12px 20px; color:#00d25b;
+                          font-weight:700; font-size:0.9rem; letter-spacing:0.5px; cursor:pointer;
+                          text-decoration:none; border-radius:10px; margin:5px 10px;
+                          background:linear-gradient(135deg,rgba(0,210,91,0.12),rgba(255,180,0,0.05));
+                          border:1px solid rgba(0,210,91,0.25); transition:all 0.2s;
+                          box-shadow:0 0 10px rgba(0,210,91,0.1);"
+                   onmouseover="this.style.background='linear-gradient(135deg,rgba(0,210,91,0.25),rgba(255,180,0,0.1))'; this.style.boxShadow='0 0 18px rgba(0,210,91,0.3)'"
+                   onmouseout="this.style.background='linear-gradient(135deg,rgba(0,210,91,0.12),rgba(255,180,0,0.05))'; this.style.boxShadow='0 0 10px rgba(0,210,91,0.1)'">
+                    <i class="fas fa-gift" style="width:24px;text-align:center;font-size:1.1rem;color:#00d25b;filter:drop-shadow(0 0 6px rgba(0,210,91,0.6));"></i>
+                    FREE GAMES 🎁
+                    <span style="margin-left:auto;font-size:0.6rem;background:#00d25b;color:#000;padding:2px 6px;border-radius:10px;font-weight:800;">BURE</span>
+                </a>
+            `;
+
             sidebarMenu.innerHTML = html;
         }
 
