@@ -2264,7 +2264,7 @@
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown" id="profileDropdown">
                     <div class="p-drop-item"><i class="fas fa-user-circle"></i> View Profile</div>
-                    <div class="p-drop-item"><i class="fas fa-history"></i> Order History</div>
+                    <div class="p-drop-item" onclick="openOrderHistory()"><i class="fas fa-history"></i> Order History</div>
                         <div class="user-menu-item" onclick="openMyGames()"><i class="fas fa-gamepad"></i> MY GAMES</div>
                         <div class="user-menu-divider"></div>
                         <div class="user-menu-item logout" onclick="openLogoutModal()"><i class="fas fa-sign-out-alt"></i> LOGOUT</div>
@@ -2449,6 +2449,17 @@
         </div>
     </div>
 
+    <!-- ORDER HISTORY OVERLAY -->
+    <div class="my-games-overlay" id="orderHistoryOverlay">
+        <div class="my-games-card">
+            <button class="close-detail" onclick="closeOrderHistory()"><i class="fas fa-times"></i></button>
+            <h2 class="premium-title" style="margin-bottom: 20px;"><i class="fas fa-history"></i> ORDER HISTORY</h2>
+            <div id="orderHistoryList" class="my-games-grid">
+                <!-- Order items will be populated here -->
+            </div>
+        </div>
+    </div>
+
     <!-- NOTIFICATION DROPDOWN -->
     <div class="notif-dropdown" id="notifDropdown" style="display: none;">
         <div class="notif-header">
@@ -2610,6 +2621,50 @@
 
         function closeMyGames() {
             document.getElementById('myGamesOverlay').classList.remove('show');
+        }
+
+        async function openOrderHistory() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return alert('Tafadhali jisajili kwanza!');
+            const visitor = JSON.parse(visitorStr);
+            
+            const overlay = document.getElementById('orderHistoryOverlay');
+            const list = document.getElementById('orderHistoryList');
+            overlay.classList.add('show');
+            list.innerHTML = '<div style="grid-column: 1/-1; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Inatafuta...</div>';
+
+            try {
+                const res = await fetch(`/api/orders/history/${visitor.id}`);
+                const orders = await res.json();
+                
+                if (orders.length === 0) {
+                    list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6c7293;">Hujafanya agizo lolote bado.</div>';
+                    return;
+                }
+
+                list.innerHTML = orders.map(o => {
+                    const statusColor = o.status === 'approved' ? '#00d25b' : (o.status === 'rejected' ? '#ff4444' : '#ffab00');
+                    return `
+                        <div class="purchased-item" style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px;">
+                            <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">${o.posts.title}</div>
+                            <div style="font-size: 0.75rem; color: #a0a0b0; margin-bottom: 10px;">ID: #${o.id.toString().substring(0,8)}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.8rem; font-weight: 600;">TSh ${o.amount.toLocaleString()}</span>
+                                <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: ${statusColor}; border: 1px solid ${statusColor}; padding: 2px 8px; border-radius: 4px;">${o.status}</span>
+                            </div>
+                            <div style="font-size: 0.65rem; color: #6c7293; margin-top: 10px;">
+                                ${new Date(o.created_at).toLocaleDateString()} ${new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: red;">Hitilafu imetokea.</div>';
+            }
+        }
+
+        function closeOrderHistory() {
+            document.getElementById('orderHistoryOverlay').classList.remove('show');
         }
 
         async function fetchGames() {

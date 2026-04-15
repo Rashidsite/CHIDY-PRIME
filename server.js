@@ -898,6 +898,28 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
+// Fetch order history for a specific visitor
+app.get('/api/orders/history/:visitorId', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitorId } = req.params;
+    
+    try {
+        const { data, error } = await supabase
+            .from('payment_orders')
+            .select(`
+                *,
+                posts (title)
+            `)
+            .eq('visitor_id', parseInt(visitorId))
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Admin - Fetch all orders
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
