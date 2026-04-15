@@ -3731,14 +3731,6 @@
             group.style.display = check.checked ? 'block' : 'none';
         }
 
-        // PWA Install Logic
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Optionally show an install button here
-        });
-
         function addBotMessage(text, type = 'bot') {
             const body = document.getElementById('botMessages');
             if (!body) return;
