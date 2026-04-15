@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --sidebar-width: 260px;
@@ -1319,6 +1320,12 @@
 
         <!-- DASHBOARD VIEW -->
         <section id="dashboardView" class="content view-section">
+            <h2 class="view-title"><i class="fas fa-chart-line"></i> Business Analytics</h2>
+            
+            <div class="chart-container" style="position: relative; height:30vh; width:100%; margin-bottom: 2rem; background: #1a1a24; padding: 20px; border-radius: 15px; border: 1px solid #333;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div>
@@ -1709,21 +1716,21 @@
             <div class="stat-card" style="background: rgba(0, 242, 255, 0.05); border-left: 4px solid var(--primary-color);">
                 <div>
                     <div class="stat-label">Action Games</div>
-                    <div class="stat-val" style="font-size: 1.1rem;" id="actionOrders">0 Orders</div>
+                    <div class="stat-val" style="font-size: 1.1rem;" id="countAction">0 Orders</div>
                 </div>
                 <i class="fas fa-fire stat-icon" style="color: #ff4444;"></i>
             </div>
             <div class="stat-card" style="background: rgba(188, 19, 254, 0.05); border-left: 4px solid var(--secondary-color);">
                 <div>
                     <div class="stat-label">Sports Games</div>
-                    <div class="stat-val" style="font-size: 1.1rem;" id="sportsOrders">0 Orders</div>
+                    <div class="stat-val" style="font-size: 1.1rem;" id="countSports">0 Orders</div>
                 </div>
                 <i class="fas fa-trophy stat-icon" style="color: #ffb400;"></i>
             </div>
             <div class="stat-card" style="background: rgba(0, 210, 91, 0.05); border-left: 4px solid #00d25b;">
                 <div>
                     <div class="stat-label">Premium Apps</div>
-                    <div class="stat-val" style="font-size: 1.1rem;" id="appOrders">0 Orders</div>
+                    <div class="stat-val" style="font-size: 1.1rem;" id="countApps">0 Orders</div>
                 </div>
                 <i class="fas fa-gem stat-icon" style="color: #00d25b;"></i>
             </div>
@@ -1857,12 +1864,124 @@
             if (viewId === 'analyticsView') fetchAnalytics();
             if (viewId === 'categoriesView') loadCategories();
             if (viewId === 'usersView') loadUsers();
+            if (viewId === 'ordersView') fetchOrders();
         }
 
         // ============================================
         // CATEGORY MANAGEMENT
         // ============================================
         let allCategories = [];
+        let lastSeenOrderId = null;
+        let revenueChartInstance = null;
+        const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+        // Fetch Orders Data
+        async function fetchOrders() {
+            try {
+                const res = await fetch('/api/admin/orders');
+                const orders = await res.json();
+                allOrdersData = orders;
+
+                // 1. Play sound if there's a new order
+                if (orders.length > 0) {
+                    const latestId = orders[0].id; // API returns sorted by created_at desc
+                    if (lastSeenOrderId !== null && latestId > lastSeenOrderId) {
+                        notificationSound.play().catch(e => console.log('Sound blocked by browser'));
+                    }
+                    lastSeenOrderId = latestId;
+                } else if (lastSeenOrderId === null) {
+                    lastSeenOrderId = 0;
+                }
+
+                // 2. Process Stats
+                let total = 0;
+                let action = 0, sports = 0, apps = 0;
+                
+                orders.forEach(o => {
+                    if (o.status === 'approved') total += o.amount;
+                    if (o.posts && o.posts.category) {
+                        const cat = o.posts.category.toLowerCase();
+                        if (cat === 'action') action++;
+                        else if (cat === 'sports') sports++;
+                        else if (cat === 'apps') apps++;
+                    }
+                });
+
+                document.getElementById('totalRevenue').innerText = 'TSh ' + total.toLocaleString();
+                document.getElementById('countAction').innerText = action;
+                document.getElementById('countSports').innerText = sports;
+                document.getElementById('countApps').innerText = apps;
+
+                updateRevenueChart(orders);
+                renderOrdersList();
+            } catch (err) {
+                console.error('Error fetching orders:', err);
+            }
+        }
+
+        function updateRevenueChart(orders) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            // Group revenue by date (Last 7 days)
+            const dailyData = {};
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                last7Days.push(dateStr);
+                dailyData[dateStr] = 0;
+            }
+
+            orders.forEach(o => {
+                if (o.status === 'approved') {
+                    const date = o.created_at.split('T')[0];
+                    if (dailyData[date] !== undefined) {
+                        dailyData[date] += o.amount;
+                    }
+                }
+            });
+
+            const labels = last7Days.map(d => d.split('-').slice(1).join('/'));
+            const dataValues = last7Days.map(d => dailyData[d]);
+
+            if (revenueChartInstance) revenueChartInstance.destroy();
+
+            revenueChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Mapato (TSh)',
+                        data: dataValues,
+                        borderColor: '#00f2ff',
+                        backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#00f2ff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#6c7293', font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#6c7293', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
 
         async function loadCategories() {
             try {
@@ -2417,6 +2536,12 @@
             } catch (err) {
                 console.error('User stats error:', err);
             }
+        }
+
+        function initDash() {
+            showView('dashboardView');
+            fetchOrders();
+            fetchAnalytics();
         }
 
         function refreshAllData() {
