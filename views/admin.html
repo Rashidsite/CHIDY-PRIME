@@ -2685,7 +2685,12 @@
             const query = document.getElementById('adminSearchInput').value.toLowerCase();
             
             const filteredOrders = query 
-                ? orders.filter(o => o.post_title.toLowerCase().includes(query) || o.visitor_name.toLowerCase().includes(query) || o.phone_number.includes(query))
+                ? orders.filter(o => {
+                    const gameTitle = o.posts ? o.posts.title.toLowerCase() : '';
+                    const guestName = o.visitors ? o.visitors.name.toLowerCase() : '';
+                    const phone = o.phone_number || '';
+                    return gameTitle.includes(query) || guestName.includes(query) || phone.includes(query);
+                })
                 : orders;
                 
             if (filteredOrders.length === 0) {
