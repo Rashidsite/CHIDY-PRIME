@@ -924,6 +924,13 @@ app.get('/api/orders/history/:visitorId', async (req, res) => {
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
+    // Auto-cleanup Approved/Rejected orders after 7 days
+    try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        await supabase.from('payment_orders').delete().neq('status', 'pending').lt('created_at', sevenDaysAgo.toISOString());
+    } catch (e) {}
+    
     const { data, error } = await supabase
         .from('payment_orders')
         .select(`
