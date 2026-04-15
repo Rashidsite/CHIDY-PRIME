@@ -14,6 +14,7 @@
     <!-- PERFORMANCE: Load fonts with display=swap (prevents invisible text) -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#00f2ff">
@@ -34,6 +35,146 @@
             --text-dim: #6c7293;
             --glass: rgba(255, 255, 255, 0.05);
             --bottom-bar-height: 65px;
+            --primary-glow: #00f2ff;
+            --secondary-glow: #bc13fe;
+        }
+
+        /* --- GENESIS ENGINE OVERLAY --- */
+        #genesis-startup {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease, visibility 1s;
+        }
+        .startup-logo {
+            font-family: 'Orbitron', sans-serif !important;
+            font-size: 3rem;
+            color: #fff;
+            letter-spacing: 15px;
+            font-weight: 900;
+            position: relative;
+            text-shadow: 0 0 20px var(--primary-glow);
+            animation: logoPulse 2s infinite;
+            text-align: center;
+        }
+        .startup-bar {
+            width: 300px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 30px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+        .startup-progress {
+            position: absolute;
+            left: 0; top: 0; height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, transparent, var(--primary-glow), var(--secondary-glow));
+            box-shadow: 0 0 15px var(--primary-glow);
+            animation: loadProgress 2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        }
+        .startup-status {
+            font-family: 'Orbitron';
+            color: var(--primary-glow);
+            font-size: 0.7rem;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.8;
+        }
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.05); filter: brightness(1.5); }
+        }
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        /* --- 3D TILT EFFECT --- */
+        .game-card {
+            transition: transform 0.1s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        .game-card:hover {
+            box-shadow: 0 20px 40px rgba(0, 242, 255, 0.15);
+        }
+        
+        /* CATEGORY NEON GLOWS */
+        .game-card[data-category*="PS5"] { border-bottom: 3px solid #0072ce; }
+        .game-card[data-category*="PS4"] { border-bottom: 3px solid #003791; }
+        .game-card[data-category*="ANDROID"] { border-bottom: 3px solid #3ddc84; }
+        .game-card[data-category*="PC"] { border-bottom: 3px solid #ff4b2b; }
+        .game-card[data-category*="HOT"] { border-bottom: 3px solid #ffb400; }
+        
+        /* MAGNETIC BUTTON EFFECT */
+        .magnetic-btn {
+            display: inline-block;
+            transition: transform 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+        }
+
+        /* --- LIVE PULSE TOASTS --- */
+        .pulse-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(10, 10, 20, 0.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 9999;
+            transform: translateX(125%);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @media (max-width: 576px) {
+            .pulse-toast { left: 20px; right: 20px; bottom: 85px; }
+        }
+        .pulse-toast.show { transform: translateX(0); }
+        .pulse-user-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* Glassmorphism Floating Sidebar Orb */
+        .cyber-orb {
+            position: fixed;
+            left: 20px;
+            bottom: 90px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--primary-glow), transparent);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            z-index: 5000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+            animation: orbFloat 4s infinite ease-in-out;
+        }
+        @keyframes orbFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-10px) scale(1.1); box-shadow: 0 15px 30px rgba(188, 19, 254, 0.4); }
         }
 
         * {
@@ -50,6 +191,8 @@
             min-height: 100vh;
             padding-bottom: calc(var(--bottom-bar-height) + 20px);
         }
+
+        /* STARTUP OVERLAY HTML */
 
         /* === AMBIENT BACKGROUND GLOW === */
         .ambient-glow {
@@ -1854,6 +1997,28 @@
     </style>
 </head>
 <body>
+    <!-- GENESIS ENGINE STARTUP -->
+    <div id="genesis-startup">
+        <div class="startup-logo">CHIDY<br>PRIME</div>
+        <div class="startup-bar">
+            <div class="startup-progress"></div>
+        </div>
+        <div class="startup-status" id="startup-text">Accessing Secure Neural Network...</div>
+    </div>
+
+    <!-- LIVE PULSE NOTIFICATION -->
+    <div id="pulse-notification" class="pulse-toast">
+        <div class="pulse-user-icon"><i class="fas fa-user-shield"></i></div>
+        <div>
+            <div style="font-size: 0.6rem; color: var(--primary-glow); letter-spacing: 1px; text-transform: uppercase; font-family: 'Orbitron';">Real-time Activity</div>
+            <div id="pulse-message" style="font-size: 0.85rem; font-weight: 600;">Someone just unlocked Access!</div>
+        </div>
+    </div>
+
+    <!-- CYBER ORB -->
+    <div class="cyber-orb" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <i class="fas fa-bolt" style="color: #fff; font-size: 1.2rem;"></i>
+    </div>
     <!-- SIGNUP OVERLAY (First-time visitors) -->
     <div class="signup-overlay" id="signupOverlay">
         <div class="signup-card">
@@ -2350,11 +2515,14 @@
         function renderCard(game) {
             const priceLabel = game.price > 0 ? `${parseInt(game.price).toLocaleString()}/-` : 'FREE';
             const priceClass = game.price > 0 ? '' : 'free';
+            const category = game.category ? game.category.toUpperCase() : 'HOT POST';
 
             return `
-                <div class="game-card" data-game-id="${game.id}">
+                <div class="game-card" data-game-id="${game.id}" data-category="${category}">
                     <div class="card-image-wrap">
-                        <img data-src="${game.image_url}" alt="${game.title}" loading="lazy" decoding="async" width="175" height="263">
+                        <img data-src="${game.image_url}" alt="${game.title}" 
+                             onerror="this.src='https://placehold.co/400x600/111119/00f2ff?text=${encodeURIComponent(game.title)}'"
+                             loading="lazy" decoding="async" width="175" height="263">
                         <div class="price-badge ${priceClass}">${priceLabel}</div>
                         <div class="card-rating">
                             <i class="fas fa-star"></i> ${game.rating || '0'}
@@ -2376,8 +2544,8 @@
             const overlay = document.getElementById('detailOverlay');
             const card = document.getElementById('detailCard');
 
-            const links = Array.isArray(game.links) ? game.links : [];
             const hasDuration = game.duration_days && game.duration_days > 0;
+            const isFree = !game.price || game.price <= 0;
 
             // Get visitor info
             const visitorStr = localStorage.getItem('chidy_visitor');
@@ -2392,11 +2560,13 @@
                     const accessData = await res.json();
 
                     if (accessData.has_access) {
-                        // ... Active access code ... (lines 1655-1675)
                         const expiryDate = new Date(accessData.expires_at);
                         const formattedExpiry = expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
                         const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
                         
+                        // Use links from access check response
+                        const activeLinks = accessData.links || [];
+
                         accessHtml = `
                             <div style="background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05)); border: 1px solid rgba(0,210,91,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
                                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -2406,14 +2576,16 @@
                                 <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">
                                     <i class="fas fa-calendar-alt" style="color:#ffb400;"></i> 
                                     Muda wako unaisha: <strong style="color:#fff;">${formattedExpiry}</strong> 
-                                    <span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>
+                                    ${hasDuration ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
                                 </p>
                             </div>
                             <div class="detail-links">
                                 ${game.youtube_url ? `<a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a>` : ''}
-                                ${links.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name}</a>`).join('')}
+                                ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name}</a>`).join('')}
                             </div>
                         `;
+                        // Trigger Celebration!
+                        triggerCelebration();
                     } else if (accessData.pending_order) {
                         // Pending approval
                         accessHtml = `
@@ -2476,11 +2648,33 @@
                     }
                 } catch (e) {
                     console.error('Access check failed:', e);
-                    accessHtml = buildDirectLinks(game, links);
+                    accessHtml = `
+                        <div style="text-align:center; padding: 20px;">
+                            <i class="fas fa-wifi" style="font-size: 2rem; color: #333; margin-bottom: 10px;"></i>
+                            <p style="color: #6c7293; font-size: 0.8rem;">Network error while checking access. Please refresh.</p>
+                        </div>
+                    `;
                 }
+            } else if (!visitor) {
+                // Not logged in - force login for any game (even free ones)
+                accessHtml = `
+                    <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                        <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-user-plus" style="color:var(--gold);"></i> Tafadhali jisajili kwanza ili kupata access ya kudownload.</p>
+                    </div>
+                    ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                    <button class="dl-btn" onclick="openLogin()" style="width:100%;margin-top:10px;">JISAJILI SASA</button>
+                `;
             } else {
-                // No duration set (permanent) - show links directly
-                accessHtml = buildDirectLinks(game, links);
+                // Logged in but game has no duration/price? Still hit access check to get links
+                // Re-calling with a simplified view or just fallback
+                accessHtml = `
+                    <div class="loader-container" style="padding: 20px;">
+                        <div class="loader-spinner" style="width:25px; height:25px;"></div>
+                        <div class="loader-text">Fetching links...</div>
+                    </div>
+                `;
+                // Manually trigger the check if we didn't enter the duration block
+                setTimeout(() => openDetail(id), 100); 
             }
 
             card.innerHTML = `
@@ -2503,6 +2697,12 @@
 
             overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
+            
+            // Genesis Engine: Init magnetic effects
+            document.querySelectorAll('.dl-btn').forEach(btn => {
+                btn.classList.add('magnetic-btn');
+                initMagnetic(btn);
+            });
         }
 
         // Initiate payment flow
@@ -2806,8 +3006,21 @@
             }
             
             // If no visitor or deleted from DB, ensure overlay is shown
-            document.getElementById('signupOverlay').classList.remove('hidden');
+            openLogin();
             return false;
+        }
+
+        function openLogin() {
+            document.getElementById('signupOverlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLogin() {
+            // Only allow closing if user is actually registered
+            if (localStorage.getItem('chidy_visitor')) {
+                document.getElementById('signupOverlay').classList.add('hidden');
+                document.body.style.overflow = '';
+            }
         }
 
         // Create floating particles for welcome screen
@@ -3501,6 +3714,151 @@
                 document.body.style.overflow = '';
             }
         }
+
+        // SMART HELP LOGIC
+        function openBotChat() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            
+            let message = "Habari Chidy Prime! Nahitaji msaada kitalu cha Gaming.";
+            if (visitor) {
+                message = `Habari Chidy Prime! Mimi ni ${visitor.name}, ID: ${visitor.id.substring(0,6)}. Nahitaji msaada wa huduma zenu.`;
+            }
+            
+            const waUrl = `https://wa.me/255762047805?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        function triggerCelebration() {
+            const duration = 3 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+              confetti({
+                particleCount: 3,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#00f2ff', '#bc13fe', '#ffffff']
+              });
+              confetti({
+                particleCount: 3,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#00f2ff', '#bc13fe', '#ffffff']
+              });
+
+              if (Date.now() < end) {
+                requestAnimationFrame(frame);
+              }
+            }());
+        }
+        // Wrapper for magnetic effect
+        function initMagnetic(el) {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                el.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = `translate(0px, 0px)`;
+            });
+        }
+
+        // --- GENESIS ENGINE CORE LOGIC ---
+        
+        // 1. Startup Sequence
+        function startGenesisEngine() {
+            const statusText = document.getElementById('startup-text');
+            const overlay = document.getElementById('genesis-startup');
+            const scripts = [
+                'Initializing Neural Interface...',
+                'Loading 3D Visual Engine...',
+                'Connecting to Secure Gateway...',
+                'CHIDY PRIME SYSTEM ONLINE'
+            ];
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (statusText) statusText.innerText = scripts[i];
+                i++;
+                if (i >= scripts.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.style.display = 'none', 1000);
+                    }, 500);
+                }
+            }, 400);
+        }
+
+        // 2. 3D Tilt Cards Logic
+        function init3DTilt(element) {
+            element.addEventListener('mousemove', (e) => {
+                const rect = element.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotX = ((y - centerY) / centerY) * 10; // Max 10 degrees
+                const rotY = ((centerX - x) / centerX) * 10;
+                
+                element.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(1.02, 1.02, 1.02)`;
+            });
+            
+            element.addEventListener('mouseleave', () => {
+                element.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+            });
+        }
+
+        // 3. Social Pulse Notifications
+        const pulseMessages = [
+            "Mteja kutoka Dar amepata access ya FIFA 2025 sasa hivi!",
+            "Kuna mtu anadownload Spiderman 2 sasa hivi...",
+            "Mteja amemaliza malipo ya GTA V...",
+            "Premium Account imesajiliwa sasa hivi!",
+            "Mteja @Said kutoka Mwanza amefanya upgrade...",
+            "Access ya siku 30 imefanikiwa kwa mteja!",
+            "Umeona ofa mpya? Angalia sehemu ya HOT POST."
+        ];
+
+        function showPulseNotification() {
+            const toast = document.getElementById('pulse-notification');
+            const msg = document.getElementById('pulse-message');
+            
+            if (toast && msg) {
+                msg.innerText = pulseMessages[Math.floor(Math.random() * pulseMessages.length)];
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 4000);
+            }
+        }
+
+        function showCyberOffers() {
+            // Can be expanded to show a special modal
+            openDetail(filteredPosts[0].id); // Just as a demo, open first game
+        }
+
+        window.addEventListener('load', () => {
+            startGenesisEngine();
+            // Start Pulse interval
+            setInterval(showPulseNotification, 12000); // Every 12 seconds
+        });
+
+        // Wrap the card rendering to include Tilt
+        const originalRenderPosts = renderPosts;
+        window.renderPosts = function(posts) {
+            originalRenderPosts(posts);
+            // Apply tilt to new cards
+            document.querySelectorAll('.game-card').forEach(init3DTilt);
+        };
+
     </script>
 </body>
 </html>

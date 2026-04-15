@@ -99,7 +99,7 @@ app.get('/api/games', async (req, res) => {
 
     const { data, error } = await supabase
         .from('posts')
-        .select('*')
+        .select('id, title, description, rating, image_url, price, category, youtube_url, status, created_at, duration_days')
         .eq('status', 'published')
         .order('created_at', { ascending: false });
 
@@ -504,6 +504,25 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
     const { visitor_id, post_id } = req.params;
     
     try {
+        // 1. Fetch game details to check price
+        const { data: game, error: gameErr } = await supabase
+            .from('posts')
+            .select('price, links')
+            .eq('id', post_id)
+            .single();
+
+        if (gameErr || !game) return res.status(404).json({ error: 'Game not found' });
+
+        // 2. If game is FREE (price <= 0), anyone with a visitor_id (this endpoint is called after signup) gets access
+        if (game.price <= 0) {
+            return res.json({ 
+                has_access: true, 
+                expires_at: '2099-12-31T23:59:59Z', // Permanent
+                links: game.links || []
+            });
+        }
+
+        // 3. If game is PAID, check user_access
         const { data, error } = await supabase
             .from('user_access')
             .select('*')
@@ -512,7 +531,18 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             .single();
         
         if (error || !data) {
-            return res.json({ has_access: false });
+            // Check for pending order before saying "no access"
+            const { data: orderData } = await supabase
+                .from('payment_orders')
+                .select('status')
+                .eq('visitor_id', parseInt(visitor_id))
+                .eq('post_id', post_id)
+                .eq('status', 'pending');
+
+            return res.json({ 
+                has_access: false,
+                pending_order: orderData && orderData.length > 0
+            });
         }
         
         const now = new Date();
@@ -520,11 +550,15 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         const hasAccess = expiresAt > now;
         
         if (hasAccess) {
-            return res.json({ has_access: true, expires_at: data.expires_at });
+            return res.json({ 
+                has_access: true, 
+                expires_at: data.expires_at,
+                links: game.links || []
+            });
         }
         
-        // If expired or no access, check if there's a pending order
-        const { data: orderData } = await supabase
+        // If expired
+        const { data: pendingAfterExpiry } = await supabase
             .from('payment_orders')
             .select('status')
             .eq('visitor_id', parseInt(visitor_id))
@@ -534,26 +568,45 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         res.json({ 
             has_access: false, 
             expired: true,
-            pending_order: orderData && orderData.length > 0
+            pending_order: pendingAfterExpiry && pendingAfterExpiry.length > 0
         });
     } catch (err) {
-        // Even if error in user_access (no record found), check for pending order
-        try {
-            const { visitor_id, post_id } = req.params;
-            const { data: orderData } = await supabase
-                .from('payment_orders')
-                .select('status')
-                .eq('visitor_id', parseInt(visitor_id))
-                .eq('post_id', post_id)
-                .eq('status', 'pending');
+        res.status(500).json({ error: err.message });
+    }
+});
 
-            res.json({ 
-                has_access: false,
-                pending_order: orderData && orderData.length > 0 
-            });
-        } catch (innerErr) {
-            res.json({ has_access: false });
-        }
+// GET user purchases/library with active access
+app.get('/api/user/purchases/:visitor_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    const { visitor_id } = req.params;
+    
+    try {
+        const { data, error } = await supabase
+            .from('user_access')
+            .select(`
+                visitor_id,
+                post_id,
+                expires_at,
+                posts (id, title, image_url, links)
+            `)
+            .eq('visitor_id', parseInt(visitor_id));
+            
+        if (error) throw error;
+        
+        // Filter out expired ones and format
+        const now = new Date();
+        const activePurchases = data
+            .filter(item => new Date(item.expires_at) > now)
+            .map(item => ({
+                id: item.post_id,
+                expires_at: item.expires_at,
+                posts: item.posts
+            }));
+            
+        res.json(activePurchases);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -776,6 +829,39 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
     }
 });
 
+// Admin Activity Feed
+app.get('/api/admin/activity', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    try {
+        // Fetch last 10 visitors (signups)
+        const { data: signups, error: sErr } = await supabase
+            .from('visitors')
+            .select('id, name, created_at')
+            .order('created_at', { ascending: false })
+            .limit(10);
+            
+        // Fetch last 10 orders
+        const { data: orders, error: oErr } = await supabase
+            .from('orders')
+            .select('id, created_at, amount, status, visitors(name), posts(title)')
+            .order('created_at', { ascending: false })
+            .limit(10);
+            
+        if (sErr || oErr) throw (sErr || oErr);
+
+        // Combine and label
+        const activity = [
+            ...signups.map(s => ({ ...s, type: 'signup', timestamp: s.created_at })),
+            ...orders.map(o => ({ ...o, type: 'order', timestamp: o.created_at }))
+        ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 15);
+
+        res.json(activity);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Notifications API
 app.get('/api/notifications/:visitor_id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -813,6 +899,50 @@ app.post('/api/admin/notifications/broadcast', verifyAdmin, async (req, res) => 
     }
 });
 
+// Manual Access Extension
+app.post('/api/admin/access/extend', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id, post_id, days } = req.body;
+    
+    try {
+        // 1. Get current access
+        const { data: access, error: getErr } = await supabase
+            .from('user_access')
+            .select('*')
+            .eq('visitor_id', visitor_id)
+            .eq('post_id', post_id)
+            .single();
+            
+        if (getErr || !access) {
+            // If no access exists, grant new access starting now
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + parseInt(days));
+            
+            await supabase.from('user_access').upsert({
+                visitor_id, post_id, 
+                granted_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString()
+            });
+        } else {
+            // Extend existing access
+            const currentExpiry = new Date(access.expires_at);
+            const now = new Date();
+            const baseDate = currentExpiry > now ? currentExpiry : now;
+            
+            baseDate.setDate(baseDate.getDate() + parseInt(days));
+            
+            await supabase.from('user_access')
+                .update({ expires_at: baseDate.toISOString() })
+                .eq('visitor_id', visitor_id)
+                .eq('post_id', post_id);
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Get payment settings info
 app.get('/api/settings/payment', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -831,5 +961,15 @@ if (process.env.NODE_ENV !== 'production') {
         console.log(`Server running at http://localhost:${port}`);
     });
 }
+
+// Global Error Handling to prevent silent crashes
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+    // In production, you might want to restart specifically or log to a service
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 module.exports = app;
