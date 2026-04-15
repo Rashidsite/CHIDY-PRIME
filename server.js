@@ -963,36 +963,33 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
         if (status === 'approved') {
             const { post_id, visitor_id } = order;
             
-            // Fetch game details (duration, title)
+            // 2a. Fetch game info first (REQUIRED for expiresAt and title)
             const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', post_id).single();
-            const durationDays = game ? (game.duration_days || 0) : 0;
-            const gameTitle = game ? game.title : 'Game';
+            const dDays = game ? (game.duration_days || 0) : 0;
+            const gTitle = game ? game.title : 'Game';
             
-            let expiresAt;
-            if (durationDays > 0) {
-                expiresAt = new Date();
-                expiresAt.setDate(expiresAt.getDate() + durationDays);
+            var finalExpiresAt = new Date();
+            if (dDays > 0) {
+                finalExpiresAt.setDate(finalExpiresAt.getDate() + dDays);
             } else {
-                expiresAt = new Date('2099-12-31T23:59:59Z');
+                finalExpiresAt = new Date('2099-12-31T23:59:59Z');
             }
 
             let targetVisitorId = visitor_id;
-            let isGift = order.is_gift;
-            let giftPhone = order.gift_phone;
+            const isGift = order.is_gift;
+            const giftPhone = order.gift_phone;
 
             if (isGift && giftPhone) {
-                // Check if gift user exists
                 const { data: giftUser } = await supabase.from('visitors').select('id').eq('phone', giftPhone.trim()).single();
                 if (giftUser) {
                     targetVisitorId = giftUser.id;
                 } else {
-                    // Store as pending gift
                     await supabase.from('pending_gifts').insert([{
                         gift_phone: giftPhone.trim(),
                         post_id: post_id,
-                        duration_days: durationDays
+                        duration_days: dDays
                     }]);
-                    targetVisitorId = null; // No one to grant yet
+                    targetVisitorId = null;
                 }
             }
 
@@ -1001,26 +998,26 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
                     visitor_id: targetVisitorId,
                     post_id,
                     granted_at: new Date().toISOString(),
-                    expires_at: expiresAt.toISOString()
+                    expires_at: finalExpiresAt.toISOString()
                 }, { onConflict: 'visitor_id,post_id' });
             }
 
-            // 3. Auto-notify the requester
+            // 3. Notify requester
             await supabase.from('notifications').insert({
                 visitor_id: visitor_id,
                 title: isGift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
                 message: isGift 
-                    ? `Oda yako ya zawadi ya "${gameTitle}" kwa namba ${giftPhone} imekubaliwa.` 
-                    : `Malipo yako ya game "${gameTitle}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
+                    ? `Oda yako ya zawadi ya "${gTitle}" kwa namba ${giftPhone} imekubaliwa.` 
+                    : `Malipo yako ya game "${gTitle}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
                 type: 'success'
             });
 
-            // 4. Notify the recipient if they exist
+            // 4. Notify recipient
             if (isGift && targetVisitorId) {
                 await supabase.from('notifications').insert({
                     visitor_id: targetVisitorId,
                     title: 'Umepokea Zawadi! 👑',
-                    message: `Umepata zawadi ya game "${game.title}" kutoka kwa ${order.phone_number}. Unaweza kuanza kuicheza sasa hivi hapa Chidy Prime!`,
+                    message: `Umepata zawadi ya game "${gTitle}" kutoka kwa ${order.phone_number || 'rafiki'}. Unaweza kuanza kuicheza sasa hivi!`,
                     type: 'success'
                 });
             }
