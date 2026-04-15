@@ -2495,6 +2495,77 @@
             document.getElementById('paymentOverlay').classList.remove('show');
         }
 
+        function switchPaymentTab(type) {
+            const autoBtn = document.getElementById('tabAuto');
+            const manualBtn = document.getElementById('tabManual');
+            const autoContent = document.getElementById('paymentContentAuto');
+            const manualContent = document.getElementById('paymentContentManual');
+
+            if (type === 'auto') {
+                autoBtn.classList.add('active');
+                manualBtn.classList.remove('active');
+                autoContent.style.display = 'block';
+                manualContent.style.display = 'none';
+            } else {
+                manualBtn.classList.add('active');
+                autoBtn.classList.remove('active');
+                manualContent.style.display = 'block';
+                autoContent.style.display = 'none';
+            }
+        }
+
+        async function initiateAzamPay() {
+            const postId = document.getElementById('payPostId').value;
+            const phone = document.getElementById('payAutoPhone').value.trim();
+            const provider = document.getElementById('payProvider').value;
+            const statusText = document.getElementById('autoPayStatus');
+            const btn = document.getElementById('autoPayBtn');
+
+            if (!phone || phone.length < 10) {
+                alert('Tafadhali ingiza namba ya simu sahihi!');
+                return;
+            }
+
+            const game = allGames.find(g => g.id == postId);
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            const visitor = JSON.parse(visitorStr);
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA USSD...';
+            statusText.innerText = 'Tafadhali kagua simu yako na uweke PIN...';
+
+            try {
+                const res = await fetch('/api/payments/azampay-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: game.price,
+                        phone: phone,
+                        provider: provider,
+                        gameTitle: game.title,
+                        visitorId: visitor.id,
+                        postId: game.id
+                    })
+                });
+
+                const data = await res.json();
+                
+                if (data.success) {
+                    statusText.innerHTML = '<b style="color:var(--primary);">IMETUMWA!</b> Angalia simu yako sasa hivi. Game litafunguka lenyewe kisha utapata SMS.';
+                    // No need to close modal, the callback will handle unlocking or user can check status
+                } else {
+                    btn.disabled = false;
+                    btn.innerText = '🚀 JARIBU TENA';
+                    statusText.innerText = 'Kuna tatizo kidogo: ' + (data.message || 'Jaribu tena baadaye.');
+                }
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerText = '🚀 JARIBU TENA';
+                statusText.innerText = 'Hitilafu ya mtandao. Jaribu tena.';
+            }
+        }
+
         async function submitPaymentOrder() {
             const postId = document.getElementById('payPostId').value;
             const phoneNumber = document.getElementById('paySenderNumber').value.trim();
@@ -3067,29 +3138,83 @@
     <div class="payment-overlay" id="paymentOverlay">
         <div class="payment-card">
             <button class="close-detail" onclick="closePayment()"><i class="fas fa-times"></i></button>
-            <h3>MAAGIZO YA MALIPO</h3>
-            <div class="payment-info-box">
-                <div class="payment-step">
-                    <div class="step-num">1</div>
-                    <div>Tuma kiasi cha <strong id="payAmount" style="color:var(--primary);">...</strong> kwenda M-Pesa: <strong id="payNumber" style="color:var(--primary);">...</strong> (<span id="payName">...</span>)</div>
-                </div>
-                <div class="payment-step">
-                    <div class="step-num">2</div>
-                    <div>Ukishatuma, ingiza namba ya simu uliyotumia chini kisha bofya <strong>NIMETUMA PESA</strong>.</div>
-                </div>
-                <div class="payment-step">
-                    <div class="step-num">3</div>
-                    <div>Subiri Admin athibitishe malipo yako. Utapata email kisha download itafunguka mara moja!</div>
-                </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="tab-btn active" id="tabAuto" onclick="switchPaymentTab('auto')">MALIPO YA HARAKA (AUTO)</button>
+                <button class="tab-btn" id="tabManual" onclick="switchPaymentTab('manual')">NJIA YA KAWAIDA</button>
             </div>
-            <div class="payment-input-group">
-                <label>Namba uliyotumia kulipia (M-Pesa):</label>
-                <input type="tel" id="paySenderNumber" placeholder="Mfano: 0796XXXXXX">
+
+            <!-- AUTO PAYMENT SECTION -->
+            <div id="paymentContentAuto">
+                <h3 style="font-size: 1rem; color: var(--primary);"><i class="fas fa-bolt"></i> USSD PUSH (AUTO-UNLOCK)</h3>
+                <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 15px;">Ingiza namba yako, utapata ujumbe wa kuweka PIN kwenye simu yako papo hapo.</p>
+                
+                <div class="payment-input-group">
+                    <label>Chagua Mtandao:</label>
+                    <select id="payProvider" style="width: 100%; padding: 10px; background: #1a1a24; border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;">
+                        <option value="Airtel">Airtel Money</option>
+                        <option value="Tigo">Tigo Pesa</option>
+                        <option value="Mpesa">M-Pesa</option>
+                        <option value="Halopesa">HaloPesa</option>
+                    </select>
+                </div>
+
+                <div class="payment-input-group">
+                    <label>Namba ya Malipo:</label>
+                    <input type="tel" id="payAutoPhone" placeholder="Mfano: 07XXXXXXXX">
+                </div>
+                
+                <button class="payment-confirm-btn" id="autoPayBtn" onclick="initiateAzamPay()">🚀 LIPA SASA (AUTO)</button>
+                <p id="autoPayStatus" style="font-size: 0.75rem; color: #6c7293; margin-top: 10px; text-align: center;"></p>
             </div>
+
+            <!-- MANUAL PAYMENT SECTION -->
+            <div id="paymentContentManual" style="display: none;">
+                <h3>TUMA KWA SIMU (MANUAL)</h3>
+                <div class="payment-info-box">
+                    <div class="payment-step">
+                        <div class="step-num">1</div>
+                        <div>Tuma kiasi cha <strong id="payAmount" style="color:var(--primary);">...</strong> kwenda <strong id="payNumber" style="color:var(--primary);">...</strong> (<span id="payName">...</span>)</div>
+                    </div>
+                    <div class="payment-step">
+                        <div class="step-num">2</div>
+                        <div>Ukishatuma, ingiza namba ya simu uliyotumia chini kisha bofya <strong>NIMETUMA PESA</strong>.</div>
+                    </div>
+                </div>
+                <div class="payment-input-group">
+                    <label>Namba uliyotumia kulipia:</label>
+                    <input type="tel" id="paySenderNumber" placeholder="Mfano: 0796XXXXXX">
+                </div>
+                <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()">✅ NIMETUMA PESA</button>
+            </div>
+
             <input type="hidden" id="payPostId">
-            <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()">✅ NIMETUMA PESA</button>
         </div>
     </div>
+
+    <style>
+        .tab-btn {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #333;
+            color: #6c7293;
+            padding: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            font-family: 'Orbitron';
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+        }
+        #paymentOverlay input, #paymentOverlay select {
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
 
     <div class="bot-overlay" id="botOverlay">
         <div class="bot-container">

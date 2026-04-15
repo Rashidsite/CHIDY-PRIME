@@ -199,15 +199,15 @@
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.75rem;
-            font-weight: bold;
+            font-weight: 400;
             text-transform: uppercase;
         }
         .status-pending { background: rgba(255, 171, 0, 0.1); color: #ffab00; }
         .status-approved { background: rgba(0, 210, 91, 0.1); color: #00d25b; }
         .status-rejected { background: rgba(255, 51, 51, 0.1); color: #ff3333; }
         .order-actions { display: flex; gap: 10px; }
-        .btn-order-approve { background: #00d25b; color: #000; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-order-reject { background: #ff3333; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-order-approve { background: #00d25b; color: #000; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 500; }
+        .btn-order-reject { background: #ff3333; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 500; }
 
         .stats-grid {
             display: grid;
@@ -245,7 +245,7 @@
             box-shadow: 0 10px 20px rgba(0, 242, 255, 0.1);
         }
 
-        .stat-val { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0; }
+        .stat-val { font-size: 1.5rem; font-weight: 400; margin: 0.5rem 0; }
         .stat-label { color: #6c7293; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
         .stat-icon { font-size: 1.5rem; filter: drop-shadow(0 0 5px currentColor); }
 
@@ -295,7 +295,7 @@
             border: none;
             padding: 1rem 2.5rem;
             border-radius: 8px;
-            font-weight: 700;
+            font-weight: 500;
             cursor: pointer;
             font-family: 'Orbitron';
             transition: 0.3s;
@@ -1133,6 +1133,81 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        // PIN Security Logic - Defined early to ensure responsiveness
+        let enteredPin = "";
+        const CORRECT_PIN = "2025"; 
+
+        function addPin(val) {
+            console.log("PIN Input:", val);
+            const output = document.getElementById('pinOutput');
+            if (val === 'C') {
+                enteredPin = "";
+            } else if (val === 'OK') {
+                if (enteredPin.length > 0) verifyPin();
+                return;
+            } else {
+                if (enteredPin.length < 4) enteredPin += val;
+            }
+            if (output) {
+                output.textContent = "*".repeat(enteredPin.length);
+            }
+            if (enteredPin.length === 4) {
+                setTimeout(verifyPin, 300);
+            }
+        }
+
+        function verifyPin() {
+            fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: enteredPin })
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    localStorage.setItem('adminToken', result.token);
+                    unlockVault();
+                    if (typeof refreshAllData === 'function') refreshAllData();
+                } else {
+                    handleWrongPin();
+                }
+            })
+            .catch(err => {
+                console.error("Login Error:", err);
+                handleWrongPin();
+            });
+        }
+
+        function handleWrongPin() {
+            const output = document.getElementById('pinOutput');
+            if (output) {
+                output.style.color = "#ff3366";
+                output.textContent = "WRONG";
+                setTimeout(() => {
+                    enteredPin = "";
+                    output.textContent = "";
+                    output.style.color = "var(--primary-color)";
+                }, 1000);
+            }
+        }
+
+        function unlockVault() {
+            const overlay = document.getElementById('vaultOverlay');
+            const welcome = document.getElementById('welcomeSequence');
+            document.body.classList.remove('scanning');
+            overlay.classList.add('vault-unlocked');
+            setTimeout(() => {
+                welcome.style.opacity = "1";
+                document.body.classList.add('run-welcome');
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    welcome.style.display = "none";
+                }, 2000);
+            }, 800);
+        }
+    </script>
 
     <!-- Welcome Sequence Overlay -->
     <div id="welcomeSequence">
@@ -1519,7 +1594,8 @@
                 </div>
             </div>
         </section>
-    </div>
+        
+        <!-- EDIT MODAL moved inside for status checks or outside? I'll keep it outside but fix wrapper -->
 
     <!-- EDIT MODAL -->
     <div id="editModal" class="modal-overlay">
@@ -1627,20 +1703,55 @@
         </div>
     </section>
 
-    <!-- ORDERS VIEW -->
     <section id="ordersView" class="content view-section" style="display: none;">
-        <div class="admin-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 15px;">
-                <h3 class="card-title" style="margin: 0;"><i class="fas fa-shopping-cart"></i> Payment Orders</h3>
-                <button class="btn-filter" onclick="fetchOrders()" style="min-width: 150px;">
-                    <i class="fas fa-sync-alt"></i> Refresh Orders
-                </button>
+        <!-- Top Categories Stats as per sketch -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 2rem;">
+            <div class="stat-card" style="background: rgba(0, 242, 255, 0.05); border-left: 4px solid var(--primary-color);">
+                <div>
+                    <div class="stat-label">Action Games</div>
+                    <div class="stat-val" style="font-size: 1.1rem;" id="actionOrders">0 Orders</div>
+                </div>
+                <i class="fas fa-fire stat-icon" style="color: #ff4444;"></i>
             </div>
-            <div id="ordersList">
-                <p style="text-align: center; color: #6c7293; padding: 2rem;">Loading orders...</p>
+            <div class="stat-card" style="background: rgba(188, 19, 254, 0.05); border-left: 4px solid var(--secondary-color);">
+                <div>
+                    <div class="stat-label">Sports Games</div>
+                    <div class="stat-val" style="font-size: 1.1rem;" id="sportsOrders">0 Orders</div>
+                </div>
+                <i class="fas fa-trophy stat-icon" style="color: #ffb400;"></i>
+            </div>
+            <div class="stat-card" style="background: rgba(0, 210, 91, 0.05); border-left: 4px solid #00d25b;">
+                <div>
+                    <div class="stat-label">Premium Apps</div>
+                    <div class="stat-val" style="font-size: 1.1rem;" id="appOrders">0 Orders</div>
+                </div>
+                <i class="fas fa-gem stat-icon" style="color: #00d25b;"></i>
+            </div>
+        </div>
+
+        <div class="admin-card" style="background: transparent; border: none; padding: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 15px;">
+                <h3 class="card-title" style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-shopping-cart" style="color: var(--primary-color);"></i> Recent Orders
+                    <span style="font-family: sans-serif; font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; color: #6c7293;" id="orderCountBadge">0 Total</span>
+                </h3>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-filter" onclick="fetchOrders()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div id="ordersList" style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 20px;
+            ">
+                <p style="text-align: center; color: #6c7293; padding: 2rem; grid-column: 1/-1;">Loading network data...</p>
             </div>
         </div>
     </section>
+    
+    </div> <!-- END MAIN WRAPPER -->
 
     <script>
         // Intercept all fetch requests to add the Admin Token automatically
@@ -1881,78 +1992,7 @@
             document.getElementById('msgDropdown').classList.remove('show');
         };
 
-        // PIN Security Logic
-        let enteredPin = "";
-        const CORRECT_PIN = "2025"; // OUR SECRET PIN
-
-        function addPin(val) {
-            if (val === 'C') {
-                enteredPin = "";
-            } else if (val === 'OK') {
-                verifyPin();
-                return;
-            } else {
-                if (enteredPin.length < 4) enteredPin += val;
-            }
-            // Update display with asterisks
-            document.getElementById('pinOutput').innerText = "*".repeat(enteredPin.length);
-            
-            // Auto verify if 4 digits
-            if (enteredPin.length === 4) {
-                setTimeout(verifyPin, 300);
-            }
-        }
-
-        function verifyPin() {
-            fetch('/api/admin/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin: enteredPin })
-            })
-            .then(res => res.json())
-            .then(result => {
-                if (result.success) {
-                    localStorage.setItem('adminToken', result.token);
-                    unlockVault();
-                } else {
-                    handleWrongPin();
-                }
-            })
-            .catch(err => {
-                console.error("Login failed:", err);
-                handleWrongPin();
-            });
-        }
-
-        function handleWrongPin() {
-            // Shake effect on wrong pin
-            const output = document.getElementById('pinOutput');
-            output.style.color = "#ff3366";
-            output.innerText = "ERROR";
-            setTimeout(() => {
-                enteredPin = "";
-                output.innerText = "";
-                output.style.color = "var(--primary-color)";
-            }, 1000);
-        }
-
-        function unlockVault() {
-            const overlay = document.getElementById('vaultOverlay');
-            const welcome = document.getElementById('welcomeSequence');
-            
-            document.body.classList.remove('scanning');
-            overlay.classList.add('vault-unlocked');
-            
-            setTimeout(() => {
-                welcome.style.opacity = "1";
-                document.body.classList.add('run-welcome');
-                
-                setTimeout(() => {
-                    overlay.style.display = "none";
-                    welcome.style.display = "none";
-                }, 2000);
-            }, 800);
-        }
+        // (PIN Logic moved to top for better loading)
 
         async function fetchAnalytics() {
             const grid = document.getElementById('analyticsDataGrid');
@@ -2367,7 +2407,7 @@
                 // Fetch pending orders count
                 const ordersRes = await fetch('/api/admin/orders');
                 const orders = await ordersRes.json();
-                const pending = orders.filter(o => o.status === 'pending').length;
+                const pending = Array.isArray(orders) ? orders.filter(o => o.status === 'pending').length : 0;
                 document.getElementById('pendingOrdersCount').innerText = pending;
                 if (pending > 0) {
                     document.getElementById('pendingOrdersCount').parentElement.parentElement.style.borderColor = '#ffb400';
@@ -2379,9 +2419,16 @@
             }
         }
 
-        fetchAdminData();
-        fetchUserStats();
-        loadCategories();
+        function refreshAllData() {
+            fetchAdminData();
+            fetchUserStats();
+            loadCategories();
+            // If the current view is not dashboard, reload that specific view
+            if (currentActiveViewId === 'usersView') loadUsers();
+            if (currentActiveViewId === 'ordersView') fetchOrders();
+        }
+
+        refreshAllData();
         // Auto-refresh user stats every 30 seconds
         setInterval(fetchUserStats, 30000);
 
@@ -2440,10 +2487,6 @@
                     `;
                     tbody.appendChild(tr);
                 });
-                    `;
-                    tbody.appendChild(tr);
-                });
-        }
         }
 
         async function handleDeleteUser(id, name) {
@@ -2610,11 +2653,24 @@
                 const res = await fetch('/api/admin/orders');
                 allOrdersData = await res.json();
                 
+                // Calculate Category specific counts for the top boxes (based on keywords or categories)
+                if (Array.isArray(allOrdersData)) {
+                    const actionCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('action')).length;
+                    const sportsCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('sports')).length;
+                    const appCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('app')).length;
+                    
+                    if (document.getElementById('actionOrders')) document.getElementById('actionOrders').innerText = `${actionCount} Orders`;
+                    if (document.getElementById('sportsOrders')) document.getElementById('sportsOrders').innerText = `${sportsCount} Orders`;
+                    if (document.getElementById('appOrders')) document.getElementById('appOrders').innerText = `${appCount} Orders`;
+                }
+
                 // Update Revenue statistic
-                const approvedTotal = allOrdersData
-                    .filter(o => o.status === 'approved')
-                    .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
-                document.getElementById('totalRevenue').innerText = \`TSh \${approvedTotal.toLocaleString()}\`;
+                const approvedTotal = Array.isArray(allOrdersData) 
+                    ? allOrdersData
+                        .filter(o => o.status === 'approved')
+                        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
+                    : 0;
+                document.getElementById('totalRevenue').innerText = `TSh ${approvedTotal.toLocaleString()}`;
 
                 renderOrdersList();
             } catch (err) {
@@ -2637,29 +2693,66 @@
                 return;
             }
 
+            // Update order badge count
+            const orderBadge = document.getElementById('orderCountBadge');
+            if (orderBadge) orderBadge.innerText = `${filteredOrders.length} Total`;
+
             list.innerHTML = filteredOrders.map(order => {
                     const statusClass = `status-${order.status}`;
-                    const date = new Date(order.created_at).toLocaleString();
+                    const date = new Date(order.created_at).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+                    const guestName = order.visitors ? order.visitors.name : 'Unknown';
+                    const guestPhone = order.visitors ? order.visitors.phone : order.phone_number;
+                    const gameTitle = order.posts ? order.posts.title : 'Deleted Game';
                     
                     return `
-                        <div class="order-card">
-                            <div class="order-info">
-                                <h4>${order.post_title}</h4>
-                                <div class="order-meta">
-                                    <span><i class="fas fa-user"></i> ${order.visitor_name}</span> | 
-                                    <span><i class="fas fa-phone"></i> ${order.phone_number}</span> | 
-                                    <span><i class="fas fa-money-bill-wave"></i> TSh ${order.amount}</span>
+                        <div class="order-card" style="
+                            flex-direction: column; 
+                            align-items: stretch; 
+                            margin-bottom: 0; 
+                            background: linear-gradient(135deg, #121218 0%, #0d0d12 100%);
+                            border: 1px solid rgba(255,255,255,0.05);
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                            position: relative;
+                            overflow: hidden;
+                            transition: 0.3s;
+                        ">
+                            <!-- Glowing edge for status -->
+                            <div style="position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: ${order.status === 'pending' ? '#ffab00' : (order.status === 'approved' ? '#00d25b' : '#ff3333')}"></div>
+                            
+                            <div class="order-info" style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${gameTitle}</h4>
+                                    <span style="font-size: 0.65rem; color: #6c7293;">${date}</span>
                                 </div>
-                                <div style="font-size: 0.7rem; color: #4b4b56; margin-top: 5px;">${date}</div>
+                                <div class="order-meta" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(0,242,255,0.1); display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-user" style="font-size: 0.7rem; color: var(--primary-color);"></i>
+                                        </div>
+                                        <span style="color: #fff; font-size: 0.85rem;">${guestName}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-phone" style="font-size: 0.7rem; color: #6c7293;"></i>
+                                        </div>
+                                        <span style="font-size: 0.8rem; color: #6c7293;">${guestPhone}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <span class="order-status ${statusClass}">${order.status}</span>
-                            </div>
-                            <div class="order-actions">
-                                ${order.status === 'pending' ? `
-                                    <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'approved')">Approve</button>
-                                    <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')">Reject</button>
-                                ` : ''}
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.03);">
+                                <div>
+                                    <span style="display: block; font-size: 0.6rem; text-transform: uppercase; color: #4b4b56; margin-bottom: 2px;">Amount</span>
+                                    <span style="font-weight: 500; color: #00ff88; font-size: 1.1rem;">TSh ${parseInt(order.amount).toLocaleString()}</span>
+                                </div>
+                                <div class="order-actions">
+                                    ${order.status === 'pending' ? `
+                                        <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'approved')" style="padding: 6px 14px; font-size: 0.75rem; background: #00d25b; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">Approve</button>
+                                        <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(255,51,51,0.1); border: 1px solid #ff3333; color: #ff3333; border-radius: 4px; font-weight: 500; cursor: pointer;">Reject</button>
+                                    ` : `
+                                        <span class="order-status ${statusClass}" style="opacity: 0.8;">${order.status}</span>
+                                    `}
+                                </div>
                             </div>
                         </div>
                     `;

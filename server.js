@@ -615,6 +615,109 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
 // PAYMENT ORDER ENDPOINTS
 // ============================================
 
+// === AZAMPAY INTEGRATION LOGIC ===
+async function getAzamPayToken() {
+    try {
+        const res = await fetch(`${process.env.AZAMPAY_BASE_URL}/azampay/authentication/v1/authenticate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                appName: "Chidy Prime",
+                clientId: process.env.AZAMPAY_CLIENT_ID,
+                clientSecret: process.env.AZAMPAY_SECRET_KEY
+            })
+        });
+        const data = await res.json();
+        return data.data?.accessToken;
+    } catch (err) {
+        console.error('AzamPay Auth Error:', err);
+        return null;
+    }
+}
+
+// Checkout endpoint for Push USSD
+app.post('/api/payments/azampay-checkout', async (req, res) => {
+    const { amount, phone, gameTitle, visitorId, postId } = req.body;
+    
+    // Validate phone (needs 255...)
+    let formattedPhone = phone.replace(/[^0-9]/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '255' + formattedPhone.substring(1);
+    
+    const token = await getAzamPayToken();
+    if (!token) return res.status(500).json({ error: 'Failed to authenticate with AzamPay' });
+
+    try {
+        const azamRes = await fetch(`${process.env.AZAMPAY_BASE_URL}/azampay/checkout/v1/checkout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                accountNumber: formattedPhone, // The phone number to bill
+                amount: amount.toString(),
+                currency: "TZS",
+                externalId: Date.now().toString(), // Unique ID for this attempt
+                provider: "Airtel", // Default to Airtel or should be dynamic
+                additionalProperties: {
+                    visitorId: visitorId,
+                    postId: postId,
+                    gameTitle: gameTitle
+                }
+            })
+        });
+
+        const data = await azamRes.json();
+        res.json(data);
+    } catch (err) {
+        console.error('AzamPay Checkout Error:', err);
+        res.status(500).json({ error: 'AzamPay service error' });
+    }
+});
+
+// Admin Webhook Callback (The "Auto" part)
+app.post('/api/payments/callback', async (req, res) => {
+    console.log('--- AZAMPAY CALLBACK RECEIVED ---', req.body);
+    const { msisdn, amount, status, externalId, additionalProperties } = req.body;
+
+    if (status === 'success' || status === 'Success') {
+        const { visitorId, postId } = additionalProperties || {};
+        
+        try {
+            // 1. Create/Update order in database as Approved
+            const { data: order, error: orderError } = await supabase
+                .from('payment_orders')
+                .insert([{
+                    visitor_id: visitorId,
+                    post_id: postId,
+                    amount: amount,
+                    phone_number: msisdn,
+                    status: 'approved',
+                    payment_method: 'AzamPay'
+                }])
+                .select()
+                .single();
+
+            if (orderError) throw orderError;
+
+            // 2. Log Analytics
+            await supabase.from('daily_stats').insert([{
+                event_type: 'payment_success',
+                metadata: { amount, msisdn, postId }
+            }]);
+
+            console.log(`Auto-Approved Order ${order.id} for ${msisdn}`);
+            return res.json({ success: true, message: 'Payment recorded and content unlocked' });
+
+        } catch (dbErr) {
+            console.error('Database Error in Callback:', dbErr);
+            return res.status(500).json({ error: 'DB update failed' });
+        }
+    }
+
+    res.json({ success: false, message: 'Payment not successful' });
+});
+
 // Create a new manual payment order
 app.post('/api/orders', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
