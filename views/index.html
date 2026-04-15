@@ -3027,10 +3027,13 @@
                 alert('Tafadhali ingiza namba uliyotumia kulipia!');
                 return;
             }
+            // Gift phone is now optional as per user request
+            /* 
             if (isGift && !giftPhone) {
                 alert("Tafadhali ingiza namba ya rafiki unayemzawadia.");
                 return;
             }
+            */
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
