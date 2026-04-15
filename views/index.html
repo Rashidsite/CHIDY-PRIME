@@ -353,12 +353,13 @@
         }
         .user-profile:hover::before { opacity: 1; }
         .user-avatar {
-            width: 40px; height: 40px; border-radius: 50%;
+            width: 42px; height: 42px; border-radius: 50%;
             background: url('/assets/admin-avatar.png');
             background-size: cover; background-position: center;
-            border: 2px solid var(--gold);
-            box-shadow: 0 0 15px rgba(255, 180, 0, 0.4);
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4), 0 0 5px rgba(188, 19, 254, 0.3);
             cursor: pointer;
+            transition: all 0.3s ease;
         }
         .user-profile:hover .user-avatar {
             box-shadow: 0 0 18px rgba(0,242,255,0.7), 0 0 8px rgba(188,19,254,0.5);
@@ -3416,9 +3417,8 @@
                 }
             } catch (e) { console.error("Stats fetch failed"); }
         }
-    </script>
-    
-    <!-- PAYMENT MODAL -->
+
+    // PAYMENT MODAL
     <div class="payment-overlay" id="paymentOverlay">
         <div class="payment-card">
             <button class="close-detail" onclick="closePayment()"><i class="fas fa-times"></i></button>
@@ -3505,7 +3505,7 @@
     <div id="botChatOverlay" class="bot-overlay" onclick="if(event.target === this) toggleBotChat()">
         <div class="bot-container">
             <div class="bot-header">
-                <div class="bot-avatar"><i class="fas fa-robot"></i></div>
+                <div class="bot-avatar" style="background: url('/assets/admin-avatar.png') center/cover; border: 1.5px solid var(--primary); box-shadow: 0 0 10px rgba(0, 242, 255, 0.4);"></div>
                 <div class="bot-header-info">
                     <div class="bot-name">Chidy AI Assistant</div>
                     <div class="bot-status"><i class="fas fa-circle" style="font-size:0.5rem; color:#00a884;"></i> Online</div>
@@ -3935,12 +3935,22 @@
                 'CHIDY PRIME SYSTEM ONLINE'
             ];
             
+            // Fail-safe: Hide overlay if it hangs for more than 4 seconds
+            const failSafe = setTimeout(() => {
+                if (overlay && overlay.style.display !== 'none') {
+                    console.warn('Genesis Engine startup hang detected, engaging fail-safe...');
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.style.display = 'none', 1000);
+                }
+            }, 4000);
+
             let i = 0;
             const interval = setInterval(() => {
                 if (statusText) statusText.innerText = scripts[i];
                 i++;
                 if (i >= scripts.length) {
                     clearInterval(interval);
+                    clearTimeout(failSafe);
                     setTimeout(() => {
                         overlay.style.opacity = '0';
                         setTimeout(() => overlay.style.display = 'none', 1000);
@@ -4024,9 +4034,9 @@
         });
 
         // Wrap the card rendering to include Tilt
-        const originalRenderPosts = renderPosts;
-        window.renderPosts = function(posts) {
-            originalRenderPosts(posts);
+        const originalRenderCategories = renderCategories;
+        window.renderCategories = function(games) {
+            originalRenderCategories(games);
             // Apply tilt to new cards
             document.querySelectorAll('.game-card').forEach(init3DTilt);
         };
