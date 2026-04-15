@@ -943,6 +943,7 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
     
     const { id } = req.params;
     const { status } = req.body;
+    console.log(`[DEBUG] Status Update Request: ID=${id}, Status=${status}, Version=1.5_FIXED`);
     
     if (!['approved', 'rejected'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
@@ -1023,9 +1024,10 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
             }
         }
         
-        res.json({ success: true, order });
+        res.json({ success: true, order, debug_version: '1.5_FIXED' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(`[ERROR] Status Update Error: ${err.message}`);
+        res.status(500).json({ error: `Server Error [v1.5]: ${err.message}` });
     }
 });
 
