@@ -3421,7 +3421,6 @@
     
     <!-- PAYMENT MODAL -->
 
-    // PAYMENT MODAL
     <div class="payment-overlay" id="paymentOverlay">
         <div class="payment-card">
             <button class="close-detail" onclick="closePayment()"><i class="fas fa-times"></i></button>
@@ -4010,10 +4009,12 @@
 
         function showCyberOffers() {
             // Can be expanded to show a special modal
-            openDetail(filteredPosts[0].id); // Just as a demo, open first game
+            if (allGames && allGames.length > 0) {
+                openDetail(allGames[0].id); // Just as a demo, open first game
+            }
         }
 
-        window.addEventListener('load', () => {
+        document.addEventListener('DOMContentLoaded', () => {
             startGenesisEngine();
             
             // Initial Data fetch for stats
@@ -4030,7 +4031,7 @@
                     if (d.value && el) {
                         el.innerHTML = d.value + " &nbsp; • &nbsp; " + d.value;
                     }
-                });
+                }).catch(e => console.log("Announcement skipped"));
 
             // Start Pulse interval
             setInterval(showPulseNotification, 15000); // Every 15 seconds
