@@ -2459,6 +2459,24 @@
         </div>
     </div>
 
+    <!-- LOGOUT VERIFICATION MODAL -->
+    <div class="logout-verify-overlay" id="logoutVerifyOverlay">
+        <div class="logout-verify-card">
+            <div class="logout-icon"><i class="fas fa-sign-out-alt"></i></div>
+            <h3 class="logout-title">THIBITISHA KUTOKA</h3>
+            <p class="logout-desc">Kwa usalama wako, tafadhali thibitisha namba yako ya simu ili kutoka kwenye akaunti.</p>
+            <div class="verify-input-group">
+                <label>Namba ya Simu Uliyosajili:</label>
+                <input type="tel" id="logoutVerifyPhone" class="verify-input" placeholder="07XXXXXXXX">
+            </div>
+            <p id="logoutError" class="logout-error"></p>
+            <div class="logout-actions">
+                <button class="btn-cancel-logout" onclick="closeLogoutModal()">RUDI</button>
+                <button class="btn-confirm-logout" id="confirmLogoutBtn" onclick="processLogout()">TOKA SASA</button>
+            </div>
+        </div>
+    </div>
+
     <!-- AI BOT OVERLAY -->
     <div class="bot-overlay" id="botChatOverlay">
         <div class="bot-container">
