@@ -318,6 +318,35 @@ app.get('/api/user-stats', async (req, res) => {
     }
 });
 
+app.get('/api/leaderboard', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    try {
+        const { data: orders, error } = await supabase
+            .from('payment_orders')
+            .select('visitor_id, visitors(name)')
+            .eq('status', 'approved');
+            
+        if (error) throw error;
+        
+        const counts = {};
+        orders.forEach(o => {
+            if (!o.visitor_id || !o.visitors) return;
+            const name = o.visitors.name;
+            counts[name] = (counts[name] || 0) + 1;
+        });
+        
+        const leaderboard = Object.keys(counts)
+            .map(name => ({ name, purchases: counts[name] }))
+            .sort((a, b) => b.purchases - a.purchases)
+            .slice(0, 10);
+            
+        res.json(leaderboard);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Fetch analytics for last 7 days
 app.get('/api/analytics', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
