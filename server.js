@@ -963,6 +963,19 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
         if (status === 'approved') {
             const { post_id, visitor_id } = order;
             
+            // Fetch game details (duration, title)
+            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', post_id).single();
+            const durationDays = game ? (game.duration_days || 0) : 0;
+            const gameTitle = game ? game.title : 'Game';
+            
+            let expiresAt;
+            if (durationDays > 0) {
+                expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + durationDays);
+            } else {
+                expiresAt = new Date('2099-12-31T23:59:59Z');
+            }
+
             let targetVisitorId = visitor_id;
             let isGift = order.is_gift;
             let giftPhone = order.gift_phone;
@@ -997,8 +1010,8 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
                 visitor_id: visitor_id,
                 title: isGift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
                 message: isGift 
-                    ? `Oda yako ya zawadi ya "${game.title}" kwa namba ${giftPhone} imekubaliwa.` 
-                    : `Malipo yako ya game "${game.title}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
+                    ? `Oda yako ya zawadi ya "${gameTitle}" kwa namba ${giftPhone} imekubaliwa.` 
+                    : `Malipo yako ya game "${gameTitle}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
                 type: 'success'
             });
 
