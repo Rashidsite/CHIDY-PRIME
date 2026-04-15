@@ -1664,10 +1664,15 @@
             background: var(--primary); display: flex; justify-content: center; align-items: center;
             color: #000; font-size: 1.5rem; flex-shrink: 0;
         }
-        .bot-header-info { flex: 1; display:flex; flex-direction: column; }
-        .bot-name { color: #e9edef; font-weight: 600; font-size: 1.1rem; }
+        .bot-header-info { flex: 1; display:flex; flex-direction: column; margin-left:12px; }
+        .bot-name { color: #e9edef; font-weight: 600; font-size: 1.1rem; border-bottom:none !important; }
         .bot-status { color: #00a884; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
-        .bot-close { color: #aebac1; font-size: 1.2rem; cursor: pointer; background:none; border:none; margin-left:auto; }
+        .bot-close { 
+            background: none; border: none; color: #aebac1; font-size: 1.4rem; 
+            cursor: pointer; padding: 5px; transition: color 0.3s;
+            position: absolute; right: 20px; top: 20px;
+        }
+        .bot-close:hover { color: #ff3333; }
         .bot-body {
             flex: 1; padding: 20px; overflow-y: auto;
             background-color: #0b141a;
@@ -3439,7 +3444,7 @@
                 </div>
                 <button class="bot-close" onclick="toggleBotChat()"><i class="fas fa-times"></i></button>
             </div>
-            <div class="bot-body" id="botBody">
+            <div class="bot-body" id="botMessages">
                 <!-- Messages appended here -->
             </div>
             <div class="bot-input-area">
@@ -3729,16 +3734,17 @@
                 } else {
                     botOverlay.classList.add('show');
                     // If no message, start with a greeting
-                    const body = document.getElementById('botBody');
+                    const body = document.getElementById('botMessages');
                     if (body && body.innerHTML.trim() === '') {
-                        addBotMessage("Habari! Mimi ni Chidy AI Assistant. Naweza kukusaidia kupata game unayohitaji au kutatua tatizo la malipo. Unahitaji msaada gani?");
+                        addBotMessage("Habari! Mimi ni Chidy AI Assistant 🤖. Naweza kukusaidia kupata game unayohitaji au kutatua tatizo la malipo. Unahitaji msaada gani?");
                     }
                 }
             }
         }
 
         function addBotMessage(text, type = 'bot') {
-            const body = document.getElementById('botBody');
+            const body = document.getElementById('botMessages');
+            if (!body) return;
             const msg = document.createElement('div');
             msg.className = `b-msg ${type}`;
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
