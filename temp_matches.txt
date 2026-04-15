@@ -1,0 +1,192 @@
+37: --bottom-bar-height: 65px;
+46: border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+130: .game-card[data-category*="PS5"] { border-bottom: 3px solid #0072ce; }
+131: .game-card[data-category*="PS4"] { border-bottom: 3px solid #003791; }
+132: .game-card[data-category*="ANDROID"] { border-bottom: 3px solid #3ddc84; }
+133: .game-card[data-category*="PC"] { border-bottom: 3px solid #ff4b2b; }
+134: .game-card[data-category*="HOT"] { border-bottom: 3px solid #ffb400; }
+145: bottom: 30px;
+162: .pulse-toast { left: 20px; right: 20px; bottom: 85px; }
+178: bottom: 90px;
+210: padding-bottom: calc(var(--bottom-bar-height) + 20px);
+236: border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+467: border-bottom: 1px solid rgba(255,255,255,0.05);
+509: border-bottom: 1px solid rgba(255,255,255,0.05);
+521: border-bottom: 1px solid rgba(255,255,255,0.02);
+541: padding-bottom: 1rem;
+587: margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+609: margin-bottom: 0.8rem;
+627: background: linear-gradient(to bottom, var(--primary), var(--secondary));
+663: margin-bottom: 0.5rem;
+713: padding-bottom: 10px;
+782: /* Gradient overlay at bottom of image */
+786: bottom: 0; left: 0;
+817: bottom: 8px;
+971: margin-bottom: 0.5rem;
+978: margin-bottom: 1rem;
+994: margin-bottom: 1.5rem;
+1090: /* === BOTTOM NAVIGATION BAR === */
+1091: .bottom-bar {
+1093: bottom: 0;
+1096: height: var(--bottom-bar-height);
+1108: .bottom-item {
+1126: .bottom-item i {
+1131: .bottom-item.active,
+1132: .bottom-item:hover {
+1136: .bottom-item.active i {
+1141: .bottom-item.active::after {
+1199: margin-bottom: 1rem;
+1265: margin-bottom: 1rem;
+1273: margin-bottom: 1.5rem;
+1279: margin-bottom: 12px;
+1295: margin-bottom: 1.5rem;
+1302: margin-bottom: 8px;
+1375: right: -2px; bottom: -2px;
+1397: margin-bottom: 0.5rem;
+1411: margin-bottom: 2rem;
+1417: margin-bottom: 1rem;
+1439: margin-bottom: 1rem;
+1570: margin-bottom: 1rem;
+1571: animation: crownBounce 1s ease-out 0.5s both;
+1585: margin-bottom: 0.5rem;
+1605: margin-bottom: 1rem;
+1617: margin-bottom: 1.5rem;
+1657: background: linear-gradient(to bottom, transparent, rgba(188, 19, 254, 0.05));
+1668: margin-bottom: 1.5rem;
+1675: margin-bottom: 2rem;
+1698: .footer-info p { margin-bottom: 8px; }
+1710: /* AI Bot Chat Modal (WhatsApp Style) */
+1711: .bot-overlay {
+1716: .bot-overlay.show { display: flex; }
+1717: .bot-container {
+1723: animation: slideUpBot 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+1726: .bot-overlay { padding: 0; }
+1727: .bot-container { height: 90vh; max-height: 100%; border-radius: 20px 20px 0 0; }
+1729: @keyframes slideUpBot { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+1730: .bot-header {
+1732: border-bottom: 1px solid #2a3942;
+1734: .bot-header .bot-avatar {
+1739: .bot-header-info { flex: 1; display:flex; flex-direction: column; margin-left:12px; }
+1740: .bot-name { color: #e9edef; font-weight: 600; font-size: 1.1rem; border-bottom:none !important; }
+1741: .bot-status { color: #00a884; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
+1742: .bot-close {
+1747: .bot-close:hover { color: #ff3333; }
+1748: .bot-body {
+1754: .bot-body::before {
+1764: .b-msg.bot { background: #202c33; align-self: flex-start; border-top-left-radius: 0; }
+1767: .bot-input-area {
+1771: .bot-input-area input {
+1777: .bot-btn {
+1785: .bot-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--primary-glow); }
+1786: .bot-btn:active { transform: scale(0.95); }
+1787: .bot-icon-btn { color: #8696a0; background: none; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px; transition: color 0.2s;}
+1788: .bot-icon-btn:hover { color: #00a884; }
+1922: margin-bottom: 12px;
+1947: margin-bottom: 8px;
+1956: margin-bottom: 20px;
+1962: margin-bottom: 20px;
+1973: border-bottom: 1px solid rgba(255,255,255,0.04);
+1975: .wa-benefits li:last-child { border-bottom: none; }
+1985: margin-bottom: 20px;
+2015: margin-bottom: 14px;
+2063: .logout-title { color: #fff; font-family: 'Orbitron'; font-size: 1.2rem; margin-bottom: 10px; }
+2064: .logout-desc { color: #a0a0b0; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5; }
+2065: .verify-input-group { margin-bottom: 20px; text-align: left; }
+2066: .verify-input-group label { display: block; font-size: 0.8rem; color: #a0a0b0; margin-bottom: 8px; }
+2084: .logout-error { color: #ff4444; font-size: 0.8rem; margin-bottom: 15px; display: none; }
+2097: <!-- LIVE PULSE NOTIFICATION -->
+2098: <div id="pulse-notification" class="pulse-toast">
+2107: <div class="cyber-orb" onclick="toggleBotChat()">
+2108: <i class="fas fa-robot" style="color: #fff; font-size: 1.2rem;"></i>
+2174: .yoyo-container { position: relative; height: 150px; width: 100%; display: flex; justify-content: center; margin-bottom: 2rem; }
+2211: margin-bottom: 1rem; text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+2214: color: #a0a0b0; line-height: 1.6; font-size: 1rem; margin-bottom: 2rem;
+2250: <div class="notif-bell-btn" id="notifBell" onclick="toggleNotifDropdown()" title="Notifications">
+2336: <!-- BOTTOM NAVIGATION BAR -->
+2337: <nav class="bottom-bar">
+2338: <div class="bottom-item active" onclick="showHome()">
+2343: <div class="bottom-item wa-channel-btn" id="waChannelBtn" onclick="openWaChannelModal()">
+2351: <div class="bottom-item" onclick="toggleBotChat()">
+2355: <div class="bottom-item" onclick="openLeaderboard()">
+2365: <div style="text-align: center; margin-bottom: 25px;">
+2366: <div style="font-size: 3rem; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--gold));">👑</div>
+2367: <h2 class="premium-title" style="color: var(--gold); border-bottom: 1px solid rgba(255,180,0,0.2); padding-bottom: 10px;">HALL OF FAME</h2>
+2445: <h2 class="premium-title" style="margin-bottom: 20px;"><i class="fas fa-library"></i> MY LIBRARY</h2>
+2731: <div style="background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05)); border: 1px solid rgba(0,210,91,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+2732: <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+2752: <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1px solid rgba(255,171,0,0.3); border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
+2771: <div style="background: linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,51,51,0.05)); border: 1px solid rgba(255,51,51,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+2772: <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+2788: <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+2799: <div style="background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.05)); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+2813: <i class="fas fa-wifi" style="font-size: 2rem; color: #333; margin-bottom: 10px;"></i>
+2821: <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+3022: // ===== BOTTOM BAR ACTIONS =====
+3025: setActiveBottom(0);
+3032: setActiveBottom(1);
+3041: if (cat === 'HOT POST') setActiveBottom(1);
+3042: else if (cat === 'TANZANIA GAMES') setActiveBottom(2);
+3049: setActiveBottom(-1); // Deselect bottom bar as we are in a sub-view
+3057: setActiveBottom(0);
+3060: function setActiveBottom(index) {
+3061: document.querySelectorAll('.bottom-item').forEach((item, i) => {
+3148: bottom: -10px;
+3256: // ===== AI BOT SYSTEM (Msaada) =====
+3257: function openBotChat() {
+3258: document.getElementById('botChatOverlay').classList.add('show');
+3260: if (document.getElementById('botMessages').innerHTML.trim() === '') {
+3261: appendBotMsg("Mambo vipi Chief! 👋 Mimi ni Chidy AI Bot 🤖. Niko hapa kukusaidia. Unatafuta game la aina gani leo? (Mfano: 'Kazi', 'Mpira', au jina la game)");
+3265: function toggleBotChat() {
+3266: const overlay = document.getElementById('botChatOverlay');
+3271: openBotChat();
+3278: const box = document.getElementById('botMessages');
+3283: function appendBotMsg(text, games = []) {
+3286: htmlText += `<a href="#" onclick="toggleBotChat(); openDetail('${g.id}'); return false;" class="chat-game-link"><i class="fas fa-gamepad"></i> Tazama ${g.title}</a>`;
+3290: const html = `<div class="b-msg bot">${htmlText} <span class="time">${time}</span></div>`;
+3291: const box = document.getElementById('botMessages');
+3296: function processBotLogic(input) {
+3301: return appendBotMsg("Poa sana Kaka! 🔥 Nipo hapa kukusaidia kupata games zote kali. Unatafuta game la simu, PC au PPSSPP?");
+3331: appendBotMsg(`Nimekupatia hizi hapa! Chagua mojawapo hapa chini kuitazama: 👇`, matchedGames);
+3333: appendBotMsg(`Dah! 🤔 Sijapata "${keywords.join(' ')}" moja kwa moja. Hebu jaribu kutaja jina lingine au niambie category kama 'PPSSPP' au 'PC Games'. Kama hujanunua au kuupload, hutaikuta hapa.`);
+3337: function sendBotMessage() {
+3338: const inputEl = document.getElementById('botInputUrl');
+3347: processBotLogic(text);
+3356: position: fixed; bottom: 85px; left: 20px; right: 20px;
+3373: <div style="font-family: 'Orbitron'; font-size: 0.9rem; font-weight: 900; color: #fff; margin-bottom: 2px; letter-spacing: 1px;">CHIDY PRIME APP</div>
+3516: let notifications = [];
+3518: async function fetchNotifications() {
+3524: const res = await fetch(`/api/notifications/${visitor.id}`);
+3528: const lastCount = notifications.length;
+3529: notifications = data;
+3531: renderNotifications();
+3533: // Show toast for newest notification if it's new and unread
+3535: showBigNotification(data[0]);
+3542: function renderNotifications() {
+3546: const unread = notifications.filter(n => !n.is_read).length;
+3554: if (notifications.length === 0) {
+3559: body.innerHTML = notifications.map(n => {
+3576: function showBigNotification(notif) {
+3585: <h3 style="color:#fff; text-align:center; font-family:'Orbitron'; font-size:1rem; margin-bottom:10px;">${notif.title}</h3>
+3586: <p style="color:#a0a0b0; text-align:center; font-size:0.9rem; margin-bottom:20px; line-height:1.5;">${notif.message}</p>
+3603: setTimeout(fetchNotifications, 2000);
+3604: setInterval(fetchNotifications, 30000); // Check every 30s
+3754: function toggleBotChat() {
+3755: const botOverlay = document.getElementById('botChatOverlay');
+3756: if (botOverlay) {
+3757: if (botOverlay.classList.contains('show')) {
+3758: botOverlay.classList.remove('show');
+3760: botOverlay.classList.add('show');
+3762: const body = document.getElementById('botMessages');
+3764: addBotMessage("Habari! Mimi ni Chidy AI Assistant 🤖. Naweza kukusaidia kupata game unayohitaji au kutatua tatizo la malipo. Unahitaji msaada gani?");
+3791: function addBotMessage(text, type = 'bot') {
+3792: const body = document.getElementById('botMessages');
+3802: async function sendBotMessage() {
+3803: const input = document.getElementById('botInputUrl');
+3807: addBotMessage(text, 'user');
+3813: addBotMessage("Ili kufanya malipo, chagua game unayotaka kisha bonyeza kitufe cha 'Download'. Fuata maelekezo ya kulipia namba iliyowekwa.");
+3815: addBotMessage("Tuna games nyingi za PPSSPP, Android, na PC. Unaweza kutumia search bar juu upate game unayotaka haraka.");
+3817: addBotMessage("Samahani, sijakuelewa vizuri. Unaweza pia kubonyeza kitufe cha WhatsApp hapo chini ili kuongea na msimamizi moja kwa moja.");
+3822: // Keep existing openBotChat for real WhatsApp fallback if needed inside the bot
+3932: // 3. Social Pulse Notifications
+3943: function showPulseNotification() {
+3944: const toast = document.getElementById('pulse-notification');

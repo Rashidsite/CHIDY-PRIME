@@ -2447,6 +2447,36 @@
         </div>
     </div>
 
+    <!-- NOTIFICATION DROPDOWN -->
+    <div class="notif-dropdown" id="notifDropdown" style="display: none;">
+        <div class="notif-header">
+            <h4 style="margin: 0; color: #fff;"><i class="fas fa-bell"></i> Taarifa (Notifications)</h4>
+        </div>
+        <div class="notif-body" id="notifDropdownBody">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+
+    <!-- AI BOT OVERLAY -->
+    <div class="bot-overlay" id="botChatOverlay">
+        <div class="bot-container">
+            <div class="bot-header">
+                <div class="bot-avatar"><i class="fas fa-robot"></i></div>
+                <div class="bot-header-info">
+                    <span class="bot-name">Chidy AI Bot</span>
+                    <span class="bot-status"><i class="fas fa-circle" style="font-size:8px;"></i> Online</span>
+                </div>
+                <button class="bot-close" onclick="toggleBotChat()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="bot-body" id="botMessages"></div>
+            <div class="bot-input-area">
+                <button class="bot-icon-btn" onclick="openWhatsAppSupport()" title="Chat with human"><i class="fab fa-whatsapp"></i></button>
+                <input type="text" id="botInputUrl" placeholder="Uliza swali au andika jina la game..." onkeypress="if(event.key === 'Enter') sendBotMessage()">
+                <button class="bot-btn" onclick="sendBotMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ===== DATA =====
         let allGames = [];
@@ -3540,8 +3570,9 @@
         }
 
         function renderNotifications() {
-            const body = document.getElementById('notifBody');
+            const body = document.getElementById('notifDropdownBody');
             const badge = document.getElementById('notifBadge');
+            if (!body || !badge) return;
             
             const unread = notifications.filter(n => !n.is_read).length;
             if (unread > 0) {
@@ -3570,7 +3601,15 @@
 
         function toggleNotifDropdown() {
             const dropdown = document.getElementById('notifDropdown');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            const bell = document.getElementById('notifBell');
+            if (!dropdown) return;
+            const isOpen = dropdown.style.display === 'block';
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen && bell) {
+                const rect = bell.getBoundingClientRect();
+                dropdown.style.top = (rect.bottom + 8) + 'px';
+                dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+            }
         }
 
         function showBigNotification(notif) {
@@ -3750,88 +3789,6 @@
             }
         }
 
-        // SMART HELP LOGIC
-        function toggleBotChat() {
-            const botOverlay = document.getElementById('botChatOverlay');
-            if (botOverlay) {
-                if (botOverlay.classList.contains('show')) {
-                    botOverlay.classList.remove('show');
-                } else {
-                    botOverlay.classList.add('show');
-                    // If no message, start with a greeting
-                    const body = document.getElementById('botMessages');
-                    if (body && body.innerHTML.trim() === '') {
-                        addBotMessage("Habari! Mimi ni Chidy AI Assistant 🤖. Naweza kukusaidia kupata game unayohitaji au kutatua tatizo la malipo. Unahitaji msaada gani?");
-                    }
-                }
-            }
-        }
-
-        async function refreshUserStats() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) return;
-            const visitor = JSON.parse(visitorStr);
-            try {
-                const res = await fetch(`/api/user/stats/${visitor.id}`);
-                const stats = await res.json();
-                if (stats.level) {
-                    const badge = document.getElementById('userLevelBadge');
-                    badge.innerText = stats.level;
-                    badge.style.color = stats.color;
-                }
-            } catch (e) { console.error("Stats error", e); }
-        }
-
-        function toggleGiftInput() {
-            const check = document.getElementById('isGiftCheck');
-            const group = document.getElementById('giftInputGroup');
-            group.style.display = check.checked ? 'block' : 'none';
-        }
-
-        function addBotMessage(text, type = 'bot') {
-            const body = document.getElementById('botMessages');
-            if (!body) return;
-            const msg = document.createElement('div');
-            msg.className = `b-msg ${type}`;
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            msg.innerHTML = `${text}<span class="time">${time}</span>`;
-            body.appendChild(msg);
-            body.scrollTop = body.scrollHeight;
-        }
-
-        async function sendBotMessage() {
-            const input = document.getElementById('botInputUrl');
-            const text = input.value.trim();
-            if (!text) return;
-
-            addBotMessage(text, 'user');
-            input.value = '';
-
-            // Simple Auto-responses for the premium feel
-            setTimeout(() => {
-                if (text.toLowerCase().includes('malipo') || text.toLowerCase().includes('lipa')) {
-                    addBotMessage("Ili kufanya malipo, chagua game unayotaka kisha bonyeza kitufe cha 'Download'. Fuata maelekezo ya kulipia namba iliyowekwa.");
-                } else if (text.toLowerCase().includes('game') || text.toLowerCase().includes('mchezo')) {
-                    addBotMessage("Tuna games nyingi za PPSSPP, Android, na PC. Unaweza kutumia search bar juu upate game unayotaka haraka.");
-                } else {
-                    addBotMessage("Samahani, sijakuelewa vizuri. Unaweza pia kubonyeza kitufe cha WhatsApp hapo chini ili kuongea na msimamizi moja kwa moja.");
-                }
-            }, 1000);
-        }
-
-        // Keep existing openBotChat for real WhatsApp fallback if needed inside the bot
-        function openWhatsAppSupport() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
-            
-            let message = "Habari Chidy Prime! Nahitaji msaada kitalu cha Gaming.";
-            if (visitor) {
-                message = `Habari Chidy Prime! Mimi ni ${visitor.name}, ID: ${visitor.id.substring(0,6)}. Nahitaji msaada wa huduma zenu.`;
-            }
-            
-            const waUrl = `https://wa.me/255762047805?text=${encodeURIComponent(message)}`;
-            window.open(waUrl, '_blank');
-        }
 
         function triggerCelebration() {
             const duration = 3 * 1000;
