@@ -493,8 +493,10 @@
         .notif-dropdown {
             position: fixed;
             top: 70px;
-            right: 20px;
-            width: 320px;
+            right: 10px;
+            left: 10px;
+            max-width: 340px;
+            margin-left: auto;
             background: #1a1a1f;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
@@ -3601,15 +3603,8 @@
 
         function toggleNotifDropdown() {
             const dropdown = document.getElementById('notifDropdown');
-            const bell = document.getElementById('notifBell');
             if (!dropdown) return;
-            const isOpen = dropdown.style.display === 'block';
-            dropdown.style.display = isOpen ? 'none' : 'block';
-            if (!isOpen && bell) {
-                const rect = bell.getBoundingClientRect();
-                dropdown.style.top = (rect.bottom + 8) + 'px';
-                dropdown.style.right = (window.innerWidth - rect.right) + 'px';
-            }
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         }
 
         function showBigNotification(notif) {
