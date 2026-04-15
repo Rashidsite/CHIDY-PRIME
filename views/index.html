@@ -2444,8 +2444,8 @@
                                 <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
                             </div>
                             ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                            <button class="dl-btn" onclick="grantAccess('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#00f2ff,#bc13fe);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                <i class="fas fa-redo"></i> PATA ACCESS UPYA (Siku ${game.duration_days})
+                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
+                                <i class="fas fa-redo"></i> LIPA UPYA (Kama Muda Umeisha)
                             </button>
                         `;
                     } else {
@@ -2468,7 +2468,7 @@
                                     <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-lock" style="color:#ffb400;"></i> Game hii ina access ya siku <strong style="color:#fff;">${game.duration_days}</strong>. Bofya hapa chini kupata access.</p>
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                <button class="dl-btn" onclick="grantAccess('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#00f2ff,#bc13fe);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
+                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#00f2ff,#bc13fe);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
                                     <i class="fas fa-unlock-alt"></i> PATA ACCESS (Siku ${game.duration_days})
                                 </button>
                             `;
@@ -2666,46 +2666,6 @@
                     ${links.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name}</a>`).join('')}
                 </div>
             `;
-        }
-
-        // Grant access to a game
-        async function grantAccess(postId) {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) {
-                alert('Tafadhali jisajili kwanza!');
-                return;
-            }
-            const visitor = JSON.parse(visitorStr);
-            
-            try {
-                const res = await fetch('/api/grant-access', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ visitor_id: visitor.id, post_id: postId })
-                });
-                const result = await res.json();
-                
-                if (result.success) {
-                    const expiryDate = new Date(result.expires_at);
-                    const formattedExpiry = expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
-                    
-                    let msg = '';
-                    if (result.is_permanent) {
-                        msg = `✅ Umefanikiwa kupata "${result.game_title}"!\n\nAccess yako ni ya MILELE. Download sasa!`;
-                    } else {
-                        msg = `✅ Umefanikiwa kupata "${result.game_title}"!\n\n📅 Muda wako wa kudownload unaisha: ${formattedExpiry}\n⏳ Una siku ${result.duration_days} za access.`;
-                    }
-                    
-                    alert(msg);
-                    // Refresh the detail view
-                    openDetail(postId);
-                } else {
-                    alert('Kuna tatizo: ' + (result.error || 'Jaribu tena.'));
-                }
-            } catch (err) {
-                alert('Kuna tatizo la mtandao. Jaribu tena.');
-                console.error('Grant access error:', err);
-            }
         }
 
         function closeDetail() {
