@@ -229,7 +229,42 @@ app.post('/api/signup', async (req, res) => {
             .select();
 
         if (error) throw error;
-        res.json({ success: true, visitor: data[0] });
+        // For XP Levels
+    const { count: orderCount } = await supabase
+        .from('payment_orders')
+        .filter('status', 'eq', 'approved')
+        .filter('visitor_id', 'eq', data[0].id)
+        .select('*', { count: 'exact', head: true });
+
+    // Check for pending gifts for this phone
+    const { data: gifts } = await supabase
+        .from('pending_gifts')
+        .select('*')
+        .eq('gift_phone', phone.trim());
+
+    if (gifts && gifts.length > 0) {
+        for (const gift of gifts) {
+            const { post_id, duration_days } = gift;
+            let expiresAt;
+            if (duration_days > 0) {
+                expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + duration_days);
+            } else {
+                expiresAt = new Date('2099-12-31T23:59:59Z');
+            }
+            await supabase.from('user_access').upsert({
+                visitor_id: data[0].id,
+                post_id,
+                granted_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString()
+            }, { onConflict: 'visitor_id,post_id' });
+            
+            // Delete the gift after granting
+            await supabase.from('pending_gifts').delete().eq('id', gift.id);
+        }
+    }
+
+    res.json({ success: true, visitor: data[0], orderCount: orderCount || 0 });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -492,6 +527,21 @@ app.post('/api/settings/maintenance', verifyAdmin, async (req, res) => {
     res.json({ success: true, enabled });
 });
 
+app.get('/api/settings/announcement', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'announcement_text').single();
+    if (error) return res.json({ value: "Karibu Chidy Prime Gaming!" });
+    res.json({ value: data.value });
+});
+
+app.post('/api/settings/announcement', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { text } = req.body;
+    const { error } = await supabase.from('site_settings').upsert({ key: 'announcement_text', value: JSON.stringify(text) });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
 // ============================================
 // USER ACCESS / DURATION ENDPOINTS
 // ============================================
@@ -674,6 +724,71 @@ app.post('/api/payments/azampay-checkout', async (req, res) => {
     }
 });
 
+// GET User Stats (XP/Level)
+app.get('/api/user/stats/:visitor_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id } = req.params;
+    try {
+        const { count, error } = await supabase
+            .from('payment_orders')
+            .select('*', { count: 'exact', head: true })
+            .eq('visitor_id', parseInt(visitor_id))
+            .eq('status', 'approved');
+        
+        if (error) throw error;
+        
+        const countNum = count || 0;
+        let level = 'ROOKIE GAMER';
+        let color = '#a0a0b0';
+        let xp_to_next = 2 - countNum;
+        
+        if (countNum >= 10) {
+            level = 'LEGENDARY GAMER 👑';
+            color = '#ffb400';
+            xp_to_next = 0;
+        } else if (countNum >= 5) {
+            level = 'PRO GAMER';
+            color = '#bc13fe';
+            xp_to_next = 10 - countNum;
+        } else if (countNum >= 2) {
+            level = 'ELITE GAMER';
+            color = '#00f2ff';
+            xp_to_next = 5 - countNum;
+        }
+
+        res.json({ total_orders: countNum, level, color, xp_to_next });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/analytics/sales', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    try {
+        const { data, error } = await supabase.rpc('get_daily_sales'); 
+        // If RPC doesn't exist, we'll use a raw query check
+        if (error) {
+            // Fallback: simple fetch last 30 orders and group in JS
+            const { data: orders } = await supabase
+                .from('payment_orders')
+                .select('amount, created_at')
+                .eq('status', 'approved')
+                .order('created_at', { ascending: false })
+                .limit(100);
+            
+            const grouped = {};
+            orders.forEach(o => {
+                const date = o.created_at.split('T')[0];
+                grouped[date] = (grouped[date] || 0) + parseFloat(o.amount);
+            });
+            // Convert to array and sort
+            const result = Object.entries(grouped).map(([date, total]) => ({ date, total })).sort((a,b) => a.date.localeCompare(b.date));
+            return res.json(result);
+        }
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // Admin Webhook Callback (The "Auto" part)
 app.post('/api/payments/callback', async (req, res) => {
     console.log('--- AZAMPAY CALLBACK RECEIVED ---', req.body);
@@ -734,7 +849,9 @@ app.post('/api/orders', async (req, res) => {
                 post_id,
                 amount: parseFloat(amount),
                 phone_number: phone_number.trim(),
-                status: 'pending'
+                status: 'pending',
+                is_gift: req.body.is_gift || false,
+                gift_phone: req.body.gift_phone || null
             }])
             .select();
         
@@ -795,35 +912,138 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
         if (status === 'approved') {
             const { post_id, visitor_id } = order;
             
-            // Get duration
-            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', post_id).single();
-            const durationDays = game.duration_days || 0;
-            
-            let expiresAt;
-            if (durationDays > 0) {
-                expiresAt = new Date();
-                expiresAt.setDate(expiresAt.getDate() + durationDays);
-            } else {
-                expiresAt = new Date('2099-12-31T23:59:59Z');
+            let targetVisitorId = visitor_id;
+            let isGift = order.is_gift;
+            let giftPhone = order.gift_phone;
+
+            if (isGift && giftPhone) {
+                // Check if gift user exists
+                const { data: giftUser } = await supabase.from('visitors').select('id').eq('phone', giftPhone.trim()).single();
+                if (giftUser) {
+                    targetVisitorId = giftUser.id;
+                } else {
+                    // Store as pending gift
+                    await supabase.from('pending_gifts').insert([{
+                        gift_phone: giftPhone.trim(),
+                        post_id: post_id,
+                        duration_days: durationDays
+                    }]);
+                    targetVisitorId = null; // No one to grant yet
+                }
             }
-            
+
+            if (targetVisitorId) {
+                await supabase.from('user_access').upsert({
+                    visitor_id: targetVisitorId,
+                    post_id,
+                    granted_at: new Date().toISOString(),
+                    expires_at: expiresAt.toISOString()
+                }, { onConflict: 'visitor_id,post_id' });
+            }
+
+            // 3. Auto-notify the requester
+            await supabase.from('notifications').insert({
+                visitor_id: visitor_id,
+                title: isGift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
+                message: isGift 
+                    ? `Oda yako ya zawadi ya "${game.title}" kwa namba ${giftPhone} imekubaliwa.` 
+                    : `Malipo yako ya game "${game.title}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
+                type: 'success'
+            });
+
+            // 4. Notify the recipient if they exist
+            if (isGift && targetVisitorId) {
+                await supabase.from('notifications').insert({
+                    visitor_id: targetVisitorId,
+                    title: 'Umepokea Zawadi! 👑',
+                    message: `Umepata zawadi ya game "${game.title}" kutoka kwa ${order.phone_number}. Unaweza kuanza kuicheza sasa hivi hapa Chidy Prime!`,
+                    type: 'success'
+                });
+            }
+        }
+        
+        res.json({ success: true, order });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET Leaderboard (Top 10 Gamers)
+app.get('/api/leaderboard', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    try {
+        const { data, error } = await supabase
+            .from('payment_orders')
+            .select('visitor_id, visitors(name)')
+            .eq('status', 'approved');
+
+        if (error) throw error;
+
+        const counts = {};
+        data.forEach(item => {
+            const vid = item.visitor_id;
+            if (vid && item.visitors) {
+                if (!counts[vid]) counts[vid] = { name: item.visitors.name, purchases: 0 };
+                counts[vid].purchases++;
+            }
+        });
+
+        const leaderboard = Object.values(counts)
+            .sort((a, b) => b.purchases - a.purchases)
+            .slice(0, 10);
+
+        res.json(leaderboard);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin Manual Gift Grant
+app.post('/api/admin/grant-gift', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { post_id, phone } = req.body;
+
+    if (!post_id || !phone) return res.status(400).json({ error: 'Post ID and Phone are required' });
+
+    try {
+        // 1. Get Game info for duration
+        const { data: game, error: gErr } = await supabase.from('posts').select('*').eq('id', post_id).single();
+        if (gErr || !game) throw new Error("Game not found");
+
+        const durationDays = game.duration_days || 30;
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+        // 2. Check if user exists
+        const { data: user } = await supabase.from('visitors').select('id').eq('phone', phone.trim()).single();
+        
+        if (user) {
+            // Grant access directly
             await supabase.from('user_access').upsert({
-                visitor_id,
+                visitor_id: user.id,
                 post_id,
                 granted_at: new Date().toISOString(),
                 expires_at: expiresAt.toISOString()
             }, { onConflict: 'visitor_id,post_id' });
 
-            // 3. Auto-notify the user
+            // Notify user
             await supabase.from('notifications').insert({
-                visitor_id,
-                title: 'Malipo Yamekubaliwa! ✅',
-                message: `Malipo yako ya game "${game.title}" yamehakikiwa. Sasa unaweza kuanza kudownload. Furahia mchezo wako!`,
+                visitor_id: user.id,
+                title: 'Umepokea Zawadi! 👑',
+                message: `Umepewa zawadi ya game "${game.title}" na Admin wa Chidy Prime. Unaweza kuanza kuicheza sasa hivi!`,
                 type: 'success'
             });
+            
+            res.json({ success: true, message: 'Access granted to existing user' });
+        } else {
+            // Store as pending gift
+            await supabase.from('pending_gifts').insert([{
+                gift_phone: phone.trim(),
+                post_id: post_id,
+                duration_days: durationDays
+            }]);
+            res.json({ success: true, message: 'Game stored as pending gift for new user' });
         }
-        
-        res.json({ success: true, order });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

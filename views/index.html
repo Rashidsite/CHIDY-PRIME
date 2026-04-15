@@ -39,6 +39,24 @@
             --secondary-glow: #bc13fe;
         }
 
+        /* ANNOUNCEMENT BAR */
+        .announcement-bar {
+            background: linear-gradient(90deg, #1a1a2e, #0f0f1a);
+            height: 35px; overflow: hidden; position: relative;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+            display: flex; align-items: center; z-index: 1001;
+        }
+        .announcement-content {
+            white-space: nowrap; position: absolute;
+            color: var(--primary); font-size: 0.75rem; font-weight: 700;
+            letter-spacing: 1px; font-family: 'Orbitron';
+            animation: scrollText 25s linear infinite;
+        }
+        @keyframes scrollText {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+
         /* --- GENESIS ENGINE OVERLAY --- */
         #genesis-startup {
             position: fixed;
@@ -1681,7 +1699,7 @@
         }
         .bot-body::before {
             content:''; position: absolute; top:0; left:0; width:100%; height:100%; opacity:0.04; pointer-events: none;
-            background-image: url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h-2v20h-2V22h-2v20h-2V22h-2v20h-2V22h-2v20h-2V22h-2v20h-2V22h-2v20H0V22h20v-1.5zM0 22h20v2H0v-2zm0 4h20v2H0v-2zm0 4h20v2H0v-2zm0 4h20v2H0v-2z" fill="%23fff" fill-opacity="1" fill-rule="evenodd"/%3E%3C/svg%3E');
+            background-image: url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h-2v20h-2V22h-2v20h-2V22h-2v20h-2V22h-2v20h-2V22h-2v20h-2V22h-2v20H0V22h20v-1.5zM0 22h20v2H0v-2zm0 4h20v2H0v-2zm0 4h20v2H0v-2zm0 4h20v2H0v-2z" fill="%23fff" fill-opacity="1" fill-rule="evenodd"/%3E%3C/svg%3E');
         }
         .b-msg {
             max-width: 85%; padding: 8px 12px; border-radius: 8px; position: relative;
@@ -2160,6 +2178,13 @@
 
     <div class="ambient-glow"></div>
 
+    <!-- ANNOUNCEMENT BAR -->
+    <div class="announcement-bar" id="announcementBar">
+        <div class="announcement-content" id="announcementText">
+            Karibu Chidy Prime! Pata games zote mpya za FIFA 25 na nyinginezo hapa. &nbsp; • &nbsp; Furahia Gaming katika Level nyingine!
+        </div>
+    </div>
+
     <!-- HEADER -->
     <header class="header" id="header">
         <div class="brand">
@@ -2175,7 +2200,10 @@
             <!-- Premium User Pill -->
             <div class="user-profile" id="userProfileBtn" onclick="toggleProfileDropdown(event)" title="Profile">
                 <div class="user-avatar" id="userAvatar">C</div>
-                <span class="user-name-text" id="userName">User</span>
+                <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                    <span class="user-name-text" id="userName" style="font-size: 0.85rem;">User</span>
+                    <span id="userLevelBadge" style="font-size: 0.55rem; color: var(--primary); font-weight: 800; letter-spacing: 0.5px;">ROOKIE GAMER</span>
+                </div>
                 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown" id="profileDropdown">
@@ -2270,7 +2298,32 @@
             <i class="fas fa-headset" style="color:var(--primary);"></i>
             <span style="color:var(--primary); font-weight:bold;">Msaada</span>
         </div>
+        <div class="bottom-item" onclick="openLeaderboard()">
+            <i class="fas fa-crown" style="color:var(--gold);"></i>
+            <span style="color:var(--gold); font-weight:bold;">Winners</span>
+        </div>
     </nav>
+
+    <!-- LEADERBOARD / HALL OF FAME OVERLAY -->
+    <div class="my-games-overlay" id="leaderboardOverlay" style="z-index: 2100;">
+        <div class="my-games-card" style="border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(255, 180, 0, 0.2); max-width: 450px;">
+            <button class="close-detail" onclick="closeLeaderboard()"><i class="fas fa-times"></i></button>
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="font-size: 3rem; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--gold));">👑</div>
+                <h2 class="premium-title" style="color: var(--gold); border-bottom: 1px solid rgba(255,180,0,0.2); padding-bottom: 10px;">HALL OF FAME</h2>
+                <p style="font-size: 0.75rem; color: #a0a0b0; letter-spacing: 1px; margin-top: 5px;">MASHUJAA WA CHIDY PRIME</p>
+            </div>
+            
+            <div id="leaderboardList" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Rankings will be injected here -->
+                <div style="text-align: center; padding: 20px; color: #6c7293;">Inapekuwa list ya mashujaa...</div>
+            </div>
+            
+            <div style="margin-top: 30px; padding: 15px; background: rgba(255,180,0,0.05); border-radius: 12px; border: 1px solid rgba(255,180,0,0.1); text-align: center;">
+                <p style="font-size: 0.7rem; color: #e0e0f0; line-height: 1.4;">Unataka jina lako litokee hapa? Nunua games nyingi zaidi ili upate heshima ya <strong>LEGENDARY GAMER</strong>! 🚀</p>
+            </div>
+        </div>
+    </div>
 
     <!-- WHATSAPP CHANNEL MODAL -->
     <div class="wa-modal-overlay" id="waModalOverlay" onclick="closeWaModal(event)">
@@ -2758,89 +2811,28 @@
             document.getElementById('paymentOverlay').classList.remove('show');
         }
 
-        function switchPaymentTab(type) {
-            const autoBtn = document.getElementById('tabAuto');
-            const manualBtn = document.getElementById('tabManual');
-            const autoContent = document.getElementById('paymentContentAuto');
-            const manualContent = document.getElementById('paymentContentManual');
-
-            if (type === 'auto') {
-                autoBtn.classList.add('active');
-                manualBtn.classList.remove('active');
-                autoContent.style.display = 'block';
-                manualContent.style.display = 'none';
-            } else {
-                manualBtn.classList.add('active');
-                autoBtn.classList.remove('active');
-                manualContent.style.display = 'block';
-                autoContent.style.display = 'none';
-            }
-        }
-
-        async function initiateAzamPay() {
-            const postId = document.getElementById('payPostId').value;
-            const phone = document.getElementById('payAutoPhone').value.trim();
-            const provider = document.getElementById('payProvider').value;
-            const statusText = document.getElementById('autoPayStatus');
-            const btn = document.getElementById('autoPayBtn');
-
-            if (!phone || phone.length < 10) {
-                alert('Tafadhali ingiza namba ya simu sahihi!');
-                return;
-            }
-
-            const game = allGames.find(g => g.id == postId);
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = JSON.parse(visitorStr);
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA USSD...';
-            statusText.innerText = 'Tafadhali kagua simu yako na uweke PIN...';
-
-            try {
-                const res = await fetch('/api/payments/azampay-checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amount: game.price,
-                        phone: phone,
-                        provider: provider,
-                        gameTitle: game.title,
-                        visitorId: visitor.id,
-                        postId: game.id
-                    })
-                });
-
-                const data = await res.json();
-                
-                if (data.success) {
-                    statusText.innerHTML = '<b style="color:var(--primary);">IMETUMWA!</b> Angalia simu yako sasa hivi. Game litafunguka lenyewe kisha utapata SMS.';
-                    // No need to close modal, the callback will handle unlocking or user can check status
-                } else {
-                    btn.disabled = false;
-                    btn.innerText = '🚀 JARIBU TENA';
-                    statusText.innerText = 'Kuna tatizo kidogo: ' + (data.message || 'Jaribu tena baadaye.');
-                }
-            } catch (err) {
-                console.error(err);
-                btn.disabled = false;
-                btn.innerText = '🚀 JARIBU TENA';
-                statusText.innerText = 'Hitilafu ya mtandao. Jaribu tena.';
-            }
+        function toggleGiftInput() {
+            const isGift = document.getElementById('isGiftCheck').checked;
+            document.getElementById('giftInputGroup').style.display = isGift ? 'block' : 'none';
         }
 
         async function submitPaymentOrder() {
             const postId = document.getElementById('payPostId').value;
-            const phoneNumber = document.getElementById('paySenderNumber').value.trim();
+            const senderPhone = document.getElementById('paySenderNumber').value.trim();
             const btn = document.getElementById('confirmPayBtn');
+            const isGift = document.getElementById('isGiftCheck').checked;
+            const giftPhone = document.getElementById('giftRecipientPhone').value.trim();
             
             const visitorStr = localStorage.getItem('chidy_visitor');
             const visitor = JSON.parse(visitorStr);
-
             const game = allGames.find(g => g.id == postId);
 
-            if (!phoneNumber) {
+            if (!senderPhone) {
                 alert('Tafadhali ingiza namba uliyotumia kulipia!');
+                return;
+            }
+            if (isGift && !giftPhone) {
+                alert("Tafadhali ingiza namba ya rafiki unayemzawadia.");
                 return;
             }
 
@@ -2855,7 +2847,9 @@
                         visitor_id: visitor.id,
                         post_id: postId,
                         amount: game.price,
-                        phone_number: phoneNumber
+                        phone_number: senderPhone,
+                        is_gift: isGift,
+                        gift_phone: giftPhone
                     })
                 });
                 const result = await res.json();
@@ -3010,6 +3004,7 @@
                             // Still exists in DB, hide overlay
                             document.getElementById('signupOverlay').classList.add('hidden');
                             setUserDisplay(visitor.name);
+                            refreshUserStats();
                             return true;
                         }
                     }
@@ -3145,6 +3140,7 @@
                     // Save to localStorage
                     localStorage.setItem('chidy_visitor', JSON.stringify({ name, phone, id: result.visitor.id }));
                     setUserDisplay(name);
+                    refreshUserStats();
                     
                     // Hide signup overlay
                     const signupOverlay = document.getElementById('signupOverlay');
@@ -3168,16 +3164,21 @@
 
         // ===== AI BOT SYSTEM (Msaada) =====
         function openBotChat() {
-            document.getElementById('botOverlay').classList.add('show');
+            document.getElementById('botChatOverlay').classList.add('show');
             document.body.style.overflow = 'hidden';
             if (document.getElementById('botMessages').innerHTML.trim() === '') {
                 appendBotMsg("Mambo vipi Chief! 👋 Mimi ni Chidy AI Bot 🤖. Niko hapa kukusaidia. Unatafuta game la aina gani leo? (Mfano: 'Kazi', 'Mpira', au jina la game)");
             }
         }
 
-        function closeBotChat() {
-            document.getElementById('botOverlay').classList.remove('show');
-            document.body.style.overflow = '';
+        function toggleBotChat() {
+            const overlay = document.getElementById('botChatOverlay');
+            if (overlay.classList.contains('show')) {
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            } else {
+                openBotChat();
+            }
         }
 
         function appendUserMsg(text) {
@@ -3191,7 +3192,7 @@
         function appendBotMsg(text, games = []) {
             let htmlText = text;
             games.forEach(g => {
-                htmlText += `<a href="#" onclick="closeBotChat(); openDetail('${g.id}'); return false;" class="chat-game-link"><i class="fas fa-gamepad"></i> Tazama ${g.title}</a>`;
+                htmlText += `<a href="#" onclick="toggleBotChat(); openDetail('${g.id}'); return false;" class="chat-game-link"><i class="fas fa-gamepad"></i> Tazama ${g.title}</a>`;
             });
 
             const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -3242,7 +3243,7 @@
             }
         }
 
-        function sendBot() {
+        function sendBotMessage() {
             const inputEl = document.getElementById('botInputUrl');
             const text = inputEl.value.trim();
             if (!text) return;
@@ -3254,10 +3255,6 @@
             setTimeout(() => {
                 processBotLogic(text);
             }, 800 + Math.random() * 1000); // 0.8s - 1.8s delay
-        }
-
-        function handleBotEnter(e) {
-            if (e.key === 'Enter') sendBot();
         }
 
         // ===== PWA INSTALLATION SYSTEM =====
@@ -3368,6 +3365,61 @@
                 renderCategories(allGames);
             }
         }, 250));
+
+        async function openLeaderboard() {
+            const overlay = document.getElementById('leaderboardOverlay');
+            const list = document.getElementById('leaderboardList');
+            overlay.classList.add('show');
+            
+            try {
+                const res = await fetch('/api/leaderboard');
+                const data = await res.json();
+                
+                if (data.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: #6c7293; padding: 20px;">Hakuna mshindi aliyepatikana bado. Kuwa wa kwanza!</div>';
+                    return;
+                }
+                
+                list.innerHTML = data.map((user, index) => {
+                    let medal = '';
+                    if (index === 0) medal = '🥇';
+                    else if (index === 1) medal = '🥈';
+                    else if (index === 2) medal = '🥉';
+                    else medal = `<span style="font-size:0.8rem; color:#6c7293;">#${index + 1}</span>`;
+                    
+                    return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="width: 30px; text-align: center;">${medal}</div>
+                                <div style="font-weight: 600; font-family: 'Orbitron'; font-size: 0.85rem; color: #fff;">${user.name}</div>
+                            </div>
+                            <div style="font-size: 0.7rem; padding: 4px 8px; background: rgba(0, 242, 255, 0.1); color: var(--primary); border-radius: 6px; font-weight: 800;">
+                                ${user.purchases} GAMES
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                list.innerHTML = '<div style="text-align: center; color: #ff3333; padding: 20px;">Hitilafu imetokea. Jaribu tena!</div>';
+            }
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboardOverlay').classList.remove('show');
+        }
+
+        async function refreshUserStats() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
+            try {
+                const res = await fetch(`/api/user/stats/${visitor.id}`);
+                const stats = await res.json();
+                if (stats.level) {
+                    document.getElementById('userLevelBadge').textContent = stats.level.toUpperCase();
+                }
+            } catch (e) { console.error("Stats fetch failed"); }
+        }
     </script>
     
     <!-- PAYMENT MODAL -->
@@ -3385,6 +3437,19 @@
                     <div class="payment-step">
                         <div class="step-num">2</div>
                         <div style="font-size: 0.9rem;">Ukishatuma pesa, ingiza namba ya simu uliyotumia kulipia hapa chini kisha bofya <strong>NIMETUMA PESA</strong>.</div>
+                    </div>
+                </div>
+                
+                <!-- GIFT OPTION -->
+                <div class="gift-section" style="margin-top: 15px; padding: 12px; border: 1px dashed rgba(0, 242, 255, 0.3); border-radius: 10px; background: rgba(0, 242, 255, 0.05);">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <input type="checkbox" id="isGiftCheck" onchange="toggleGiftInput()" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                        <span>🎁 Nunua kama Zawadi kwa Rafiki?</span>
+                    </label>
+                    <div id="giftInputGroup" style="display: none; margin-top: 12px; animation: fadeIn 0.3s;">
+                        <label style="font-size: 0.75rem; color: #00f2ff; margin-bottom: 5px; display: block;">Namba ya Simu ya Rafiki:</label>
+                        <input type="tel" id="giftRecipientPhone" placeholder="Mfano: 07XXXXXXXX" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(0,242,255,0.2); color: white; border-radius: 8px; font-size: 0.9rem;">
+                        <p style="font-size: 0.65rem; color: #a0a0b0; margin-top: 5px;">Rafiki yako atapata access ya game hii mara moja malipo yatakapohakikiwa.</p>
                     </div>
                 </div>
                 
@@ -3749,6 +3814,35 @@
             }
         }
 
+        async function refreshUserStats() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
+            try {
+                const res = await fetch(`/api/user/stats/${visitor.id}`);
+                const stats = await res.json();
+                if (stats.level) {
+                    const badge = document.getElementById('userLevelBadge');
+                    badge.innerText = stats.level;
+                    badge.style.color = stats.color;
+                }
+            } catch (e) { console.error("Stats error", e); }
+        }
+
+        function toggleGiftInput() {
+            const check = document.getElementById('isGiftCheck');
+            const group = document.getElementById('giftInputGroup');
+            group.style.display = check.checked ? 'block' : 'none';
+        }
+
+        // PWA Install Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Optionally show an install button here
+        });
+
         function addBotMessage(text, type = 'bot') {
             const body = document.getElementById('botMessages');
             if (!body) return;
@@ -3912,8 +4006,25 @@
 
         window.addEventListener('load', () => {
             startGenesisEngine();
+            
+            // Initial Data fetch for stats
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (visitorStr) {
+                refreshUserStats();
+            }
+
+            // Fetch Announcement
+            fetch('/api/settings/announcement')
+                .then(r => r.json())
+                .then(d => {
+                    const el = document.getElementById('announcementText');
+                    if (d.value && el) {
+                        el.innerHTML = d.value + " &nbsp; • &nbsp; " + d.value;
+                    }
+                });
+
             // Start Pulse interval
-            setInterval(showPulseNotification, 12000); // Every 12 seconds
+            setInterval(showPulseNotification, 15000); // Every 15 seconds
         });
 
         // Wrap the card rendering to include Tilt
