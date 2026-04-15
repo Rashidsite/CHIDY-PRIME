@@ -230,11 +230,11 @@ app.post('/api/signup', async (req, res) => {
 
         if (error) throw error;
         // For XP Levels
-    const { count: orderCount } = await supabase
-        .from('payment_orders')
-        .filter('status', 'eq', 'approved')
-        .filter('visitor_id', 'eq', data[0].id)
-        .select('*', { count: 'exact', head: true });
+        const { count: orderCount } = await supabase
+            .from('payment_orders')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'approved')
+            .eq('visitor_id', data[0].id);
 
     // Check for pending gifts for this phone
     const { data: gifts } = await supabase
