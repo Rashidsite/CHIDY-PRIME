@@ -1547,8 +1547,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Post Image (Direct Link)</label>
-                        <input type="url" name="image_url" placeholder="https://example.com/image.jpg" required>
+                        <label>Post Image</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                            <input type="url" name="image_url" id="createImageUrl" placeholder="https://example.com/image.jpg" required style="flex: 1;">
+                            <label class="btn-secondary" style="margin:0; cursor:pointer; padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.3); color: var(--primary);">
+                                <i class="fas fa-upload"></i> UPLOAD
+                                <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'createImageUrl', 'createUploadStatus')">
+                            </label>
+                        </div>
+                        <p id="createUploadStatus" style="font-size: 0.75rem; margin: 0; min-height: 1rem;"></p>
                     </div>
                     <button type="submit" class="btn-deploy" id="submitBtn">Deploy To Store</button>
 
@@ -1748,8 +1755,15 @@
                         <input type="url" name="youtube_url" id="editYoutubeUrl" placeholder="https://www.youtube.com/watch?v=...">
                     </div>
                     <div class="form-group">
-                        <label>Image URL</label>
-                        <input type="url" name="image_url" id="editImageUrl" placeholder="https://i.ibb.co/...">
+                        <label>Post Image</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                            <input type="url" name="image_url" id="editImageUrl" placeholder="https://i.ibb.co/..." required style="flex: 1;">
+                            <label class="btn-secondary" style="margin:0; cursor:pointer; padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.3); color: var(--primary);">
+                                <i class="fas fa-upload"></i> UPLOAD
+                                <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'editImageUrl', 'editUploadStatus')">
+                            </label>
+                        </div>
+                        <p id="editUploadStatus" style="font-size: 0.75rem; margin: 0; min-height: 1rem;"></p>
                     </div>
                 </div>
                 <div class="form-group">
@@ -2034,6 +2048,43 @@
         let lastSeenOrderId = null;
         let revenueChartInstance = null;
         const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+        async function handleImageUpload(input, targetInputId, statusId) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const status = document.getElementById(statusId);
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inapakia picha...';
+            status.style.color = '#00f2ff';
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64Image = e.target.result;
+                try {
+                    const res = await fetch('/api/admin/upload', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify({ image: base64Image, fileName: file.name })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById(targetInputId).value = data.url;
+                        status.innerHTML = '<i class="fas fa-check-circle"></i> Imekamilika! Picha tayari.';
+                        status.style.color = '#00d25b';
+                    } else {
+                        status.innerHTML = '<i class="fas fa-times-circle"></i> Imefeli: ' + data.error;
+                        status.style.color = '#ff3333';
+                    }
+                } catch (err) {
+                    status.innerHTML = '<i class="fas fa-times-circle"></i> Kosa la mtandao.';
+                    status.style.color = '#ff3333';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
 
         // Fetch Orders Data
         async function fetchOrders() {

@@ -44,7 +44,8 @@ if (supabaseUrl && supabaseKey) {
 // === PERFORMANCE: Gzip compression (reduces response size 60-80%) ===
 app.use(compression());
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // === PERFORMANCE: Static file caching (1 week for assets) ===
 app.use(express.static('public', {
@@ -457,6 +458,33 @@ app.post('/api/verify-phone', async (req, res) => {
     }
 });
 
+// Image Upload to Supabase Storage
+app.post('/api/admin/upload', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    try {
+        const { image, fileName } = req.body;
+        if (!image) return res.status(400).json({ error: 'No image data provided' });
+
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        const finalFileName = `${Date.now()}_${fileName || 'upload.jpg'}`;
+
+        const mimeMatch = image.match(/^data:(image\/\w+);base64,/);
+        const contentType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+        const { data, error } = await supabase.storage
+            .from('images')
+            .upload(finalFileName, buffer, { contentType, upsert: true });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(finalFileName);
+        res.json({ success: true, url: publicUrl });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // ============================================
 // CATEGORY ENDPOINTS
