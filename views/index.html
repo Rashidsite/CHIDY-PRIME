@@ -2716,11 +2716,20 @@
                 grouped[cat].push(game);
             });
 
-            // Sort categories by predefined order, then any extras
+            // Sort categories by predefined order from Admin DB
             const orderedKeys = [];
-            categoryOrder.forEach(c => {
-                if (grouped[c]) orderedKeys.push(c);
-            });
+            if (allCategoriesData && allCategoriesData.length > 0) {
+                const viCats = allCategoriesData
+                    .filter(c => c.is_visible !== false)
+                    .sort((a,b) => (a.display_order || 0) - (b.display_order || 0));
+                
+                viCats.forEach(cat => orderedKeys.push(cat.name));
+            } else {
+                // Fallback
+                categoryOrder.forEach(c => orderedKeys.push(c));
+            }
+
+            // Append any extra categories that have games but aren't explicitly registered
             Object.keys(grouped).forEach(c => {
                 const catObj = allCategoriesData.find(dbCat => dbCat.name === c);
                 // Hide strictly if specified by Admin
@@ -2764,7 +2773,7 @@
             else if (screenWidth >= 600) displayLimit = 10;
 
             orderedKeys.forEach(category => {
-                const catGames = grouped[category];
+                const catGames = grouped[category] || [];
                 const icon = categoryIcons[category] || 'fa-folder';
 
                 html += `
@@ -2779,7 +2788,10 @@
                             </a>
                         </div>
                         <div class="games-row">
-                            ${catGames.slice(0, displayLimit).map(game => renderCard(game)).join('')}
+                            ${catGames.length > 0 
+                                ? catGames.slice(0, displayLimit).map(game => renderCard(game)).join('') 
+                                : '<div style="color: #4b4b56; font-size: 0.85rem; padding: 1.5rem 1rem; flex: 1; text-align: center; border: 1px dashed rgba(255,255,255,0.05); border-radius: 12px;">Hakuna michezo iliyoongezwa kwenye category hii bado.</div>'
+                            }
                         </div>
                     </section>
                 `;
