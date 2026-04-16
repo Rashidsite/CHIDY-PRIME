@@ -1268,6 +1268,9 @@
             <li class="nav-item">
                 <a href="#" class="nav-link" data-view="categoriesView"><i class="fas fa-tags"></i> <span>Categories</span></a>
             </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="healthView"><i class="fas fa-heartbeat"></i> <span>System Health</span></a>
+            </li>
             <li class="nav-item" style="margin-top: 2rem;">
                 <a href="/" class="nav-link"><i class="fas fa-external-link-alt"></i> View Store</a>
             </li>
@@ -1344,6 +1347,75 @@
                 </div>
             </div>
         </nav>
+
+        <!-- SYSTEM HEALTH VIEW -->
+        <section id="healthView" class="content view-section" style="display:none;">
+            <h2 class="view-title"><i class="fas fa-heartbeat"></i> System Health Monitor</h2>
+
+            <!-- Status Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 2rem;">
+                <div class="stat-card" id="healthDbCard" style="border-left: 5px solid #00d25b;">
+                    <div>
+                        <div class="stat-label">Database</div>
+                        <div class="stat-val" id="healthDbStatus" style="font-size:1rem;">Checking...</div>
+                        <div style="font-size:0.7rem;color:#6c7293;margin-top:4px;" id="healthDbLastCheck">--</div>
+                    </div>
+                    <i class="fas fa-database stat-icon" style="color:#00d25b;"></i>
+                </div>
+                <div class="stat-card" id="healthCpuCard" style="border-left: 5px solid #00f2ff;">
+                    <div>
+                        <div class="stat-label">CPU Load</div>
+                        <div class="stat-val" id="healthCpuVal" style="font-size:1rem;">--%</div>
+                    </div>
+                    <i class="fas fa-microchip stat-icon" style="color:#00f2ff;"></i>
+                </div>
+                <div class="stat-card" id="healthMemCard" style="border-left: 5px solid #bc13fe;">
+                    <div>
+                        <div class="stat-label">Memory Usage</div>
+                        <div class="stat-val" id="healthMemVal" style="font-size:1rem;">--%</div>
+                    </div>
+                    <i class="fas fa-memory stat-icon" style="color:#bc13fe;"></i>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid #ffb400;">
+                    <div>
+                        <div class="stat-label">Server Uptime</div>
+                        <div class="stat-val" id="healthUptime" style="font-size:1rem;">--</div>
+                    </div>
+                    <i class="fas fa-server stat-icon" style="color:#ffb400;"></i>
+                </div>
+                <div class="stat-card" id="healthTelegramCard" style="border-left: 5px solid #6c7293;">
+                    <div>
+                        <div class="stat-label">Telegram Alerts</div>
+                        <div class="stat-val" id="healthTelegramStatus" style="font-size:1rem;">--</div>
+                    </div>
+                    <i class="fab fa-telegram stat-icon" style="color:#229ed9;"></i>
+                </div>
+            </div>
+
+            <!-- Progress Bars -->
+            <div class="admin-card" style="margin-bottom:1.5rem;">
+                <h4 style="font-family:'Orbitron';color:#00f2ff;font-size:0.85rem;margin:0 0 1.2rem;letter-spacing:2px;"><i class="fas fa-tachometer-alt"></i> RESOURCE USAGE</h4>
+                <div style="margin-bottom:1rem;">
+                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#aaa;margin-bottom:6px;"><span>CPU</span><span id="healthCpuBar">--%</span></div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:30px;height:8px;overflow:hidden;"><div id="healthCpuProgress" style="height:100%;width:0%;background:linear-gradient(90deg,#00f2ff,#bc13fe);border-radius:30px;transition:width 0.6s ease;"></div></div>
+                </div>
+                <div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#aaa;margin-bottom:6px;"><span>Memory</span><span id="healthMemBar">--%</span></div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:30px;height:8px;overflow:hidden;"><div id="healthMemProgress" style="height:100%;width:0%;background:linear-gradient(90deg,#bc13fe,#ff3366);border-radius:30px;transition:width 0.6s ease;"></div></div>
+                </div>
+            </div>
+
+            <!-- Error Log -->
+            <div class="admin-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <h4 style="font-family:'Orbitron';color:#ff3366;font-size:0.85rem;margin:0;letter-spacing:2px;"><i class="fas fa-exclamation-triangle"></i> SYSTEM ERROR LOG</h4>
+                    <button onclick="loadSystemHealth()" style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.3);color:#00f2ff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div id="healthErrorLog" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;">
+                    <div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+        </section>
 
         <!-- DASHBOARD VIEW -->
         <section id="dashboardView" class="content view-section">
@@ -2039,6 +2111,96 @@
             if (viewId === 'categoriesView') loadCategories();
             if (viewId === 'usersView') loadUsers();
             if (viewId === 'ordersView') fetchOrders();
+            if (viewId === 'healthView') loadSystemHealth();
+        }
+
+        // ============================================
+        // SYSTEM HEALTH
+        // ============================================
+        async function loadSystemHealth() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/system/health', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Failed to fetch health data');
+                const data = await res.json();
+                const s = data.stats;
+
+                // DB Status
+                const isDbOk = s.supabaseStatus && s.supabaseStatus.startsWith('OK');
+                document.getElementById('healthDbStatus').textContent = s.supabaseStatus || 'Unknown';
+                document.getElementById('healthDbStatus').style.color = isDbOk ? '#00d25b' : '#ff3366';
+                document.getElementById('healthDbCard').style.borderColor = isDbOk ? '#00d25b' : '#ff3366';
+                document.getElementById('healthDbLastCheck').textContent = s.lastDbCheck 
+                    ? 'Last checked: ' + new Date(s.lastDbCheck).toLocaleTimeString() 
+                    : 'Never checked yet';
+
+                // CPU
+                const cpu = s.cpuUsage || 0;
+                document.getElementById('healthCpuVal').textContent = cpu + '%';
+                document.getElementById('healthCpuBar').textContent = cpu + '%';
+                document.getElementById('healthCpuProgress').style.width = Math.min(cpu, 100) + '%';
+                document.getElementById('healthCpuCard').style.borderColor = cpu > 90 ? '#ff3366' : cpu > 70 ? '#ffb400' : '#00f2ff';
+
+                // Memory
+                const mem = s.memoryUsage || 0;
+                document.getElementById('healthMemVal').textContent = mem + '%';
+                document.getElementById('healthMemBar').textContent = mem + '%';
+                document.getElementById('healthMemProgress').style.width = Math.min(mem, 100) + '%';
+                document.getElementById('healthMemCard').style.borderColor = mem > 90 ? '#ff3366' : mem > 70 ? '#ffb400' : '#bc13fe';
+
+                // Uptime
+                const uptimeSec = Math.floor(s.uptime || 0);
+                const hrs = Math.floor(uptimeSec / 3600);
+                const mins = Math.floor((uptimeSec % 3600) / 60);
+                const secs = uptimeSec % 60;
+                document.getElementById('healthUptime').textContent = `${hrs}h ${mins}m ${secs}s`;
+
+                // Telegram
+                const tgEl = document.getElementById('healthTelegramStatus');
+                const tgCard = document.getElementById('healthTelegramCard');
+                if (data.telegramConfigured) {
+                    tgEl.textContent = '✅ Connected';
+                    tgEl.style.color = '#00d25b';
+                    tgCard.style.borderColor = '#00d25b';
+                } else {
+                    tgEl.textContent = '❌ Not Set';
+                    tgEl.style.color = '#ff3366';
+                    tgCard.style.borderColor = '#ff3366';
+                }
+
+                // Error Log
+                const log = document.getElementById('healthErrorLog');
+                const errors = data.errors || [];
+                if (errors.length === 0) {
+                    log.innerHTML = '<div style="color:#00d25b;text-align:center;padding:2rem;font-size:0.9rem;"><i class="fas fa-check-circle"></i> No errors detected. System is healthy! 🎉</div>';
+                } else {
+                    log.innerHTML = errors.map(e => `
+                        <div style="
+                            background: rgba(255,51,102,0.07);
+                            border: 1px solid rgba(255,51,102,0.25);
+                            border-radius: 10px;
+                            padding: 12px 16px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            gap: 10px;
+                        ">
+                            <div>
+                                <div style="color:#ff3366;font-weight:700;font-size:0.8rem;letter-spacing:1px;">${e.type.replace(/_/g,' ')}</div>
+                                <div style="color:#e0e0e0;font-size:0.85rem;margin-top:3px;">${e.message}</div>
+                            </div>
+                            <div style="color:#6c7293;font-size:0.7rem;white-space:nowrap;">${new Date(e.time).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch(err) {
+                document.getElementById('healthErrorLog').innerHTML = 
+                    '<div style="color:#ff3366;text-align:center;padding:2rem;"><i class="fas fa-times-circle"></i> Failed to load health data: ' + err.message + '</div>';
+            }
         }
 
         // ============================================

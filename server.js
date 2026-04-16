@@ -4,12 +4,90 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
 const compression = require('compression');
+const os = require('os');
+const https = require('https');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'chidy_prime_super_secret_2025';
 const ADMIN_PIN = process.env.ADMIN_PIN || '2025';
+
+// --- SYSTEM HEALTH MONITORING ---
+global.systemErrors = [];
+global.healthStats = {
+    supabaseStatus: 'Unknown',
+    lastDbCheck: null,
+    cpuUsage: 0,
+    memoryUsage: 0,
+    uptime: 0
+};
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
+
+function sendTelegramAlert(message) {
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+    try {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const payload = JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML' });
+        
+        const req = https.request(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        });
+        req.on('error', (e) => console.error('Telegram alert failed:', e));
+        req.write(payload);
+        req.end();
+    } catch(e) { console.error(e); }
+}
+
+function logSystemError(type, message) {
+    global.systemErrors.unshift({ type, message, time: new Date().toISOString() });
+    if(global.systemErrors.length > 50) global.systemErrors.pop();
+    
+    sendTelegramAlert(`🚨 <b>CHIDY PRIME SYSTEM ALERT</b> 🚨\n\n<b>Type:</b> ${type}\n<b>Message:</b> ${message}\n<b>Time:</b> ${new Date().toISOString()}`);
+}
+
+// Background Monitor Task (Every 5 mins)
+setInterval(async () => {
+    try {
+        const totalMem = os.totalmem();
+        const freeMem = os.freemem();
+        const usedMem = totalMem - freeMem;
+        global.healthStats.memoryUsage = Math.round((usedMem / totalMem) * 100);
+        
+        const load = os.loadavg()[0]; 
+        const cpus = os.cpus().length;
+        global.healthStats.cpuUsage = Math.round((load / cpus) * 100);
+        
+        global.healthStats.uptime = process.uptime();
+
+        if (supabase) {
+            const start = Date.now();
+            const { error } = await supabase.from('site_settings').select('*').limit(1);
+            if (error) {
+                if (global.healthStats.supabaseStatus !== 'Down') logSystemError('Database_Failure', error.message);
+                global.healthStats.supabaseStatus = 'Down';
+            } else {
+                global.healthStats.supabaseStatus = `OK (${Date.now() - start}ms)`;
+            }
+            global.healthStats.lastDbCheck = new Date().toISOString();
+        }
+
+        if (global.healthStats.memoryUsage > 90) {
+            logSystemError('High_Memory', `Server Memory Usage is critical: ${global.healthStats.memoryUsage}%`);
+        }
+        if (global.healthStats.cpuUsage > 90) {
+            logSystemError('High_CPU', `Server CPU Usage is critical: ${global.healthStats.cpuUsage}%`);
+        }
+    } catch(err) {
+        console.error("Health monitor error:", err);
+    }
+}, 5 * 60 * 1000);
 
 // Admin Auth Middleware
 const verifyAdmin = (req, res, next) => {
@@ -567,6 +645,16 @@ app.get('/api/settings/maintenance', async (req, res) => {
     }
     res.json({ value: data.value });
 });
+
+// GET System Health (Admin Only)
+app.get('/api/system/health', verifyAdmin, (req, res) => {
+    res.json({
+        stats: global.healthStats,
+        errors: global.systemErrors,
+        telegramConfigured: !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID)
+    });
+});
+
 
 app.post('/api/settings/maintenance', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
