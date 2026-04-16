@@ -496,6 +496,7 @@ app.get('/api/categories', async (req, res) => {
     const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .order('display_order', { ascending: true })
         .order('created_at', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
@@ -527,6 +528,24 @@ app.delete('/api/categories/:id', verifyAdmin, async (req, res) => {
         .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
+});
+
+// PATCH - bulk update categories order and visibility
+app.patch('/api/categories/order', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) return res.status(400).json({ error: 'Categories array is required' });
+    
+    try {
+        for (const cat of categories) {
+            await supabase.from('categories')
+                .update({ display_order: cat.display_order, is_visible: cat.is_visible })
+                .eq('id', cat.id);
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // ============================================

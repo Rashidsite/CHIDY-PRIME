@@ -2569,7 +2569,7 @@
         }
 
         // Ordered categories from user's wireframe
-        const categoryOrder = [
+        let categoryOrder = [
             'HOT POST',
             'TANZANIA GAMES',
             'FREE GAMES',
@@ -2577,6 +2577,7 @@
             'ANDROID GAMES',
             'PC GAMES'
         ];
+        let allCategoriesData = [];
 
         const categoryIcons = {
             'HOT POST': 'fa-fire',
@@ -2669,6 +2670,20 @@
 
         async function fetchGames() {
             try {
+                // Fetch dynamic categories first to enforce order & visibility
+                try {
+                    const cRes = await fetch('/api/categories');
+                    allCategoriesData = await cRes.json();
+                    if(allCategoriesData && allCategoriesData.length > 0) {
+                        const viCats = allCategoriesData
+                            .filter(c => c.is_visible !== false)
+                            .sort((a,b) => (a.display_order || 0) - (b.display_order || 0));
+                        if(viCats.length > 0) {
+                            categoryOrder = viCats.map(c => c.name);
+                        }
+                    }
+                } catch(e) { console.error('Failed to load categories context', e); }
+
                 const response = await fetch('/api/games');
                 const games = await response.json();
                 allGames = games;
@@ -2707,6 +2722,9 @@
                 if (grouped[c]) orderedKeys.push(c);
             });
             Object.keys(grouped).forEach(c => {
+                const catObj = allCategoriesData.find(dbCat => dbCat.name === c);
+                // Hide strictly if specified by Admin
+                if (catObj && catObj.is_visible === false) return; 
                 if (!orderedKeys.includes(c)) orderedKeys.push(c);
             });
 
