@@ -2413,37 +2413,97 @@
     </div>
 
     <!-- MODALS -->
+    <style>
+        @keyframes pulseGlowIcon {
+            0% { box-shadow: 0 0 15px rgba(0,242,255,0.2); transform: scale(1); }
+            100% { box-shadow: 0 0 30px rgba(0,242,255,0.6); transform: scale(1.05); }
+        }
+        @keyframes sweepLine {
+            0% { left: -100%; }
+            50%, 100% { left: 200%; }
+        }
+    </style>
     <div class="payment-overlay" id="paymentOverlay">
-        <div class="payment-card">
-            <button class="close-detail" onclick="closePayment()"><i class="fas fa-times"></i></button>
-            <h3 style="margin-top: 10px; font-family: 'Orbitron'; color: var(--primary);"><i class="fas fa-shopping-cart"></i> MAAGIZO YA MALIPO</h3>
+        <div class="payment-card" style="background: rgba(15, 15, 25, 0.95); border: 1px solid rgba(0, 242, 255, 0.3); box-shadow: 0 0 50px rgba(0, 242, 255, 0.15), inset 0 0 20px rgba(188, 19, 254, 0.1); backdrop-filter: blur(25px); overflow: hidden;">
+            
+            <!-- Decorative Glow Top -->
+            <div style="position: absolute; top: -50px; left: 50%; transform: translateX(-50%); width: 200px; height: 100px; background: var(--primary); filter: blur(60px); opacity: 0.3; pointer-events: none;"></div>
+
+            <button class="close-detail" onclick="closePayment()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);"><i class="fas fa-times"></i></button>
+            
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.1)); border: 1px solid rgba(0,242,255,0.4); margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--primary); animation: pulseGlowIcon 2s infinite alternate;">
+                    <i class="fas fa-shield-check"></i><i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 style="margin: 0; font-family: 'Orbitron'; font-size: 1.4rem; letter-spacing: 2px; text-transform: uppercase; background: linear-gradient(90deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SECURE CHECKOUT</h3>
+                <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 5px;">Miamala inathibitishwa ndani ya sekunde 30</p>
+            </div>
+
             <div id="paymentContentManual">
-                <div class="payment-info-box">
-                    <div class="payment-step"><div class="step-num">1</div><div style="font-size: 0.9rem;">Tuma kiasi cha <strong id="payAmount" style="color:var(--primary); font-weight: 500;">...</strong> kwenda namba: <strong id="payNumber" style="color:var(--primary); font-weight: 500;">...</strong> (<span id="payName" style="font-size: 0.8rem; opacity: 0.8;">...</span>)</div></div>
-                    <div class="payment-step"><div class="step-num">2</div><div style="font-size: 0.9rem;">Ukishatuma pesa, ingiza namba ya simu hapa chini kisha bofya <strong>NIMETUMA PESA</strong>.</div></div>
+                
+                <!-- Digital Receipt / Amount Display -->
+                <div style="background: rgba(0,0,0,0.4); border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); padding: 20px; text-align: center; margin-bottom: 25px; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); box-shadow: 0 0 15px var(--primary);"></div>
+                    <span style="display: block; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Kiasi cha Kulipia</span>
+                    <strong id="payAmount" style="display: block; font-family: 'Orbitron'; font-size: 2.2rem; color: #fff; text-shadow: 0 0 20px rgba(0,242,255,0.6);">...</strong>
                 </div>
-                <div class="gift-section" style="margin-top: 15px; padding: 12px; border: 1px dashed rgba(0, 242, 255, 0.3); border-radius: 10px; background: rgba(0, 242, 255, 0.05);">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #fff; font-size: 0.85rem;">
-                        <input type="checkbox" id="isGiftCheck" onchange="toggleGiftInput()" style="width: 18px; height: 18px; accent-color: var(--primary);">
-                        <span>🎁 Nunua kama Zawadi kwa Rafiki?</span>
+
+                <!-- Payment Instructions Grid -->
+                <div style="background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0)); border: 1px dashed rgba(255,255,255,0.15); border-radius: 15px; padding: 20px; margin-bottom: 25px;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-start;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0,242,255,0.1); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--primary); font-family: 'Orbitron'; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(0,242,255,0.2);">1</div>
+                        <div style="font-size: 0.9rem; color: #e0e0e0; line-height: 1.5; padding-top: 4px; text-align: left;">
+                            Tuma pesa kwenda namba:<br>
+                            <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 8px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1.2rem; color: var(--primary); letter-spacing: 2px;" id="payNumber">...</span><br>
+                            <span style="display: inline-block; margin-top: 8px; font-size: 0.85rem; color: var(--secondary); background: rgba(188,19,254,0.1); padding: 4px 10px; border-radius: 6px; font-weight: bold;" id="payName">...</span>
+                        </div>
+                    </div>
+                    
+                    <div style="width: 100%; height: 1px; background: rgba(255,255,255,0.05); margin-bottom: 15px;"></div>
+
+                    <div style="display: flex; gap: 15px; align-items: flex-start;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(188,19,254,0.1); border: 1px solid var(--secondary); display: flex; align-items: center; justify-content: center; color: var(--secondary); font-family: 'Orbitron'; font-weight: 900; flex-shrink: 0; box-shadow: 0 0 10px rgba(188,19,254,0.2);">2</div>
+                        <div style="font-size: 0.9rem; color: #e0e0e0; line-height: 1.5; padding-top: 4px; text-align: left;">
+                            Thibitisha malipo kwa kuweka <strong>namba uliyotuma pesa</strong> hapa chini:
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Fields -->
+                <div style="position: relative; margin-bottom: 15px;">
+                    <i class="fas fa-mobile-alt" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--primary); font-size: 1.2rem;"></i>
+                    <input type="tel" id="paySenderNumber" placeholder="Namba uliyotuma (Mf. 07XXXXXXXX)" style="width: 100%; padding: 16px 15px 16px 50px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.3); border-radius: 12px; color: #fff; font-size: 1.05rem; transition: 0.3s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+                </div>
+
+                <!-- Gift Toggle -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; color: #d0d0e8; font-size: 0.9rem; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+                        <input type="checkbox" id="isGiftCheck" onchange="toggleGiftInput()" style="width: 18px; height: 18px; accent-color: var(--secondary); cursor: pointer;">
+                        <span><i class="fas fa-gift" style="color: var(--secondary); margin-right: 5px;"></i> Nunua kama Zawadi kwa Rafiki?</span>
                     </label>
-                    <div id="giftInputGroup" style="display: none; margin-top: 12px; animation: fadeIn 0.3s;">
-                        <input type="tel" id="giftRecipientPhone" placeholder="Namba ya Rafiki: 07XXXXXXXX" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(0,242,255,0.2); color: white; border-radius: 8px;">
+                    <div id="giftInputGroup" style="display: none; margin-top: 10px; position: relative;">
+                        <i class="fas fa-user-friends" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--secondary); font-size: 1.1rem;"></i>
+                        <input type="tel" id="giftRecipientPhone" placeholder="Namba ya Rafiki (07XXXXXXXX)" style="width: 100%; padding: 14px 15px 14px 50px; background: rgba(188,19,254,0.05); border: 1px solid rgba(188,19,254,0.3); color: white; border-radius: 12px; font-size: 1rem;">
                     </div>
                 </div>
-                <div class="payment-input-group" style="margin-top: 20px;">
-                    <input type="tel" id="paySenderNumber" placeholder="Namba uliyotuma: 07XXXXXXXX" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
-                </div>
+
                 <!-- PROMO CODE SECTION -->
-                <div class="promo-section" style="margin-top: 15px; text-align: left;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px;">Una kodi ya punguzo? (Promo Code)</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="promoCodeInput" placeholder="Mfano: CHIDYNEW" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; text-transform: uppercase;">
-                        <button onclick="applyPromoCode()" style="padding: 0 15px; border-radius: 8px; border: 1px solid var(--primary); background: transparent; color: var(--primary); font-size: 0.75rem; font-weight: bold; cursor: pointer;">HAKIKI</button>
+                <div style="background: rgba(255,255,255,0.02); border-radius: 12px; padding: 18px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05); text-align: left;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;"><i class="fas fa-ticket-alt" style="color: var(--gold); margin-right: 5px;"></i> Promo Code (Kama unayo)</label>
+                    <div style="display: flex; gap: 10px;">
+                        <div style="position: relative; flex: 1;">
+                            <i class="fas fa-tag" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4);"></i>
+                            <input type="text" id="promoCodeInput" placeholder="Mfano: CHIDYNEW" style="width: 100%; padding: 14px 12px 14px 40px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 10px; text-transform: uppercase; font-family: 'Orbitron'; font-size: 0.95rem; letter-spacing: 1px;">
+                        </div>
+                        <button onclick="applyPromoCode()" style="padding: 0 25px; border-radius: 10px; border: 1px solid var(--gold); background: rgba(255,180,0,0.1); color: var(--gold); font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: 0.3s; font-family: 'Orbitron';" onmouseover="this.style.background='var(--gold)'; this.style.color='#000'; this.style.boxShadow='0 0 15px rgba(255,180,0,0.4)';" onmouseout="this.style.background='rgba(255,180,0,0.1)'; this.style.color='var(--gold)'; this.style.boxShadow='none';">HAKIKI</button>
                     </div>
-                    <div id="promoMessage" style="font-size: 0.7rem; margin-top: 5px;"></div>
+                    <div id="promoMessage" style="font-size: 0.8rem; margin-top: 10px; font-weight: 600;"></div>
                 </div>
-                <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()" style="margin-top: 15px; width: 100%; padding: 15px; background: var(--primary); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Orbitron';">✅ NIMETUMA PESA</button>
+
+                <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()" style="width: 100%; padding: 20px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; font-size: 1.2rem; letter-spacing: 1.5px; box-shadow: 0 10px 30px rgba(0,242,255,0.4); display: flex; align-items: center; justify-content: center; gap: 10px; transition: transform 0.3s, box-shadow 0.3s; position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-3px) scale(1.02)';" onmouseout="this.style.transform='none';">
+                    <i class="fas fa-check-circle" style="font-size: 1.4rem;"></i> <span>THIBITISHA MALIPO</span>
+                    <div style="position: absolute; top: 0; left: -100%; width: 30%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); animation: sweepLine 3s infinite; transform: skewX(-20deg);"></div>
+                </button>
             </div>
             <input type="hidden" id="payPostId">
         </div>

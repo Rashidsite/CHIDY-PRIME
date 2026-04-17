@@ -3822,24 +3822,31 @@
                 
                 if (data.error) throw new Error(data.error);
 
-                // Update UI elements with absolute fallbacks
-                document.getElementById('healthDbStatus').innerText = (data.database === 'connected') ? 'CONNECTED' : (data.database || 'OFFLINE');
-                document.getElementById('healthDbCard').style.borderColor = (data.database === 'connected') ? '#00d25b' : '#ff3333';
-                document.getElementById('healthDbLastCheck').innerText = 'Last check: ' + new Date().toLocaleTimeString();
+                const s = data.stats || {};
                 
-                const cpu = data.cpu !== undefined ? data.cpu : 0;
-                const mem = data.memory !== undefined ? data.memory : 0;
+                // Update UI elements with absolute fallbacks
+                const isDbOk = s.supabaseStatus && s.supabaseStatus.startsWith('OK');
+                document.getElementById('healthDbStatus').innerText = s.supabaseStatus || 'OFFLINE';
+                document.getElementById('healthDbCard').style.borderColor = isDbOk ? '#00d25b' : '#ff3333';
+                document.getElementById('healthDbLastCheck').innerText = s.lastDbCheck ? 'Last checked: ' + new Date(s.lastDbCheck).toLocaleTimeString() : 'Never checked yet';
+                
+                const cpu = s.cpuUsage !== undefined ? s.cpuUsage : 0;
+                const mem = s.memoryUsage !== undefined ? s.memoryUsage : 0;
 
                 document.getElementById('healthCpuVal').innerText = cpu + '%';
                 document.getElementById('healthCpuBar').innerText = cpu + '%';
-                document.getElementById('healthCpuProgress').style.width = cpu + '%';
+                document.getElementById('healthCpuProgress').style.width = Math.min(cpu, 100) + '%';
                 
                 document.getElementById('healthMemVal').innerText = mem + '%';
                 document.getElementById('healthMemBar').innerText = mem + '%';
-                document.getElementById('healthMemProgress').style.width = mem + '%';
+                document.getElementById('healthMemProgress').style.width = Math.min(mem, 100) + '%';
                 
-                document.getElementById('healthUptime').innerText = data.uptime || 'Stable';
-                document.getElementById('healthTelegramStatus').innerText = data.telegram || 'Active';
+                const uptimeSec = Math.floor(s.uptime || 0);
+                const hrs = Math.floor(uptimeSec / 3600);
+                const mins = Math.floor((uptimeSec % 3600) / 60);
+                const secs = uptimeSec % 60;
+                document.getElementById('healthUptime').innerText = `${hrs}h ${mins}m ${secs}s`;
+                document.getElementById('healthTelegramStatus').innerText = data.telegramConfigured ? 'Active' : 'Not Set';
                 
                 if (errorLog) errorLog.innerHTML = '<div style="color:#00d25b; font-size:0.85rem; text-align:center; padding:1rem;"><i class="fas fa-check-circle"></i> System operational. No critical errors found.</div>';
 

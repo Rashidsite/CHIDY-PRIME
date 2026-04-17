@@ -661,7 +661,8 @@ app.get('/api/settings/maintenance', async (req, res) => {
 });
 
 // GET System Health (Admin Only)
-app.get('/api/system/health', verifyAdmin, (req, res) => {
+app.get('/api/system/health', verifyAdmin, async (req, res) => {
+    if (typeof runHealthCheck === 'function') await runHealthCheck();
     res.json({
         stats: global.healthStats,
         errors: global.systemErrors,
@@ -718,6 +719,39 @@ app.post('/api/settings/announcement', verifyAdmin, async (req, res) => {
     const { error } = await supabase.from('site_settings').upsert({ key: 'announcement_text', value: JSON.stringify(text) });
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
+});
+
+// ============================================
+// PROMO CODES ENDPOINTS
+// ============================================
+
+app.get('/api/admin/promo', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    try {
+        const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'promo_codes').single();
+        if (error) {
+            if (error.code === 'PGRST116') return res.json([]); // Not found
+            return res.status(500).json({ error: error.message });
+        }
+        res.json(JSON.parse(data.value || '[]'));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/admin/promo', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    try {
+        const { codes } = req.body;
+        const { error } = await supabase.from('site_settings').upsert({ 
+            key: 'promo_codes', 
+            value: JSON.stringify(codes || []) 
+        });
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // ============================================
@@ -1512,67 +1546,6 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-// System Health Monitoring Endpoint
-app.get('/api/system/health', verifyAdmin, async (req, res) => {
-    try {
-        const startTime = Date.now();
-        let dbStatus = 'connected';
-        
-        // Check DB Connection - Use a more reliable simple check
-        try {
-            if (supabase) {
-                // Just check if we can reach the 'posts' table (which always exists)
-                const { error } = await supabase.from('posts').select('id', { count: 'exact', head: true }).limit(1);
-                if (error) {
-                    console.error("DB Health Check Error:", error);
-                    dbStatus = 'disconnected';
-                } else {
-                    dbStatus = 'connected';
-                }
-            } else {
-                dbStatus = 'not_configured';
-            }
-        } catch (dbErr) {
-            console.error("DB Exception:", dbErr);
-            dbStatus = 'error';
-        }
-
-        // System Metrics with smarter fallbacks
-        const totalMem = os.totalmem() || (2 * 1024 * 1024 * 1024); // Default 2GB
-        const freeMem = os.freemem() || (1.2 * 1024 * 1024 * 1024);
-        let memUsage = Math.round(((totalMem - freeMem) / totalMem) * 100);
-        if (memUsage === 0) memUsage = 14; // Realistic base usage
-        
-        // Improved CPU calculation
-        const loadAvg = os.loadavg();
-        const cpus = os.cpus();
-        let cpuUsage = (loadAvg && loadAvg.length > 0 && cpus && cpus.length > 0) 
-            ? Math.round(loadAvg[0] * 100 / cpus.length) 
-            : 0;
-        
-        if (cpuUsage === 0) cpuUsage = 2 + Math.floor(Math.random() * 5); // Realistic base load
-        
-        // Uptime formatting
-        const uptimeSeconds = os.uptime();
-        const days = Math.floor(uptimeSeconds / (3600 * 24));
-        const hours = Math.floor((uptimeSeconds % (3600 * 24)) / 3600);
-        const mins = Math.floor((uptimeSeconds % 3600) / 60);
-        const uptimeStr = uptimeSeconds ? `${days}d ${hours}h ${mins}m` : "Checking...";
-
-        res.json({
-            database: dbStatus,
-            cpu: Math.min(cpuUsage, 100),
-            memory: Math.min(memUsage, 100),
-            uptime: uptimeStr,
-            telegram: 'Active (Bot Online)',
-            latency: `${Date.now() - startTime}ms`
-        });
-    } catch (err) {
-        console.error("Health Endpoint Error:", err);
-        res.status(500).json({ error: err.message });
-    }
 });
 
 module.exports = app;
