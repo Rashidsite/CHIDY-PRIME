@@ -1165,9 +1165,10 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
                 }, { onConflict: 'visitor_id,post_id' });
             }
 
-            // 3. Notify requester
+            // 3. Notify requester (with post_id for auto-cleanup)
             await supabase.from('notifications').insert({
                 visitor_id: visitor_id,
+                post_id: post_id,
                 title: isGift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
                 message: isGift 
                     ? `Oda yako ya zawadi ya "${gTitle}" kwa namba ${giftPhone} imekubaliwa.` 
@@ -1175,10 +1176,11 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
                 type: 'success'
             });
 
-            // 4. Notify recipient
+            // 4. Notify recipient (with post_id for auto-cleanup)
             if (isGift && targetVisitorId) {
                 await supabase.from('notifications').insert({
                     visitor_id: targetVisitorId,
+                    post_id: post_id,
                     title: 'Umepokea Zawadi! 👑',
                     message: `Umepata zawadi ya game "${gTitle}" kutoka kwa ${order.phone_number || 'rafiki'}. Unaweza kuanza kuicheza sasa hivi!`,
                     type: 'success'
@@ -1313,15 +1315,58 @@ app.get('/api/notifications/:visitor_id', async (req, res) => {
     const { visitor_id } = req.params;
     
     try {
-        const { data, error } = await supabase
+        // 1. Fetch current notifications
+        const { data: notifications, error } = await supabase
             .from('notifications')
             .select('*')
             .or(`visitor_id.eq.${visitor_id},visitor_id.is.null`)
-            .order('created_at', { ascending: false })
-            .limit(10);
+            .order('created_at', { ascending: false });
             
         if (error) throw error;
-        res.json(data);
+
+        // 2. Fetch user access to check for expired ones
+        const { data: activeAccess } = await supabase
+            .from('user_access')
+            .select('post_id, expires_at')
+            .eq('visitor_id', parseInt(visitor_id));
+
+        const now = new Date();
+        const accessMap = {};
+        (activeAccess || []).forEach(a => {
+            accessMap[a.post_id] = new Date(a.expires_at) > now;
+        });
+
+        // 3. Filter and Cleanup Expired Notifications
+        const filteredNotifications = [];
+        const toDeleteIds = [];
+
+        for (const n of notifications) {
+            // If it's a game-specific notification (has post_id)
+            if (n.post_id) {
+                const isStillActive = accessMap[n.post_id];
+                if (isStillActive) {
+                    filteredNotifications.push(n);
+                } else {
+                    // Access expired or doesn't exist anymore, mark for deletion
+                    toDeleteIds.push(n.id);
+                }
+            } else {
+                // Global or system notification, always show for 7 days
+                const ageDays = (now - new Date(n.created_at)) / (1000 * 60 * 60 * 24);
+                if (ageDays < 7) {
+                    filteredNotifications.push(n);
+                } else {
+                    toDeleteIds.push(n.id);
+                }
+            }
+        }
+
+        // 4. Background cleanup (Delete from DB so they don't clog up)
+        if (toDeleteIds.length > 0) {
+            supabase.from('notifications').delete().in('id', toDeleteIds).then();
+        }
+
+        res.json(filteredNotifications.slice(0, 10));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
