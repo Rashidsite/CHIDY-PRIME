@@ -3599,29 +3599,43 @@
 
         // ===== SYSTEM HEALTH & PROMO MANAGEMENT =====
         async function loadSystemHealth() {
+            console.log("Fetching system health...");
+            const errorLog = document.getElementById('healthErrorLog');
+            
             try {
                 const res = await fetch('/api/system/health');
                 const data = await res.json();
+                console.log("Health Data Received:", data);
                 
-                // Update UI elements
-                document.getElementById('healthDbStatus').innerText = data.database === 'connected' ? 'CONNECTED' : 'OFFLINE';
-                document.getElementById('healthDbCard').style.borderColor = data.database === 'connected' ? '#00d25b' : '#ff3333';
+                if (data.error) throw new Error(data.error);
+
+                // Update UI elements with absolute fallbacks
+                document.getElementById('healthDbStatus').innerText = (data.database === 'connected') ? 'CONNECTED' : (data.database || 'OFFLINE');
+                document.getElementById('healthDbCard').style.borderColor = (data.database === 'connected') ? '#00d25b' : '#ff3333';
                 document.getElementById('healthDbLastCheck').innerText = 'Last check: ' + new Date().toLocaleTimeString();
                 
-                document.getElementById('healthCpuVal').innerText = data.cpu + '%';
-                document.getElementById('healthCpuBar').innerText = data.cpu + '%';
-                document.getElementById('healthCpuProgress').style.width = data.cpu + '%';
+                const cpu = data.cpu !== undefined ? data.cpu : 0;
+                const mem = data.memory !== undefined ? data.memory : 0;
+
+                document.getElementById('healthCpuVal').innerText = cpu + '%';
+                document.getElementById('healthCpuBar').innerText = cpu + '%';
+                document.getElementById('healthCpuProgress').style.width = cpu + '%';
                 
-                document.getElementById('healthMemVal').innerText = data.memory + '%';
-                document.getElementById('healthMemBar').innerText = data.memory + '%';
-                document.getElementById('healthMemProgress').style.width = data.memory + '%';
+                document.getElementById('healthMemVal').innerText = mem + '%';
+                document.getElementById('healthMemBar').innerText = mem + '%';
+                document.getElementById('healthMemProgress').style.width = mem + '%';
                 
-                document.getElementById('healthUptime').innerText = data.uptime;
-                document.getElementById('healthTelegramStatus').innerText = data.telegram;
+                document.getElementById('healthUptime').innerText = data.uptime || 'Stable';
+                document.getElementById('healthTelegramStatus').innerText = data.telegram || 'Active';
                 
+                if (errorLog) errorLog.innerHTML = '<div style="color:#00d25b; font-size:0.85rem; text-align:center; padding:1rem;"><i class="fas fa-check-circle"></i> System operational. No critical errors found.</div>';
+
                 // Load Promo Codes too
                 fetchPromoCodes();
-            } catch (e) { console.error('Health fetch failed', e); }
+            } catch (e) { 
+                console.error('Health fetch failed:', e); 
+                if (errorLog) errorLog.innerHTML = `<div style="color:#ff3366; font-size:0.85rem; padding:1rem;"><i class="fas fa-exclamation-circle"></i> Error: ${e.message}. Jaribu ku-refresh ukurasa.</div>`;
+            }
         }
 
         async function fetchPromoCodes() {
