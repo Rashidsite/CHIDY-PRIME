@@ -629,11 +629,12 @@ app.patch('/api/categories/order', verifyAdmin, async (req, res) => {
     if (!Array.isArray(categories)) return res.status(400).json({ error: 'Categories array is required' });
     
     try {
-        for (const cat of categories) {
-            await supabase.from('categories')
+        // Use parallel updates for better performance
+        await Promise.all(categories.map(cat => 
+            supabase.from('categories')
                 .update({ display_order: cat.display_order, is_visible: cat.is_visible })
-                .eq('id', cat.id);
-        }
+                .eq('id', cat.id)
+        ));
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
