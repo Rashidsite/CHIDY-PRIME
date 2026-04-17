@@ -1477,6 +1477,9 @@
                 <a href="#" class="nav-link" data-view="categoriesView"><i class="fas fa-tags"></i> <span>Categories</span></a>
             </li>
             <li class="nav-item">
+                <a href="#" class="nav-link" data-view="promoView"><i class="fas fa-ticket-alt"></i> <span>Promo Codes</span></a>
+            </li>
+            <li class="nav-item">
                 <a href="#" class="nav-link" data-view="healthView"><i class="fas fa-heartbeat"></i> <span>System Health</span></a>
             </li>
             <li class="nav-item" style="margin-top: 2rem;">
@@ -1628,16 +1631,81 @@
                     <div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
                 </div>
             </div>
+        </section>
 
-            <!-- PROMO CODES MANAGER (Added as per user request) -->
-            <div class="admin-card" style="margin-top: 25px; border-left: 5px solid #bc13fe; background: rgba(188, 19, 254, 0.02);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h4 style="margin: 0; font-family: 'Orbitron'; color: #bc13fe; letter-spacing: 2px;"><i class="fas fa-ticket-alt"></i> PROMO CODES MANAGER</h4>
-                    <button onclick="addPromoCodeUI()" class="btn-primary" style="padding: 8px 15px; font-size: 0.75rem; background: #bc13fe; border:none; border-radius:8px; color:#fff; cursor:pointer;"><i class="fas fa-plus"></i> NEW SECRET CODE</button>
+        <!-- PROMO CODES VIEW -->
+        <section id="promoView" class="content view-section" style="display: none;">
+            <style>
+                .promo-stat-card {
+                    background: rgba(188,19,254,0.06);
+                    border: 1px solid rgba(188,19,254,0.2);
+                    border-radius: 14px;
+                    padding: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 18px;
+                    transition: 0.3s;
+                }
+                .promo-stat-card:hover { border-color: #bc13fe; box-shadow: 0 0 20px rgba(188,19,254,0.15); }
+                .promo-stat-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(188,19,254,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #bc13fe; flex-shrink: 0; }
+                .promo-card-item {
+                    background: rgba(0,0,0,0.3);
+                    border: 1px solid rgba(188,19,254,0.2);
+                    border-radius: 14px;
+                    padding: 20px;
+                    transition: 0.3s;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .promo-card-item::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #bc13fe; box-shadow: 0 0 10px #bc13fe; }
+                .promo-card-item:hover { border-color: #bc13fe; transform: translateY(-2px); }
+                .promo-code-badge { font-family: 'Orbitron'; font-size: 1.1rem; letter-spacing: 2px; color: #bc13fe; text-shadow: 0 0 10px rgba(188,19,254,0.5); }
+            </style>
+
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h2 class="view-title" style="margin-bottom: 5px;"><i class="fas fa-ticket-alt"></i> Promo Codes Manager</h2>
+                    <p style="color: #6c7293; font-size: 0.9rem; margin: 0;">Simamia kodi za punguzo (discounts) kwa wateja wako</p>
                 </div>
-                <div id="promoCodesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
-                    <!-- Promo codes will appear here -->
-                    <div style="color:#6c7293; font-size:0.85rem;">Loading your secret codes...</div>
+                <button onclick="addPromoCodeUI()" style="padding: 12px 25px; background: linear-gradient(135deg, #bc13fe, #7b00ff); border: none; border-radius: 12px; color: #fff; font-family: 'Orbitron'; font-size: 0.85rem; font-weight: 700; cursor: pointer; box-shadow: 0 5px 20px rgba(188,19,254,0.4); transition: 0.3s; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                    <i class="fas fa-plus-circle"></i> ONGEZA PROMO CODE
+                </button>
+            </div>
+
+            <!-- Stats Row -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 2rem;" id="promoStatsRow">
+                <div class="promo-stat-card">
+                    <div class="promo-stat-icon"><i class="fas fa-tags"></i></div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6c7293; text-transform: uppercase; letter-spacing: 1px;">Jumla ya Codes</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #fff;" id="promoTotalCount">-</div>
+                    </div>
+                </div>
+                <div class="promo-stat-card" style="background: rgba(0,210,91,0.06); border-color: rgba(0,210,91,0.2);">
+                    <div class="promo-stat-icon" style="background: rgba(0,210,91,0.15); color: #00d25b;"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6c7293; text-transform: uppercase; letter-spacing: 1px;">Zinazofanya Kazi</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #00d25b;" id="promoActiveCount">-</div>
+                    </div>
+                </div>
+                <div class="promo-stat-card" style="background: rgba(255,51,102,0.06); border-color: rgba(255,51,102,0.2);">
+                    <div class="promo-stat-icon" style="background: rgba(255,51,102,0.15); color: #ff3366;"><i class="fas fa-times-circle"></i></div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6c7293; text-transform: uppercase; letter-spacing: 1px;">Zimezimwa</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #ff3366;" id="promoDisabledCount">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promo Cards Grid -->
+            <div class="admin-card" style="border: 1px solid rgba(188,19,254,0.15);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="font-family: 'Orbitron'; font-size: 0.95rem; color: #bc13fe; margin: 0; letter-spacing: 2px;"><i class="fas fa-list"></i> CODES ZOTE</h3>
+                    <button onclick="loadPromoCodes()" style="background: rgba(188,19,254,0.1); border: 1px solid rgba(188,19,254,0.3); color: #bc13fe; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div id="promoCodesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                    <div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading promo codes...</div>
                 </div>
             </div>
         </section>
@@ -2337,6 +2405,7 @@
             if (viewId === 'usersView') loadUsers();
             if (viewId === 'ordersView') fetchOrders();
             if (viewId === 'healthView') loadSystemHealth();
+            if (viewId === 'promoView') loadPromoCodesWithStats();
         }
 
         // ============================================
@@ -3864,38 +3933,64 @@
             }
         }
 
-        async function fetchPromoCodes() {
+        async function loadPromoCodesWithStats() {
             try {
                 const token = localStorage.getItem('adminToken');
                 const res = await fetch('/api/admin/promo', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const codes = await res.json();
+                
+                // Update Stats
+                const total = codes.length;
+                const active = codes.filter(c => c.active).length;
+                const disabled = total - active;
+                
+                const totalEl = document.getElementById('promoTotalCount');
+                const activeEl = document.getElementById('promoActiveCount');
+                const disabledEl = document.getElementById('promoDisabledCount');
+                
+                if (totalEl) totalEl.textContent = total;
+                if (activeEl) activeEl.textContent = active;
+                if (disabledEl) disabledEl.textContent = disabled;
+                
                 renderPromoCodes(codes);
             } catch (e) { console.error('Failed to fetch promos', e); }
         }
 
+        function loadPromoCodes() { loadPromoCodesWithStats(); }
+
         function renderPromoCodes(codes) {
             const container = document.getElementById('promoCodesList');
+            if (!container) return;
+            
             if (!codes || codes.length === 0) {
-                container.innerHTML = '<p style="color: #6c7293; font-size: 0.85rem;">Hakuna promo code yoyote kwa sasa. Bonyeza "NEW SECRET CODE" kuanza.</p>';
+                container.innerHTML = '<div style="color: #6c7293; font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;">Hakuna promo code yoyote kwa sasa. Bonyeza "ONGEZA PROMO CODE" kuanza.</div>';
                 return;
             }
 
             container.innerHTML = codes.map((c, i) => `
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid ${c.active ? '#00d25b' : '#6c7293'};">
-                    <div>
-                        <div style="font-family: 'Orbitron'; font-size: 0.95rem; color: #fff; letter-spacing: 1px;">${c.code}</div>
-                        <div style="font-size: 0.8rem; color: ${c.active ? '#00d25b' : '#6c7293'}; font-weight: bold;">${c.discount}% Punguzo ${c.active ? '✅' : '(ZIMWA)'}</div>
+                <div class="promo-card-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span class="promo-code-badge">${c.code}</span>
+                        <div style="padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; background: ${c.active ? 'rgba(0, 210, 91, 0.1)' : 'rgba(255, 51, 102, 0.1)'}; color: ${c.active ? '#00d25b' : '#ff3366'}; border: 1px solid ${c.active ? 'rgba(0, 210, 91, 0.2)' : 'rgba(255, 51, 102, 0.2)'};">
+                            ${c.active ? 'Active' : 'Disabled'}
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button onclick="editPromoDiscount(${i})" style="background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); color: #00f2ff; cursor: pointer; width:35px; height:35px; border-radius:50%;" title="Badilisha %">
-                            <i class="fas fa-edit"></i>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #6c7293; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 4px;">Punguzo (Discount)</div>
+                        <div style="font-size: 1.4rem; color: #fff; font-weight: 700;">${c.discount}% <span style="font-size: 0.8rem; color: #bc13fe; font-weight: 400;">OFF</span></div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+                        <button onclick="editPromoDiscount(${i})" style="flex: 1; background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); color: #00f2ff; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='rgba(0,242,255,0.1)'" onmouseout="this.style.background='rgba(0,242,255,0.05)'">
+                            <i class="fas fa-edit"></i> Edit %
                         </button>
-                        <button onclick="togglePromoStatus(${i})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: ${c.active ? '#00d25b' : '#ffb400'}; cursor: pointer; width:35px; height:35px; border-radius:50%;" title="${c.active ? 'Zima' : 'Washa'}">
-                            <i class="fas fa-${c.active ? 'toggle-on' : 'toggle-off'}"></i>
+                        <button onclick="togglePromoStatus(${i})" style="flex: 1; background: rgba(188,19,254,0.05); border: 1px solid rgba(188,19,254,0.2); color: #bc13fe; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='rgba(188,19,254,0.1)'" onmouseout="this.style.background='rgba(188,19,254,0.05)'">
+                            <i class="fas fa-${c.active ? 'power-off' : 'play'}"></i> ${c.active ? 'Disable' : 'Enable'}
                         </button>
-                        <button onclick="deletePromoCode(${i})" style="background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.2); color: #ff3366; cursor: pointer; width:35px; height:35px; border-radius:50%;" title="Futa">
+                        <button onclick="deletePromoCode(${i})" style="background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.2); color: #ff3366; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.background='rgba(255,51,102,0.2)'" onmouseout="this.style.background='rgba(255,51,102,0.1)'">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -3977,7 +4072,7 @@
                 body: JSON.stringify({ codes })
             });
             const result = await res.json();
-            if (result.success) fetchPromoCodes();
+            if (result.success) loadPromoCodesWithStats();
             else alert('Failed to save promo codes');
         }
 
