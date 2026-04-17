@@ -1496,28 +1496,7 @@ app.post('/api/promo/validate', async (req, res) => {
     }
 });
 
-// Get all promo codes (Admin)
-app.get('/api/admin/promo', verifyAdmin, async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    try {
-        const { data } = await supabase.from('site_settings').select('value').eq('key', 'promo_codes').single();
-        res.json(data ? data.value : []);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Update promo codes (Admin)
-app.post('/api/admin/promo', verifyAdmin, async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    const { codes } = req.body;
-    try {
-        await supabase.from('site_settings').upsert({ key: 'promo_codes', value: codes });
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+// Get payment settings info
 
 // Get payment settings info
 app.get('/api/settings/payment', async (req, res) => {
