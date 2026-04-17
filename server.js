@@ -1268,7 +1268,7 @@ app.get('/api/admin/activity', verifyAdmin, async (req, res) => {
             
         // Fetch last 10 orders
         const { data: orders, error: oErr } = await supabase
-            .from('orders')
+            .from('payment_orders')
             .select('id, created_at, amount, status, visitors(name), posts(title)')
             .order('created_at', { ascending: false })
             .limit(10);
