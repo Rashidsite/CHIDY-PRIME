@@ -2705,11 +2705,13 @@
                 }
             });
         }
+        let isCatDirty = false;
 
         async function loadCategories() {
             try {
                 const res = await fetch('/api/categories');
                 allCategories = await res.json();
+                isCatDirty = false; // Reset on load
                 renderCategoriesView();
                 populateCategoryDropdowns();
             } catch (err) {
@@ -2773,7 +2775,7 @@
                 </div>
             `).join('');
             html += `
-                <button onclick="saveCategorySettings()" class="btn-primary" id="saveCatBtn" style="margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: bold; background: linear-gradient(45deg, var(--primary), var(--secondary)); display: none;">
+                <button onclick="saveCategorySettings()" class="btn-primary" id="saveCatBtn" style="margin-top: 15px; padding: 12px; border-radius: 8px; font-weight: bold; background: linear-gradient(45deg, var(--primary), var(--secondary)); display: ${isCatDirty ? 'block' : 'none'};">
                     Save Order & Visibility
                 </button>
             </div>`;
@@ -2805,6 +2807,7 @@
         }
 
         function markCatDirty() {
+            isCatDirty = true;
             const btn = document.getElementById('saveCatBtn');
             if (btn) btn.style.display = 'block';
         }
@@ -2829,6 +2832,7 @@
                     body: JSON.stringify({ categories: payload })
                 });
                 if (!res.ok) throw new Error('Failed to save');
+                isCatDirty = false; // Reset on success
                 btn.innerHTML = '<i class="fas fa-check"></i> Saved successfully!';
                 setTimeout(() => { if(btn) btn.style.display = 'none'; }, 2000);
             } catch (err) {
