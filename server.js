@@ -734,7 +734,7 @@ app.get('/api/admin/promo', verifyAdmin, async (req, res) => {
             if (error.code === 'PGRST116') return res.json([]); // Not found
             return res.status(500).json({ error: error.message });
         }
-        res.json(JSON.parse(data.value || '[]'));
+        res.json(data.value || []);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -746,7 +746,7 @@ app.post('/api/admin/promo', verifyAdmin, async (req, res) => {
         const { codes } = req.body;
         const { error } = await supabase.from('site_settings').upsert({ 
             key: 'promo_codes', 
-            value: JSON.stringify(codes || []) 
+            value: codes || [] 
         });
         if (error) return res.status(500).json({ error: error.message });
         res.json({ success: true });
