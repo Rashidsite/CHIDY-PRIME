@@ -1013,9 +1013,23 @@
             overflow: hidden;
             box-shadow: inset 0 0 50px rgba(0, 242, 255, 0.05);
             background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
+            border-radius: 50%; /* Circle looks more premium for face scan */
             transition: 0.3s;
+            border: 2px solid rgba(0, 242, 255, 0.1);
         }
+        .camera-viewfinder video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(0.5) contrast(1.2) brightness(0.8) sepia(0.2) hue-rotate(180deg); /* Blue-ish tint */
+            opacity: 0.6;
+            transition: 0.5s;
+        }
+        .camera-viewfinder.scanning video {
+            opacity: 1;
+            filter: grayscale(0) contrast(1.1) brightness(0.9) hue-rotate(240deg); /* Purple-ish tint for scanning */
+        }
+
 
         .camera-viewfinder:hover {
             box-shadow: inset 0 0 80px rgba(0, 242, 255, 0.1);
@@ -1241,18 +1255,18 @@
         <div class="vault-content" id="faceIdContainer" style="display:flex; flex-direction:column; align-items:center;">
             
             <div class="camera-viewfinder" id="mainFaceBtn" onclick="startBiometricUnlock()">
+                <video id="faceVideo" autoplay playsinline muted></video>
+                
                 <div class="corner top-left"></div>
                 <div class="corner top-right"></div>
                 <div class="corner bottom-left"></div>
                 <div class="corner bottom-right"></div>
                 
                 <!-- Center Focus Ring -->
-                <div style="width:100px; height:100px; border:1px solid rgba(255,255,255,0.1); border-radius:50%; position:absolute;"></div>
-                <div style="width:2px; height:10px; background:rgba(255,255,255,0.2); position:absolute; top:50%; margin-top:-5px;"></div>
-                <div style="width:10px; height:2px; background:rgba(255,255,255,0.2); position:absolute; left:50%; margin-left:-5px;"></div>
+                <div style="width:120px; height:120px; border:1px dashed rgba(0,242,255,0.3); border-radius:50%; position:absolute; animation: rotate 10s linear infinite;"></div>
                 
                 <div class="viewfinder-scan-line" id="viewfinderScanLine"></div>
-                <div class="status-badge" id="faceStatusText">SYSTEM READY</div>
+                <div class="status-badge" id="faceStatusText">TAP TO SCAN</div>
             </div>
             
             <button class="switch-login-btn" id="retryFaceBtn" onclick="startBiometricUnlock()" style="display:none; color:#ff3366; text-decoration:none; border:1px solid #ff3366; padding:8px 20px; border-radius:8px; margin-bottom:10px; background:rgba(255,51,102,0.1);"><i class="fas fa-redo"></i> RETRY SCAN</button>
@@ -1390,6 +1404,17 @@
             statusText.style.color = "#bc13fe";
             retryBtn.style.display = 'none';
             
+            // 1. Start Camera Feed
+            let stream = null;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const videoEl = document.getElementById('faceVideo');
+                videoEl.srcObject = stream;
+            } catch (camErr) {
+                console.warn("Camera access denied:", camErr);
+                // Continue with biometric only (it will show OS prompt)
+            }
+
             try {
                 // Real Biometric Request using WebAuthn standard
                 const bioData = JSON.parse(biometrics);
@@ -1417,6 +1442,9 @@
                     statusText.style.borderColor = "#00d25b";
                     statusText.style.color = "#00d25b";
                     
+                    // Stop Camera
+                    if (stream) stream.getTracks().forEach(t => t.stop());
+
                     setTimeout(() => {
                         unlockVault();
                         if (typeof refreshAllData === 'function') refreshAllData();
@@ -1424,6 +1452,9 @@
                 }
             } catch (err) {
                 console.error("Biometric Error:", err);
+                // Stop Camera on error
+                if (stream) stream.getTracks().forEach(t => t.stop());
+
                 faceBtn.className = 'camera-viewfinder failed';
                 scanLine.style.display = 'none';
                 statusText.innerText = "ACCESS DENIED";
