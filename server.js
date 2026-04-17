@@ -1018,7 +1018,7 @@ app.post('/api/payments/callback', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
-    const { visitor_id, post_id, amount, phone_number } = req.body;
+    const { visitor_id, post_id, amount, phone_number, promo_used } = req.body;
     if (!visitor_id || !post_id || !amount || !phone_number) {
         return res.status(400).json({ error: 'All fields are required' });
     }
@@ -1033,14 +1033,16 @@ app.post('/api/orders', async (req, res) => {
                 phone_number: phone_number.trim(),
                 status: 'pending',
                 is_gift: req.body.is_gift || false,
-                gift_phone: req.body.gift_phone || null
+                gift_phone: req.body.gift_phone || null,
+                promo_used: promo_used || null
             }])
             .select();
         
         if (error) throw error;
         
         // Notify admin via Telegram & chat
-        sendTelegramAlert(`🛒 <b>NEW PENDING ORDER</b> 🛒\n\n<b>Phone:</b> ${phone_number}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Time:</b> ${new Date().toLocaleString()}\n\n<i>Check Admin Dashboard to approve.</i>`);
+        const promoInfo = promo_used ? `\n🎟️ <b>Promo:</b> ${promo_used}` : '';
+        sendTelegramAlert(`🛒 <b>NEW PENDING ORDER</b> 🛒\n\n<b>Phone:</b> ${phone_number}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}${promoInfo}\n<b>Time:</b> ${new Date().toLocaleString()}\n\n<i>Check Admin Dashboard to approve.</i>`);
 
         await supabase.from('chat_messages').insert([{
             sender: 'SYSTEM',
@@ -1428,6 +1430,33 @@ app.post('/api/admin/access/extend', verifyAdmin, async (req, res) => {
         }
 
         res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Validate Promo Code
+app.post('/api/promo/validate', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { code } = req.body;
+    
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'promo_codes')
+            .single();
+            
+        if (error || !data) return res.status(404).json({ valid: false, message: 'Invalid promo code' });
+        
+        const codes = data.value;
+        const promo = codes.find(c => c.code.toUpperCase() === code.toUpperCase() && c.active);
+        
+        if (promo) {
+            res.json({ valid: true, discount: promo.discount });
+        } else {
+            res.status(404).json({ valid: false, message: 'Promo code not found or inactive' });
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

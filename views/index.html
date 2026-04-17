@@ -2434,6 +2434,15 @@
                 <div class="payment-input-group" style="margin-top: 20px;">
                     <input type="tel" id="paySenderNumber" placeholder="Namba uliyotuma: 07XXXXXXXX" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
                 </div>
+                <!-- PROMO CODE SECTION -->
+                <div class="promo-section" style="margin-top: 15px; text-align: left;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px;">Una kodi ya punguzo? (Promo Code)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="promoCodeInput" placeholder="Mfano: CHIDYNEW" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; text-transform: uppercase;">
+                        <button onclick="applyPromoCode()" style="padding: 0 15px; border-radius: 8px; border: 1px solid var(--primary); background: transparent; color: var(--primary); font-size: 0.75rem; font-weight: bold; cursor: pointer;">HAKIKI</button>
+                    </div>
+                    <div id="promoMessage" style="font-size: 0.7rem; margin-top: 5px;"></div>
+                </div>
                 <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()" style="margin-top: 15px; width: 100%; padding: 15px; background: var(--primary); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Orbitron';">✅ NIMETUMA PESA</button>
             </div>
             <input type="hidden" id="payPostId">
@@ -3017,10 +3026,16 @@
                 const res = await fetch('/api/settings/payment');
                 const settings = await res.json();
                 
-                document.getElementById('payAmount').textContent = 'TSh ' + game.price;
+                document.getElementById('payAmount').textContent = 'TSh ' + game.price.toLocaleString();
                 document.getElementById('payNumber').textContent = settings.mpesa_number;
                 document.getElementById('payName').textContent = settings.mpesa_name;
                 document.getElementById('payPostId').value = postId;
+                
+                // Clear promo state
+                window.activeDiscount = 0;
+                document.getElementById('promoCodeInput').value = '';
+                document.getElementById('promoMessage').textContent = '';
+                document.getElementById('promoMessage').style.color = '';
                 
                 // Clear prefill to ensure user knows they must enter it
                 document.getElementById('paySenderNumber').value = '';
@@ -3030,6 +3045,45 @@
                 document.getElementById('paymentOverlay').classList.add('show');
             } catch (e) {
                 alert('Tafadhali jaribu tena baadae.');
+            }
+        }
+
+        async function applyPromoCode() {
+            const code = document.getElementById('promoCodeInput').value.trim();
+            const msgEl = document.getElementById('promoMessage');
+            const amountEl = document.getElementById('payAmount');
+            const postId = document.getElementById('payPostId').value;
+            const game = allGames.find(g => g.id == postId);
+
+            if (!code) return;
+
+            msgEl.textContent = 'Inahakiki...';
+            msgEl.style.color = 'var(--text-dim)';
+
+            try {
+                const res = await fetch('/api/promo/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const result = await res.json();
+
+                if (result.valid) {
+                    window.activeDiscount = result.discount;
+                    const discountAmount = (game.price * result.discount) / 100;
+                    const finalPrice = game.price - discountAmount;
+                    
+                    amountEl.innerHTML = `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.8em;">TSh ${game.price.toLocaleString()}</span> <span style="color: #00d25b;">TSh ${finalPrice.toLocaleString()}</span>`;
+                    msgEl.textContent = `Hongera! Umepata punguzo la ${result.discount}% ✅`;
+                    msgEl.style.color = '#00d25b';
+                } else {
+                    window.activeDiscount = 0;
+                    amountEl.textContent = 'TSh ' + game.price.toLocaleString();
+                    msgEl.textContent = result.message || 'Kodi hii si sahihi ❌';
+                    msgEl.style.color = '#ff3366';
+                }
+            } catch (e) {
+                msgEl.textContent = 'Tatizo la mtandao ⚠️';
             }
         }
 
@@ -3075,10 +3129,11 @@
                     body: JSON.stringify({
                         visitor_id: visitor.id,
                         post_id: postId,
-                        amount: game.price,
+                        amount: window.activeDiscount ? (game.price - (game.price * window.activeDiscount / 100)) : game.price,
                         phone_number: senderPhone,
                         is_gift: isGift,
-                        gift_phone: giftPhone
+                        gift_phone: giftPhone,
+                        promo_used: window.activeDiscount ? document.getElementById('promoCodeInput').value.trim().toUpperCase() : null
                     })
                 });
                 const result = await res.json();
