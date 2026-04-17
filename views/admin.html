@@ -3929,8 +3929,7 @@
                 
                 if (errorLog) errorLog.innerHTML = '<div style="color:#00d25b; font-size:0.85rem; text-align:center; padding:1rem;"><i class="fas fa-check-circle"></i> System operational. No critical errors found.</div>';
 
-                // Load Promo Codes too
-                fetchPromoCodes();
+
             } catch (e) { 
                 console.error('Health fetch failed:', e); 
                 if (errorLog) errorLog.innerHTML = `<div style="color:#ff3366; font-size:0.85rem; padding:1rem;"><i class="fas fa-exclamation-circle"></i> Error: ${e.message}. Jaribu ku-refresh ukurasa.</div>`;
