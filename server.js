@@ -26,6 +26,12 @@ global.healthStats = {
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 
+if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+    console.log('Telegram Alert System: READY ✅');
+} else {
+    console.warn('Telegram Alert System: DISABLED (Missing credentials) ❌');
+}
+
 function sendTelegramAlert(message) {
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
     try {
@@ -52,8 +58,7 @@ function logSystemError(type, message) {
     sendTelegramAlert(`🚨 <b>CHIDY PRIME SYSTEM ALERT</b> 🚨\n\n<b>Type:</b> ${type}\n<b>Message:</b> ${message}\n<b>Time:</b> ${new Date().toISOString()}`);
 }
 
-// Background Monitor Task (Every 5 mins)
-setInterval(async () => {
+async function runHealthCheck() {
     try {
         const totalMem = os.totalmem();
         const freeMem = os.freemem();
@@ -87,7 +92,13 @@ setInterval(async () => {
     } catch(err) {
         console.error("Health monitor error:", err);
     }
-}, 5 * 60 * 1000);
+}
+
+// Run immediately on startup
+// runHealthCheck(); // Moved later to ensure supabase is initialized first
+
+// Background Monitor Task (Every 5 mins)
+setInterval(runHealthCheck, 5 * 60 * 1000);
 
 // Admin Auth Middleware
 const verifyAdmin = (req, res, next) => {
@@ -116,6 +127,9 @@ if (supabaseUrl && supabaseKey) {
 } else {
     console.warn('Supabase keys missing. Database features will not work.');
 }
+
+// Start health checks after everything is initialized
+runHealthCheck();
 
 
 
@@ -985,6 +999,10 @@ app.post('/api/payments/callback', async (req, res) => {
             }]);
 
             console.log(`Auto-Approved Order ${order.id} for ${msisdn}`);
+            
+            // Telegram Alert for Success
+            sendTelegramAlert(`💰 <b>SUCCESSFUL PAYMENT</b> 💰\n\n<b>Game:</b> ${additionalProperties?.gameTitle || 'Unknown'}\n<b>Amount:</b> TSh ${parseInt(amount).toLocaleString()}\n<b>Phone:</b> ${msisdn}\n<b>Method:</b> AzamPay\n<b>Time:</b> ${new Date().toLocaleString()}`);
+
             return res.json({ success: true, message: 'Payment recorded and content unlocked' });
 
         } catch (dbErr) {
@@ -1021,7 +1039,9 @@ app.post('/api/orders', async (req, res) => {
         
         if (error) throw error;
         
-        // Notify admin via chat (as a simple notification system)
+        // Notify admin via Telegram & chat
+        sendTelegramAlert(`🛒 <b>NEW PENDING ORDER</b> 🛒\n\n<b>Phone:</b> ${phone_number}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Time:</b> ${new Date().toLocaleString()}\n\n<i>Check Admin Dashboard to approve.</i>`);
+
         await supabase.from('chat_messages').insert([{
             sender: 'SYSTEM',
             message: `New Order! 💰 Number: ${phone_number}, Amount: TSh ${amount}. Check Admin Dashboard to approve.`
