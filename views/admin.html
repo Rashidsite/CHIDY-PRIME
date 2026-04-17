@@ -997,73 +997,88 @@
             animation: scan 2s linear infinite;
         }
 
-        /* Face ID Specific Styles */
-        .face-id-btn {
-            background: rgba(0, 242, 255, 0.05);
-            border: 2px solid var(--primary-color);
-            border-radius: 20px;
-            padding: 30px;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            width: 250px;
+        /* Face ID Viewfinder Styles */
+        .camera-viewfinder {
             position: relative;
+            width: 250px;
+            height: 250px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
             overflow: hidden;
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+            box-shadow: inset 0 0 50px rgba(0, 242, 255, 0.05);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            transition: 0.3s;
         }
 
-        .face-id-btn:hover {
-            background: rgba(0, 242, 255, 0.15);
-            transform: translateY(-5px);
-            box-shadow: 0 0 40px rgba(0, 242, 255, 0.3);
+        .camera-viewfinder:hover {
+            box-shadow: inset 0 0 80px rgba(0, 242, 255, 0.1);
         }
 
-        .face-id-btn i {
-            font-size: 3.5rem;
-            color: var(--primary-color);
-            animation: facePulse 2s infinite;
+        .camera-viewfinder .corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--primary-color);
+            transition: 0.3s;
         }
 
-        @keyframes facePulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
+        .camera-viewfinder .top-left { top: 0; left: 0; border-right: none; border-bottom: none; border-top-left-radius: 10px; }
+        .camera-viewfinder .top-right { top: 0; right: 0; border-left: none; border-bottom: none; border-top-right-radius: 10px;}
+        .camera-viewfinder .bottom-left { bottom: 0; left: 0; border-right: none; border-top: none; border-bottom-left-radius: 10px;}
+        .camera-viewfinder .bottom-right { bottom: 0; right: 0; border-left: none; border-top: none; border-bottom-right-radius: 10px;}
+
+        .camera-viewfinder.scanning .corner {
+            border-color: #bc13fe;
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.5);
+        }
+        
+        .camera-viewfinder.failed .corner {
+            border-color: #ff3366;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.5);
         }
 
-        .face-scanner-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-            height: 300px;
-            border: 2px solid var(--primary-color);
-            border-radius: 50%;
-            display: none;
-            z-index: 10001;
-            box-shadow: 0 0 100px rgba(0, 242, 255, 0.5), inset 0 0 50px rgba(0, 242, 255, 0.2);
-            pointer-events: none;
+        .camera-viewfinder.success .corner {
+            border-color: #00d25b;
+            box-shadow: 0 0 15px rgba(0, 210, 91, 0.5);
         }
 
-        .face-scanner-line {
+        .viewfinder-scan-line {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 4px;
-            background: var(--primary-color);
-            box-shadow: 0 0 15px var(--primary-color);
-            animation: scanVertical 2s linear infinite;
+            height: 3px;
+            background: #bc13fe;
+            box-shadow: 0 0 30px 10px rgba(188, 19, 254, 0.4);
+            display: none;
+            animation: viewscan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
 
-        @keyframes scanVertical {
-            0% { top: 10%; opacity: 0; }
-            50% { top: 50%; opacity: 1; }
-            100% { top: 90%; opacity: 0; }
+        @keyframes viewscan {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .status-badge {
+            position: absolute;
+            bottom: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: 'Orbitron';
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+            z-index: 2;
         }
 
         .switch-login-btn {
@@ -1074,8 +1089,10 @@
             font-size: 0.9rem;
             font-family: 'Orbitron';
             text-decoration: underline;
-            margin-top: 20px;
+            margin-top: 15px;
+            transition: 0.3s;
         }
+        .switch-login-btn:hover { color: #fff; }
 
         @keyframes welcomeIn {
             0% { opacity: 0; transform: scale(0.8) skewX(20deg); filter: blur(10px); }
@@ -1218,14 +1235,24 @@
         <div class="vault-door-right"></div>
         <div class="scan-line"></div>
         
-        <div class="vault-content" id="faceIdContainer">
-            <h2 style="font-family: 'Orbitron'; color: #fff; margin-bottom: 20px; letter-spacing: 3px;">AUTOMATIC SCAN</h2>
+        <div class="vault-content" id="faceIdContainer" style="display:flex; flex-direction:column; align-items:center;">
             
-            <div class="face-id-btn" id="mainFaceBtn" onclick="startBiometricUnlock()">
-                <i class="fas fa-face-viewfinder"></i>
-                <span id="faceStatusText" style="font-family: 'Orbitron'; font-size: 0.7rem; color: #fff; letter-spacing: 2px; margin-top:10px;">READY TO SCAN</span>
+            <div class="camera-viewfinder" id="mainFaceBtn" onclick="startBiometricUnlock()">
+                <div class="corner top-left"></div>
+                <div class="corner top-right"></div>
+                <div class="corner bottom-left"></div>
+                <div class="corner bottom-right"></div>
+                
+                <!-- Center Focus Ring -->
+                <div style="width:100px; height:100px; border:1px solid rgba(255,255,255,0.1); border-radius:50%; position:absolute;"></div>
+                <div style="width:2px; height:10px; background:rgba(255,255,255,0.2); position:absolute; top:50%; margin-top:-5px;"></div>
+                <div style="width:10px; height:2px; background:rgba(255,255,255,0.2); position:absolute; left:50%; margin-left:-5px;"></div>
+                
+                <div class="viewfinder-scan-line" id="viewfinderScanLine"></div>
+                <div class="status-badge" id="faceStatusText">SYSTEM READY</div>
             </div>
             
+            <button class="switch-login-btn" id="retryFaceBtn" onclick="startBiometricUnlock()" style="display:none; color:#ff3366; text-decoration:none; border:1px solid #ff3366; padding:8px 20px; border-radius:8px; margin-bottom:10px; background:rgba(255,51,102,0.1);"><i class="fas fa-redo"></i> RETRY SCAN</button>
             <button class="switch-login-btn" onclick="showPinLogin()">OR USE PIN CODE</button>
         </div>
 
@@ -1253,9 +1280,6 @@
             <button class="switch-login-btn" onclick="showFaceLogin()">BACK TO FACE ID</button>
         </div>
         
-        <div class="face-scanner-overlay" id="faceScanner">
-            <div class="face-scanner-line"></div>
-        </div>
     </div>
     
     <script>
@@ -1350,19 +1374,23 @@
                 return;
             }
 
-            const scanner = document.getElementById('faceScanner');
-            const statusText = document.getElementById('faceStatusText');
             const faceBtn = document.getElementById('mainFaceBtn');
+            const scanLine = document.getElementById('viewfinderScanLine');
+            const statusText = document.getElementById('faceStatusText');
+            const retryBtn = document.getElementById('retryFaceBtn');
             
-            scanner.style.display = 'block';
-            statusText.innerText = "SCANNING...";
-            faceBtn.style.borderColor = "var(--primary-color)";
+            // Reset state
+            faceBtn.className = 'camera-viewfinder scanning';
+            scanLine.style.display = 'block';
+            statusText.innerText = "VERIFYING IDENTITY...";
+            statusText.style.borderColor = "#bc13fe";
+            statusText.style.color = "#bc13fe";
+            retryBtn.style.display = 'none';
             
             try {
                 // Real Biometric Request using WebAuthn standard
                 const bioData = JSON.parse(biometrics);
                 
-                // In a real production app, the challenge comes from server
                 const challenge = window.crypto.getRandomValues(new Uint8Array(32));
                 const credentialId = new Uint8Array(bioData.id);
 
@@ -1380,27 +1408,27 @@
                 });
 
                 if (assertion) {
-                    statusText.innerText = "IDENTITY VERIFIED";
-                    faceBtn.style.borderColor = "#00d25b";
-                    scanner.style.display = 'none';
+                    faceBtn.className = 'camera-viewfinder success';
+                    scanLine.style.display = 'none';
+                    statusText.innerText = "ACCESS GRANTED";
+                    statusText.style.borderColor = "#00d25b";
+                    statusText.style.color = "#00d25b";
                     
                     setTimeout(() => {
                         unlockVault();
                         if (typeof refreshAllData === 'function') refreshAllData();
-                    }, 500);
+                    }, 800);
                 }
             } catch (err) {
                 console.error("Biometric Error:", err);
-                scanner.style.display = 'none';
-                statusText.innerText = "VERIFICATION FAILED";
-                faceBtn.style.borderColor = "#ff3366";
+                faceBtn.className = 'camera-viewfinder failed';
+                scanLine.style.display = 'none';
+                statusText.innerText = "ACCESS DENIED";
+                statusText.style.borderColor = "#ff3366";
+                statusText.style.color = "#ff3366";
                 
-                // If they cancel or it fails, show PIN after 1s
-                setTimeout(() => {
-                    if (document.getElementById('faceIdContainer').style.display !== 'none') {
-                        showPinLogin();
-                    }
-                }, 1000);
+                // Show retry button instead of forcing PIN immediately
+                retryBtn.style.display = 'inline-block';
             }
         }
 
