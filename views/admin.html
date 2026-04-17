@@ -1001,33 +1001,97 @@
         }
 
         /* Face ID Viewfinder Styles */
-        .camera-viewfinder {
-            position: relative;
-            width: 250px;
-            height: 250px;
-            margin-bottom: 20px;
+        /* Quantum Security Hub Styles */
+        #vaultOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #101018 0%, #000 100%);
+            z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
             overflow: hidden;
-            box-shadow: inset 0 0 50px rgba(0, 242, 255, 0.05);
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 50%; /* Circle looks more premium for face scan */
+        }
+
+        .quantum-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(188, 19, 254, 0.05) 0%, transparent 40%);
+            filter: blur(80px);
+            animation: pulseBg 10s ease infinite;
+        }
+        @keyframes pulseBg {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        .security-container {
+            position: relative;
+            z-index: 10;
+            width: 400px;
+            padding: 40px;
+            background: rgba(18, 18, 24, 0.7);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            border-radius: 35px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,242,255,0.02);
+            text-align: center;
+            animation: securityIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes securityIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .neon-pin-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .neon-pin-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            height: 70px;
+            border-radius: 20px;
+            font-size: 1.5rem;
+            font-family: 'Orbitron';
+            cursor: pointer;
             transition: 0.3s;
-            border: 2px solid rgba(0, 242, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .camera-viewfinder video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: grayscale(0.5) contrast(1.2) brightness(0.8) sepia(0.2) hue-rotate(180deg); /* Blue-ish tint */
-            opacity: 0.6;
-            transition: 0.5s;
+        .neon-pin-btn:hover {
+            background: rgba(0, 242, 255, 0.1);
+            border-color: rgba(0, 242, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+            transform: translateY(-2px);
         }
-        .camera-viewfinder.scanning video {
-            opacity: 1;
-            filter: grayscale(0) contrast(1.1) brightness(0.9) hue-rotate(240deg); /* Purple-ish tint for scanning */
+        .neon-pin-btn:active { transform: scale(0.9); }
+
+        .pin-display-neon {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .pin-dot-neon {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .pin-dot-neon.filled {
+            background: #00f2ff;
+            box-shadow: 0 0 15px #00f2ff;
+            transform: scale(1.25);
+            border-color: #00f2ff;
         }
 
 
@@ -1248,79 +1312,88 @@
 <body class="scanning">
     <!-- Vault PIN Overlay -->
     <div id="vaultOverlay">
-        <div class="vault-door-left"></div>
-        <div class="vault-door-right"></div>
-        <div class="scan-line"></div>
+        <div class="quantum-bg"></div>
         
-        <div class="vault-content" id="faceIdContainer" style="display:flex; flex-direction:column; align-items:center;">
-            
-            <div class="camera-viewfinder" id="mainFaceBtn" onclick="startBiometricUnlock()">
-                <video id="faceVideo" autoplay playsinline muted></video>
-                
-                <div class="corner top-left"></div>
-                <div class="corner top-right"></div>
-                <div class="corner bottom-left"></div>
-                <div class="corner bottom-right"></div>
-                
-                <!-- Center Focus Ring -->
-                <div style="width:120px; height:120px; border:1px dashed rgba(0,242,255,0.3); border-radius:50%; position:absolute; animation: rotate 10s linear infinite;"></div>
-                
-                <div class="viewfinder-scan-line" id="viewfinderScanLine"></div>
-                <div class="status-badge" id="faceStatusText">TAP TO SCAN</div>
+        <div class="security-container">
+            <!-- Header -->
+            <div style="margin-bottom: 30px;">
+                <div style="width: 60px; height: 60px; background: rgba(0,242,255,0.1); border: 1px solid rgba(0,242,255,0.3); border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; position: relative; overflow: hidden;">
+                    <i class="fas fa-shield-halved" style="color: #00f2ff; font-size: 1.5rem; z-index: 2;"></i>
+                    <div style="position: absolute; width: 100%; height: 100%; background: linear-gradient(45deg, transparent, rgba(0,242,255,0.1), transparent); animation: sweep 3s linear infinite;"></div>
+                </div>
+                <h2 style="font-family: 'Orbitron'; font-size: 1.1rem; color: #fff; margin: 0; letter-spacing: 3px;">SECURE VAULT</h2>
+                <div style="font-size: 0.65rem; color: #6c7293; text-transform: uppercase; margin-top: 8px; letter-spacing: 2px; font-weight: 600;" id="securityPhaseText">IDENTITY SCAN REQUIRED</div>
             </div>
-            
-            <button class="switch-login-btn" id="retryFaceBtn" onclick="startBiometricUnlock()" style="display:none; color:#ff3366; text-decoration:none; border:1px solid #ff3366; padding:8px 20px; border-radius:8px; margin-bottom:10px; background:rgba(255,51,102,0.1);"><i class="fas fa-redo"></i> RETRY SCAN</button>
-            <button class="switch-login-btn" onclick="showPinLogin()">OR USE PIN CODE</button>
-        </div>
 
-        <div class="vault-content" id="pinContainer" style="display: none;">
-            <i class="fas fa-shield-alt" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 20px;"></i>
-            <h2 style="font-family: 'Orbitron'; color: #fff; margin-bottom: 10px; letter-spacing: 3px;">SECURE ACCESS</h2>
-            <p style="color: #6c7293; margin-bottom: 30px;">Enter Admin PIN to Unlock Platform</p>
-            
-            <div class="pin-display" id="pinOutput"></div>
-            
-            <div class="numpad">
-                <button class="num-btn" onclick="addPin('1')">1</button>
-                <button class="num-btn" onclick="addPin('2')">2</button>
-                <button class="num-btn" onclick="addPin('3')">3</button>
-                <button class="num-btn" onclick="addPin('4')">4</button>
-                <button class="num-btn" onclick="addPin('5')">5</button>
-                <button class="num-btn" onclick="addPin('6')">6</button>
-                <button class="num-btn" onclick="addPin('7')">7</button>
-                <button class="num-btn" onclick="addPin('8')">8</button>
-                <button class="num-btn" onclick="addPin('9')">9</button>
-                <button class="num-btn" onclick="addPin('C')" style="background: rgba(255, 51, 102, 0.1); border-color: #ff3366; color: #ff3366;">C</button>
-                <button class="num-btn" onclick="addPin('0')">0</button>
-                <button class="num-btn" onclick="addPin('OK')" style="background: rgba(0, 210, 91, 0.1); border-color: #00d25b; color: #00d25b;">OK</button>
+            <!-- VIEW 1: FACE ID -->
+            <div id="faceIdContainer" style="display:flex; flex-direction:column; align-items:center;">
+                <div class="camera-viewfinder" id="mainFaceBtn" onclick="startBiometricUnlock()">
+                    <video id="faceVideo" autoplay playsinline muted></video>
+                    <div class="corner top-left"></div>
+                    <div class="corner top-right"></div>
+                    <div class="corner bottom-left"></div>
+                    <div class="corner bottom-right"></div>
+                    <div style="width:120px; height:120px; border:1px dashed rgba(0,242,255,0.3); border-radius:50%; position:absolute; animation: rotate 10s linear infinite;"></div>
+                    <div class="viewfinder-scan-line" id="viewfinderScanLine"></div>
+                    <div class="status-badge" id="faceStatusText">TAP TO SCAN</div>
+                </div>
+                <button class="switch-login-btn" id="retryFaceBtn" onclick="startBiometricUnlock()" style="display:none; color:#ff3366; text-decoration:none; border:1px solid #ff3366; padding:10px 20px; border-radius:12px; margin-bottom:15px; background:rgba(255,51,102,0.1); width: 100%; font-weight: 600;"><i class="fas fa-redo"></i> RETRY SCAN</button>
+                <button onclick="showPinLogin()" style="color: #6c7293; font-size: 0.75rem; background: none; border: none; cursor: pointer; text-decoration: none; opacity: 0.7; transition: 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">OR USE EMERGENCY KEYPAD</button>
             </div>
-            <button class="switch-login-btn" onclick="showFaceLogin()">BACK TO FACE ID</button>
+
+            <!-- VIEW 2: PIN PAD -->
+            <div id="pinContainer" style="display:none; flex-direction:column; align-items:center;">
+                <div class="pin-display-neon">
+                    <div class="pin-dot-neon"></div>
+                    <div class="pin-dot-neon"></div>
+                    <div class="pin-dot-neon"></div>
+                    <div class="pin-dot-neon"></div>
+                </div>
+                <div style="color: #00f2ff; font-family: 'Orbitron'; font-size: 0.75rem; margin-bottom: 20px; letter-spacing: 1px;" id="pinStatusText">ENTER SECONDARY KEY</div>
+                
+                <div class="neon-pin-grid">
+                    <button class="neon-pin-btn" onclick="addPin('1')">1</button>
+                    <button class="neon-pin-btn" onclick="addPin('2')">2</button>
+                    <button class="neon-pin-btn" onclick="addPin('3')">3</button>
+                    <button class="neon-pin-btn" onclick="addPin('4')">4</button>
+                    <button class="neon-pin-btn" onclick="addPin('5')">5</button>
+                    <button class="neon-pin-btn" onclick="addPin('6')">6</button>
+                    <button class="neon-pin-btn" onclick="addPin('7')">7</button>
+                    <button class="neon-pin-btn" onclick="addPin('8')">8</button>
+                    <button class="neon-pin-btn" onclick="addPin('9')">9</button>
+                    <button class="neon-pin-btn" style="color:#ff3366;" onclick="clearPin()"><i class="fas fa-backspace"></i></button>
+                    <button class="neon-pin-btn" onclick="addPin('0')">0</button>
+                    <button class="neon-pin-btn" style="color:#00f2ff;" onclick="showFaceLogin()"><i class="fas fa-face-viewfinder"></i></button>
+                </div>
+            </div>
         </div>
-        
     </div>
     
     <script>
         // PIN Security Logic - Defined early to ensure responsiveness
         let enteredPin = "";
-        const CORRECT_PIN = "2025"; 
 
         function addPin(val) {
-            console.log("PIN Input:", val);
-            const output = document.getElementById('pinOutput');
-            if (val === 'C') {
-                enteredPin = "";
-            } else if (val === 'OK') {
-                if (enteredPin.length > 0) verifyPin();
-                return;
-            } else {
-                if (enteredPin.length < 4) enteredPin += val;
+            if (enteredPin.length < 4) {
+                enteredPin += val;
+                updatePinDots();
+                if (enteredPin.length === 4) {
+                    setTimeout(verifyPin, 300);
+                }
             }
-            if (output) {
-                output.textContent = "*".repeat(enteredPin.length);
-            }
-            if (enteredPin.length === 4) {
-                setTimeout(verifyPin, 300);
-            }
+        }
+
+        function updatePinDots() {
+            const dots = document.querySelectorAll('.pin-dot-neon');
+            dots.forEach((dot, i) => {
+                if (i < enteredPin.length) dot.classList.add('filled');
+                else dot.classList.remove('filled');
+            });
+        }
+
+        function clearPin() {
+            enteredPin = enteredPin.slice(0, -1);
+            updatePinDots();
         }
 
         function verifyPin() {
@@ -1333,8 +1406,17 @@
             .then(result => {
                 if (result.success) {
                     localStorage.setItem('adminToken', result.token);
-                    unlockVault();
-                    if (typeof refreshAllData === 'function') refreshAllData();
+                    const status = document.getElementById('pinStatusText');
+                    status.innerText = "ACCESS GRANTED";
+                    status.style.color = "#00d25b";
+                    document.querySelectorAll('.pin-dot-neon').forEach(d => {
+                        d.style.background = "#00d25b";
+                        d.style.boxShadow = "0 0 20px #00d25b";
+                    });
+                    setTimeout(() => {
+                        unlockVault();
+                        if (typeof refreshAllData === 'function') refreshAllData();
+                    }, 600);
                 } else {
                     handleWrongPin();
                 }
@@ -1346,42 +1428,43 @@
         }
 
         function handleWrongPin() {
-            const output = document.getElementById('pinOutput');
-            if (output) {
-                output.style.color = "#ff3366";
-                output.textContent = "WRONG";
-                setTimeout(() => {
-                    enteredPin = "";
-                    output.textContent = "";
-                    output.style.color = "var(--primary-color)";
-                }, 1000);
-            }
+            const container = document.querySelector('.security-container');
+            container.style.animation = 'shake 0.4s ease-in-out';
+            const status = document.getElementById('pinStatusText');
+            status.innerText = "INVALID KEY - RETRY";
+            status.style.color = "#ff3366";
+            
+            setTimeout(() => {
+                enteredPin = "";
+                updatePinDots();
+                container.style.animation = 'none';
+                status.innerText = "ENTER SECONDARY KEY";
+                status.style.color = "#00f2ff";
+            }, 1000);
         }
 
         function unlockVault() {
             const overlay = document.getElementById('vaultOverlay');
-            const welcome = document.getElementById('welcomeSequence');
-            document.body.classList.remove('scanning');
-            overlay.classList.add('vault-unlocked');
+            overlay.style.transition = '1s cubic-bezier(0.16, 1, 0.3, 1)';
+            overlay.style.opacity = '0';
+            overlay.style.transform = 'scale(1.1)';
+            
             setTimeout(() => {
-                welcome.style.opacity = "1";
-                document.body.classList.add('run-welcome');
-                setTimeout(() => {
-                    overlay.style.display = "none";
-                    welcome.style.display = "none";
-                }, 2000);
-            }, 800);
+                overlay.style.display = "none";
+            }, 1000);
         }
 
         // --- NEW FACE ID / BIOMETRIC LOGIC ---
         function showPinLogin() {
             document.getElementById('faceIdContainer').style.display = 'none';
             document.getElementById('pinContainer').style.display = 'flex';
+            document.getElementById('securityPhaseText').innerText = "SECONDARY KEYPAD ACTIVE";
         }
 
         function showFaceLogin() {
             document.getElementById('faceIdContainer').style.display = 'flex';
             document.getElementById('pinContainer').style.display = 'none';
+            document.getElementById('securityPhaseText').innerText = "IDENTITY SCAN REQUIRED";
         }
 
         async function startBiometricUnlock() {
@@ -1397,14 +1480,12 @@
             const retryBtn = document.getElementById('retryFaceBtn');
             
             // Reset state
-            faceBtn.className = 'camera-viewfinder scanning';
+            faceBtn.classList.add('scanning');
             scanLine.style.display = 'block';
             statusText.innerText = "VERIFYING IDENTITY...";
-            statusText.style.borderColor = "#bc13fe";
             statusText.style.color = "#bc13fe";
             retryBtn.style.display = 'none';
             
-            // 1. Start Camera Feed
             let stream = null;
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
@@ -1412,13 +1493,10 @@
                 videoEl.srcObject = stream;
             } catch (camErr) {
                 console.warn("Camera access denied:", camErr);
-                // Continue with biometric only (it will show OS prompt)
             }
 
             try {
-                // Real Biometric Request using WebAuthn standard
                 const bioData = JSON.parse(biometrics);
-                
                 const challenge = window.crypto.getRandomValues(new Uint8Array(32));
                 const credentialId = new Uint8Array(bioData.id);
 
@@ -1426,42 +1504,35 @@
                     publicKey: {
                         challenge: challenge,
                         rpId: window.location.hostname,
-                        allowCredentials: [{
-                            type: 'public-key',
-                            id: credentialId
-                        }],
+                        allowCredentials: [{ type: 'public-key', id: credentialId }],
                         userVerification: 'required',
                         timeout: 60000
                     }
                 });
 
                 if (assertion) {
-                    faceBtn.className = 'camera-viewfinder success';
+                    faceBtn.classList.remove('scanning');
+                    faceBtn.classList.add('success');
                     scanLine.style.display = 'none';
-                    statusText.innerText = "ACCESS GRANTED";
-                    statusText.style.borderColor = "#00d25b";
+                    statusText.innerText = "IDENTITY CONFIRMED";
                     statusText.style.color = "#00d25b";
                     
-                    // Stop Camera
                     if (stream) stream.getTracks().forEach(t => t.stop());
 
+                    // Transition to PIN (DOUBLE LOCK)
                     setTimeout(() => {
-                        unlockVault();
-                        if (typeof refreshAllData === 'function') refreshAllData();
-                    }, 800);
+                        showPinLogin();
+                        document.getElementById('pinStatusText').innerText = "STEP 2: ENTER ADMIN PIN";
+                    }, 1000);
                 }
             } catch (err) {
                 console.error("Biometric Error:", err);
-                // Stop Camera on error
                 if (stream) stream.getTracks().forEach(t => t.stop());
-
-                faceBtn.className = 'camera-viewfinder failed';
+                faceBtn.classList.remove('scanning');
+                faceBtn.classList.add('failed');
                 scanLine.style.display = 'none';
-                statusText.innerText = "ACCESS DENIED";
-                statusText.style.borderColor = "#ff3366";
+                statusText.innerText = "VERIFICATION FAILED";
                 statusText.style.color = "#ff3366";
-                
-                // Show retry button instead of forcing PIN immediately
                 retryBtn.style.display = 'inline-block';
             }
         }
