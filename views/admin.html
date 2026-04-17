@@ -3649,6 +3649,9 @@
                         <div style="font-size: 0.8rem; color: ${c.active ? '#00d25b' : '#6c7293'}; font-weight: bold;">${c.discount}% Punguzo ${c.active ? '✅' : '(ZIMWA)'}</div>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <button onclick="editPromoDiscount(${i})" style="background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); color: #00f2ff; cursor: pointer; width:35px; height:35px; border-radius:50%;" title="Badilisha %">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <button onclick="togglePromoStatus(${i})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: ${c.active ? '#00d25b' : '#ffb400'}; cursor: pointer; width:35px; height:35px; border-radius:50%;" title="${c.active ? 'Zima' : 'Washa'}">
                             <i class="fas fa-${c.active ? 'toggle-on' : 'toggle-off'}"></i>
                         </button>
@@ -3677,6 +3680,24 @@
                 await savePromoCodes(codes);
                 showToast('Promo Code imeongezwa!');
             } catch (e) { alert('Failed to add code'); }
+        }
+
+        async function editPromoDiscount(index) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch('/api/admin/promo', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const codes = await res.json();
+                const current = codes[index];
+                
+                const newDiscount = prompt(`Badilisha asilimia ya punguzo kwa kodi "${current.code}":`, current.discount);
+                if (newDiscount === null || isNaN(newDiscount)) return;
+
+                codes[index].discount = parseInt(newDiscount);
+                await savePromoCodes(codes);
+                showToast(`Punguzo la "${current.code}" limebadilishwa kuwa ${newDiscount}%`);
+            } catch (e) { alert('Failed to edit discount'); }
         }
 
         async function togglePromoStatus(index) {
