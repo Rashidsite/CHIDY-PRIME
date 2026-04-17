@@ -1415,6 +1415,18 @@
                     <div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
                 </div>
             </div>
+
+            <!-- PROMO CODES MANAGER (Added as per user request) -->
+            <div class="admin-card" style="margin-top: 25px; border-left: 5px solid #bc13fe; background: rgba(188, 19, 254, 0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h4 style="margin: 0; font-family: 'Orbitron'; color: #bc13fe; letter-spacing: 2px;"><i class="fas fa-ticket-alt"></i> PROMO CODES MANAGER</h4>
+                    <button onclick="addPromoCodeUI()" class="btn-primary" style="padding: 8px 15px; font-size: 0.75rem; background: #bc13fe; border:none; border-radius:8px; color:#fff; cursor:pointer;"><i class="fas fa-plus"></i> NEW SECRET CODE</button>
+                </div>
+                <div id="promoCodesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                    <!-- Promo codes will appear here -->
+                    <div style="color:#6c7293; font-size:0.85rem;">Loading your secret codes...</div>
+                </div>
+            </div>
         </section>
 
         <!-- DASHBOARD VIEW -->
@@ -3584,6 +3596,139 @@
                 alert('Network error.');
             }
         }
+
+        // ===== SYSTEM HEALTH & PROMO MANAGEMENT =====
+        async function loadSystemHealth() {
+            try {
+                const res = await fetch('/api/system/health');
+                const data = await res.json();
+                
+                // Update UI elements
+                document.getElementById('healthDbStatus').innerText = data.database === 'connected' ? 'CONNECTED' : 'OFFLINE';
+                document.getElementById('healthDbCard').style.borderColor = data.database === 'connected' ? '#00d25b' : '#ff3333';
+                document.getElementById('healthDbLastCheck').innerText = 'Last check: ' + new Date().toLocaleTimeString();
+                
+                document.getElementById('healthCpuVal').innerText = data.cpu + '%';
+                document.getElementById('healthCpuBar').innerText = data.cpu + '%';
+                document.getElementById('healthCpuProgress').style.width = data.cpu + '%';
+                
+                document.getElementById('healthMemVal').innerText = data.memory + '%';
+                document.getElementById('healthMemBar').innerText = data.memory + '%';
+                document.getElementById('healthMemProgress').style.width = data.memory + '%';
+                
+                document.getElementById('healthUptime').innerText = data.uptime;
+                document.getElementById('healthTelegramStatus').innerText = data.telegram;
+                
+                // Load Promo Codes too
+                fetchPromoCodes();
+            } catch (e) { console.error('Health fetch failed', e); }
+        }
+
+        async function fetchPromoCodes() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch('/api/admin/promo', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const codes = await res.json();
+                renderPromoCodes(codes);
+            } catch (e) { console.error('Failed to fetch promos', e); }
+        }
+
+        function renderPromoCodes(codes) {
+            const container = document.getElementById('promoCodesList');
+            if (!codes || codes.length === 0) {
+                container.innerHTML = '<p style="color: #6c7293; font-size: 0.85rem;">Hakuna promo code yoyote kwa sasa. Bonyeza "NEW SECRET CODE" kuanza.</p>';
+                return;
+            }
+
+            container.innerHTML = codes.map((c, i) => `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid ${c.active ? '#00d25b' : '#6c7293'};">
+                    <div>
+                        <div style="font-family: 'Orbitron'; font-size: 0.95rem; color: #fff; letter-spacing: 1px;">${c.code}</div>
+                        <div style="font-size: 0.8rem; color: ${c.active ? '#00d25b' : '#6c7293'}; font-weight: bold;">${c.discount}% Punguzo ${c.active ? '✅' : '(ZIMWA)'}</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="togglePromoStatus(${i})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: ${c.active ? '#00d25b' : '#ffb400'}; cursor: pointer; width:35px; height:35px; border-radius:50%;" title="${c.active ? 'Zima' : 'Washa'}">
+                            <i class="fas fa-${c.active ? 'toggle-on' : 'toggle-off'}"></i>
+                        </button>
+                        <button onclick="deletePromoCode(${i})" style="background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.2); color: #ff3366; cursor: pointer; width:35px; height:35px; border-radius:50%;" title="Futa">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addPromoCodeUI() {
+            const code = prompt("Andika Promo Code (Mfano: CHIDY20):");
+            if (!code) return;
+            const discount = prompt("Weka Asilimia ya Punguzo (Mfano: 20):");
+            if (!discount || isNaN(discount)) return;
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch('/api/admin/promo', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const codes = await res.json();
+                codes.push({ code: code.toUpperCase(), discount: parseInt(discount), active: true });
+                
+                await savePromoCodes(codes);
+                showToast('Promo Code imeongezwa!');
+            } catch (e) { alert('Failed to add code'); }
+        }
+
+        async function togglePromoStatus(index) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch('/api/admin/promo', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const codes = await res.json();
+                codes[index].active = !codes[index].active;
+                await savePromoCodes(codes);
+            } catch (e) { alert('Failed to toggle status'); }
+        }
+
+        async function deletePromoCode(index) {
+            if (!confirm('Una uhakika unataka kufuta hii kodi?')) return;
+            try {
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch('/api/admin/promo', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const codes = await res.json();
+                codes.splice(index, 1);
+                await savePromoCodes(codes);
+                showToast('Promo Code imefutwa.');
+            } catch (e) { alert('Failed to delete code'); }
+        }
+
+        async function savePromoCodes(codes) {
+            const token = localStorage.getItem('adminToken');
+            const res = await fetch('/api/admin/promo', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ codes })
+            });
+            const result = await res.json();
+            if (result.success) fetchPromoCodes();
+            else alert('Failed to save promo codes');
+        }
+
+        // Initialize health check on view switch
+        document.querySelector('[data-view="healthView"]').addEventListener('click', loadSystemHealth);
+        // Also run every 2 minutes if the view is active
+        setInterval(() => {
+            if (document.getElementById('healthView').style.display === 'block') {
+                loadSystemHealth();
+            }
+        }, 120000);
+
     </script>
 </body>
 </html>
