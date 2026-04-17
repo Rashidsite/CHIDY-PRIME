@@ -1219,11 +1219,11 @@
         <div class="scan-line"></div>
         
         <div class="vault-content" id="faceIdContainer">
-            <h2 style="font-family: 'Orbitron'; color: #fff; margin-bottom: 30px; letter-spacing: 3px;">BIOMETRIC LOGIN</h2>
+            <h2 style="font-family: 'Orbitron'; color: #fff; margin-bottom: 20px; letter-spacing: 3px;">AUTOMATIC SCAN</h2>
             
-            <div class="face-id-btn" onclick="startBiometricUnlock()">
+            <div class="face-id-btn" id="mainFaceBtn" onclick="startBiometricUnlock()">
                 <i class="fas fa-face-viewfinder"></i>
-                <span style="font-family: 'Orbitron'; font-size: 0.8rem; color: #fff; letter-spacing: 2px;">SCAN FACE ID</span>
+                <span id="faceStatusText" style="font-family: 'Orbitron'; font-size: 0.7rem; color: #fff; letter-spacing: 2px; margin-top:10px;">READY TO SCAN</span>
             </div>
             
             <button class="switch-login-btn" onclick="showPinLogin()">OR USE PIN CODE</button>
@@ -1344,54 +1344,74 @@
         }
 
         async function startBiometricUnlock() {
+            const biometrics = localStorage.getItem('adminBiometrics');
+            if (!biometrics) {
+                showPinLogin();
+                return;
+            }
+
             const scanner = document.getElementById('faceScanner');
+            const statusText = document.getElementById('faceStatusText');
+            const faceBtn = document.getElementById('mainFaceBtn');
+            
             scanner.style.display = 'block';
+            statusText.innerText = "SCANNING...";
+            faceBtn.style.borderColor = "var(--primary-color)";
             
             try {
-                // Check if user has registered biometrics
-                const biometrics = localStorage.getItem('adminBiometrics');
-                if (!biometrics) {
-                    alert("Face ID haijasajiliwa bado. Tafadhali ingia kwa PIN kwanza, kisha nenda kwenye Settings kusajili sura yako.");
-                    scanner.style.display = 'none';
-                    showPinLogin();
-                    return;
-                }
+                // Real Biometric Request using WebAuthn standard
+                const bioData = JSON.parse(biometrics);
+                
+                // In a real production app, the challenge comes from server
+                const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+                const credentialId = new Uint8Array(bioData.id);
 
-                // Standard WebAuthn / Biometric Request
-                // Note: For actual implementation, this requires server-side verification.
-                // Here we use a secure local validation for the prototype.
-                const options = {
+                const assertion = await navigator.credentials.get({
                     publicKey: {
-                        challenge: new Uint8Array(32),
+                        challenge: challenge,
                         rpId: window.location.hostname,
                         allowCredentials: [{
                             type: 'public-key',
-                            id: new Uint8Array(JSON.parse(biometrics).id)
+                            id: credentialId
                         }],
-                        userVerification: 'required'
+                        userVerification: 'required',
+                        timeout: 60000
                     }
-                };
+                });
 
-                // Trigger biometric prompt
-                // In this simplified version, we'll verify the identity
-                // If the device supports it and user has registered.
-                setTimeout(() => {
-                    // Simulating the prompt for 1s for the 'scanning' effect
+                if (assertion) {
+                    statusText.innerText = "IDENTITY VERIFIED";
+                    faceBtn.style.borderColor = "#00d25b";
                     scanner.style.display = 'none';
                     
-                    // In a real app, you'd call navigator.credentials.get(options)
-                    // For now, if they registered, we allow unlock with a small delay
-                    unlockVault();
-                    if (typeof refreshAllData === 'function') refreshAllData();
-                }, 1500);
-
+                    setTimeout(() => {
+                        unlockVault();
+                        if (typeof refreshAllData === 'function') refreshAllData();
+                    }, 500);
+                }
             } catch (err) {
                 console.error("Biometric Error:", err);
                 scanner.style.display = 'none';
-                alert("Face ID imeshindwa. Tafadhali tumia PIN.");
-                showPinLogin();
+                statusText.innerText = "VERIFICATION FAILED";
+                faceBtn.style.borderColor = "#ff3366";
+                
+                // If they cancel or it fails, show PIN after 1s
+                setTimeout(() => {
+                    if (document.getElementById('faceIdContainer').style.display !== 'none') {
+                        showPinLogin();
+                    }
+                }, 1000);
             }
         }
+
+        // Trigger Auto-Scan on Load
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('adminBiometrics')) {
+                setTimeout(startBiometricUnlock, 1500); // Small delay for the intro animation
+            } else {
+                showPinLogin();
+            }
+        });
     </script>
 
     <!-- Welcome Sequence Overlay -->
@@ -3922,21 +3942,40 @@
 
         // --- BIOMETRIC REGISTRATION ---
         async function registerFaceID() {
-            if (!confirm("Unataka kusajili Face ID ya kifaa hiki kama njia ya kuingia?")) return;
+            if (!confirm("Unataka kusajili Face ID (Biometrics) ya kifaa hiki? Hii itakuruhusu kuingia automatic ukiwa unatumia sura yako pekee.")) return;
             
             try {
-                // In a real WebAuthn flow, we'd call navigator.credentials.create()
-                // For this premium UI prototype, we'll mark the device as registered
-                const mockID = Array.from(window.crypto.getRandomValues(new Uint8Array(16)));
-                localStorage.setItem('adminBiometrics', JSON.stringify({
-                    registered: true,
-                    id: mockID,
-                    date: new Date().toISOString()
-                }));
-                
-                showToast("Face ID imesajiliwa kwa mafanikio kwenye kifaa hiki! ✅");
+                const userId = window.crypto.getRandomValues(new Uint8Array(16));
+                const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "Chidy Prime Admin", id: window.location.hostname },
+                        user: {
+                            id: userId,
+                            name: "admin@chidyprime.com",
+                            displayName: "Chidy Admin"
+                        },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                        authenticatorSelection: { userVerification: "required" },
+                        timeout: 60000
+                    }
+                });
+
+                if (credential) {
+                    const idArray = Array.from(new Uint8Array(credential.rawId));
+                    localStorage.setItem('adminBiometrics', JSON.stringify({
+                        registered: true,
+                        id: idArray,
+                        date: new Date().toISOString()
+                    }));
+                    
+                    showToast("Face ID imesajiliwa na 'Identity Key' imehifadhiwa salama! ✅");
+                }
             } catch (err) {
-                alert("Imeshindikana kusajili biometrics: " + err.message);
+                console.error("Registration failed:", err);
+                alert("Imeshindikana kusajili: " + err.message + "\n\nHakikisha kifaa chako kina Face ID/Fingerprint na browser yako inaruhusu.");
             }
         }
 
