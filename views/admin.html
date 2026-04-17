@@ -2431,6 +2431,7 @@
             const activeLink = document.querySelector(`.nav-link[data-view="${viewId}"]`);
             if (activeLink) activeLink.classList.add('active');
 
+            if (viewId === 'dashboardView') fetchOrders();
             if (viewId === 'analyticsView') fetchAnalytics();
             if (viewId === 'categoriesView') loadCategories();
             if (viewId === 'usersView') loadUsers();
@@ -3413,6 +3414,7 @@
             loadCategories();
             fetchActivity();
             // If the current view is not dashboard, reload that specific view
+            if (currentActiveViewId === 'dashboardView') fetchOrders();
             if (currentActiveViewId === 'usersView') loadUsers();
             if (currentActiveViewId === 'ordersView') fetchOrders();
         }
