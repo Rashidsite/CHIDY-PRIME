@@ -3601,9 +3601,12 @@
         async function loadSystemHealth() {
             console.log("Fetching system health...");
             const errorLog = document.getElementById('healthErrorLog');
+            const token = localStorage.getItem('adminToken');
             
             try {
-                const res = await fetch('/api/system/health');
+                const res = await fetch('/api/system/health', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const data = await res.json();
                 console.log("Health Data Received:", data);
                 

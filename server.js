@@ -1515,7 +1515,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // System Health Monitoring Endpoint
-app.get('/api/system/health', async (req, res) => {
+app.get('/api/system/health', verifyAdmin, async (req, res) => {
     try {
         const startTime = Date.now();
         let dbStatus = 'connected';
