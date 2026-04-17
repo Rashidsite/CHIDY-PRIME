@@ -2666,8 +2666,7 @@
                 return;
             }
             
-            // Sort to ensure we render them by their current order
-            allCategories.sort((a,b) => (a.display_order || 0) - (b.display_order || 0));
+            // NOTE: Do NOT sort here — user's manual drag order is preserved in the array
 
             let html = '<div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 600px;">';
             html += allCategories.map((c, i) => `
@@ -2748,9 +2747,13 @@
             }));
             
             try {
+                const token = localStorage.getItem('adminToken');
                 const res = await fetch('/api/categories/order', {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
                     body: JSON.stringify({ categories: payload })
                 });
                 if (!res.ok) throw new Error('Failed to save');
