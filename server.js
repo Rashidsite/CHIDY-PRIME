@@ -443,39 +443,15 @@ app.get('/api/leaderboard', async (req, res) => {
 // Fetch analytics for last 7 days
 app.get('/api/analytics', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
     const { data, error } = await supabase
         .from('daily_stats')
         .select('*')
         .order('date', { ascending: false })
         .limit(7);
+
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
-});
-
-// Admin Analytics (Dashboard Summary)
-app.get('/api/admin/analytics', verifyAdmin, async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    try {
-        const { count: total } = await supabase.from('visitors').select('*', { count: 'exact', head: true });
-        const yesterday = new Date();
-        yesterday.setHours(yesterday.getHours() - 24);
-        const { count: prevTotal } = await supabase.from('visitors').select('*', { count: 'exact', head: true }).lt('created_at', yesterday.toISOString());
-        const diff = (total || 0) - (prevTotal || 0);
-        res.json({ total: total || 0, diff: Math.abs(diff), trend: diff >= 0 ? 'up' : 'down' });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// User Stats Endpoint
-app.get('/api/user-stats', verifyAdmin, async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    try {
-        const { count: total } = await supabase.from('visitors').select('*', { count: 'exact', head: true });
-        const yesterday = new Date();
-        yesterday.setHours(yesterday.getHours() - 24);
-        const { count: prevTotal } = await supabase.from('visitors').select('*', { count: 'exact', head: true }).lt('created_at', yesterday.toISOString());
-        const diff = (total || 0) - (prevTotal || 0);
-        res.json({ total: total || 0, diff: Math.abs(diff), trend: diff >= 0 ? 'up' : 'down' });
-    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.get('/api/messages', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
