@@ -2452,6 +2452,10 @@
         const linksContainer = document.getElementById('linksContainer');
 
         let currentActiveViewId = 'dashboardView';
+        let allGamesData = [];
+        let allOrdersData = [];
+        let allCategories = [];
+        let currentGamesFilter = 'all';
 
         // GLOBAL SEARCH HANDLER
         document.getElementById('adminSearchInput').addEventListener('input', () => {
@@ -2714,11 +2718,6 @@
         }
 
         // Fetch Orders Data
-        async function fetchOrders() {
-            try {
-                const res = await fetch('/api/admin/orders');
-                const orders = await res.json();
-                allOrdersData = orders;
 
                 // 1. Play sound if there's a new order
                 if (orders.length > 0) {
@@ -3890,11 +3889,23 @@
 
         async function fetchOrders() {
             const list = document.getElementById('ordersList');
-            list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading orders...</p>';
+            if (list) list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
             
             try {
                 const res = await fetch('/api/admin/orders');
-                allOrdersData = await res.json();
+                const orders = await res.json();
+                allOrdersData = orders;
+
+                // Notification sound for new orders
+                if (Array.isArray(orders) && orders.length > 0) {
+                    const latestId = orders[0].id;
+                    if (lastSeenOrderId !== null && latestId > lastSeenOrderId) {
+                        notificationSound.play().catch(e => console.log('Audio blocked'));
+                    }
+                    lastSeenOrderId = latestId;
+                } else if (lastSeenOrderId === null) {
+                    lastSeenOrderId = 0;
+                }
                 
                 // Calculate Category specific counts for the top boxes (based on keywords or categories)
                 if (Array.isArray(allOrdersData)) {
@@ -4028,24 +4039,15 @@
             } catch (err) {
                 alert('Network error.');
             }
-        }
-
-                }
-            } catch (err) {
-                console.error("Registration failed:", err);
-                alert("Imeshindikana kusajili: " + err.message + "\n\nHakikisha kifaa chako kina Face ID/Fingerprint na browser yako inaruhusu.");
-            }
-        }
-
-        // Initialize health check on view switch
-        document.querySelector('[data-view="healthView"]').addEventListener('click', loadSystemHealth);
-        // Also run every 2 minutes if the view is active
+        // Auto-refresh system health every 15 seconds if view is active
         setInterval(() => {
-            if (document.getElementById('healthView').style.display === 'block') {
+            if (currentActiveViewId === 'healthView') {
                 loadSystemHealth();
             }
-        }, 120000);
+        }, 15000);
 
+        // Debug: Log when script is fully loaded
+        console.log("Admin Dashboard Script: FULLY INITIALIZED ✅");
     </script>
 </body>
 </html>

@@ -661,15 +661,6 @@ app.get('/api/settings/maintenance', async (req, res) => {
     res.json({ value: data.value });
 });
 
-// GET System Health (Admin Only)
-app.get('/api/system/health', verifyAdmin, async (req, res) => {
-    if (typeof runHealthCheck === 'function') await runHealthCheck();
-    res.json({
-        stats: global.healthStats,
-        errors: global.systemErrors,
-        telegramConfigured: !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID)
-    });
-});
 
 
 app.post('/api/settings/maintenance', verifyAdmin, async (req, res) => {
@@ -1116,12 +1107,14 @@ app.get('/api/orders/history/:visitorId', async (req, res) => {
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
-    // Auto-cleanup Approved/Rejected orders after 7 days
+    // Auto-cleanup Approved/Rejected orders after 7 days (DISABLED TO PREVENT DATA LOSS)
+    /*
     try {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         await supabase.from('payment_orders').delete().neq('status', 'pending').lt('created_at', sevenDaysAgo.toISOString());
     } catch (e) {}
+    */
     
     const { data, error } = await supabase
         .from('payment_orders')
@@ -1313,7 +1306,7 @@ app.post('/api/admin/grant-gift', verifyAdmin, async (req, res) => {
     }
 });
 
-// Admin Activity Feed
+// Admin - Activity Feed
 app.get('/api/admin/activity', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
@@ -1344,6 +1337,47 @@ app.get('/api/admin/activity', verifyAdmin, async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// Admin - Analytics Summary
+app.get('/api/admin/analytics', verifyAdmin, async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const { count: todayUsers } = await supabase.from('visitors').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString());
+        const { count: yesterdayUsers } = await supabase.from('visitors').select('*', { count: 'exact', head: true }).gte('created_at', yesterday.toISOString()).lt('created_at', today.toISOString());
+
+        const diff = (todayUsers || 0) - (yesterdayUsers || 0);
+        res.json({
+            trend: diff >= 0 ? 'up' : 'down',
+            diff: Math.abs(diff)
+        });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// System Health
+app.get('/api/system/health', verifyAdmin, async (req, res) => {
+    const os = require('os');
+    try {
+        // Test DB connection
+        const { error: dbError } = await supabase.from('posts').select('id').limit(1);
+        
+        const stats = {
+            supabaseStatus: dbError ? 'ERROR: ' + dbError.message : 'OK (Connected)',
+            cpuLoad: (os.loadavg()[0] * 100 / (os.cpus().length || 1)).toFixed(1),
+            memUsage: ((1 - os.freemem() / os.totalmem()) * 100).toFixed(1),
+            uptime: Math.floor(process.uptime()) + 's',
+            telegramStatus: process.env.TELEGRAM_BOT_TOKEN ? 'Active' : 'Not Configured'
+        };
+        res.json({ 
+            stats,
+            errors: global.systemErrors || [],
+            telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID)
+        });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Notifications API
