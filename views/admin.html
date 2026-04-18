@@ -1045,13 +1045,14 @@
             z-index: 10;
             width: 420px;
             padding: 45px;
-            background: rgba(10, 10, 15, 0.85);
+            background: rgba(10, 10, 15, 0.9);
             backdrop-filter: blur(30px);
-            border: 2px solid rgba(0, 242, 255, 0.1);
+            border: 2px solid rgba(0, 242, 255, 0.15);
             border-radius: 40px;
             box-shadow: 0 0 100px rgba(0,0,0,1), 0 0 30px rgba(0, 242, 255, 0.1);
             text-align: center;
-            clip-path: polygon(0% 15%, 15% 0%, 100% 0%, 100% 85%, 85% 100%, 0% 100%); /* Cyberpunk Cut */
+            clip-path: polygon(0% 10%, 10% 0%, 100% 0%, 100% 90%, 90% 100%, 0% 100%);
+            animation: securityIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .cyber-header {
@@ -1371,36 +1372,17 @@
         <div class="security-container">
             <!-- Header -->
             <div class="cyber-header">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
-                    <i class="fas fa-gamepad" style="color: #00f2ff; font-size: 1.2rem;"></i>
-                    <span style="color: rgba(255,255,255,0.3); font-size: 0.7rem; letter-spacing: 2px;">V2.0.4 - ENCRYPTED</span>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                    <div style="width: 40px; height: 2px; background: linear-gradient(90deg, transparent, #00f2ff);"></div>
+                    <i class="fas fa-microchip" style="color: #00f2ff; font-size: 1.2rem; animation: pulse 2s infinite;"></i>
+                    <div style="width: 40px; height: 2px; background: linear-gradient(270deg, transparent, #00f2ff);"></div>
                 </div>
-                <h2 class="glitch-text" id="securityTitle">CHIDY PRIME VAULT</h2>
-                <div style="font-size: 0.6rem; color: #bc13fe; text-transform: uppercase; margin-top: 10px; letter-spacing: 3px; font-weight: 700; background: rgba(188,19,254,0.1); padding: 4px 10px; display: inline-block; border-radius: 4px;" id="securityPhaseText">IDENTITY SCAN REQUIRED</div>
+                <h2 class="glitch-text" id="securityTitle" style="font-size: 1.2rem; letter-spacing: 4px;">SYSTEM LOCK</h2>
+                <div style="font-size: 0.6rem; color: #bc13fe; text-transform: uppercase; margin-top: 10px; letter-spacing: 3px; font-weight: 700; border: 1px solid rgba(188,19,254,0.3); padding: 5px 15px; display: inline-block; border-radius: 4px;" id="securityPhaseText">Awaiting Authorization</div>
             </div>
 
-            <!-- VIEW 1: FACE ID -->
-            <div id="faceIdContainer" style="display:flex; flex-direction:column; align-items:center;">
-                <div class="camera-viewfinder" id="mainFaceBtn" onclick="startBiometricUnlock()" style="border: 2px solid rgba(188,19,254,0.3); box-shadow: 0 0 30px rgba(188,19,254,0.1);">
-                    <video id="faceVideo" autoplay playsinline muted></video>
-                    <div class="corner top-left" style="border-color: #bc13fe;"></div>
-                    <div class="corner top-right" style="border-color: #bc13fe;"></div>
-                    <div class="corner bottom-left" style="border-color: #bc13fe;"></div>
-                    <div class="corner bottom-right" style="border-color: #bc13fe;"></div>
-                    
-                    <!-- Pulsing Rings -->
-                    <div style="width:140px; height:140px; border:1px solid rgba(188,19,254,0.2); border-radius:50%; position:absolute; animation: pulse 2s infinite;"></div>
-                    <div style="width:100px; height:100px; border:1px solid rgba(0,242,255,0.2); border-radius:50%; position:absolute; animation: pulse 3s infinite;"></div>
-                    
-                    <div class="viewfinder-scan-line" id="viewfinderScanLine" style="background: linear-gradient(180deg, transparent, #bc13fe, transparent);"></div>
-                    <div class="status-badge" id="faceStatusText" style="background: rgba(188,19,254,0.8); border-color: #bc13fe; box-shadow: 0 0 15px rgba(188,19,254,0.4);">TAP TO SCAN</div>
-                </div>
-                <button class="switch-login-btn" id="retryFaceBtn" onclick="startBiometricUnlock()" style="display:none; color:#ff3366; text-decoration:none; border:1px solid #ff3366; padding:12px 25px; border-radius:12px; margin-bottom:15px; background:rgba(255,51,102,0.1); width: 100%; font-weight: 700; letter-spacing: 2px;"><i class="fas fa-redo"></i> RE-SYNC NEURAL LINK</button>
-                <button onclick="showPinLogin()" style="color: #6c7293; font-size: 0.7rem; background: none; border: none; cursor: pointer; text-decoration: none; opacity: 0.6; letter-spacing: 2px; transition: 0.3s;" onmouseover="this.style.opacity='1'; this.style.color='#00f2ff'" onmouseout="this.style.opacity='0.6'; this.style.color='#6c7293'">BYPASS BIOMETRIC (PIN REQUIRED)</button>
-            </div>
-
-            <!-- VIEW 2: PIN PAD -->
-            <div id="pinContainer" style="display:none; flex-direction:column; align-items:center;">
+            <!-- PIN PAD VIEW -->
+            <div id="pinContainer" style="display:flex; flex-direction:column; align-items:center;">
                 <div class="pin-display-gaming">
                     <div class="pin-slot"></div>
                     <div class="pin-slot"></div>
@@ -1408,11 +1390,11 @@
                     <div class="pin-slot"></div>
                 </div>
                 
-                <div class="power-bar-container">
+                <div class="power-bar-container" style="margin: 10px 0 25px;">
                     <div class="power-bar-fill" id="powerBar"></div>
                 </div>
 
-                <div style="color: #6c7293; font-family: 'Orbitron'; font-size: 0.65rem; margin-bottom: 25px; letter-spacing: 3px; font-weight: 600;" id="pinStatusText">AWAITING SECONDARY AUTHORIZATION</div>
+                <div style="color: #6c7293; font-family: 'Orbitron'; font-size: 0.65rem; margin-bottom: 25px; letter-spacing: 3px; font-weight: 600;" id="pinStatusText">ENTER MASTER PASSKEY</div>
                 
                 <div class="neon-pin-grid">
                     <button class="neon-pin-btn" onclick="addPin('1')">1</button>
@@ -1424,9 +1406,13 @@
                     <button class="neon-pin-btn" onclick="addPin('7')">7</button>
                     <button class="neon-pin-btn" onclick="addPin('8')">8</button>
                     <button class="neon-pin-btn" onclick="addPin('9')">9</button>
-                    <button class="neon-pin-btn" style="color:#ff3366;" onclick="clearPin()"><i class="fas fa-times"></i></button>
+                    <button class="neon-pin-btn" style="color:#ff3366;" onclick="clearPin()"><i class="fas fa-backspace"></i></button>
                     <button class="neon-pin-btn" onclick="addPin('0')">0</button>
-                    <button class="neon-pin-btn" style="color:#00f2ff;" onclick="showFaceLogin()"><i class="fas fa-microchip"></i></button>
+                    <button class="neon-pin-btn" style="color:#00f2ff;" onclick="verifyPin()"><i class="fas fa-check"></i></button>
+                </div>
+
+                <div style="margin-top: 30px; font-size: 0.6rem; color: rgba(255,255,255,0.2); letter-spacing: 1px;">
+                    <i class="fas fa-lock"></i> AES-256 END-TO-END ENCRYPTION ACTIVE
                 </div>
             </div>
         </div>
@@ -1556,98 +1542,8 @@
             }, 1000);
         }
 
-        // --- NEW FACE ID / BIOMETRIC LOGIC ---
-        function showPinLogin() {
-            document.getElementById('faceIdContainer').style.display = 'none';
-            document.getElementById('pinContainer').style.display = 'flex';
-            document.getElementById('securityPhaseText').innerText = "SECONDARY AUTHORIZATION";
-            document.getElementById('securityPhaseText').style.color = "#00f2ff";
-        }
-
-        function showFaceLogin() {
-            document.getElementById('faceIdContainer').style.display = 'flex';
-            document.getElementById('pinContainer').style.display = 'none';
-            document.getElementById('securityPhaseText').innerText = "IDENTITY SCAN REQUIRED";
-            document.getElementById('securityPhaseText').style.color = "#bc13fe";
-        }
-
-        async function startBiometricUnlock() {
-            const biometrics = localStorage.getItem('adminBiometrics');
-            if (!biometrics) {
-                showPinLogin();
-                return;
-            }
-
-            const faceBtn = document.getElementById('mainFaceBtn');
-            const scanLine = document.getElementById('viewfinderScanLine');
-            const statusText = document.getElementById('faceStatusText');
-            const retryBtn = document.getElementById('retryFaceBtn');
-            
-            // Reset state
-            faceBtn.classList.add('scanning');
-            scanLine.style.display = 'block';
-            statusText.innerText = "SYNCING NEURAL LINK...";
-            statusText.style.color = "#bc13fe";
-            retryBtn.style.display = 'none';
-            
-            let stream = null;
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                const videoEl = document.getElementById('faceVideo');
-                videoEl.srcObject = stream;
-            } catch (camErr) {
-                console.warn("Camera access denied:", camErr);
-            }
-
-            try {
-                const bioData = JSON.parse(biometrics);
-                const challenge = window.crypto.getRandomValues(new Uint8Array(32));
-                const credentialId = new Uint8Array(bioData.id);
-
-                const assertion = await navigator.credentials.get({
-                    publicKey: {
-                        challenge: challenge,
-                        rpId: window.location.hostname,
-                        allowCredentials: [{ type: 'public-key', id: credentialId }],
-                        userVerification: 'required',
-                        timeout: 60000
-                    }
-                });
-
-                if (assertion) {
-                    faceBtn.classList.remove('scanning');
-                    faceBtn.classList.add('success');
-                    scanLine.style.display = 'none';
-                    statusText.innerText = "NEURAL LINK ESTABLISHED";
-                    statusText.style.color = "#00d25b";
-                    
-                    if (stream) stream.getTracks().forEach(t => t.stop());
-
-                    // Transition to PIN (DOUBLE LOCK)
-                    setTimeout(() => {
-                        showPinLogin();
-                        document.getElementById('pinStatusText').innerText = "FINAL AUTHENTICATION REQUIRED";
-                    }, 1000);
-                }
-            } catch (err) {
-                console.error("Biometric Error:", err);
-                if (stream) stream.getTracks().forEach(t => t.stop());
-                faceBtn.classList.remove('scanning');
-                faceBtn.classList.add('failed');
-                scanLine.style.display = 'none';
-                statusText.innerText = "RE-SYNC REQUIRED";
-                statusText.style.color = "#ff3366";
-                retryBtn.style.display = 'inline-block';
-            }
-        }
-
-        // Trigger Auto-Scan on Load
         window.addEventListener('load', () => {
-            if (localStorage.getItem('adminBiometrics')) {
-                setTimeout(startBiometricUnlock, 1500); // Small delay for the intro animation
-            } else {
-                showPinLogin();
-            }
+            // PIN Login is default
         });
     </script>
 
@@ -1728,11 +1624,6 @@
                     <div class="ninja-shadow shadow-4"><i class="fas fa-user-ninja"></i></div>
                     <div class="slash-effect"><i class="fas fa-bolt"></i></div>
                 </div>
-                
-                <!-- NEW: Register Biometrics Button -->
-                <button onclick="registerFaceID()" class="btn-primary" style="margin-left:20px; padding: 5px 15px; font-size: 0.7rem; background:rgba(0,242,255,0.1); border:1px solid var(--primary-color); border-radius:8px; color:var(--primary-color); cursor:pointer;">
-                    <i class="fas fa-face-viewfinder"></i> SETUP FACE ID
-                </button>
             </div>
             
             <div class="user-profile">
@@ -1810,7 +1701,7 @@
                         <div class="stat-label">Telegram Alerts</div>
                         <div class="stat-val" id="healthTelegramStatus" style="font-size:1rem;">--</div>
                     </div>
-                    <i class="fab fa-telegram stat-icon" style="color:#229ed9;"></i>
+                    <fab class="fab fa-telegram stat-icon" style="color:#229ed9;"></fab>
                 </div>
             </div>
 
@@ -3126,62 +3017,34 @@
         // (PIN Logic moved to top for better loading)
 
         async function fetchAnalytics() {
-            const grid = document.getElementById('analyticsDataGrid');
             try {
-                const response = await fetch('/api/analytics');
-                const data = await response.json();
+                const res = await fetch('/api/admin/analytics');
+                const data = await res.json();
                 
-                // Create a map for quick lookup
-                const statsMap = {};
-                data.forEach(d => {
-                    const dateStr = d.date.split('T')[0];
-                    statsMap[dateStr] = d.views;
-                });
+                const trendEl = document.getElementById('userTrend');
+                let arrowIcon, trendText, trendClass;
 
-                // Get last 7 days
-                const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                let html = '';
-                
-                for(let i=6; i>=0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    const dayKey = d.toISOString().split('T')[0];
-                    const dayName = daysOfWeek[d.getDay()];
-                    const views = statsMap[dayKey] || 0;
-                    
-                    // Simple trend calculation (previous vs current)
-                    const prevD = new Date(d);
-                    prevD.setDate(prevD.getDate() - 1);
-                    const prevKey = prevD.toISOString().split('T')[0];
-                    const prevViews = statsMap[prevKey] || 0;
-                    
-                    let trendIcon = 'fa-minus';
-                    let trendClass = 'trend-stable';
-                    let trendText = 'Stable';
-
-                    if (views > prevViews) {
-                        trendIcon = 'fa-arrow-up';
-                        trendClass = 'trend-up';
-                        trendText = '+' + (views - prevViews);
-                    } else if (views < prevViews) {
-                        trendIcon = 'fa-arrow-down';
-                        trendClass = 'trend-down';
-                        trendText = views - prevViews;
-                    }
-
-                    html += `
-                        <div class="analytics-box">
-                            <div class="analytics-day">${dayName}</div>
-                            <div class="analytics-count">${views}</div>
-                            <div class="analytics-trend ${trendClass}">
-                                <i class="fas ${trendIcon}"></i> ${trendText}
-                            </div>
-                        </div>
-                    `;
+                if (data.trend === 'up') {
+                    arrowIcon = 'fa-arrow-up';
+                    trendText = `+${data.diff} leo`;
+                    trendClass = 'up';
+                } else if (data.trend === 'down') {
+                    arrowIcon = 'fa-arrow-down';
+                    trendText = `${data.diff} leo`;
+                    trendClass = 'down';
+                } else {
+                    arrowIcon = 'fa-minus';
+                    trendText = 'Tulivu';
+                    trendClass = 'stable';
                 }
-                grid.innerHTML = html;
+                
+                trendEl.className = `stat-trend ${trendClass}`;
+                trendEl.innerHTML = `
+                    <span class="stat-trend-arrow"><i class="fas ${arrowIcon}"></i></span>
+                    <span class="stat-trend-text">${trendText}</span>
+                `;
             } catch (err) {
-                grid.innerHTML = `<p style="grid-column: span 7; color: #ff3333;">Error loading analytics: ${err.message}</p>`;
+                console.error('Analytics error:', err);
             }
         }
 
@@ -4094,231 +3957,6 @@
             }
         }
 
-        // ===== SYSTEM HEALTH & PROMO MANAGEMENT =====
-        async function loadSystemHealth() {
-            console.log("Fetching system health...");
-            const errorLog = document.getElementById('healthErrorLog');
-            const token = localStorage.getItem('adminToken');
-            
-            try {
-                const res = await fetch('/api/system/health', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
-                console.log("Health Data Received:", data);
-                
-                if (data.error) throw new Error(data.error);
-
-                const s = data.stats || {};
-                
-                // Update UI elements with absolute fallbacks
-                const isDbOk = s.supabaseStatus && s.supabaseStatus.startsWith('OK');
-                document.getElementById('healthDbStatus').innerText = s.supabaseStatus || 'OFFLINE';
-                document.getElementById('healthDbCard').style.borderColor = isDbOk ? '#00d25b' : '#ff3333';
-                document.getElementById('healthDbLastCheck').innerText = s.lastDbCheck ? 'Last checked: ' + new Date(s.lastDbCheck).toLocaleTimeString() : 'Never checked yet';
-                
-                const cpu = s.cpuUsage !== undefined ? s.cpuUsage : 0;
-                const mem = s.memoryUsage !== undefined ? s.memoryUsage : 0;
-
-                document.getElementById('healthCpuVal').innerText = cpu + '%';
-                document.getElementById('healthCpuBar').innerText = cpu + '%';
-                document.getElementById('healthCpuProgress').style.width = Math.min(cpu, 100) + '%';
-                
-                document.getElementById('healthMemVal').innerText = mem + '%';
-                document.getElementById('healthMemBar').innerText = mem + '%';
-                document.getElementById('healthMemProgress').style.width = Math.min(mem, 100) + '%';
-                
-                const uptimeSec = Math.floor(s.uptime || 0);
-                const hrs = Math.floor(uptimeSec / 3600);
-                const mins = Math.floor((uptimeSec % 3600) / 60);
-                const secs = uptimeSec % 60;
-                document.getElementById('healthUptime').innerText = `${hrs}h ${mins}m ${secs}s`;
-                document.getElementById('healthTelegramStatus').innerText = data.telegramConfigured ? 'Active' : 'Not Set';
-                
-                if (errorLog) errorLog.innerHTML = '<div style="color:#00d25b; font-size:0.85rem; text-align:center; padding:1rem;"><i class="fas fa-check-circle"></i> System operational. No critical errors found.</div>';
-
-
-            } catch (e) { 
-                console.error('Health fetch failed:', e); 
-                if (errorLog) errorLog.innerHTML = `<div style="color:#ff3366; font-size:0.85rem; padding:1rem;"><i class="fas fa-exclamation-circle"></i> Error: ${e.message}. Jaribu ku-refresh ukurasa.</div>`;
-            }
-        }
-
-        async function loadPromoCodesWithStats() {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await fetch('/api/admin/promo', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const codes = await res.json();
-                
-                // Update Stats
-                const total = codes.length;
-                const active = codes.filter(c => c.active).length;
-                const disabled = total - active;
-                
-                const totalEl = document.getElementById('promoTotalCount');
-                const activeEl = document.getElementById('promoActiveCount');
-                const disabledEl = document.getElementById('promoDisabledCount');
-                
-                if (totalEl) totalEl.textContent = total;
-                if (activeEl) activeEl.textContent = active;
-                if (disabledEl) disabledEl.textContent = disabled;
-                
-                renderPromoCodes(codes);
-            } catch (e) { console.error('Failed to fetch promos', e); }
-        }
-
-        function loadPromoCodes() { loadPromoCodesWithStats(); }
-
-        function renderPromoCodes(codes) {
-            const container = document.getElementById('promoCodesList');
-            if (!container) return;
-            
-            if (!codes || codes.length === 0) {
-                container.innerHTML = '<div style="color: #6c7293; font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;">Hakuna promo code yoyote kwa sasa. Bonyeza "ONGEZA PROMO CODE" kuanza.</div>';
-                return;
-            }
-
-            container.innerHTML = codes.map((c, i) => `
-                <div class="promo-card-item">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span class="promo-code-badge">${c.code}</span>
-                        <div style="padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; background: ${c.active ? 'rgba(0, 210, 91, 0.1)' : 'rgba(255, 51, 102, 0.1)'}; color: ${c.active ? '#00d25b' : '#ff3366'}; border: 1px solid ${c.active ? 'rgba(0, 210, 91, 0.2)' : 'rgba(255, 51, 102, 0.2)'};">
-                            ${c.active ? 'Active' : 'Disabled'}
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <div style="color: #6c7293; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 4px;">Punguzo (Discount)</div>
-                        <div style="font-size: 1.4rem; color: #fff; font-weight: 700;">${c.discount}% <span style="font-size: 0.8rem; color: #bc13fe; font-weight: 400;">OFF</span></div>
-                    </div>
-
-                    <div style="display: flex; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
-                        <button onclick="editPromoDiscount(${i})" style="flex: 1; background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); color: #00f2ff; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='rgba(0,242,255,0.1)'" onmouseout="this.style.background='rgba(0,242,255,0.05)'">
-                            <i class="fas fa-edit"></i> Edit %
-                        </button>
-                        <button onclick="togglePromoStatus(${i})" style="flex: 1; background: rgba(188,19,254,0.05); border: 1px solid rgba(188,19,254,0.2); color: #bc13fe; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: 0.2s;" onmouseover="this.style.background='rgba(188,19,254,0.1)'" onmouseout="this.style.background='rgba(188,19,254,0.05)'">
-                            <i class="fas fa-${c.active ? 'power-off' : 'play'}"></i> ${c.active ? 'Disable' : 'Enable'}
-                        </button>
-                        <button onclick="deletePromoCode(${i})" style="background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.2); color: #ff3366; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.background='rgba(255,51,102,0.2)'" onmouseout="this.style.background='rgba(255,51,102,0.1)'">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function addPromoCodeUI() {
-            const code = prompt("Andika Promo Code (Mfano: CHIDY20):");
-            if (!code) return;
-            const discount = prompt("Weka Asilimia ya Punguzo (Mfano: 20):");
-            if (!discount || isNaN(discount)) return;
-
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await fetch('/api/admin/promo', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const codes = await res.json();
-                codes.push({ code: code.toUpperCase(), discount: parseInt(discount), active: true });
-                
-                await savePromoCodes(codes);
-                showToast('Promo Code imeongezwa!');
-            } catch (e) { alert('Failed to add code'); }
-        }
-
-        async function editPromoDiscount(index) {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await fetch('/api/admin/promo', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const codes = await res.json();
-                const current = codes[index];
-                
-                const newDiscount = prompt(`Badilisha asilimia ya punguzo kwa kodi "${current.code}":`, current.discount);
-                if (newDiscount === null || isNaN(newDiscount)) return;
-
-                codes[index].discount = parseInt(newDiscount);
-                await savePromoCodes(codes);
-                showToast(`Punguzo la "${current.code}" limebadilishwa kuwa ${newDiscount}%`);
-            } catch (e) { alert('Failed to edit discount'); }
-        }
-
-        async function togglePromoStatus(index) {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await fetch('/api/admin/promo', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const codes = await res.json();
-                codes[index].active = !codes[index].active;
-                await savePromoCodes(codes);
-            } catch (e) { alert('Failed to toggle status'); }
-        }
-
-        async function deletePromoCode(index) {
-            if (!confirm('Una uhakika unataka kufuta hii kodi?')) return;
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await fetch('/api/admin/promo', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const codes = await res.json();
-                codes.splice(index, 1);
-                await savePromoCodes(codes);
-                showToast('Promo Code imefutwa.');
-            } catch (e) { alert('Failed to delete code'); }
-        }
-
-        async function savePromoCodes(codes) {
-            const token = localStorage.getItem('adminToken');
-            const res = await fetch('/api/admin/promo', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({ codes })
-            });
-            const result = await res.json();
-            if (result.success) loadPromoCodesWithStats();
-            else alert('Failed to save promo codes');
-        }
-
-        // --- BIOMETRIC REGISTRATION ---
-        async function registerFaceID() {
-            if (!confirm("Unataka kusajili Face ID (Biometrics) ya kifaa hiki? Hii itakuruhusu kuingia automatic ukiwa unatumia sura yako pekee.")) return;
-            
-            try {
-                const userId = window.crypto.getRandomValues(new Uint8Array(16));
-                const challenge = window.crypto.getRandomValues(new Uint8Array(32));
-
-                const credential = await navigator.credentials.create({
-                    publicKey: {
-                        challenge: challenge,
-                        rp: { name: "Chidy Prime Admin", id: window.location.hostname },
-                        user: {
-                            id: userId,
-                            name: "admin@chidyprime.com",
-                            displayName: "Chidy Admin"
-                        },
-                        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                        authenticatorSelection: { userVerification: "required" },
-                        timeout: 60000
-                    }
-                });
-
-                if (credential) {
-                    const idArray = Array.from(new Uint8Array(credential.rawId));
-                    localStorage.setItem('adminBiometrics', JSON.stringify({
-                        registered: true,
-                        id: idArray,
-                        date: new Date().toISOString()
-                    }));
-                    
-                    showToast("Face ID imesajiliwa na 'Identity Key' imehifadhiwa salama! ✅");
                 }
             } catch (err) {
                 console.error("Registration failed:", err);
