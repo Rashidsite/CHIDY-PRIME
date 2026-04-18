@@ -2429,11 +2429,11 @@
                 config = config || {};
                 config.headers = config.headers || {};
                 const token = localStorage.getItem('adminToken');
-                if (token) {
-                    config.headers['Authorization'] = 'Bearer ' + token;
-                }
+                console.log("Injecting token for:", resource);
+                config.headers['Authorization'] = 'Bearer ' + token;
             }
             const response = await originalFetch(resource, config);
+            console.log(`Fetch Response [${resource}]: ${response.status}`);
             if (response.status === 401 || response.status === 403) {
                 // Token invalid or expired, locking vault
                 localStorage.removeItem('adminToken');
@@ -2574,7 +2574,8 @@
             const activeLink = document.querySelector(`.nav-link[data-view="${viewId}"]`);
             if (activeLink) activeLink.classList.add('active');
 
-            if (viewId === 'dashboardView') fetchOrders();
+            if (viewId === 'dashboardView') { fetchOrders(); fetchAnalytics(); fetchAdminData(); }
+            if (viewId === 'allGamesView') fetchAdminData();
             if (viewId === 'analyticsView') fetchAnalytics();
             if (viewId === 'categoriesView') loadCategories();
             if (viewId === 'usersView') loadUsers();
