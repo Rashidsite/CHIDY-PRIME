@@ -270,6 +270,7 @@
             top: 0; left: -100%; width: 50%; height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
             transition: 0.6s;
+            pointer-events: none;
         }
 
         .stat-card:hover {
@@ -4070,12 +4071,6 @@
                 alert('Network error.');
             }
         }
-
-                }
-            } catch (err) {
-                console.error("Registration failed:", err);
-                alert("Imeshindikana kusajili: " + err.message + "\n\nHakikisha kifaa chako kina Face ID/Fingerprint na browser yako inaruhusu.");
-            }
         }
 
         // Initialize health check on view switch
