@@ -1657,6 +1657,9 @@
             <li class="nav-item">
                 <a href="#" class="nav-link" data-view="healthView"><i class="fas fa-heartbeat"></i> <span>System Health</span></a>
             </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="settingsView"><i class="fas fa-cog"></i> <span>Store Settings</span></a>
+            </li>
             <li class="nav-item" style="margin-top: 2rem;">
                 <a href="/" class="nav-link"><i class="fas fa-external-link-alt"></i> View Store</a>
             </li>
@@ -1946,6 +1949,14 @@
                         <div class="stat-val" id="totalRevenue">TSH 0</div>
                     </div>
                     <i class="fas fa-coins stat-icon" style="color: #00ff88;"></i>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid #00f2ff;">
+                    <div>
+                        <div class="stat-label">App Installs</div>
+                        <div class="stat-val" id="appInstallsCount">0</div>
+                        <div style="font-size: 0.7rem; color: #6c7293; margin-top: 5px;">PWA Adoption</div>
+                    </div>
+                    <i class="fas fa-mobile-alt stat-icon" style="color: #00f2ff;"></i>
                 </div>
             </div>
 
@@ -2413,12 +2424,99 @@
                 grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
                 gap: 20px;
             ">
-                <p style="text-align: center; color: #6c7293; padding: 2rem; grid-column: 1/-1;">Loading network data...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SETTINGS VIEW -->
+    <section id="settingsView" class="content view-section" style="display: none;">
+        <div class="admin-card">
+            <h3 class="card-title"><i class="fas fa-cog"></i> Store Settings</h3>
+            <p style="color: #6c7293; font-size: 0.9rem; margin-bottom: 2rem;">Manage your storefront parameters and operational state.</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
+                <!-- Global Discount / Flash Sale -->
+                <div style="background: rgba(188,19,254,0.05); border: 1px solid rgba(188,19,254,0.2); border-radius: 12px; padding: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <div>
+                            <h4 style="color: #bc13fe; font-family: 'Orbitron'; margin: 0; letter-spacing: 1px; font-size: 0.9rem;">GLOBAL FLASH SALE</h4>
+                            <p style="color: #6c7293; font-size: 0.8rem; margin: 5px 0 0;">Apply a sitewide discount to all games.</p>
+                        </div>
+                        <div id="activeDiscountBadge" style="display:none; background: rgba(0,210,91,0.1); color: #00d25b; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; border: 1px solid rgba(0,210,91,0.2);">
+                            ACTIVE
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <label style="display: block; font-size: 0.7rem; color: #6c7293; margin-bottom: 8px; text-transform: uppercase;">Discount %</label>
+                            <input type="number" id="globalDiscountInput" placeholder="0" min="0" max="95" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white;">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="saveGlobalDiscount()" class="btn-deploy" style="flex: 1; padding: 10px; font-size: 0.8rem;">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                            <button onclick="clearGlobalDiscount()" style="padding: 10px; background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.2); color: #ff3366; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maintenance Mode -->
+                <div style="background: rgba(255,180,0,0.05); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 1.5rem;">
+                    <h4 style="color: #ffb400; font-family: 'Orbitron'; margin: 0; letter-spacing: 1px; font-size: 0.9rem;">SYSTEM MAINTENANCE</h4>
+                    <p style="color: #6c7293; font-size: 0.8rem; margin: 5px 0 1.5rem;">Disable storefront for all users during updates.</p>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px;">
+                        <span style="font-size: 0.85rem; color: #eee;">Maintenance Mode</span>
+                        <label class="switch">
+                            <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenanceMode(this.checked)">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <p id="maintenanceStatus" style="font-size: 0.7rem; color: #ffb400; margin-top: 10px; text-align: center; display: none;">
+                        <i class="fas fa-exclamation-triangle"></i> Storefront is currently offline.
+                    </p>
+                </div>
+
+                <!-- App Stats -->
+                <div style="background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 1.5rem;">
+                    <h4 style="color: #00f2ff; font-family: 'Orbitron'; margin: 0; letter-spacing: 1px; font-size: 0.9rem;">PWA APP ANALYTICS</h4>
+                    <p style="color: #6c7293; font-size: 0.8rem; margin: 5px 0 1.5rem;">Tracking Progressive Web App adoption.</p>
+                    
+                    <div style="text-align: center; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 10px;">
+                        <div style="font-size: 2.5rem; font-family: 'Orbitron'; color: #00f2ff;" id="settingsTotalInstalls">0</div>
+                        <div style="font-size: 0.7rem; color: #6c7293; text-transform: uppercase; margin-top: 5px;">Total App Installations</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                <p style="color: #6c7293; font-size: 0.8rem; margin: 0;">
+                    <i class="fas fa-info-circle"></i> Tip: Use Global Discount during weekends or holidays to boost sales. Maintenance mode should only be used for critical updates.
+                </p>
             </div>
         </div>
     </section>
     
     </div> <!-- END MAIN WRAPPER -->
+
+    <!-- Custom Confirm Modal -->
+    <div id="confirmModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#121218;border:1px solid rgba(255,50,50,0.4);border-radius:16px;padding:2.5rem;max-width:420px;width:90%;box-shadow:0 0 40px rgba(255,50,50,0.2);text-align:center;">
+            <div style="width:60px;height:60px;border-radius:50%;background:rgba(255,50,50,0.1);border:2px solid rgba(255,50,50,0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#ff4444;"></i>
+            </div>
+            <h3 id="confirmModalTitle" style="font-family:'Orbitron';font-size:1rem;color:#fff;margin:0 0 0.8rem;">CONFIRM ACTION</h3>
+            <p id="confirmModalText" style="color:#aaa;font-size:0.9rem;margin:0 0 2rem;line-height:1.6;"></p>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="confirmModalCancel" style="flex:1;padding:0.8rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#aaa;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">Hapana</button>
+                <button id="confirmModalOk" style="flex:1;padding:0.8rem;background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.4);color:#ff4444;border-radius:8px;cursor:pointer;font-size:0.9rem;font-weight:bold;transition:0.2s;" onmouseover="this.style.background='rgba(255,50,50,0.3)'" onmouseout="this.style.background='rgba(255,50,50,0.15)'"><i class="fas fa-trash-alt"></i> Ndio, Futa</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // Intercept all fetch requests to add the Admin Token automatically
@@ -2455,7 +2553,7 @@
         let allGamesData = [];
         let allOrdersData = [];
         let allCategories = [];
-        let currentGamesFilter = 'all';
+        let currentGamesFilter = 'published';
 
         // GLOBAL SEARCH HANDLER
         document.getElementById('adminSearchInput').addEventListener('input', () => {
@@ -2478,8 +2576,13 @@
                 const res = await fetch('/api/settings/maintenance');
                 const data = await res.json();
                 document.getElementById('maintenanceToggle').checked = data.value === 'true';
+
+                // Fetch App Installs
+                const resInstall = await fetch('/api/settings/total_installs');
+                const installData = await resInstall.json();
+                document.getElementById('appInstallsCount').innerText = installData.value || 0;
             } catch (err) {
-                console.error('Failed to load maintenance state', err);
+                console.error('Error fetching admin stats:', err);
             }
         }
 
@@ -2555,7 +2658,6 @@
         // View Switching Logic
         const navLinks = document.querySelectorAll('.nav-link[data-view]');
         const views = document.querySelectorAll('.view-section');
-        let currentGamesFilter = 'published';
 
         navLinks.forEach(link => {
             link.onclick = (e) => {
@@ -2676,7 +2778,6 @@
         // ============================================
         // CATEGORY MANAGEMENT
         // ============================================
-        let allCategories = [];
         let lastSeenOrderId = null;
         let revenueChartInstance = null;
         const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -2718,45 +2819,7 @@
             reader.readAsDataURL(file);
         }
 
-        // Fetch Orders Data
 
-                // 1. Play sound if there's a new order
-                if (orders.length > 0) {
-                    const latestId = orders[0].id; // API returns sorted by created_at desc
-                    if (lastSeenOrderId !== null && latestId > lastSeenOrderId) {
-                        notificationSound.play().catch(e => console.log('Sound blocked by browser'));
-                    }
-                    lastSeenOrderId = latestId;
-                } else if (lastSeenOrderId === null) {
-                    lastSeenOrderId = 0;
-                }
-
-                // 2. Process Stats
-                let total = 0;
-                let action = 0, sports = 0, apps = 0;
-                
-                orders.forEach(o => {
-                    if (o.status === 'approved') total += o.amount;
-                    if (o.posts && o.posts.category) {
-                        const cat = o.posts.category.toLowerCase();
-                        if (cat === 'action') action++;
-                        else if (cat === 'sports') sports++;
-                        else if (cat === 'apps') apps++;
-                    }
-                });
-
-                document.getElementById('totalRevenue').innerText = 'TSh ' + total.toLocaleString();
-                document.getElementById('countAction').innerText = action;
-                document.getElementById('countSports').innerText = sports;
-                document.getElementById('countApps').innerText = apps;
-
-                updateRevenueChart(orders);
-                updateCategoryChart(orders);
-                renderOrdersList();
-            } catch (err) {
-                console.error('Error fetching orders:', err);
-            }
-        }
 
         let categoryChartInstance = null;
         function updateCategoryChart(orders) {
@@ -3039,7 +3102,8 @@
         }
 
         async function deleteCategory(id, name) {
-            if (!confirm(`Futa category "${name}"? Games zilizo na category hii hazitafutwa.`)) return;
+            const confirmed = await showConfirmModal('FUTA CATEGORY', `Futa category "${name}"? Games zilizo na category hii hazitafutwa.`);
+            if (!confirmed) return;
             try {
                 const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error();
@@ -3131,8 +3195,6 @@
             `;
             linksContainer.appendChild(row);
         };
-
-        let allGamesData = [];
 
         async function fetchAdminData() {
             try {
@@ -3251,7 +3313,8 @@
         }
 
         async function deletePermanently(id) {
-            if (!confirm('This will permanently delete the game from the database. Are you sure?')) return;
+            const confirmed = await showConfirmModal('FUTA GAME', 'Uko uhakika unataka kufuta game hii kabisa kwenye database?');
+            if (!confirmed) return;
             
             try {
                 const response = await fetch(`/api/games/${id}`, {
@@ -3525,9 +3588,8 @@
             loadCategories();
             fetchActivity();
             // If the current view is not dashboard, reload that specific view
-            if (currentActiveViewId === 'dashboardView') fetchOrders();
-            if (currentActiveViewId === 'usersView') loadUsers();
             if (currentActiveViewId === 'ordersView') fetchOrders();
+            if (currentActiveViewId === 'promoView') loadPromoCodesWithStats();
         }
 
         refreshAllData();
@@ -3652,7 +3714,8 @@
         }
 
         async function extendAccess(vId, pId) {
-            if (!confirm('Unataka kuongeza siku 7 za access kwa huyu mteja?')) return;
+            const confirmed = await showConfirmModal('ONGEZA ACCESS', 'Unataka kuongeza siku 7 za access kwa huyu mteja?');
+            if (!confirmed) return;
             
             try {
                 const res = await fetch('/api/admin/access/extend', {
@@ -3729,23 +3792,60 @@
                 });
         }
 
+        // Custom confirm modal helper
+        function showConfirmModal(title, text) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const okBtn = document.getElementById('confirmModalOk');
+                const cancelBtn = document.getElementById('confirmModalCancel');
+
+                document.getElementById('confirmModalTitle').textContent = title;
+                document.getElementById('confirmModalText').textContent = text;
+
+                // Reset button style to default (red) on each call
+                okBtn.style.background = 'rgba(255,50,50,0.15)';
+                okBtn.style.borderColor = 'rgba(255,50,50,0.4)';
+                okBtn.style.color = '#ff4444';
+                okBtn.innerHTML = '<i class="fas fa-check"></i> Ndio, Endelea';
+
+                modal.style.display = 'flex';
+
+                function cleanup(result) {
+                    modal.style.display = 'none';
+                    okBtn.removeEventListener('click', onOk);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    resolve(result);
+                }
+                function onOk() { cleanup(true); }
+                function onCancel() { cleanup(false); }
+
+                okBtn.addEventListener('click', onOk);
+                cancelBtn.addEventListener('click', onCancel);
+            });
+        }
+
         async function handleDeleteUser(id, name) {
-            if (!confirm(`Uko uhakika unataka kumfuta mteja "${name}"? Hii itamfanya asajiliwe upya akifungua website!`)) return;
-            
+            const confirmed = await showConfirmModal(
+                'FUTA MTEJA',
+                `Uko uhakika unataka kumfuta "${name}"? Akaunti yake na historia yake yote itafutwa kabisa!`
+            );
+            if (!confirmed) return;
+
             try {
                 const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
                 const result = await response.json();
-                
+
                 if (result.success) {
-                    showToast(`Mteja ${name} amefutwa kabisa.`);
+                    showToast(`✅ Mteja "${name}" amefutwa kabisa.`);
                     loadUsers();
                     fetchUserStats();
                 } else {
-                    alert("Imeshindwa kufuta: " + (result.error || "Unknown error"));
+                    showToast(`❌ Imeshindwa: ${result.error || 'Unknown error'}`);
+                    console.error('Delete user error:', result.error);
                 }
             } catch (err) {
-                console.error("Failed to delete user:", err);
-                alert("Hitilafu imetokea wakati wa mawasiliano na server.");
+                console.error('Failed to delete user:', err);
+                showToast('❌ Hitilafu ya mtandao. Jaribu tena.');
             }
         }
 
@@ -3843,6 +3943,135 @@
             }
         };
 
+        // ===== PROMO CODES SYSTEM =====
+        let allPromoCodes = [];
+
+        async function loadPromoCodesWithStats() {
+            const list = document.getElementById('promoCodesList');
+            if (list) list.innerHTML = '<div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia promo codes...</div>';
+            
+            try {
+                const res = await fetch('/api/admin/promo');
+                const data = await res.json();
+                allPromoCodes = Array.isArray(data) ? data : [];
+                renderPromoStats();
+                renderPromoCodesList();
+            } catch (err) {
+                console.error("Failed to load promo codes:", err);
+                if (list) list.innerHTML = '<div style="color:#ff3366; text-align: center; padding: 2rem;">Error loading codes.</div>';
+            }
+        }
+
+        async function loadPromoCodes() {
+            await loadPromoCodesWithStats();
+        }
+
+        function renderPromoStats() {
+            const total = allPromoCodes.length;
+            const active = allPromoCodes.filter(c => c.active).length;
+            const disabled = total - active;
+
+            if(document.getElementById('promoTotalCount')) document.getElementById('promoTotalCount').innerText = total;
+            if(document.getElementById('promoActiveCount')) document.getElementById('promoActiveCount').innerText = active;
+            if(document.getElementById('promoDisabledCount')) document.getElementById('promoDisabledCount').innerText = disabled;
+        }
+
+        function renderPromoCodesList() {
+            const list = document.getElementById('promoCodesList');
+            if (!list) return;
+
+            if (allPromoCodes.length === 0) {
+                list.innerHTML = '<div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;">Hauna promo code yoyote kwa sasa. Bonyeza kitufe cha ONGEZA hapo juu.</div>';
+                return;
+            }
+
+            list.innerHTML = allPromoCodes.map(c => `
+                <div class="promo-card-item" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); position: relative; display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="promo-code-badge" style="font-family:'Orbitron';color:#bc13fe;letter-spacing:1px;font-weight:bold;font-size:1.1rem;">${c.code}</span>
+                        <span style="font-size: 0.65rem; background: ${c.active ? 'rgba(0,210,91,0.1)' : 'rgba(255,51,102,0.1)'}; color: ${c.active ? '#00d25b' : '#ff3366'}; padding: 4px 10px; border-radius: 6px; font-weight: 800; border: 1px solid ${c.active ? 'rgba(0,210,91,0.2)' : 'rgba(255,51,102,0.2)'}; text-transform:uppercase;">
+                            ${c.active ? 'Active' : 'Disabled'}
+                        </span>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; color: #6c7293; margin-bottom: 2px; text-transform:uppercase; letter-spacing:1px;">Discount Value</div>
+                        <div style="font-size: 1.4rem; color: #fff; font-weight: 800; font-family:'Orbitron';">${c.discount}% OFF</div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button onclick="togglePromoStatus('${c.code}')" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; font-size: 0.75rem; font-weight:600; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <i class="fas ${c.active ? 'fa-pause-circle' : 'fa-play-circle'}"></i> ${c.active ? 'Zima' : 'Washa'}
+                        </button>
+                        <button onclick="deletePromoCode('${c.code}')" style="width: 45px; height:40px; border-radius: 10px; border: 1px solid rgba(255,51,102,0.2); background: rgba(255,51,102,0.1); color: #ff3366; cursor: pointer; transition:0.3s; display:flex; align-items:center; justify-content:center;">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addPromoCodeUI() {
+            const code = prompt("Andika jina la promo code (Mfano: CHIDY50):");
+            if (!code) return;
+            const discountVal = prompt("Andika kiasi cha punguzo (Asilimia) - Mfano: 20 kwa ajili ya 20%:", "10");
+            if (!discountVal) return;
+            
+            const discount = parseInt(discountVal);
+            if (isNaN(discount) || discount < 1 || discount > 99) return alert("Tafadhali weka namba sahihi kati ya 1 na 99!");
+
+            const newCode = {
+                code: code.toUpperCase().trim(),
+                discount: discount,
+                active: true
+            };
+
+            if (allPromoCodes.some(c => c.code === newCode.code)) {
+                return alert("Hii promo code tayari ipo!");
+            }
+
+            allPromoCodes.push(newCode);
+            await savePromoCodesToServer();
+        }
+
+        async function togglePromoStatus(code) {
+            const promo = allPromoCodes.find(c => c.code === code);
+            if (promo) {
+                promo.active = !promo.active;
+                await savePromoCodesToServer();
+            }
+        }
+
+        async function deletePromoCode(code) {
+            const confirmed = await showConfirmModal(
+                'FUTA PROMO CODE',
+                `Uko uhakika unataka kufuta promo code "${code}"? Wateja hawataweza kuitumia tena.`
+            );
+            if (!confirmed) return;
+
+            allPromoCodes = allPromoCodes.filter(c => c.code !== code);
+            await savePromoCodesToServer();
+        }
+
+        async function savePromoCodesToServer() {
+            try {
+                const res = await fetch('/api/admin/promo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codes: allPromoCodes })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast("✅ Promo codes zimehifadhiwa!");
+                    renderPromoStats();
+                    renderPromoCodesList();
+                } else {
+                    alert("Imeshindikana kuhifadhi: " + result.error);
+                }
+            } catch (err) {
+                console.error("Save promo codes failed:", err);
+                alert("Hitilafu ya mtandao.");
+            }
+        }
+
         // Initialize admin dashboard
         fetchMaintenanceState();
         initSalesChart();
@@ -3877,6 +4106,8 @@
                     if (viewId === 'ordersView') fetchOrders();
                     if (viewId === 'analyticsView') updateAnalytics();
                     if (viewId === 'categoriesView') loadCategories();
+                    if (viewId === 'promoView') loadPromoCodesWithStats();
+                    if (viewId === 'settingsView') loadStoreSettings();
                 }
 
                 // Close sidebar on mobile after click
@@ -3885,9 +4116,6 @@
                 }
             });
         });
-
-        let allOrdersData = [];
-
         async function fetchOrders() {
             const list = document.getElementById('ordersList');
             if (list) list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
@@ -3932,6 +4160,108 @@
                 console.error(err);
                 list.innerHTML = '<p style="text-align: center; color: #ff3333; padding: 2rem;">Error sync orders.</p>';
             }
+        }
+
+        async function loadStoreSettings() {
+            try {
+                // Fetch Global Discount
+                const resDisc = await fetch('/api/settings/global_discount');
+                const discData = await resDisc.json();
+                
+                const input = document.getElementById('globalDiscountInput');
+                const badge = document.getElementById('activeDiscountBadge');
+                
+                if (discData && discData.value) {
+                    input.value = discData.value;
+                    if (parseInt(discData.value) > 0) {
+                        badge.style.display = 'block';
+                        badge.innerText = `${discData.value}% ACTIVE`;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                } else {
+                    input.value = 0;
+                    badge.style.display = 'none';
+                }
+
+                // Fetch Maintenance Mode
+                const resMaint = await fetch('/api/settings/maintenance');
+                const maintData = await resMaint.json();
+                const maintToggle = document.getElementById('maintenanceToggle');
+                const maintStatus = document.getElementById('maintenanceStatus');
+                
+                const isMaint = maintData.value === 'true';
+                maintToggle.checked = isMaint;
+                maintStatus.style.display = isMaint ? 'block' : 'none';
+
+                // Fetch App Installs
+                const resInst = await fetch('/api/settings/total_installs');
+                const instData = await resInst.json();
+                document.getElementById('settingsTotalInstalls').innerText = instData.value || 0;
+
+            } catch (err) {
+                console.error("Failed to load settings:", err);
+            }
+        }
+
+        async function toggleMaintenanceMode(enabled) {
+            try {
+                const res = await fetch('/api/admin/settings/maintenance', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ value: String(enabled) })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    document.getElementById('maintenanceStatus').style.display = enabled ? 'block' : 'none';
+                    showToast(enabled ? 'Maintenance Mode ACTIVATED' : 'Maintenance Mode DEACTIVATED');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Failed to update maintenance mode: " + err.message);
+                document.getElementById('maintenanceToggle').checked = !enabled;
+            }
+        }
+
+        async function saveGlobalDiscount() {
+            const val = document.getElementById('globalDiscountInput').value;
+            if (val === "" || val < 0 || val > 95) return alert("Weka asilimia sahihi (0-95)");
+
+            try {
+                const res = await fetch('/api/admin/settings/global_discount', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ value: val })
+                });
+                
+                if (res.status === 401 || res.status === 403) {
+                    return alert("Kikao chako (Session) kimeisha. Tafadhali Login tena.");
+                }
+
+                const result = await res.json();
+                if (result.success) {
+                    showToast("✅ Global Discount imehifadhiwa!");
+                    loadStoreSettings();
+                } else {
+                    alert("Error: " + (result.error || 'Unknown server error'));
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                alert("Hitilafu: " + err.message);
+            }
+        }
+
+        async function clearGlobalDiscount() {
+            document.getElementById('globalDiscountInput').value = 0;
+            await saveGlobalDiscount();
         }
 
         function renderOrdersList() {
@@ -4020,8 +4350,23 @@
         }
 
         async function updateOrderStatus(orderId, status) {
-            if (!confirm(`Are you sure you want to ${status} this order?`)) return;
-            
+            const isApprove = status === 'approved';
+            const confirmed = await showConfirmModal(
+                isApprove ? 'APPROVE ORDER' : 'REJECT ORDER',
+                isApprove
+                    ? 'Uko uhakika unataka kukubali oda hii? Mteja atapata access ya game mara moja.'
+                    : 'Uko uhakika unataka kukataa oda hii? Mteja hatapata access.'
+            );
+            if (!confirmed) return;
+
+            // Style confirm button based on action
+            const okBtn = document.getElementById('confirmModalOk');
+            if (isApprove) {
+                okBtn.style.background = 'rgba(0,210,91,0.15)';
+                okBtn.style.borderColor = 'rgba(0,210,91,0.4)';
+                okBtn.style.color = '#00d25b';
+            }
+
             try {
                 const res = await fetch(`/api/admin/orders/${orderId}/status`, {
                     method: 'POST',
@@ -4029,17 +4374,20 @@
                     body: JSON.stringify({ status })
                 });
                 const result = await res.json();
-                
+
                 if (result.success) {
-                    showToast(`Order has been ${status}! Access granted if approved.`);
+                    showToast(isApprove ? '✅ Oda imekubaliwa! Access imetolewa.' : '❌ Oda imekataliwa.');
                     fetchOrders();
-                    fetchUserStats(); // Refresh stats
+                    fetchUserStats();
                 } else {
-                    alert('Failed: ' + result.error);
+                    showToast('⚠️ Imeshindwa: ' + (result.error || 'Unknown error'));
+                    console.error('Order status error:', result.error);
                 }
             } catch (err) {
-                alert('Network error.');
+                console.error('Network error:', err);
+                showToast('⚠️ Hitilafu ya mtandao. Jaribu tena.');
             }
+        }
         // Auto-refresh system health every 15 seconds if view is active
         setInterval(() => {
             if (currentActiveViewId === 'healthView') {

@@ -139,6 +139,14 @@ app.use(compression());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// API Request Logging
+app.use((req, res, next) => {
+    if (req.url.startsWith('/api/')) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    }
+    next();
+});
+
 // === PERFORMANCE: Static file caching (1 week for assets) ===
 app.use(express.static('public', {
     maxAge: '7d',
@@ -175,6 +183,32 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
+// Settings Endpoints
+app.get('/api/settings/:key', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { key } = req.params;
+    const { data, error } = await supabase.from('site_settings').select('value').eq('key', key).single();
+    res.json(data || { value: key === 'global_discount' ? 0 : (key === 'total_installs' ? 0 : null) });
+});
+
+app.post('/api/admin/settings/:key', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { key } = req.params;
+    const { value } = req.body;
+
+    try {
+        const { error } = await supabase
+            .from('site_settings')
+            .upsert({ key, value });
+
+        if (error) return res.status(500).json({ error: error.message });
+        if (key === 'global_discount') invalidateGamesCache();
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // API Endpoints
 // Storefront - show only published
 app.get('/api/games', async (req, res) => {
@@ -199,10 +233,25 @@ app.get('/api/games', async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     // Update cache
-    gamesCache = { data, timestamp: now };
+    // Fetch Global Discount if exists
+    let globalDiscount = 0;
+    try {
+        const { data: gDisc } = await supabase.from('site_settings').select('value').eq('key', 'global_discount').single();
+        if (gDisc) globalDiscount = parseInt(gDisc.value);
+    } catch (e) {}
+
+    const processedData = data.map(g => {
+        let finalPrice = g.price;
+        if (globalDiscount > 0 && g.price > 0) {
+            finalPrice = Math.floor(g.price * (1 - globalDiscount / 100));
+        }
+        return { ...g, original_price: g.price, price: finalPrice, global_discount: globalDiscount };
+    });
+
+    gamesCache = { data: processedData, timestamp: now };
     res.set('X-Cache', 'MISS');
     res.set('Cache-Control', 'public, max-age=30');
-    res.json(data);
+    res.json(processedData);
 });
 
 // Admin - show all statuses
@@ -512,16 +561,44 @@ app.get('/api/users', verifyAdmin, async (req, res) => {
     res.json(data);
 });
 
-// DELETE a user
+// DELETE a user (cascade-safe: removes related records first)
 app.delete('/api/users/:id', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    const { error } = await supabase
-        .from('visitors')
-        .delete()
-        .eq('id', req.params.id);
-        
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ success: true });
+    const { id } = req.params;
+
+    try {
+        // 1. Delete related notifications
+        const { error: notifErr } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('visitor_id', id);
+        if (notifErr) console.warn('Notifications delete warning:', notifErr.message);
+
+        // 2. Delete related user_access records
+        const { error: accessErr } = await supabase
+            .from('user_access')
+            .delete()
+            .eq('visitor_id', id);
+        if (accessErr) console.warn('user_access delete warning:', accessErr.message);
+
+        // 3. Delete related payment_orders
+        const { error: ordersErr } = await supabase
+            .from('payment_orders')
+            .delete()
+            .eq('visitor_id', id);
+        if (ordersErr) console.warn('payment_orders delete warning:', ordersErr.message);
+
+        // 4. Now safely delete the visitor
+        const { error } = await supabase
+            .from('visitors')
+            .delete()
+            .eq('id', id);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Verify phone number matches visitor ID (for secure logout)
@@ -548,7 +625,48 @@ app.post('/api/verify-phone', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+// Track PWA Installation
+app.post('/api/track-install', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    try {
+        // Increment install count in site_settings
+        const { data: current } = await supabase.from('site_settings').select('value').eq('key', 'total_installs').single();
+        const newCount = (current ? parseInt(current.value) : 0) + 1;
+        
+        await supabase.from('site_settings').upsert({ key: 'total_installs', value: String(newCount) });
+        res.json({ success: true, count: newCount });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
+
+// Get all games for a visitor (My Library)
+app.get('/api/access/:visitor_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id } = req.params;
+
+    try {
+        const { data, error } = await supabase
+            .from('user_access')
+            .select('*, posts(*)')
+            .eq('visitor_id', visitor_id)
+            .gt('expires_at', new Date().toISOString());
+
+        if (error) return res.status(500).json({ error: error.message });
+        
+        const games = data.map(item => ({
+            ...item.posts,
+            expires_at: item.expires_at
+        }));
+        
+        res.json({ success: true, games });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 
 // Image Upload to Supabase Storage
 app.post('/api/admin/upload', verifyAdmin, async (req, res) => {
@@ -1107,14 +1225,16 @@ app.get('/api/orders/history/:visitorId', async (req, res) => {
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
-    // Auto-cleanup Approved/Rejected orders after 7 days (DISABLED TO PREVENT DATA LOSS)
-    /*
+    // Auto-cleanup Pending orders after 24 hours
     try {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        await supabase.from('payment_orders').delete().neq('status', 'pending').lt('created_at', sevenDaysAgo.toISOString());
-    } catch (e) {}
-    */
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        await supabase.from('payment_orders')
+            .delete()
+            .eq('status', 'pending')
+            .lt('created_at', oneDayAgo.toISOString());
+    } catch (e) {
+        console.error("Cleanup error:", e);
+    }
     
     const { data, error } = await supabase
         .from('payment_orders')
@@ -1553,6 +1673,40 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Global Error Handling to prevent silent crashes
+// Hall of Fame - Recent Successes
+app.get('/api/hall-of-fame', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    try {
+        const { data, error } = await supabase
+            .from('payment_orders')
+            .select(`
+                id,
+                created_at,
+                visitors (name, phone),
+                posts (title, image_url)
+            `)
+            .eq('status', 'approved')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (error) return res.status(500).json({ error: error.message });
+        
+        // Mask sensitive data and format
+        const successes = data.map(item => ({
+            name: item.visitors ? item.visitors.name : 'Mwanachama',
+            phone: item.visitors ? item.visitors.phone.substring(0,4) + '***' + item.visitors.phone.slice(-3) : '***',
+            game: item.posts ? item.posts.title : 'Premium Content',
+            image: item.posts ? item.posts.image_url : null,
+            time: item.created_at
+        }));
+        
+        res.json({ success: true, successes });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 process.on('uncaughtException', (err) => {
     console.error('CRITICAL: Uncaught Exception:', err);
     // In production, you might want to restart specifically or log to a service

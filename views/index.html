@@ -409,6 +409,16 @@
         .hamburger-btn:hover .ham-line:nth-child(2) { width: 100%; }
         .hamburger-btn:hover .ham-line:nth-child(3) { width: 70%; }
         
+        .lang-toggle-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 20px;
+            background: rgba(188,19,254,0.1); border: 1.5px solid rgba(188,19,254,0.3);
+            color: #fff; font-size: 0.75rem; font-weight: 800;
+            cursor: pointer; transition: 0.3s; font-family: 'Orbitron';
+        }
+        .lang-toggle-btn:hover { background: rgba(188,19,254,0.2); transform: scale(1.05); box-shadow: 0 0 15px rgba(188,19,254,0.3); }
+        .lang-toggle-btn i { color: #bc13fe; font-size: 0.9rem; }
+        
         /* --- Profile Dropdown --- */
         .profile-dropdown {
             position: absolute;
@@ -1401,10 +1411,36 @@
         }
 
         .signup-logo .s-chidy { color: #fff; }
-        .signup-logo .s-prime {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        /* Winners Ticker */
+        .winners-ticker-wrap {
+            background: rgba(188,19,254,0.05);
+            border-top: 1px solid rgba(188,19,254,0.2);
+            border-bottom: 1px solid rgba(188,19,254,0.2);
+            padding: 10px 0;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            z-index: 10;
+        }
+        .winners-ticker {
+            display: inline-block;
+            animation: ticker-scroll 30s linear infinite;
+            padding-left: 100%;
+        }
+        .winner-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-right: 50px;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .winner-item i { color: #00d25b; font-size: 0.9rem; }
+        .winner-item .game-name { color: #00f2ff; }
+        @keyframes ticker-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
         }
 
         .signup-subtitle {
@@ -2084,6 +2120,47 @@
         .btn-confirm-logout:hover { filter: brightness(1.1); box-shadow: 0 5px 15px rgba(255,68,68,0.3); }
         .btn-confirm-logout:disabled { opacity: 0.6; cursor: not-allowed; }
         .logout-error { color: #ff4444; font-size: 0.8rem; margin-bottom: 15px; display: none; }
+        .discount-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ff3366;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 900;
+            padding: 4px 8px;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(255,51,102,0.5);
+            font-family: 'Orbitron';
+            z-index: 5;
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* My Games Modal */
+        .my-games-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            z-index: 100000; display: none; flex-direction: column;
+            padding: 20px; animation: fadeIn 0.3s ease;
+        }
+        .my-games-modal.show { display: flex; }
+        .mg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-top: 10px; }
+        .mg-title { font-family: 'Orbitron'; font-size: 1.2rem; color: #bc13fe; letter-spacing: 2px; }
+        .mg-close { font-size: 1.5rem; color: #fff; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 50%; }
+        .mg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; overflow-y: auto; padding-bottom: 100px; }
+        .mg-item { background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); padding: 10px; text-align: center; transition: 0.3s; }
+        .mg-item:active { transform: scale(0.95); background: rgba(0,242,255,0.05); }
+        .mg-item img { width: 100%; border-radius: 8px; margin-bottom: 8px; aspect-ratio: 2/3; object-fit: cover; }
+        .mg-item-title { font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mg-item-expiry { font-size: 0.6rem; color: #6c7293; }
+
+        @media (min-width: 768px) {
+            .mg-list { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+        }
     </style>
 </head>
 <body>
@@ -2248,6 +2325,11 @@
             <span class="brand-prime">PRIME</span>
         </div>
         <div class="user-actions">
+            <!-- Language Toggle -->
+            <div class="lang-toggle-btn" onclick="toggleLanguage()" title="Badili Lugha">
+                <span id="currentLangLabel">SW</span>
+                <i class="fas fa-globe-africa"></i>
+            </div>
             <!-- Bell -->
             <div class="notif-bell-btn" id="notifBell" onclick="toggleNotifDropdown()" title="Notifications">
                 <i class="fas fa-bell"></i>
@@ -2263,11 +2345,11 @@
                 
                 <!-- Profile Dropdown -->
                 <div class="profile-dropdown" id="profileDropdown">
-                    <div class="p-drop-item"><i class="fas fa-user-circle"></i> View Profile</div>
-                    <div class="p-drop-item" onclick="openOrderHistory()"><i class="fas fa-history"></i> Order History</div>
-                        <div class="user-menu-item" onclick="openMyGames()"><i class="fas fa-gamepad"></i> MY GAMES</div>
+                    <div class="p-drop-item" data-i18n="view_profile"><i class="fas fa-user-circle"></i> View Profile</div>
+                    <div class="p-drop-item" onclick="openOrderHistory()" data-i18n="order_history"><i class="fas fa-history"></i> Order History</div>
+                        <div class="user-menu-item" onclick="openMyGames()" data-i18n="my_games"><i class="fas fa-gamepad"></i> MY GAMES</div>
                         <div class="user-menu-divider"></div>
-                        <div class="user-menu-item logout" onclick="openLogoutModal()"><i class="fas fa-sign-out-alt"></i> LOGOUT</div>
+                        <div class="user-menu-item logout" onclick="openLogoutModal()" data-i18n="logout"><i class="fas fa-sign-out-alt"></i> LOGOUT</div>
                 </div>
             </div>
             <!-- Premium Hamburger -->
@@ -2283,7 +2365,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <span class="sidebar-title">GAMES MENU</span>
+            <span class="sidebar-title" data-i18n="games_menu">GAMES MENU</span>
             <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
         </div>
         <div class="sidebar-menu" id="sidebarMenu">
@@ -2298,9 +2380,16 @@
     <section class="hero-section">
         <div class="hero-search">
             <i class="fas fa-search search-icon"></i>
-            <input type="text" id="searchInput" placeholder="Search games, categories...">
+            <input type="text" id="searchInput" placeholder="Search games, categories..." data-i18n="search_placeholder">
         </div>
     </section>
+
+    <!-- WINNERS CIRCLE TICKER -->
+    <div class="winners-ticker-wrap" id="winnersTickerWrap" style="display: none;">
+        <div class="winners-ticker" id="winnersTicker">
+            <!-- Injected via JS -->
+        </div>
+    </div>
 
     <!-- CATEGORIES CONTAINER -->
     <main class="categories-container" id="categoriesContainer">
@@ -2358,7 +2447,19 @@
             <i class="fas fa-crown" style="color:var(--gold);"></i>
             <span style="color:var(--gold); font-weight:bold;">Winners</span>
         </div>
-    </nav>
+    <!-- MY GAMES MODAL -->
+    <div class="my-games-modal" id="myGamesModal">
+        <div class="mg-header">
+            <div class="mg-title" data-i18n="my_library">MY GAME LIBRARY</div>
+            <i class="fas fa-times mg-close" onclick="closeMyGames()"></i>
+        </div>
+        <div id="myGamesList" class="mg-list">
+            <!-- Loaded dynamically -->
+        </div>
+        <div style="text-align: center; padding: 20px; color: #6c7293; font-size: 0.75rem;">
+            Games zako zitaonekana hapa ukishafanya malipo na ku-approvewa na Admin.
+        </div>
+    </div>
 
     <!-- LEADERBOARD / HALL OF FAME OVERLAY -->
     <div class="my-games-overlay" id="leaderboardOverlay" style="z-index: 2100;">
@@ -2581,8 +2682,131 @@
 
     <script>
         // ===== DATA =====
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('SW Registered!', reg);
+                }).catch(err => {
+                    console.log('SW Registration failed:', err);
+                });
+            });
+        }
+
+        // Track PWA Installation
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('App was installed');
+            fetch('/api/track-install', { method: 'POST' })
+                .catch(err => console.error('Failed to track install:', err));
+        });
+
         let allGames = [];
         let currentCategory = null; // null means 'Home' view
+        let currentLang = localStorage.getItem('chidy_lang') || 'SW';
+
+        const translations = {
+            'SW': {
+                'short': 'SW',
+                'home': 'Home',
+                'search_placeholder': 'Tafuta games, categories...',
+                'my_library': 'MY GAME LIBRARY',
+                'my_games': 'MY GAMES',
+                'order_history': 'ORDER HISTORY',
+                'view_profile': 'VIEW PROFILE',
+                'logout': 'LOGOUT',
+                'games_menu': 'GAMES MENU',
+                'view_all': 'Tazama Zote',
+                'see_all': 'View All',
+                'loading_games': 'Inatafuta Games...',
+                'join_now': 'JIUNGE SASA',
+                'welcome': 'Karibu',
+                'no_games': 'Hakuna michezo bado.',
+                'wa_channel': 'WhatsApp Channel'
+            },
+            'EN': {
+                'short': 'EN',
+                'home': 'Home',
+                'search_placeholder': 'Search games, categories...',
+                'my_library': 'MY GAME LIBRARY',
+                'my_games': 'MY GAMES',
+                'order_history': 'ORDER HISTORY',
+                'view_profile': 'VIEW PROFILE',
+                'logout': 'LOGOUT',
+                'games_menu': 'GAMES MENU',
+                'view_all': 'View All',
+                'see_all': 'View All',
+                'loading_games': 'Loading Games...',
+                'join_now': 'JOIN NOW',
+                'welcome': 'Welcome',
+                'no_games': 'No games found.',
+                'wa_channel': 'WhatsApp Channel'
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = (currentLang === 'SW') ? 'EN' : 'SW';
+            localStorage.setItem('chidy_lang', currentLang);
+            updateUILanguage();
+        }
+
+        function updateUILanguage() {
+            const t = translations[currentLang];
+            document.getElementById('currentLangLabel').innerText = t.short;
+            
+            // Translate elements with data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    if (el.tagName === 'INPUT' && el.placeholder) {
+                        el.placeholder = t[key];
+                    } else {
+                        el.innerText = t[key];
+                    }
+                }
+            });
+
+            // Update loader text
+            const loaderText = document.querySelector('.loader-text');
+            if (loaderText) loaderText.innerText = t.loading_games;
+            
+            // Re-render categories if loaded
+            if (allGames.length > 0) {
+                if (!currentCategory) renderCategories(allGames);
+                else filterByCategory(currentCategory);
+            }
+        }
+
+        // Call updateUILanguage on init
+        window.addEventListener('DOMContentLoaded', () => {
+            updateUILanguage();
+            initHallOfFame();
+        });
+
+        async function initHallOfFame() {
+            try {
+                const res = await fetch('/api/hall-of-fame');
+                const data = await res.json();
+                if (data.success && data.successes.length > 0) {
+                    const wrap = document.getElementById('winnersTickerWrap');
+                    const ticker = document.getElementById('winnersTicker');
+                    
+                    wrap.style.display = 'block';
+                    ticker.innerHTML = data.successes.map(s => `
+                        <span class="winner-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span class="winner-name">${s.name} (${s.phone})</span>
+                            <span style="color:rgba(255,255,255,0.5)">unlocked</span>
+                            <span class="game-name">${s.game}</span>
+                        </span>
+                    `).join(' &nbsp; • &nbsp; ');
+                    
+                    // Duplicate for seamless loop if content is short
+                    if (data.successes.length < 5) {
+                        ticker.innerHTML += ticker.innerHTML;
+                    }
+                }
+            } catch (e) { console.error('Hall of Fame error:', e); }
+        }
 
         // === PERFORMANCE UTILITIES ===
         function debounce(fn, delay) {
@@ -2879,6 +3103,8 @@
 
         // ===== RENDER SINGLE CARD =====
         function renderCard(game) {
+            const isGlobalDiscount = game.global_discount > 0;
+            const originalPrice = game.original_price ? `${parseInt(game.original_price).toLocaleString()}/-` : '';
             const priceLabel = game.price > 0 ? `${parseInt(game.price).toLocaleString()}/-` : 'FREE';
             const priceClass = game.price > 0 ? '' : 'free';
             const category = game.category ? game.category.toUpperCase() : 'HOT POST';
@@ -2889,7 +3115,11 @@
                         <img data-src="${game.image_url}" alt="${game.title}" 
                              onerror="this.src='https://placehold.co/400x600/111119/00f2ff?text=${encodeURIComponent(game.title)}'"
                              loading="lazy" decoding="async" width="175" height="263">
-                        <div class="price-badge ${priceClass}">${priceLabel}</div>
+                        <div class="price-badge ${priceClass}">
+                            ${isGlobalDiscount ? `<span style="text-decoration: line-through; font-size: 0.6rem; opacity: 0.7; margin-right: 4px;">${originalPrice}</span>` : ''}
+                            ${priceLabel}
+                        </div>
+                        ${isGlobalDiscount ? `<div class="discount-label">-${game.global_discount}%</div>` : ''}
                         <div class="card-rating">
                             <i class="fas fa-star"></i> ${game.rating || '0'}
                         </div>
@@ -3507,6 +3737,55 @@
                 btn.textContent = 'JOIN NOW';
             }
         });
+
+        // ===== MY GAMES LIBRARY =====
+        async function openMyGames() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) {
+                alert("Tafadhali jiunge (Signup) kwanza ili uone maktaba yako ya games.");
+                document.getElementById('signupOverlay').classList.remove('hidden');
+                document.getElementById('signupOverlay').style.opacity = '1';
+                return;
+            }
+
+            const visitor = JSON.parse(visitorStr);
+            const modal = document.getElementById('myGamesModal');
+            const list = document.getElementById('myGamesList');
+            
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6c7293; padding: 3rem;"><i class="fas fa-spinner fa-spin"></i> Inatafuta games zako...</div>';
+
+            try {
+                const res = await fetch(`/api/access/${visitor.id}`);
+                const data = await res.json();
+                const games = data.games || [];
+
+                if (games.length === 0) {
+                    list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6c7293; padding: 3rem;">Hauna game lolote ulilolinunua bado.</div>';
+                    return;
+                }
+
+                list.innerHTML = games.map(g => {
+                    const expiry = new Date(g.expires_at).toLocaleDateString();
+                    return `
+                        <div class="mg-item" onclick="closeMyGames(); openDetail('${g.id}')">
+                            <img src="${g.image_url}" alt="${g.title}">
+                            <div class="mg-item-title">${g.title}</div>
+                            <div class="mg-item-expiry">Expires: ${expiry}</div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ff3366; padding: 3rem;">Hitilafu ya mtandao. Jaribu tena.</div>';
+            }
+        }
+
+        function closeMyGames() {
+            document.getElementById('myGamesModal').classList.remove('show');
+            document.body.style.overflow = '';
+        }
 
         // ===== AI BOT SYSTEM (Msaada) =====
         function openBotChat() {
