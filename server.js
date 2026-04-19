@@ -1668,11 +1668,9 @@ app.get('/api/settings/payment', async (req, res) => {
     res.json(data.value);
 });
 
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(port, () => {
-        console.log(`Server running at http://localhost:${port}`);
-    });
-}
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
 
 // Global Error Handling to prevent silent crashes
 // Hall of Fame - Recent Successes

@@ -818,9 +818,9 @@
 
         .games-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 28vw, 175px), 1fr));
-            gap: clamp(12px, 2.5vw, 20px);
-            padding: 0 clamp(1rem, 4vw, 3rem) 3rem;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: clamp(10px, 2vw, 20px);
+            padding: 0 clamp(10px, 3vw, 2rem) 3rem;
             animation: fadeInUp 0.5s ease-out;
         }
 
@@ -1387,8 +1387,21 @@
 
         /* Phone */
         @media (max-width: 599px) {
+            .games-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                padding: 0 12px 3rem;
+            }
+
             .game-card {
-                flex: 0 0 120px;
+                flex: 0 0 130px;
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+                background: #111119;
+            }
+
+            .game-card::before {
+                display: none;
             }
 
             .card-desc {
@@ -1397,6 +1410,7 @@
 
             .card-info {
                 padding: 8px 8px 10px;
+                background: #111119;
             }
 
             .header-actions a.desktop-only {
@@ -1406,6 +1420,37 @@
             .hero-search input {
                 padding: 11px 16px 11px 42px;
                 font-size: 0.85rem;
+            }
+
+            .payment-card {
+                padding: 1.2rem;
+                max-width: 95%;
+            }
+
+            .payment-info-box {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .payment-step {
+                font-size: 0.8rem;
+            }
+
+            .detail-overlay {
+                padding: 10px;
+            }
+
+            .detail-card {
+                max-height: 95vh;
+            }
+
+            .detail-body {
+                padding: 1.2rem;
+            }
+
+            .dl-btn {
+                padding: 10px 15px;
+                font-size: 0.75rem;
             }
         }
 
@@ -2633,6 +2678,7 @@
             <i class="fas fa-crown" style="color:var(--gold);"></i>
             <span style="color:var(--gold); font-weight:bold;">Winners</span>
         </div>
+    </nav>
     <!-- MY GAMES MODAL -->
     <div class="my-games-modal" id="myGamesModal">
         <div class="mg-header">
@@ -2743,8 +2789,13 @@
                         <div style="width: 24px; height: 24px; border-radius: 6px; background: rgba(0,242,255,0.1); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; color: var(--primary); font-family: 'Orbitron'; font-weight: 900; font-size: 0.8rem; flex-shrink: 0;">1</div>
                         <div style="font-size: 0.8rem; color: #e0e0e0; line-height: 1.4; text-align: left;">
                             Tuma pesa kwenda namba:<br>
-                            <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 6px 10px; border-radius: 6px; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1rem; color: var(--primary); letter-spacing: 1px;" id="payNumber">...</span><br>
-                            <span style="display: inline-block; margin-top: 5px; font-size: 0.75rem; color: var(--secondary); background: rgba(188,19,254,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;" id="payName">...</span>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                                <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1rem; color: var(--primary); letter-spacing: 1px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="payNumber">0742137727</span>
+                                <button onclick="copyPaymentNumber(this)" style="background: rgba(0,242,255,0.1); border: 1px solid rgba(0,242,255,0.3); color: var(--primary); width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; flex-shrink: 0;" title="Nakili namba">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <span style="display: inline-block; margin-top: 5px; font-size: 0.75rem; color: var(--secondary); background: rgba(188,19,254,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;" id="payName">CHIDY PRIME</span>
                         </div>
                     </div>
                     
@@ -3335,8 +3386,8 @@
 
             let accessHtml = '';
 
-            if (hasDuration && visitor && visitor.id) {
-                // Check access status
+            if (visitor && visitor.id) {
+                // Check access status for any game (duration or not) if logged in
                 try {
                     const res = await fetch(`/api/check-access/${visitor.id}/${game.id}`);
                     const accessData = await res.json();
@@ -3398,9 +3449,33 @@
                                 <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
                             </div>
                             ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                <i class="fas fa-redo"></i> LIPA UPYA (Kama Muda Umeisha)
-                            </button>
+                            
+                            <div class="payment-inline" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 15px; margin-top: 15px;">
+                                <div style="text-align: center; margin-bottom: 15px;">
+                                    <span style="display: block; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Kiasi cha Kulipia</span>
+                                    <strong style="display: block; font-family: 'Orbitron'; font-size: 1.4rem; color: #fff;">TSh ${parseInt(game.price || 0).toLocaleString()}</strong>
+                                </div>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 0.8rem; color: #e0e0e0; margin-bottom: 8px;">1. Tuma pesa kwenda namba:</p>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1.1rem; color: var(--primary); flex: 1; text-align: center;" id="inlinePayNumber">0742137727</span>
+                                        <button onclick="copyPaymentNumberInline(this)" style="background: rgba(0,242,255,0.1); border: 1px solid rgba(0,242,255,0.3); color: var(--primary); width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <span style="display: block; margin-top: 5px; font-size: 0.75rem; color: var(--secondary); font-weight: bold; text-align: center;">CHIDY PRIME</span>
+                                </div>
+
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 0.8rem; color: #e0e0e0; margin-bottom: 8px;">2. Weka namba uliyotumia pesa:</p>
+                                    <input type="tel" id="inlineSenderPhone" placeholder="07XXXXXXXX" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.3); border-radius: 10px; color: #fff; font-size: 1rem; text-align: center;">
+                                </div>
+
+                                <button onclick="submitInlinePayment('${game.id}', this)" style="width: 100%; padding: 15px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; font-family: 'Orbitron';">
+                                    THIBITISHA MALIPO
+                                </button>
+                            </div>
                         `;
                     } else {
                         // No access yet
@@ -3411,9 +3486,33 @@
                                     <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                    <i class="fas fa-credit-card"></i> NUNUA ACCESS (TSh ${game.price || 0})
-                                </button>
+                                
+                                <div class="payment-inline" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 15px; margin-top: 15px;">
+                                    <div style="text-align: center; margin-bottom: 15px;">
+                                        <span style="display: block; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Kiasi cha Kulipia</span>
+                                        <strong style="display: block; font-family: 'Orbitron'; font-size: 1.4rem; color: #fff;">TSh ${parseInt(game.price || 0).toLocaleString()}</strong>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <p style="font-size: 0.8rem; color: #e0e0e0; margin-bottom: 8px;">1. Tuma pesa kwenda namba:</p>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1.1rem; color: var(--primary); flex: 1; text-align: center;" id="inlinePayNumber">0742137727</span>
+                                            <button onclick="copyPaymentNumberInline(this)" style="background: rgba(0,242,255,0.1); border: 1px solid rgba(0,242,255,0.3); color: var(--primary); width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <span style="display: block; margin-top: 5px; font-size: 0.75rem; color: var(--secondary); font-weight: bold; text-align: center;">CHIDY PRIME</span>
+                                    </div>
+
+                                    <div style="margin-bottom: 15px;">
+                                        <p style="font-size: 0.8rem; color: #e0e0e0; margin-bottom: 8px;">2. Weka namba uliyotumia pesa:</p>
+                                        <input type="tel" id="inlineSenderPhone" placeholder="07XXXXXXXX" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.3); border-radius: 10px; color: #fff; font-size: 1rem; text-align: center;">
+                                    </div>
+
+                                    <button onclick="submitInlinePayment('${game.id}', this)" style="width: 100%; padding: 15px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; font-family: 'Orbitron';">
+                                        THIBITISHA MALIPO
+                                    </button>
+                                </div>
                             `;
                         } else {
                             // Free game with duration
@@ -3422,9 +3521,17 @@
                                     <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-lock" style="color:#ffb400;"></i> Game hii ina access ya siku <strong style="color:#fff;">${game.duration_days}</strong>. Bofya hapa chini kupata access.</p>
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#00f2ff,#bc13fe);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                    <i class="fas fa-unlock-alt"></i> PATA ACCESS (Siku ${game.duration_days})
-                                </button>
+                                
+                                <div class="payment-inline" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 15px; margin-top: 15px;">
+                                    <div style="text-align: center; margin-bottom: 15px;">
+                                        <span style="display: block; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Kiasi cha Kulipia</span>
+                                        <strong style="display: block; font-family: 'Orbitron'; font-size: 1.4rem; color: #fff;">BURE</strong>
+                                    </div>
+                                    
+                                    <button onclick="submitInlinePayment('${game.id}', this)" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #00f2ff, #bc13fe); color: #000; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; font-family: 'Orbitron';">
+                                        PATA ACCESS
+                                    </button>
+                                </div>
                             `;
                         }
                     }
@@ -3438,7 +3545,7 @@
                     `;
                 }
             } else if (!visitor) {
-                // Not logged in - force login for any game (even free ones)
+                // Not logged in - force login for any game
                 accessHtml = `
                     <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
                         <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-user-plus" style="color:var(--gold);"></i> Tafadhali jisajili kwanza ili kupata access ya kudownload.</p>
@@ -3446,17 +3553,6 @@
                     ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                     <button class="dl-btn" onclick="openLogin()" style="width:100%;margin-top:10px;">JISAJILI SASA</button>
                 `;
-            } else {
-                // Logged in but game has no duration/price? Still hit access check to get links
-                // Re-calling with a simplified view or just fallback
-                accessHtml = `
-                    <div class="loader-container" style="padding: 20px;">
-                        <div class="loader-spinner" style="width:25px; height:25px;"></div>
-                        <div class="loader-text">Fetching links...</div>
-                    </div>
-                `;
-                // Manually trigger the check if we didn't enter the duration block
-                setTimeout(() => openDetail(id), 100); 
             }
 
             card.innerHTML = `
@@ -3487,6 +3583,74 @@
             });
         }
 
+        function copyPaymentNumberInline(btn) {
+            const num = document.getElementById('inlinePayNumber').innerText;
+            navigator.clipboard.writeText(num).then(() => {
+                const icon = btn.querySelector('i');
+                icon.className = 'fas fa-check';
+                btn.style.background = '#00d25b';
+                btn.style.color = '#000';
+                setTimeout(() => {
+                    icon.className = 'fas fa-copy';
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+
+        async function submitInlinePayment(postId, btnEl) {
+            const phoneInput = document.getElementById('inlineSenderPhone');
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            const game = allGames.find(g => g.id == postId);
+            
+            const isFree = !game.price || game.price == 0;
+            let phone = isFree ? 'BURE' : (phoneInput ? phoneInput.value.trim() : '');
+
+            if (!isFree && (!phone || phone.length < 10)) {
+                alert('Tafadhali weka namba sahihi ya simu uliyotuma pesa.');
+                return;
+            }
+
+            const btn = btnEl || (window.event && window.event.currentTarget) || document.querySelector('.payment-inline button');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
+            }
+
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        visitor_id: visitor.id,
+                        post_id: postId,
+                        amount: game.price || 0,
+                        phone_number: phone,
+                        is_gift: false
+                    })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    if (isFree) {
+                        alert('✅ Umefanikiwa kupata access!');
+                    } else {
+                        alert('⏳ Oda yako imepokelewa! Admin anahakiki malipo yako sasa.');
+                    }
+                    openDetail(postId);
+                } else {
+                    alert('Imeshindikana: ' + result.error);
+                }
+            } catch (e) {
+                alert('Hitilafu ya mtandao.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = isFree ? 'PATA ACCESS' : 'THIBITISHA MALIPO';
+                }
+            }
+        }
+
         // Initiate payment flow
         async function initiatePayment(postId) {
             const game = allGames.find(g => g.id == postId);
@@ -3501,12 +3665,18 @@
 
             try {
                 // Get payment info from settings
-                const res = await fetch('/api/settings/payment');
-                const settings = await res.json();
+                let settings = { mpesa_number: '0742137727', mpesa_name: 'CHIDY PRIME' }; // Hard fallback
+                try {
+                    const res = await fetch('/api/settings/payment');
+                    const remoteSettings = await res.json();
+                    if (remoteSettings && remoteSettings.mpesa_number) {
+                        settings = remoteSettings;
+                    }
+                } catch(e) { console.error('Settings fetch failed, using fallback'); }
                 
                 document.getElementById('payAmount').textContent = 'TSh ' + game.price.toLocaleString();
-                document.getElementById('payNumber').textContent = settings.mpesa_number;
-                document.getElementById('payName').textContent = settings.mpesa_name;
+                document.getElementById('payNumber').textContent = settings.mpesa_number || '0742137727';
+                document.getElementById('payName').textContent = settings.mpesa_name || 'CHIDY PRIME';
                 document.getElementById('payPostId').value = postId;
                 
                 // Clear promo state
