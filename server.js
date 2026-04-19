@@ -625,6 +625,8 @@ app.post('/api/verify-phone', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
 // Track PWA Installation
 app.post('/api/track-install', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
