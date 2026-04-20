@@ -2552,8 +2552,12 @@
         let currentActiveViewId = 'dashboardView';
         let allGamesData = [];
         let allOrdersData = [];
+        let allUsersData = [];
+        let allPromoCodes = [];
         let allCategories = [];
         let currentGamesFilter = 'published';
+        let lastSeenOrderId = null;
+        const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         // GLOBAL SEARCH HANDLER
         document.getElementById('adminSearchInput').addEventListener('input', () => {
@@ -2778,11 +2782,6 @@
         // ============================================
         // CATEGORY MANAGEMENT
         // ============================================
-        let lastSeenOrderId = null;
-        let allOrdersData = [];
-        let allUsersData = [];
-        let allPromoCodes = [];
-        const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         async function handleImageUpload(input, targetInputId, statusId) {
             const file = input.files[0];
@@ -3591,12 +3590,16 @@
             fetchUserStats();
             loadCategories();
             fetchActivity();
-            // If the current view is not dashboard, reload that specific view
-            if (currentActiveViewId === 'ordersView') fetchOrders();
+            // Always refresh orders for dashboard stats and notification alerts
+            fetchOrders();
             if (currentActiveViewId === 'promoView') loadPromoCodesWithStats();
         }
 
         refreshAllData();
+        // Initial view setup if logged in
+        if (localStorage.getItem('adminToken')) {
+            showView('dashboardView');
+        }
         // Auto-refresh user stats and activity every 30 seconds
         setInterval(() => {
             fetchUserStats();
@@ -3740,7 +3743,6 @@
         }
 
         // ===== USER MANAGEMENT SYSTEM =====
-        let allUsersData = [];
 
         async function loadUsers() {
             try {
@@ -3950,7 +3952,6 @@
         };
 
         // ===== PROMO CODES SYSTEM =====
-        let allPromoCodes = [];
 
         async function loadPromoCodesWithStats() {
             const list = document.getElementById('promoCodesList');
@@ -4127,7 +4128,7 @@
             if (list) list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
             
             try {
-                const res = await fetch('/api/admin/orders', {
+                const res = await fetch(`/api/admin/orders?t=${Date.now()}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                     }

@@ -1718,7 +1718,7 @@
             padding: 1.5rem;
             animation: fadeIn 0.3s ease-out;
         }
-        .payment-overlay.show { display: flex; }
+        .payment-overlay.show { display: flex !important; }
         .payment-card {
             background: var(--bg-card);
             border-radius: 20px;
@@ -3009,7 +3009,8 @@
         .payment-card-custom::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
         .payment-card-custom::-webkit-scrollbar-thumb { background: rgba(0,242,255,0.4); border-radius: 10px; }
     </style>
-    <div class="payment-overlay" id="paymentOverlay">
+    <div class="payment-overlay" id="paymentOverlay" style="display:none !important; visibility:hidden;" hidden>
+    <script>document.getElementById('paymentOverlay').style.display='none';</script>
         <div class="payment-card payment-card-custom" style="max-height: 90vh; overflow-y: auto;">
             
             <button class="close-detail" onclick="closePayment()"><i class="fas fa-times"></i></button>
@@ -4114,7 +4115,11 @@
                 // Set a custom placeholder that includes a prompt
                 document.getElementById('paySenderNumber').placeholder = "Andika namba yako hapa...";
 
-                document.getElementById('paymentOverlay').classList.add('show');
+                const payEl = document.getElementById('paymentOverlay');
+                payEl.removeAttribute('hidden');
+                payEl.style.visibility = 'visible';
+                payEl.style.display = 'flex';
+                payEl.classList.add('show');
             } catch (e) {
                 alert('Tafadhali jaribu tena baadae.');
             }
@@ -4160,7 +4165,11 @@
         }
 
         function closePayment() {
-            document.getElementById('paymentOverlay').classList.remove('show');
+            const payEl = document.getElementById('paymentOverlay');
+            payEl.classList.remove('show');
+            payEl.style.display = 'none';
+            payEl.style.visibility = 'hidden';
+            payEl.setAttribute('hidden', '');
         }
 
         function toggleGiftInput() {
@@ -5236,6 +5245,20 @@
             
             const visitorStr = localStorage.getItem('chidy_visitor');
             if (visitorStr) {
+                try {
+                    const v = JSON.parse(visitorStr);
+                    if (v.id) {
+                        // CRITICAL: Validate if this ID still exists in DB (fixes orphaned localStorage accounts)
+                        const checkRes = await fetch(`/api/check-user/${v.id}`);
+                        const checkData = await checkRes.json();
+                        if (!checkData.exists) {
+                            console.warn("Visitor ID not found in DB. Clearing orphaned session.");
+                            localStorage.removeItem('chidy_visitor');
+                            localStorage.removeItem('chidy_stats');
+                            window.location.reload();
+                        }
+                    }
+                } catch(e) { console.error("Identity check failed", e); }
                 refreshUserStats();
             }
 
@@ -5250,6 +5273,13 @@
 
             // Apply tilt to new cards
             document.querySelectorAll('.game-card').forEach(init3DTilt);
+
+            // CRITICAL: Force-hide payment overlay on page load (prevents ghost card at bottom)
+            const payOverlay = document.getElementById('paymentOverlay');
+            if (payOverlay) {
+                payOverlay.style.display = 'none';
+                payOverlay.classList.remove('show');
+            }
         });
 
     </script>

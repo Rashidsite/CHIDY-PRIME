@@ -147,12 +147,25 @@ app.use((req, res, next) => {
     next();
 });
 
+// CRITICAL: Never cache the service worker!
+app.get('/sw.js', (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
 // === PERFORMANCE: Static file caching (1 week for assets) ===
 app.use(express.static('public', {
     maxAge: '7d',
     etag: true,
     lastModified: true,
-    immutable: false
+    immutable: false,
+    setHeaders: (res, path) => {
+        if (path.endsWith('sw.js')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        }
+    }
 }));
 
 // === PERFORMANCE: In-memory cache for games API ===
@@ -176,6 +189,9 @@ app.post('/api/admin/login', (req, res) => {
 
 // Routes
 app.get('/', (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
