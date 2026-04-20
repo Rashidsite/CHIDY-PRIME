@@ -3564,7 +3564,9 @@
                 `;
                 
                 // Fetch pending orders count
-                const ordersRes = await fetch('/api/admin/orders');
+                const ordersRes = await fetch('/api/admin/orders', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
                 const orders = await ordersRes.json();
                 const pending = Array.isArray(orders) ? orders.filter(o => o.status === 'pending').length : 0;
                 document.getElementById('pendingOrdersCount').innerText = pending;
@@ -3603,7 +3605,9 @@
 
         async function fetchActivity() {
             try {
-                const res = await fetch('/api/admin/activity');
+                const res = await fetch('/api/admin/activity', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
                 const activity = await res.json();
                 renderActivity(activity);
             } catch (err) {
@@ -4123,7 +4127,11 @@
             if (list) list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
             
             try {
-                const res = await fetch('/api/admin/orders');
+                const res = await fetch('/api/admin/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
                 const orders = await res.json();
                 
                 if (!Array.isArray(orders)) {
