@@ -866,6 +866,46 @@ app.post('/api/admin/promo', verifyAdmin, async (req, res) => {
     }
 });
 
+// Public promo code validation (for storefront)
+app.post('/api/promo/validate', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { code } = req.body;
+    if (!code) return res.json({ valid: false, message: 'Tafadhali ingiza promo code.' });
+
+    try {
+        const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'promo_codes').single();
+        if (error || !data || !data.value) {
+            return res.json({ valid: false, message: 'Hakuna promo codes zilizopo kwa sasa.' });
+        }
+
+        const codes = Array.isArray(data.value) ? data.value : [];
+        const found = codes.find(c => c.code && c.code.toUpperCase() === code.toUpperCase());
+
+        if (!found) {
+            return res.json({ valid: false, message: 'Promo code hii haipo au si sahihi.' });
+        }
+
+        // Check if active
+        if (found.active === false) {
+            return res.json({ valid: false, message: 'Promo code hii imeshaisha muda wake.' });
+        }
+
+        // Check expiry if set
+        if (found.expires_at && new Date(found.expires_at) < new Date()) {
+            return res.json({ valid: false, message: 'Promo code hii imeshaisha muda wake.' });
+        }
+
+        // Check usage limit if set
+        if (found.max_uses && found.used_count >= found.max_uses) {
+            return res.json({ valid: false, message: 'Promo code hii imeshatumika mara zote zilizoruhusiwa.' });
+        }
+
+        return res.json({ valid: true, discount: found.discount || 0, message: `Punguzo la ${found.discount}%!` });
+    } catch (e) {
+        res.status(500).json({ valid: false, message: 'Tatizo la mfumo. Jaribu tena.' });
+    }
+});
+
 // ============================================
 // USER ACCESS / DURATION ENDPOINTS
 // ============================================
