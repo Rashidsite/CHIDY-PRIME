@@ -1389,15 +1389,16 @@
         @media (max-width: 599px) {
             .games-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
-                padding: 0 12px 3rem;
+                gap: 10px;
+                padding: 0 10px 3rem;
             }
 
             .game-card {
-                flex: 0 0 130px;
+                flex: 0 0 120px;
                 backdrop-filter: none;
                 -webkit-backdrop-filter: none;
                 background: #111119;
+                border-radius: 12px;
             }
 
             .game-card::before {
@@ -1409,48 +1410,254 @@
             }
 
             .card-info {
-                padding: 8px 8px 10px;
+                padding: 6px 7px 8px;
                 background: #111119;
+            }
+
+            .card-title {
+                font-size: 0.72rem;
+                -webkit-line-clamp: 2;
+                line-height: 1.25;
+            }
+
+            .header {
+                height: 50px;
+                padding: 0 10px;
+            }
+
+            .brand {
+                font-size: 0.95rem;
+                letter-spacing: 2px;
+            }
+
+            .user-actions {
+                gap: 6px;
+            }
+
+            .lang-toggle-btn {
+                padding: 4px 8px;
+                font-size: 0.65rem;
+            }
+
+            .notif-bell-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+
+            .user-avatar {
+                width: 30px;
+                height: 30px;
+            }
+
+            .user-profile {
+                padding: 3px 8px 3px 4px;
+                gap: 5px;
+            }
+
+            .user-name-text {
+                font-size: 0.7rem !important;
+                max-width: 55px;
+            }
+
+            #userLevelBadge {
+                font-size: 0.45rem !important;
+            }
+
+            .hamburger-btn {
+                width: 32px;
+                height: 32px;
+                padding: 7px;
+            }
+
+            /* Hide cyber-orb on mobile */
+            .cyber-orb {
+                display: none;
+            }
+
+            /* Compact hero on mobile */
+            .hero-section {
+                padding: 1rem 0.8rem 0.5rem;
+            }
+
+            .hero-content {
+                margin-bottom: 1rem;
+            }
+
+            .hero-badge {
+                font-size: 0.55rem;
+                padding: 4px 10px;
+                margin-bottom: 0.8rem;
+            }
+
+            .hero-title {
+                font-size: 1.4rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 0.8rem;
+                margin-bottom: 1rem;
+                line-height: 1.4;
+            }
+
+            .hero-stats {
+                margin-top: 0.8rem;
+                gap: 1.5rem;
+            }
+
+            .stat-value {
+                font-size: 1rem;
+            }
+
+            .stat-label {
+                font-size: 0.5rem;
+            }
+
+            .hero-search input {
+                padding: 10px 14px 10px 38px;
+                font-size: 0.82rem;
             }
 
             .header-actions a.desktop-only {
                 display: none;
             }
 
-            .hero-search input {
-                padding: 11px 16px 11px 42px;
-                font-size: 0.85rem;
+            /* Compact games row */
+            .games-row {
+                gap: 10px;
+                padding: 5px 10px 25px;
             }
 
+            /* Compact category headers */
+            .category-header {
+                padding: 0 10px;
+                margin-bottom: 0.8rem;
+            }
+
+            .category-title {
+                font-size: 0.8rem;
+                letter-spacing: 1px;
+                gap: 8px;
+            }
+
+            .category-title::before {
+                width: 3px;
+                height: 18px;
+            }
+
+            .see-all {
+                font-size: 0.6rem;
+                padding: 4px 10px;
+            }
+
+            .category-count {
+                font-size: 0.65rem;
+                padding: 2px 8px;
+            }
+
+            /* Category section spacing */
+            .category-section {
+                margin-bottom: 1.5rem;
+            }
+
+            /* Payment fixes */
             .payment-card {
-                padding: 1.2rem;
+                padding: 1rem;
                 max-width: 95%;
             }
 
             .payment-info-box {
-                padding: 1rem;
-                margin-bottom: 1rem;
+                padding: 0.8rem;
+                margin-bottom: 0.8rem;
             }
 
             .payment-step {
-                font-size: 0.8rem;
+                font-size: 0.78rem;
             }
 
+            /* Detail modal - compact & fast */
             .detail-overlay {
-                padding: 10px;
+                padding: 8px;
+                align-items: flex-end;
             }
 
             .detail-card {
-                max-height: 95vh;
+                max-height: 92vh;
+                border-radius: 16px 16px 0 0;
+                animation: slideUpMobile 0.25s ease-out;
+            }
+
+            @keyframes slideUpMobile {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+            }
+
+            .detail-image {
+                aspect-ratio: 16 / 8;
             }
 
             .detail-body {
-                padding: 1.2rem;
+                padding: 1rem;
+            }
+
+            .detail-body h2 {
+                font-size: 1rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .detail-body p {
+                font-size: 0.78rem;
+                line-height: 1.5;
+                margin-bottom: 1rem;
+                text-transform: none;
+            }
+
+            .detail-meta span {
+                font-size: 0.65rem;
+                padding: 3px 8px;
             }
 
             .dl-btn {
-                padding: 10px 15px;
-                font-size: 0.75rem;
+                padding: 10px 14px;
+                font-size: 0.72rem;
+            }
+
+            /* Inline payment compact */
+            .payment-inline {
+                padding: 10px !important;
+            }
+
+            /* Bottom padding */
+            body {
+                padding-bottom: calc(var(--bottom-bar-height) + 30px);
+            }
+
+            .site-footer {
+                padding: 2rem 1rem 5rem;
+                margin-top: 2rem;
+            }
+
+            /* Announcement bar compact */
+            .announcement-bar {
+                height: 28px;
+            }
+
+            .announcement-content {
+                font-size: 0.65rem;
+            }
+
+            /* Bottom bar compact */
+            .bottom-bar {
+                height: 55px;
+            }
+
+            .bottom-item {
+                font-size: 0.5rem;
+            }
+
+            .bottom-item i {
+                font-size: 1rem;
             }
         }
 
@@ -2790,12 +2997,12 @@
                         <div style="font-size: 0.8rem; color: #e0e0e0; line-height: 1.4; text-align: left;">
                             Tuma pesa kwenda namba:<br>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                                <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1rem; color: var(--primary); letter-spacing: 1px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="payNumber">0742137727</span>
+                                <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1rem; color: var(--primary); letter-spacing: 1px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="payNumber">0796615257</span>
                                 <button onclick="copyPaymentNumber(this)" style="background: rgba(0,242,255,0.1); border: 1px solid rgba(0,242,255,0.3); color: var(--primary); width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; flex-shrink: 0;" title="Nakili namba">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
-                            <span style="display: inline-block; margin-top: 5px; font-size: 0.75rem; color: var(--secondary); background: rgba(188,19,254,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;" id="payName">CHIDY PRIME</span>
+                            <span style="display: inline-block; margin-top: 5px; font-size: 0.75rem; color: var(--secondary); background: rgba(188,19,254,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;" id="payName">RASHID SALUM RASHID (Vodacom)</span>
                         </div>
                     </div>
                     
@@ -3496,12 +3703,12 @@
                                     <div style="margin-bottom: 15px;">
                                         <p style="font-size: 0.8rem; color: #e0e0e0; margin-bottom: 8px;">1. Tuma pesa kwenda namba:</p>
                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1.1rem; color: var(--primary); flex: 1; text-align: center;" id="inlinePayNumber">0742137727</span>
+                                            <span style="display: inline-block; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-family: 'Orbitron'; font-size: 1.1rem; color: var(--primary); flex: 1; text-align: center;" id="inlinePayNumber">0796615257</span>
                                             <button onclick="copyPaymentNumberInline(this)" style="background: rgba(0,242,255,0.1); border: 1px solid rgba(0,242,255,0.3); color: var(--primary); width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                                 <i class="fas fa-copy"></i>
                                             </button>
                                         </div>
-                                        <span style="display: block; margin-top: 5px; font-size: 0.75rem; color: var(--secondary); font-weight: bold; text-align: center;">CHIDY PRIME</span>
+                                        <span style="display: block; margin-top: 5px; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-weight: 600; text-align: center;">Jina: Rashid Salum Rashid (Vodacom)</span>
                                     </div>
 
                                     <div style="margin-bottom: 15px;">
@@ -3665,7 +3872,7 @@
 
             try {
                 // Get payment info from settings
-                let settings = { mpesa_number: '0742137727', mpesa_name: 'CHIDY PRIME' }; // Hard fallback
+                let settings = { mpesa_number: '0796615257', mpesa_name: 'RASHID SALUM RASHID (Vodacom)' }; // Hard fallback
                 try {
                     const res = await fetch('/api/settings/payment');
                     const remoteSettings = await res.json();
@@ -3675,8 +3882,8 @@
                 } catch(e) { console.error('Settings fetch failed, using fallback'); }
                 
                 document.getElementById('payAmount').textContent = 'TSh ' + game.price.toLocaleString();
-                document.getElementById('payNumber').textContent = settings.mpesa_number || '0742137727';
-                document.getElementById('payName').textContent = settings.mpesa_name || 'CHIDY PRIME';
+                document.getElementById('payNumber').textContent = settings.mpesa_number || '0796615257';
+                document.getElementById('payName').textContent = settings.mpesa_name || 'RASHID SALUM RASHID (Vodacom)';
                 document.getElementById('payPostId').value = postId;
                 
                 // Clear promo state
