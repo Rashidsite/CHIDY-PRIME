@@ -4334,6 +4334,7 @@
                                 <div>
                                     <span style="display: block; font-size: 0.6rem; text-transform: uppercase; color: #4b4b56; margin-bottom: 2px;">Amount</span>
                                     <span style="font-weight: 500; color: #00ff88; font-size: 1.1rem;">TSh ${parseInt(order.amount).toLocaleString()}</span>
+                                    ${order.promo_used ? `<div style="font-size: 0.6rem; color: #ffab00; margin-top: 2px;"><i class="fas fa-tag"></i> ${order.promo_used}</div>` : ''}
                                 </div>
                                 <div class="order-actions">
                                     ${order.status === 'pending' ? `
@@ -4388,9 +4389,17 @@
                 showToast('⚠️ Hitilafu ya mtandao. Jaribu tena.');
             }
         }
+        // Auto-refresh orders every 30 seconds if view is active
+        setInterval(() => {
+            const ordersView = document.getElementById('ordersView');
+            if (ordersView && ordersView.style.display === 'block') {
+                fetchOrders();
+            }
+        }, 30000);
+
         // Auto-refresh system health every 15 seconds if view is active
         setInterval(() => {
-            if (currentActiveViewId === 'healthView') {
+            if (typeof currentActiveViewId !== 'undefined' && currentActiveViewId === 'healthView') {
                 loadSystemHealth();
             }
         }, 15000);

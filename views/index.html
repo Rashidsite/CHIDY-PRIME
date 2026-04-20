@@ -4017,6 +4017,12 @@
             const isFree = !game.price || game.price == 0;
             let phone = isFree ? 'BURE' : (phoneInput ? phoneInput.value.trim() : '');
 
+            if (!visitor || !visitor.id) {
+                alert('Tafadhali jisajili kwanza ili uweze kulipia na kupata access.');
+                openLogin();
+                return;
+            }
+
             if (!isFree && (!phone || phone.length < 10)) {
                 alert('Tafadhali weka namba sahihi ya simu uliyotuma pesa.');
                 return;
@@ -4170,8 +4176,15 @@
             const giftPhone = document.getElementById('giftRecipientPhone').value.trim();
             
             const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = JSON.parse(visitorStr);
+            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
             const game = allGames.find(g => g.id == postId);
+            
+            if (!visitor || !visitor.id) {
+                alert('Tafadhali jisajili kwanza ili uweze kulipia!');
+                closePayment();
+                openLogin();
+                return;
+            }
 
             if (!senderPhone) {
                 alert('Tafadhali ingiza namba uliyotumia kulipia!');

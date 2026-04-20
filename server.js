@@ -1227,6 +1227,7 @@ app.post('/api/orders', async (req, res) => {
         if (error) throw error;
         
         // Notify admin via Telegram & chat
+        console.log(`[ORDER] New Pending Order: Visitor=${visitor_id}, Post=${post_id}, Amount=${amount}, Phone=${phone_number}`);
         const promoInfo = promo_used ? `\n🎟️ <b>Promo:</b> ${promo_used}` : '';
         sendTelegramAlert(`🛒 <b>NEW PENDING ORDER</b> 🛒\n\n<b>Phone:</b> ${phone_number}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}${promoInfo}\n<b>Time:</b> ${new Date().toLocaleString()}\n\n<i>Check Admin Dashboard to approve.</i>`);
 
