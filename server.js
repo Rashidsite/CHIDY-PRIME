@@ -12,6 +12,7 @@ const port = process.env.PORT || 3000;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'chidy_prime_super_secret_2025';
 const ADMIN_PIN = process.env.ADMIN_PIN || '2025';
+const ZENOPAY_API_KEY = process.env.ZENOPAY_API_KEY || 'S7Sy7GYL0qzE4IIaEQvlHreGW6LzkQ4DJDPZLyehi6yL4BbO3HqQyA0wAe5HmktXuln9FFYDszRXJAni_HvuAQ';
 
 // --- SYSTEM HEALTH MONITORING ---
 global.systemErrors = [];
@@ -1214,6 +1215,142 @@ app.post('/api/payments/callback', async (req, res) => {
     }
 
     res.json({ success: false, message: 'Payment not successful' });
+});
+
+// === ZENOPAY INTEGRATION LOGIC ===
+app.post('/api/payments/zenopay-checkout', async (req, res) => {
+    const { amount, phone, gameTitle, visitorId, postId, email, name } = req.body;
+    
+    // Normalize phone (ZenoPay expects 0... or 255...)
+    let formattedPhone = phone.replace(/[^0-9]/g, '');
+    if (formattedPhone.startsWith('255')) formattedPhone = '0' + formattedPhone.substring(3);
+
+    try {
+        const payload = {
+            order_id: `ZP_${Date.now()}_${visitorId}`,
+            buyer_email: email || 'customer@chidyprime.com',
+            buyer_name: name || 'Chidy Prime Customer',
+            buyer_phone: formattedPhone,
+            amount: parseFloat(amount),
+            webhook_url: process.env.ZENOPAY_WEBHOOK_URL || 'https://chidyprime.com/api/payments/zenopay-callback'
+        };
+
+        console.log('Initiating ZenoPay:', payload);
+
+        const zenoRes = await fetch('https://zenoapi.com/api/payments/mobile_money_tanzania', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'x-api-key': ZENOPAY_API_KEY
+            },
+            body: new URLSearchParams(payload)
+        });
+
+        const data = await zenoRes.json();
+        console.log('ZenoPay Response:', data);
+
+        // Store temporary order info for reference if needed
+        if (data.status === 'success') {
+             await supabase.from('payment_orders').insert([{
+                visitor_id: visitorId,
+                post_id: postId,
+                amount: amount,
+                phone_number: formattedPhone,
+                status: 'pending',
+                payment_method: 'ZenoPay',
+                external_id: payload.order_id
+            }]);
+        }
+
+        res.json(data);
+    } catch (err) {
+        console.error('ZenoPay Checkout Error:', err);
+        res.status(500).json({ error: 'ZenoPay service error' });
+    }
+});
+
+app.post('/api/payments/zenopay-callback', async (req, res) => {
+    console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
+    // ZenoPay sends data as form-urlencoded or JSON
+    const { status, order_id, transaction_id, msisdn, amount } = req.body;
+
+    if (status === 'success' || status === 'COMPLETED') {
+        try {
+            // Find the pending order
+            const { data: order, error: findErr } = await supabase
+                .from('payment_orders')
+                .select('*')
+                .eq('external_id', order_id)
+                .single();
+
+            if (findErr || !order) {
+                console.warn('ZenoPay Callback: Order not found for external_id:', order_id);
+                // Try to fallback to logic that creates an order if it doesn't exist
+                return res.json({ success: true, message: 'Order reference not found' });
+            }
+
+            if (order.status === 'approved') {
+                return res.json({ success: true, message: 'Order already approved' });
+            }
+
+            // 1. Update order in database
+            const { error: updateErr } = await supabase
+                .from('payment_orders')
+                .update({ 
+                    status: 'approved', 
+                    updated_at: new Date().toISOString() 
+                })
+                .eq('id', order.id);
+
+            if (updateErr) throw updateErr;
+
+            // 2. Grant Access (Copied logic from Admin Approval for consistency)
+            const { post_id, visitor_id } = order;
+            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', post_id).single();
+            const dDays = game ? (game.duration_days || 0) : 0;
+            const gTitle = game ? game.title : 'Game';
+            
+            let finalExpiresAt = new Date();
+            if (dDays > 0) {
+                finalExpiresAt.setDate(finalExpiresAt.getDate() + dDays);
+            } else {
+                finalExpiresAt = new Date('2099-12-31T23:59:59Z');
+            }
+
+            await supabase.from('user_access').upsert({
+                visitor_id: visitor_id,
+                post_id,
+                granted_at: new Date().toISOString(),
+                expires_at: finalExpiresAt.toISOString()
+            }, { onConflict: 'visitor_id,post_id' });
+
+            // 3. Notify User
+            await supabase.from('notifications').insert({
+                visitor_id: visitor_id,
+                post_id: post_id,
+                title: 'Malipo Yamekubaliwa! ✅',
+                message: `Malipo yako ya game "${gTitle}" kupitia ZenoPay yamehakikiwa. Sasa unaweza kuanza kudownload.`,
+                type: 'success'
+            });
+
+            // 4. Log Analytics
+            await supabase.from('daily_stats').insert([{
+                event_type: 'payment_success',
+                metadata: { amount, msisdn, postId: post_id, method: 'ZenoPay' }
+            }]);
+
+            // Telegram Alert
+            sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\n\n<b>Game:</b> ${gTitle}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${msisdn || order.phone_number}\n<b>Method:</b> ZenoPay\n<b>Time:</b> ${new Date().toLocaleString()}`);
+
+            return res.json({ success: true });
+
+        } catch (dbErr) {
+            console.error('Database Error in ZenoPay Callback:', dbErr);
+            return res.status(500).json({ error: 'DB update failed' });
+        }
+    }
+
+    res.json({ success: false, message: 'Payment status not success' });
 });
 
 // Create a new manual payment order

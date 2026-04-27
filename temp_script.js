@@ -328,7 +328,7 @@
                             </div>
                             ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                             <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                <i class="fas fa-redo"></i> LIPA UPYA (Kama Muda Umeisha)
+                                <i class="fas fa-redo"></i> LIPA SASA (Kama Muda Umeisha)
                             </button>
                         `;
                     } else {
@@ -341,7 +341,7 @@
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                                 <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                    <i class="fas fa-credit-card"></i> NUNUA ACCESS (TSh ${game.price || 0})
+                                    <i class="fas fa-credit-card"></i> LIPA SASA (TSh ${game.price || 0})
                                 </button>
                             `;
                         } else {
@@ -392,16 +392,16 @@
                 <button class="close-detail" onclick="closeDetail()"><i class="fas fa-times"></i></button>
                 <img src="${game.image_url}" alt="${game.title}" class="detail-image">
                 <div class="detail-body">
-                    <h2>${game.title}</h2>
-                    <div class="detail-meta">
-                        <span style="color: var(--gold);"><i class="fas fa-star"></i> ${game.rating || 'N/A'}</span>
-                        <span style="color: var(--primary);">${game.category || 'HOT POST'}</span>
-                        <span style="color: ${game.price > 0 ? 'var(--primary)' : '#00d25b'}; font-weight: 700;">
-                            ${game.price > 0 ? 'TSh ' + parseInt(game.price).toLocaleString() : 'FREE'}
-                        </span>
-                        ${hasDuration ? `<span style="color:#ffb400;font-size:0.8rem;"><i class="fas fa-clock"></i> Siku ${game.duration_days}</span>` : ''}
+                    <h2 style="font-family:'Orbitron'; color:#fff; font-size:1.4rem; margin-bottom:12px; letter-spacing:1px; text-transform:uppercase;">${game.title}</h2>
+                    <div class="detail-meta" style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+                        <span style="background:rgba(255,180,0,0.1); color:var(--gold); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,180,0,0.2);"><i class="fas fa-star"></i> ${game.rating || '4.5'}</span>
+                        <span style="background:rgba(0,242,255,0.1); color:var(--primary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(0,242,255,0.2);">${game.category || 'TANZANIA GAMES'}</span>
+                        <span style="background:rgba(188,19,254,0.1); color:var(--secondary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(188,19,254,0.2);">TSh ${parseInt(game.price).toLocaleString()}</span>
+                        <span style="background:rgba(255,255,255,0.05); color:#fff; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> Siku ${game.duration_days || 1}</span>
                     </div>
-                    <p>${game.description || 'No description available.'}</p>
+                    <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:15px; border:1px solid rgba(255,255,255,0.05); margin-bottom:20px;">
+                        <p style="color:#a0a0b0; font-size:0.85rem; line-height:1.6; margin:0;">${game.description || 'Gundua ulimwengu mpya wa michezo na Chidy Prime. Download sasa na ufurahie uzoefu bora wa gaming.'}</p>
+                    </div>
                     ${accessHtml}
                 </div>
             `;
@@ -427,25 +427,121 @@
                 document.getElementById('signupOverlay').classList.remove('hidden');
                 return;
             }
+            const visitor = JSON.parse(visitorStr);
 
             try {
                 // Get payment info from settings
                 const res = await fetch('/api/settings/payment');
                 const settings = await res.json();
                 
-                document.getElementById('payAmount').textContent = 'TSh ' + game.price;
+                document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
                 document.getElementById('payNumber').textContent = settings.mpesa_number;
                 document.getElementById('payName').textContent = settings.mpesa_name;
                 document.getElementById('payPostId').value = postId;
                 
                 // Clear prefill to ensure user knows they must enter it
                 document.getElementById('paySenderNumber').value = '';
-                // Set a custom placeholder that includes a prompt
                 document.getElementById('paySenderNumber').placeholder = "Andika namba yako hapa...";
+                
+                // Prefill autoPayPhone if visitor phone exists
+                if (visitor.phone) {
+                    document.getElementById('autoPayPhone').value = visitor.phone;
+                }
 
-                document.getElementById('paymentOverlay').classList.add('show');
+                // Reset tabs to Automated by default
+                switchPaymentMethod('automated');
+
+                const pOverlay = document.getElementById('paymentOverlay');
+                pOverlay.style.display = 'flex';
+                pOverlay.style.visibility = 'visible';
+                pOverlay.removeAttribute('hidden');
+                pOverlay.classList.add('show');
             } catch (e) {
                 alert('Tafadhali jaribu tena baadae.');
+            }
+        }
+
+        function switchPaymentMethod(method) {
+            const autoContent = document.getElementById('paymentContentAuto');
+            const manualContent = document.getElementById('paymentContentManual');
+            const tabAuto = document.getElementById('tabAuto');
+            const tabManual = document.getElementById('tabManual');
+            const subtitle = document.getElementById('paymentSubtitle');
+
+            if (method === 'automated') {
+                autoContent.style.display = 'block';
+                manualContent.style.display = 'none';
+                tabAuto.style.background = 'var(--primary)';
+                tabAuto.style.color = '#000';
+                tabManual.style.background = 'transparent';
+                tabManual.style.color = '#fff';
+                subtitle.textContent = 'Malipo ya Papo kwa Hapo';
+            } else {
+                autoContent.style.display = 'none';
+                manualContent.style.display = 'block';
+                tabAuto.style.background = 'transparent';
+                tabAuto.style.color = '#fff';
+                tabManual.style.background = 'var(--primary)';
+                tabManual.style.color = '#000';
+                subtitle.textContent = 'Malipo ya Manual (Hakiki)';
+            }
+        }
+
+        async function payWithZenoPay() {
+            const postId = document.getElementById('payPostId').value;
+            const phone = document.getElementById('autoPayPhone').value.trim();
+            const btn = document.getElementById('autoPayBtn');
+            const game = allGames.find(g => g.id == postId);
+            
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
+
+            if (!phone || phone.length < 10) {
+                alert('Tafadhali ingiza namba sahihi ya simu!');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA MAOMBI...';
+
+            try {
+                const response = await fetch('/api/payments/zenopay-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: game.price,
+                        phone: phone,
+                        gameTitle: game.title,
+                        visitorId: visitor.id,
+                        postId: postId,
+                        email: `${visitor.phone}@chidyprime.com`, // Fallback email
+                        name: visitor.name
+                    })
+                });
+
+                const result = await response.json();
+                console.log('ZenoPay Checkout Result:', result);
+
+                if (result.status === 'success') {
+                    // STK Push initiated
+                    alert('✅ Ombi la Malipo limetumwa! Tafadhali angalia simu yako sasa hivi na uingize PIN kukamilisha malipo.\n\nBaada ya kulipa, game litajifungua lenyewe hapa.');
+                    
+                    // Show a "Waiting for confirmation" state
+                    btn.innerHTML = '<i class="fas fa-clock"></i> TUNASUBIRI PIN YAKO...';
+                    
+                    // Start polling or just wait for the user to refresh/notif
+                    // For now, we'll tell them to wait for the notification
+                } else {
+                    alert('Hitilafu: ' + (result.message || 'Jaribu tena au tumia Manual Payment.'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> PAY NOW & ACCESS';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Kuna tatizo la mtandao. Jaribu Manual Payment.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bolt"></i> PAY NOW & ACCESS';
             }
         }
 
