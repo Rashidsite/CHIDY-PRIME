@@ -327,8 +327,8 @@
                                 <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
                             </div>
                             ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                <i class="fas fa-redo"></i> LIPA SASA (Kama Muda Umeisha)
+                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,51,51,0.5);animation:pulse-glow-red 2s infinite;">
+                                <i class="fas fa-bolt"></i> LIPA SASA (Kama Muda Umeisha)
                             </button>
                         `;
                     } else {
@@ -340,8 +340,8 @@
                                     <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
-                                    <i class="fas fa-credit-card"></i> LIPA SASA (TSh ${game.price || 0})
+                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
+                                    <i class="fas fa-bolt"></i> LIPA SASA (TSh ${game.price || 0})
                                 </button>
                             `;
                         } else {
@@ -416,7 +416,7 @@
             });
         }
 
-        // Initiate payment flow
+        // Initiate payment flow (Only ZenoPay AutoPayment)
         async function initiatePayment(postId) {
             const game = allGames.find(g => g.id == postId);
             if (!game) return;
@@ -430,60 +430,26 @@
             const visitor = JSON.parse(visitorStr);
 
             try {
-                // Get payment info from settings
-                const res = await fetch('/api/settings/payment');
-                const settings = await res.json();
-                
+                // Populate Game Name and Price in Popup
                 document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
-                document.getElementById('payNumber').textContent = settings.mpesa_number;
-                document.getElementById('payName').textContent = settings.mpesa_name;
                 document.getElementById('payPostId').value = postId;
-                
-                // Clear prefill to ensure user knows they must enter it
-                document.getElementById('paySenderNumber').value = '';
-                document.getElementById('paySenderNumber').placeholder = "Andika namba yako hapa...";
                 
                 // Prefill autoPayPhone if visitor phone exists
                 if (visitor.phone) {
                     document.getElementById('autoPayPhone').value = visitor.phone;
                 }
 
-                // Reset tabs to Automated by default
-                switchPaymentMethod('automated');
-
+                // Show the Payment Overlay
                 const pOverlay = document.getElementById('paymentOverlay');
+                const subtitle = document.getElementById('paymentSubtitle');
+                if(subtitle) subtitle.textContent = game.title; // Set subtitle to game title for better UX
+                
                 pOverlay.style.display = 'flex';
                 pOverlay.style.visibility = 'visible';
                 pOverlay.removeAttribute('hidden');
                 pOverlay.classList.add('show');
             } catch (e) {
-                alert('Tafadhali jaribu tena baadae.');
-            }
-        }
-
-        function switchPaymentMethod(method) {
-            const autoContent = document.getElementById('paymentContentAuto');
-            const manualContent = document.getElementById('paymentContentManual');
-            const tabAuto = document.getElementById('tabAuto');
-            const tabManual = document.getElementById('tabManual');
-            const subtitle = document.getElementById('paymentSubtitle');
-
-            if (method === 'automated') {
-                autoContent.style.display = 'block';
-                manualContent.style.display = 'none';
-                tabAuto.style.background = 'var(--primary)';
-                tabAuto.style.color = '#000';
-                tabManual.style.background = 'transparent';
-                tabManual.style.color = '#fff';
-                subtitle.textContent = 'Malipo ya Papo kwa Hapo';
-            } else {
-                autoContent.style.display = 'none';
-                manualContent.style.display = 'block';
-                tabAuto.style.background = 'transparent';
-                tabAuto.style.color = '#fff';
-                tabManual.style.background = 'var(--primary)';
-                tabManual.style.color = '#000';
-                subtitle.textContent = 'Malipo ya Manual (Hakiki)';
+                alert('Kuna tatizo la mtandao. Tafadhali jaribu tena.');
             }
         }
 

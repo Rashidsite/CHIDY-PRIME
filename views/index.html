@@ -3001,6 +3001,14 @@
             0% { box-shadow: 0 0 10px rgba(0,242,255,0.2); transform: scale(1); }
             100% { box-shadow: 0 0 20px rgba(0,242,255,0.5); transform: scale(1.05); }
         }
+        @keyframes pulse-glow-red {
+            0% { box-shadow: 0 0 10px rgba(255,51,51,0.2); transform: scale(1); }
+            100% { box-shadow: 0 0 25px rgba(255,51,51,0.6); transform: scale(1.03); }
+        }
+        @keyframes pulse-glow-gold {
+            0% { box-shadow: 0 0 10px rgba(255,180,0,0.2); transform: scale(1); }
+            100% { box-shadow: 0 0 25px rgba(255,180,0,0.6); transform: scale(1.03); }
+        }
         @keyframes sweepLine {
             0% { left: -100%; }
             50%, 100% { left: 200%; }
@@ -3022,80 +3030,31 @@
                 <p id="paymentSubtitle" style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">Chagua njia ya malipo</p>
             </div>
 
-            <!-- Payment Method Tabs -->
-            <div style="display: flex; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 4px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
-                <button onclick="switchPaymentMethod('automated')" id="tabAuto" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: var(--primary); color: #000; font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 900; cursor: pointer; transition: 0.3s;">AUTOMATED</button>
-                <button onclick="switchPaymentMethod('manual')" id="tabManual" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: transparent; color: #fff; font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 900; cursor: pointer; transition: 0.3s;">MANUAL</button>
-            </div>
-
-            <!-- Automated Payment Content -->
+            <!-- Automated Payment Content Only -->
             <div id="paymentContentAuto">
-                <div style="background: rgba(0,242,255,0.05); border-radius: 12px; border: 1px solid rgba(0,242,255,0.1); padding: 15px; margin-bottom: 18px;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                        <i class="fas fa-magic" style="color: var(--primary);"></i>
-                        <span style="font-size: 0.75rem; color: #fff; font-weight: 700;">STK PUSH (Instant Access)</span>
+                <div style="background: rgba(0,242,255,0.05); border-radius: 12px; border: 1px solid rgba(0,242,255,0.1); padding: 15px; margin-bottom: 18px; text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
+                        <i class="fas fa-magic" style="color: var(--primary); font-size: 1.2rem;"></i>
+                        <span style="font-size: 0.9rem; color: #fff; font-weight: 700; font-family: 'Orbitron';">MALIPO YA PAPO KWA HAPO</span>
                     </div>
-                    <p style="font-size: 0.7rem; color: rgba(255,255,255,0.6); line-height: 1.4;">Weka namba yako, bonyeza 'Pay Now' na kisha utatokea ujumbe kwenye simu yako ukiomba uweke PIN ili kukamilisha malipo.</p>
+                    <p style="font-size: 0.75rem; color: rgba(255,255,255,0.6); line-height: 1.4;">Weka namba yako, bonyeza 'LIPA SASA' na kisha utatokea ujumbe kwenye simu yako ukiomba uweke PIN ili kukamilisha malipo.</p>
                 </div>
 
-                <div style="margin-bottom: 18px;">
-                    <label style="display: block; font-size: 0.75rem; color: #a0a0b0; margin-bottom: 8px;">Namba ya Simu (M-Pesa, Tigo, Airtel):</label>
-                    <div style="position: relative;">
-                        <i class="fas fa-mobile-alt" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.3);"></i>
-                        <input type="tel" id="autoPayPhone" placeholder="07XXXXXXXX" style="width: 100%; padding: 12px 12px 12px 38px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 1rem; outline: none;">
-                    </div>
-                </div>
-
-                <button class="payment-confirm-btn" id="autoPayBtn" onclick="payWithZenoPay()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; font-size: 0.95rem; letter-spacing: 1.5px; box-shadow: 0 8px 25px rgba(0,242,255,0.3); display: flex; align-items: center; justify-content: center; gap: 10px;">
-                    <i class="fas fa-bolt"></i> <span>PAY NOW & ACCESS</span>
-                </button>
-            </div>
-
-            <!-- Manual Payment Content -->
-            <div id="paymentContentManual" style="display: none;">
                 <div style="background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); padding: 15px; text-align: center; margin-bottom: 20px;">
                     <span style="display: block; font-size: 0.65rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">Kiasi cha Kulipia</span>
                     <strong id="payAmount" style="display: block; font-family: 'Orbitron'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px rgba(0,242,255,0.3);">...</strong>
                 </div>
 
-                <div style="display:flex;gap:12px;margin-bottom:18px;align-items:flex-start;">
-                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,242,255,0.1);border:1.5px solid var(--primary);display:flex;align-items:center;justify-content:center;color:var(--primary);font-family:'Orbitron';font-weight:900;font-size:0.75rem;flex-shrink:0;margin-top:2px;">1</div>
-                    <div style="flex:1;">
-                        <div style="font-size:0.85rem;color:#fff;font-weight:600;margin-bottom:8px;">Lipa Namba (Mixx by Yas)</div>
-                        <div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.4);padding:10px 12px;border-radius:10px;border:1px solid rgba(0,242,255,0.2);">
-                            <i class="fas fa-hashtag" style="color:var(--primary);font-size:0.8rem;"></i>
-                            <span style="font-family:'Orbitron';font-size:1rem;color:var(--primary);letter-spacing:1.5px;flex:1;" id="payNumber">43135388</span>
-                            <button onclick="copyPaymentNumber(this)" style="background:rgba(0,242,255,0.15);border:1px solid rgba(0,242,255,0.3);color:var(--primary);width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:0.2s;flex-shrink:0;">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);margin-top:6px;display:flex;align-items:center;gap:6px;">
-                            <i class="fas fa-user" style="font-size:0.6rem;"></i> Jina: <strong style="color:rgba(255,255,255,0.7);" id="payName">Rashid Salum Rashid</strong>
-                        </div>
-                        <div style="font-size:0.7rem;color:#ccc;margin-top:8px;line-height:1.4;">
-                            <strong>Jinsi ya kulipa:</strong><br>
-                            1. Ingia kwenye menu ya mtandao wako (M-Pesa, TigoPesa n.k)<br>
-                            2. Chagua <strong>Lipa Namba / Lipa kwa Simu</strong><br>
-                            3. Weka Lipa Namba <strong>43135388</strong><br>
-                            4. Thibitisha jina (Rashid Salum Rashid)
-                        </div>
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 0.75rem; color: #a0a0b0; margin-bottom: 8px; font-weight: bold;"><i class="fas fa-mobile-alt"></i> Namba ya Simu (M-Pesa, Tigo, Airtel):</label>
+                    <div style="position: relative;">
+                        <i class="fas fa-phone-alt" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--primary);"></i>
+                        <input type="tel" id="autoPayPhone" placeholder="Mfano: 07XXXXXXXX" style="width: 100%; padding: 16px 16px 16px 45px; background: rgba(0,0,0,0.6); border: 2px solid rgba(0,242,255,0.2); border-radius: 12px; color: #fff; font-size: 1.1rem; outline: none; font-weight: bold; letter-spacing: 1px; transition: all 0.3s ease;" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 15px rgba(0,242,255,0.3)';" onblur="this.style.borderColor='rgba(0,242,255,0.2)'; this.style.boxShadow='none';">
                     </div>
                 </div>
 
-                <div style="display:flex;gap:12px;margin-bottom:18px;align-items:flex-start;">
-                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(188,19,254,0.1);border:1.5px solid var(--secondary);display:flex;align-items:center;justify-content:center;color:var(--secondary);font-family:'Orbitron';font-weight:900;font-size:0.75rem;flex-shrink:0;margin-top:2px;">2</div>
-                    <div style="flex:1;">
-                        <div style="font-size:0.85rem;color:#fff;font-weight:600;margin-bottom:8px;">Weka namba uliyotumia pesa</div>
-                        <div style="position:relative;">
-                            <i class="fas fa-mobile-alt" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.3);font-size:0.9rem;"></i>
-                            <input type="tel" id="paySenderNumber" placeholder="Mfano: 07XXXXXXXX" style="width: 100%; padding: 12px 12px 12px 38px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 0.95rem; outline:none; transition:0.3s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                        </div>
-                    </div>
-                </div>
-
-                <button class="payment-confirm-btn" id="confirmPayBtn" onclick="submitPaymentOrder()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; font-size: 0.95rem; letter-spacing: 1.5px; box-shadow: 0 8px 25px rgba(0,242,255,0.3); display: flex; align-items: center; justify-content: center; gap: 10px; position: relative; overflow: hidden;">
-                    <i class="fas fa-check-circle" style="font-size: 1.1rem;"></i> <span>THIBITISHA MALIPO</span>
-                    <div style="position: absolute; top: 0; left: -100%; width: 30%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: sweepLine 3s infinite; transform: skewX(-20deg);"></div>
+                <button class="payment-confirm-btn animated-btn pulse-glow" id="autoPayBtn" onclick="payWithZenoPay()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; font-size: 1.1rem; letter-spacing: 2px; box-shadow: 0 8px 25px rgba(0,242,255,0.4); display: flex; align-items: center; justify-content: center; gap: 12px; text-transform: uppercase;">
+                    <i class="fas fa-bolt"></i> <span>TUMA MAOMBI YA KULIPA</span>
                 </button>
             </div>
 
