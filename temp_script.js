@@ -494,20 +494,39 @@
                     alert('✅ Ombi la Malipo limetumwa! Tafadhali angalia simu yako sasa hivi na uingize PIN kukamilisha malipo.\n\nBaada ya kulipa, game litajifungua lenyewe hapa.');
                     
                     // Show a "Waiting for confirmation" state
-                    btn.innerHTML = '<i class="fas fa-clock"></i> TUNASUBIRI PIN YAKO...';
+                    btn.innerHTML = '<i class="fas fa-clock fa-spin"></i> TUNASUBIRI PIN YAKO...';
                     
-                    // Start polling or just wait for the user to refresh/notif
-                    // For now, we'll tell them to wait for the notification
+                    // Auto-poll to check if access is granted (Polling Mechanism)
+                    let pollCount = 0;
+                    const pollInterval = setInterval(async () => {
+                        pollCount++;
+                        if (pollCount > 20) { // Timeout after 2 minutes (every 6s)
+                            clearInterval(pollInterval);
+                            btn.innerHTML = '<i class="fas fa-check"></i> ANGALIA GAME YAKO';
+                            btn.disabled = false;
+                            btn.onclick = () => { closePayment(); openDetail(postId); };
+                            return;
+                        }
+                        try {
+                            const res = await fetch(`/api/check-access/${visitor.id}/${postId}`);
+                            const access = await res.json();
+                            if (access.has_access) {
+                                clearInterval(pollInterval);
+                                closePayment();
+                                openDetail(postId); // Open game immediately
+                            }
+                        } catch(e){}
+                    }, 6000);
                 } else {
                     alert('Hitilafu: ' + (result.message || 'Jaribu tena au tumia Manual Payment.'));
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-bolt"></i> PAY NOW & ACCESS';
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> TUMA MAOMBI YA KULIPA';
                 }
             } catch (err) {
                 console.error(err);
-                alert('Kuna tatizo la mtandao. Jaribu Manual Payment.');
+                alert('Kuna tatizo la mtandao. Jaribu tena.');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-bolt"></i> PAY NOW & ACCESS';
+                btn.innerHTML = '<i class="fas fa-bolt"></i> TUMA MAOMBI YA KULIPA';
             }
         }
 

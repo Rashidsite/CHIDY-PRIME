@@ -3161,132 +3161,10 @@
     </div>
 
     <script>
+
         // ===== DATA =====
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(reg => {
-                    console.log('SW Registered!', reg);
-                }).catch(err => {
-                    console.log('SW Registration failed:', err);
-                });
-            });
-        }
-
-        // Track PWA Installation
-        window.addEventListener('appinstalled', (evt) => {
-            console.log('App was installed');
-            fetch('/api/track-install', { method: 'POST' })
-                .catch(err => console.error('Failed to track install:', err));
-        });
-
         let allGames = [];
         let currentCategory = null; // null means 'Home' view
-        let currentLang = localStorage.getItem('chidy_lang') || 'SW';
-
-        const translations = {
-            'SW': {
-                'short': 'SW',
-                'home': 'Home',
-                'search_placeholder': 'Tafuta games, categories...',
-                'my_library': 'MY GAME LIBRARY',
-                'my_games': 'MY GAMES',
-                'order_history': 'ORDER HISTORY',
-                'view_profile': 'VIEW PROFILE',
-                'logout': 'LOGOUT',
-                'games_menu': 'GAMES MENU',
-                'view_all': 'Tazama Zote',
-                'see_all': 'View All',
-                'loading_games': 'Inatafuta Games...',
-                'join_now': 'JIUNGE SASA',
-                'welcome': 'Karibu',
-                'no_games': 'Hakuna michezo bado.',
-                'wa_channel': 'WhatsApp Channel'
-            },
-            'EN': {
-                'short': 'EN',
-                'home': 'Home',
-                'search_placeholder': 'Search games, categories...',
-                'my_library': 'MY GAME LIBRARY',
-                'my_games': 'MY GAMES',
-                'order_history': 'ORDER HISTORY',
-                'view_profile': 'VIEW PROFILE',
-                'logout': 'LOGOUT',
-                'games_menu': 'GAMES MENU',
-                'view_all': 'View All',
-                'see_all': 'View All',
-                'loading_games': 'Loading Games...',
-                'join_now': 'JOIN NOW',
-                'welcome': 'Welcome',
-                'no_games': 'No games found.',
-                'wa_channel': 'WhatsApp Channel'
-            }
-        };
-
-        function toggleLanguage() {
-            currentLang = (currentLang === 'SW') ? 'EN' : 'SW';
-            localStorage.setItem('chidy_lang', currentLang);
-            updateUILanguage();
-        }
-
-        function updateUILanguage() {
-            const t = translations[currentLang];
-            document.getElementById('currentLangLabel').innerText = t.short;
-            
-            // Translate elements with data-i18n
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) {
-                    if (el.tagName === 'INPUT' && el.placeholder) {
-                        el.placeholder = t[key];
-                    } else {
-                        el.innerText = t[key];
-                    }
-                }
-            });
-
-            // Update loader text
-            const loaderText = document.querySelector('.loader-text');
-            if (loaderText) loaderText.innerText = t.loading_games;
-            
-            // Re-render categories if loaded
-            if (allGames.length > 0) {
-                if (!currentCategory) renderCategories(allGames);
-                else filterByCategory(currentCategory);
-            }
-        }
-
-        // Call updateUILanguage on init
-        window.addEventListener('DOMContentLoaded', () => {
-            updateUILanguage();
-            initHallOfFame();
-        });
-
-        async function initHallOfFame() {
-            try {
-                const res = await fetch('/api/hall-of-fame');
-                const data = await res.json();
-                if (data.success && data.successes.length > 0) {
-                    const wrap = document.getElementById('winnersTickerWrap');
-                    const ticker = document.getElementById('winnersTicker');
-                    
-                    wrap.style.display = 'block';
-                    ticker.innerHTML = data.successes.map(s => `
-                        <span class="winner-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span class="winner-name">${s.name} (${s.phone})</span>
-                            <span style="color:rgba(255,255,255,0.5)">unlocked</span>
-                            <span class="game-name">${s.game}</span>
-                        </span>
-                    `).join(' &nbsp; • &nbsp; ');
-                    
-                    // Duplicate for seamless loop if content is short
-                    if (data.successes.length < 5) {
-                        ticker.innerHTML += ticker.innerHTML;
-                    }
-                }
-            } catch (e) { console.error('Hall of Fame error:', e); }
-        }
 
         // === PERFORMANCE UTILITIES ===
         function debounce(fn, delay) {
@@ -3344,7 +3222,7 @@
         }
 
         // Ordered categories from user's wireframe
-        let categoryOrder = [
+        const categoryOrder = [
             'HOT POST',
             'TANZANIA GAMES',
             'FREE GAMES',
@@ -3352,7 +3230,6 @@
             'ANDROID GAMES',
             'PC GAMES'
         ];
-        let allCategoriesData = [];
 
         const categoryIcons = {
             'HOT POST': 'fa-fire',
@@ -3399,66 +3276,8 @@
             document.getElementById('myGamesOverlay').classList.remove('show');
         }
 
-        async function openOrderHistory() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) return alert('Tafadhali jisajili kwanza!');
-            const visitor = JSON.parse(visitorStr);
-            
-            const overlay = document.getElementById('orderHistoryOverlay');
-            const list = document.getElementById('orderHistoryList');
-            overlay.classList.add('show');
-            list.innerHTML = '<div style="grid-column: 1/-1; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Inatafuta...</div>';
-
-            try {
-                const res = await fetch(`/api/orders/history/${visitor.id}`);
-                const orders = await res.json();
-                
-                if (orders.length === 0) {
-                    list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6c7293;">Hujafanya agizo lolote bado.</div>';
-                    return;
-                }
-
-                list.innerHTML = orders.map(o => {
-                    const statusColor = o.status === 'approved' ? '#00d25b' : (o.status === 'rejected' ? '#ff4444' : '#ffab00');
-                    return `
-                        <div class="purchased-item" style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px;">
-                            <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">${o.posts.title}</div>
-                            <div style="font-size: 0.75rem; color: #a0a0b0; margin-bottom: 10px;">ID: #${o.id.toString().substring(0,8)}</div>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-size: 0.8rem; font-weight: 600;">TSh ${o.amount.toLocaleString()}</span>
-                                <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: ${statusColor}; border: 1px solid ${statusColor}; padding: 2px 8px; border-radius: 4px;">${o.status}</span>
-                            </div>
-                            <div style="font-size: 0.65rem; color: #6c7293; margin-top: 10px;">
-                                ${new Date(o.created_at).toLocaleDateString()} ${new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (e) {
-                list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: red;">Hitilafu imetokea.</div>';
-            }
-        }
-
-        function closeOrderHistory() {
-            document.getElementById('orderHistoryOverlay').classList.remove('show');
-        }
-
         async function fetchGames() {
             try {
-                // Fetch dynamic categories first to enforce order & visibility
-                try {
-                    const cRes = await fetch('/api/categories');
-                    allCategoriesData = await cRes.json();
-                    if(allCategoriesData && allCategoriesData.length > 0) {
-                        const viCats = allCategoriesData
-                            .filter(c => c.is_visible !== false)
-                            .sort((a,b) => (a.display_order || 0) - (b.display_order || 0));
-                        if(viCats.length > 0) {
-                            categoryOrder = viCats.map(c => c.name);
-                        }
-                    }
-                } catch(e) { console.error('Failed to load categories context', e); }
-
                 const response = await fetch('/api/games');
                 const games = await response.json();
                 allGames = games;
@@ -3491,24 +3310,12 @@
                 grouped[cat].push(game);
             });
 
-            // Sort categories by predefined order from Admin DB
+            // Sort categories by predefined order, then any extras
             const orderedKeys = [];
-            if (allCategoriesData && allCategoriesData.length > 0) {
-                const viCats = allCategoriesData
-                    .filter(c => c.is_visible !== false)
-                    .sort((a,b) => (a.display_order || 0) - (b.display_order || 0));
-                
-                viCats.forEach(cat => orderedKeys.push(cat.name));
-            } else {
-                // Fallback
-                categoryOrder.forEach(c => orderedKeys.push(c));
-            }
-
-            // Append any extra categories that have games but aren't explicitly registered
+            categoryOrder.forEach(c => {
+                if (grouped[c]) orderedKeys.push(c);
+            });
             Object.keys(grouped).forEach(c => {
-                const catObj = allCategoriesData.find(dbCat => dbCat.name === c);
-                // Hide strictly if specified by Admin
-                if (catObj && catObj.is_visible === false) return; 
                 if (!orderedKeys.includes(c)) orderedKeys.push(c);
             });
 
@@ -3548,7 +3355,7 @@
             else if (screenWidth >= 600) displayLimit = 10;
 
             orderedKeys.forEach(category => {
-                const catGames = grouped[category] || [];
+                const catGames = grouped[category];
                 const icon = categoryIcons[category] || 'fa-folder';
 
                 html += `
@@ -3563,10 +3370,7 @@
                             </a>
                         </div>
                         <div class="games-row">
-                            ${catGames.length > 0 
-                                ? catGames.slice(0, displayLimit).map(game => renderCard(game)).join('') 
-                                : '<div style="color: #4b4b56; font-size: 0.85rem; padding: 1.5rem 1rem; flex: 1; text-align: center; border: 1px dashed rgba(255,255,255,0.05); border-radius: 12px;">Hakuna michezo iliyoongezwa kwenye category hii bado.</div>'
-                            }
+                            ${catGames.slice(0, displayLimit).map(game => renderCard(game)).join('')}
                         </div>
                     </section>
                 `;
@@ -3583,8 +3387,6 @@
 
         // ===== RENDER SINGLE CARD =====
         function renderCard(game) {
-            const isGlobalDiscount = game.global_discount > 0;
-            const originalPrice = game.original_price ? `${parseInt(game.original_price).toLocaleString()}/-` : '';
             const priceLabel = game.price > 0 ? `${parseInt(game.price).toLocaleString()}/-` : 'FREE';
             const priceClass = game.price > 0 ? '' : 'free';
             const category = game.category ? game.category.toUpperCase() : 'HOT POST';
@@ -3595,11 +3397,7 @@
                         <img data-src="${game.image_url}" alt="${game.title}" 
                              onerror="this.src='https://placehold.co/400x600/111119/00f2ff?text=${encodeURIComponent(game.title)}'"
                              loading="lazy" decoding="async" width="175" height="263">
-                        <div class="price-badge ${priceClass}">
-                            ${isGlobalDiscount ? `<span style="text-decoration: line-through; font-size: 0.6rem; opacity: 0.7; margin-right: 4px;">${originalPrice}</span>` : ''}
-                            ${priceLabel}
-                        </div>
-                        ${isGlobalDiscount ? `<div class="discount-label">-${game.global_discount}%</div>` : ''}
+                        <div class="price-badge ${priceClass}">${priceLabel}</div>
                         <div class="card-rating">
                             <i class="fas fa-star"></i> ${game.rating || '0'}
                         </div>
@@ -3629,8 +3427,8 @@
 
             let accessHtml = '';
 
-            if (visitor && visitor.id) {
-                // Check access status for any game (duration or not) if logged in
+            if (hasDuration && visitor && visitor.id) {
+                // Check access status
                 try {
                     const res = await fetch(`/api/check-access/${visitor.id}/${game.id}`);
                     const accessData = await res.json();
@@ -3689,30 +3487,36 @@
                                     <i class="fas fa-exclamation-triangle" style="color:#ff3333;font-size:1.1rem;"></i>
                                     <span style="color:#ff3333;font-weight:700;font-size:0.9rem;">MUDA WAKO UMEISHA</span>
                                 </div>
-                                <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo upya kupata access mpya.</p>
+                                <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
                             </div>
                             ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                            ${buildInlinePaymentHTML(game)}
+                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,51,51,0.5);animation:pulse-glow-red 2s infinite;">
+                                <i class="fas fa-bolt"></i> LIPA SASA (Kama Muda Umeisha)
+                            </button>
                         `;
                     } else {
                         // No access yet
                         if (game.price && game.price > 0) {
                             // Paid game
                             accessHtml = `
-                                <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 10px;">
+                                <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
                                     <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                ${buildInlinePaymentHTML(game)}
+                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
+                                    <i class="fas fa-bolt"></i> LIPA SASA (TSh ${game.price || 0})
+                                </button>
                             `;
                         } else {
                             // Free game with duration
                             accessHtml = `
-                                <div style="background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.05)); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 14px; margin-bottom: 10px;">
+                                <div style="background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.05)); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
                                     <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-lock" style="color:#ffb400;"></i> Game hii ina access ya siku <strong style="color:#fff;">${game.duration_days}</strong>. Bofya hapa chini kupata access.</p>
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                ${buildInlinePaymentHTML(game)}
+                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,#00f2ff,#bc13fe);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1px;">
+                                    <i class="fas fa-unlock-alt"></i> PATA ACCESS (Siku ${game.duration_days})
+                                </button>
                             `;
                         }
                     }
@@ -3726,7 +3530,7 @@
                     `;
                 }
             } else if (!visitor) {
-                // Not logged in - force login for any game
+                // Not logged in - force login for any game (even free ones)
                 accessHtml = `
                     <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
                         <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-user-plus" style="color:var(--gold);"></i> Tafadhali jisajili kwanza ili kupata access ya kudownload.</p>
@@ -3734,22 +3538,33 @@
                     ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                     <button class="dl-btn" onclick="openLogin()" style="width:100%;margin-top:10px;">JISAJILI SASA</button>
                 `;
+            } else {
+                // Logged in but game has no duration/price? Still hit access check to get links
+                // Re-calling with a simplified view or just fallback
+                accessHtml = `
+                    <div class="loader-container" style="padding: 20px;">
+                        <div class="loader-spinner" style="width:25px; height:25px;"></div>
+                        <div class="loader-text">Fetching links...</div>
+                    </div>
+                `;
+                // Manually trigger the check if we didn't enter the duration block
+                setTimeout(() => openDetail(id), 100); 
             }
 
             card.innerHTML = `
                 <button class="close-detail" onclick="closeDetail()"><i class="fas fa-times"></i></button>
                 <img src="${game.image_url}" alt="${game.title}" class="detail-image">
                 <div class="detail-body">
-                    <h2>${game.title}</h2>
-                    <div class="detail-meta">
-                        <span style="color: var(--gold);"><i class="fas fa-star"></i> ${game.rating || 'N/A'}</span>
-                        <span style="color: var(--primary);">${game.category || 'HOT POST'}</span>
-                        <span style="color: ${game.price > 0 ? 'var(--primary)' : '#00d25b'}; font-weight: 700;">
-                            ${game.price > 0 ? 'TSh ' + parseInt(game.price).toLocaleString() : 'FREE'}
-                        </span>
-                        ${hasDuration ? `<span style="color:#ffb400;font-size:0.8rem;"><i class="fas fa-clock"></i> Siku ${game.duration_days}</span>` : ''}
+                    <h2 style="font-family:'Orbitron'; color:#fff; font-size:1.4rem; margin-bottom:12px; letter-spacing:1px; text-transform:uppercase;">${game.title}</h2>
+                    <div class="detail-meta" style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+                        <span style="background:rgba(255,180,0,0.1); color:var(--gold); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,180,0,0.2);"><i class="fas fa-star"></i> ${game.rating || '4.5'}</span>
+                        <span style="background:rgba(0,242,255,0.1); color:var(--primary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(0,242,255,0.2);">${game.category || 'TANZANIA GAMES'}</span>
+                        <span style="background:rgba(188,19,254,0.1); color:var(--secondary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(188,19,254,0.2);">TSh ${parseInt(game.price).toLocaleString()}</span>
+                        <span style="background:rgba(255,255,255,0.05); color:#fff; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> Siku ${game.duration_days || 1}</span>
                     </div>
-                    <p>${game.description || 'No description available.'}</p>
+                    <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:15px; border:1px solid rgba(255,255,255,0.05); margin-bottom:20px;">
+                        <p style="color:#a0a0b0; font-size:0.85rem; line-height:1.6; margin:0;">${game.description || 'Gundua ulimwengu mpya wa michezo na Chidy Prime. Download sasa na ufurahie uzoefu bora wa gaming.'}</p>
+                    </div>
                     ${accessHtml}
                 </div>
             `;
@@ -3763,311 +3578,8 @@
                 initMagnetic(btn);
             });
         }
-        // === BUILD PREMIUM INLINE PAYMENT UI ===
-        function buildInlinePaymentHTML(game) {
-            const price = parseInt(game.price || 0);
-            const isFree = price <= 0;
 
-            if (isFree) {
-                return `
-                    <div class="payment-inline" style="background: linear-gradient(145deg, rgba(0,210,91,0.08), rgba(0,0,0,0.3)); border: 1px solid rgba(0,210,91,0.25); border-radius: 14px; padding: 18px; margin-top: 12px;">
-                        <div style="text-align:center; margin-bottom:12px;">
-                            <div style="width:40px;height:40px;border-radius:50%;background:rgba(0,210,91,0.15);border:1px solid rgba(0,210,91,0.3);display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">
-                                <i class="fas fa-gift" style="color:#00d25b;font-size:1.1rem;"></i>
-                            </div>
-                            <div style="font-family:'Orbitron';font-size:1.2rem;color:#00d25b;font-weight:900;">BURE</div>
-                            <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:4px;">Bonyeza hapa chini kupata access</div>
-                        </div>
-                        <button onclick="submitInlinePayment('${game.id}', this)" style="width:100%;padding:14px;background:linear-gradient(135deg,#00d25b,#00a347);color:#fff;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:'Orbitron';font-size:0.85rem;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 15px rgba(0,210,91,0.3);">
-                            <i class="fas fa-unlock"></i> PATA ACCESS SASA
-                        </button>
-                    </div>
-                `;
-            }
-
-            return `
-                <div class="payment-inline" style="background: linear-gradient(145deg, rgba(10,10,20,0.9), rgba(15,15,30,0.95)); border: 1px solid rgba(0,242,255,0.15); border-radius: 14px; margin-top: 12px; overflow: hidden;">
-                    
-                    <!-- Payment Header -->
-                    <div style="background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.08)); padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,rgba(0,242,255,0.15),rgba(188,19,254,0.15));border:1px solid rgba(0,242,255,0.3);display:flex;align-items:center;justify-content:center;">
-                                <i class="fas fa-shield-alt" style="color:var(--primary);font-size:0.85rem;"></i>
-                            </div>
-                            <div>
-                                <div style="font-family:'Orbitron';font-size:0.7rem;color:rgba(255,255,255,0.7);letter-spacing:1px;">LIPIA SASA</div>
-                                <div style="font-size:0.6rem;color:rgba(255,255,255,0.35);">Malipo salama na ya haraka</div>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-family:'Orbitron';font-size:1.1rem;color:#fff;font-weight:900;" id="inlinePayAmount">TSh ${price.toLocaleString()}</div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Steps -->
-                    <div style="padding: 14px 16px;">
-                        
-                        <!-- Step 1: Send Money -->
-                        <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;">
-                            <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,242,255,0.12);border:1.5px solid var(--primary);display:flex;align-items:center;justify-content:center;color:var(--primary);font-family:'Orbitron';font-weight:900;font-size:0.65rem;flex-shrink:0;margin-top:2px;">1</div>
-                            <div style="flex:1;">
-                                <div style="font-size:0.78rem;color:#e0e0e0;font-weight:600;margin-bottom:6px;">Lipa Namba (Mixx by Yas)</div>
-                                <div style="display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.4);padding:8px 10px;border-radius:8px;border:1px solid rgba(0,242,255,0.2);">
-                                    <i class="fas fa-hashtag" style="color:var(--primary);font-size:0.75rem;"></i>
-                                    <span style="font-family:'Orbitron';font-size:0.95rem;color:var(--primary);letter-spacing:1.5px;flex:1;" id="inlinePayNumber">43135388</span>
-                                    <button onclick="copyPaymentNumberInline(this)" style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.25);color:var(--primary);width:32px;height:32px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:0.2s;flex-shrink:0;font-size:0.8rem;" title="Nakili">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                                <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:5px;display:flex;align-items:center;gap:5px;">
-                                    <i class="fas fa-user" style="font-size:0.6rem;"></i> Jina: <strong style="color:rgba(255,255,255,0.6);">Rashid Salum Rashid</strong>
-                                </div>
-                                <div style="font-size:0.65rem;color:#ccc;margin-top:6px;line-height:1.4;">
-                                    <strong>Jinsi ya kulipa:</strong> Chagua <strong>Lipa Namba</strong> kwenye menu ya mtandao wako na uweke <strong>43135388</strong>.
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Step 2: Enter Phone -->
-                        <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;">
-                            <div style="width:22px;height:22px;border-radius:50%;background:rgba(188,19,254,0.12);border:1.5px solid var(--secondary);display:flex;align-items:center;justify-content:center;color:var(--secondary);font-family:'Orbitron';font-weight:900;font-size:0.65rem;flex-shrink:0;margin-top:2px;">2</div>
-                            <div style="flex:1;">
-                                <div style="font-size:0.78rem;color:#e0e0e0;font-weight:600;margin-bottom:6px;">Weka namba uliyotumia kutuma</div>
-                                <div style="position:relative;">
-                                    <i class="fas fa-mobile-alt" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.3);font-size:0.85rem;"></i>
-                                    <input type="tel" id="inlineSenderPhone" placeholder="Mfano: 0796XXXXXX" style="width:100%;padding:10px 10px 10px 32px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.88rem;outline:none;transition:0.3s;" onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 8px rgba(0,242,255,0.15)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none';">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Step 3: Promo Code -->
-                        <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;">
-                            <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,180,0,0.12);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:'Orbitron';font-weight:900;font-size:0.65rem;flex-shrink:0;margin-top:2px;">3</div>
-                            <div style="flex:1;">
-                                <div style="font-size:0.78rem;color:#e0e0e0;font-weight:600;margin-bottom:6px;">
-                                    Promo Code <span style="font-size:0.6rem;color:rgba(255,255,255,0.3);font-weight:400;">(si lazima)</span>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <div style="position:relative;flex:1;">
-                                        <i class="fas fa-ticket-alt" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,180,0,0.5);font-size:0.75rem;"></i>
-                                        <input type="text" id="inlinePromoInput" placeholder="Mfano: CHIDYNEW" style="width:100%;padding:10px 10px 10px 30px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:0.8rem;text-transform:uppercase;font-family:'Orbitron';letter-spacing:1px;outline:none;transition:0.3s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
-                                    </div>
-                                    <button onclick="applyInlinePromo('${game.id}')" style="padding:0 14px;border-radius:8px;border:1px solid rgba(255,180,0,0.3);background:rgba(255,180,0,0.08);color:var(--gold);font-size:0.7rem;font-weight:800;cursor:pointer;font-family:'Orbitron';transition:0.2s;white-space:nowrap;" onmouseover="this.style.background='var(--gold)';this.style.color='#000'" onmouseout="this.style.background='rgba(255,180,0,0.08)';this.style.color='var(--gold)'">
-                                        TUMIA
-                                    </button>
-                                </div>
-                                <div id="inlinePromoMsg" style="font-size:0.7rem;margin-top:5px;font-weight:600;min-height:16px;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button onclick="submitInlinePayment('${game.id}', this)" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#000;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:'Orbitron';font-size:0.85rem;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 20px rgba(0,242,255,0.25);transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 25px rgba(0,242,255,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 20px rgba(0,242,255,0.25)'">
-                            <i class="fas fa-check-circle" style="font-size:1rem;"></i>
-                            <span>THIBITISHA MALIPO</span>
-                            <div style="position:absolute;top:0;left:-100%;width:30%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent);animation:sweepLine 3s infinite;transform:skewX(-20deg);"></div>
-                        </button>
-
-                        <!-- Security Note -->
-                        <div style="text-align:center;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:0.6rem;color:rgba(255,255,255,0.25);">
-                            <i class="fas fa-lock" style="font-size:0.5rem;"></i> Malipo yako yanalindwa na Chidy Prime
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // === INLINE PROMO CODE HANDLER ===
-        async function applyInlinePromo(gameId) {
-            const input = document.getElementById('inlinePromoInput');
-            const msgEl = document.getElementById('inlinePromoMsg');
-            const amountEl = document.getElementById('inlinePayAmount');
-            const game = allGames.find(g => g.id == gameId);
-            const code = input ? input.value.trim() : '';
-
-            if (!code) {
-                msgEl.textContent = 'Tafadhali ingiza promo code.';
-                msgEl.style.color = '#ff3366';
-                return;
-            }
-
-            msgEl.textContent = 'Inahakiki...';
-            msgEl.style.color = 'rgba(255,255,255,0.5)';
-
-            try {
-                const res = await fetch('/api/promo/validate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
-                });
-                const result = await res.json();
-
-                if (result.valid) {
-                    window.inlineDiscount = result.discount;
-                    window.inlinePromoCode = code;
-                    const discountAmount = (game.price * result.discount) / 100;
-                    const finalPrice = game.price - discountAmount;
-                    
-                    amountEl.innerHTML = `<span style="text-decoration:line-through;opacity:0.4;font-size:0.7em;">TSh ${game.price.toLocaleString()}</span> <span style="color:#00d25b;">TSh ${finalPrice.toLocaleString()}</span>`;
-                    msgEl.innerHTML = `<i class="fas fa-check-circle"></i> Hongera! Punguzo la ${result.discount}% limewekwa ✨`;
-                    msgEl.style.color = '#00d25b';
-                } else {
-                    window.inlineDiscount = 0;
-                    window.inlinePromoCode = null;
-                    amountEl.textContent = 'TSh ' + game.price.toLocaleString();
-                    msgEl.textContent = result.message || 'Promo code si sahihi ❌';
-                    msgEl.style.color = '#ff3366';
-                }
-            } catch (e) {
-                msgEl.textContent = 'Tatizo la mtandao ⚠️';
-                msgEl.style.color = '#ffab00';
-            }
-        }
-
-        function copyPaymentNumberInline(btn) {
-            const num = document.getElementById('inlinePayNumber').innerText;
-            navigator.clipboard.writeText(num).then(() => {
-                const icon = btn.querySelector('i');
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i>';
-                btn.style.background = '#00d25b';
-                btn.style.color = '#000';
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                    btn.style.background = '';
-                    btn.style.color = '';
-                }, 2000);
-            });
-        }
-
-        function copyPaymentNumber(btn) {
-            const num = document.getElementById('payNumber').innerText;
-            navigator.clipboard.writeText(num).then(() => {
-                const icon = btn.querySelector('i');
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i>';
-                btn.style.background = 'var(--primary)';
-                btn.style.color = '#000';
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                    btn.style.background = '';
-                    btn.style.color = '';
-                }, 2000);
-            });
-        }
-
-        async function applyPromoCode() {
-            const input = document.getElementById('promoCodeInput');
-            const msgEl = document.getElementById('promoMessage');
-            const amountEl = document.getElementById('payAmount');
-            const postId = document.getElementById('payPostId').value;
-            const game = allGames.find(g => g.id == postId);
-            const code = input ? input.value.trim().toUpperCase() : '';
-
-            if (!code) {
-                msgEl.textContent = 'Tafadhali ingiza promo code.';
-                msgEl.style.color = 'var(--secondary)';
-                return;
-            }
-
-            msgEl.textContent = 'Inahakiki...';
-            msgEl.style.color = 'rgba(255,255,255,0.5)';
-
-            try {
-                const res = await fetch('/api/promo/validate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
-                });
-                const result = await res.json();
-
-                if (result.valid) {
-                    window.activeDiscount = result.discount;
-                    const discountAmount = (game.price * result.discount) / 100;
-                    const finalPrice = game.price - discountAmount;
-                    
-                    amountEl.innerHTML = `<span style="text-decoration:line-through;opacity:0.4;font-size:0.7em;">TSh ${parseInt(game.price).toLocaleString()}</span> TSh ${parseInt(finalPrice).toLocaleString()}`;
-                    msgEl.innerHTML = `<i class="fas fa-check-circle"></i> Promo ya ${result.discount}% imetumika! ✨`;
-                    msgEl.style.color = '#00d25b';
-                } else {
-                    window.activeDiscount = 0;
-                    amountEl.textContent = 'TSh ' + parseInt(game.price).toLocaleString();
-                    msgEl.textContent = result.message || 'Promo code si sahihi ❌';
-                    msgEl.style.color = '#ff3366';
-                }
-            } catch (e) {
-                msgEl.textContent = 'Hitilafu ya mtandao ⚠️';
-                msgEl.style.color = 'var(--gold)';
-            }
-        }
-
-        async function submitInlinePayment(postId, btnEl) {
-            const phoneInput = document.getElementById('inlineSenderPhone');
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
-            const game = allGames.find(g => g.id == postId);
-            
-            const isFree = !game.price || game.price == 0;
-            let phone = isFree ? 'BURE' : (phoneInput ? phoneInput.value.trim() : '');
-
-            if (!visitor || !visitor.id) {
-                alert('Tafadhali jisajili kwanza ili uweze kulipia na kupata access.');
-                openLogin();
-                return;
-            }
-
-            if (!isFree && (!phone || phone.length < 10)) {
-                alert('Tafadhali weka namba sahihi ya simu uliyotuma pesa.');
-                return;
-            }
-
-            const btn = btnEl || (window.event && window.event.currentTarget) || document.querySelector('.payment-inline button');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
-            }
-
-            try {
-                // Calculate discounted amount if promo was applied
-                let finalAmount = game.price || 0;
-                const promoCode = window.inlinePromoCode || null;
-                if (promoCode && window.inlineDiscount > 0) {
-                    finalAmount = finalAmount - (finalAmount * window.inlineDiscount / 100);
-                }
-
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        visitor_id: visitor.id,
-                        post_id: postId,
-                        amount: finalAmount,
-                        phone_number: phone,
-                        is_gift: false,
-                        promo_used: promoCode
-                    })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    if (isFree) {
-                        alert('✅ Umefanikiwa kupata access!');
-                    } else {
-                        alert('⏳ Oda yako imepokelewa! Admin anahakiki malipo yako sasa.');
-                    }
-                    openDetail(postId);
-                } else {
-                    alert('Imeshindikana: ' + result.error);
-                }
-            } catch (e) {
-                alert('Hitilafu ya mtandao.');
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerText = isFree ? 'PATA ACCESS' : 'THIBITISHA MALIPO';
-                }
-            }
-        }
-
-        // Initiate payment flow
+        // Initiate payment flow (Only ZenoPay AutoPayment)
         async function initiatePayment(postId) {
             const game = allGames.find(g => g.id == postId);
             if (!game) return;
@@ -4078,89 +3590,111 @@
                 document.getElementById('signupOverlay').classList.remove('hidden');
                 return;
             }
+            const visitor = JSON.parse(visitorStr);
 
             try {
-                // Get payment info from settings
-                let settings = { mpesa_number: '0796615257', mpesa_name: 'RASHID SALUM RASHID (Vodacom)' }; // Hard fallback
-                try {
-                    const res = await fetch('/api/settings/payment');
-                    const remoteSettings = await res.json();
-                    if (remoteSettings && remoteSettings.mpesa_number) {
-                        settings = remoteSettings;
-                    }
-                } catch(e) { console.error('Settings fetch failed, using fallback'); }
-                
-                document.getElementById('payAmount').textContent = 'TSh ' + game.price.toLocaleString();
-                document.getElementById('payNumber').textContent = settings.mpesa_number || '0796615257';
-                document.getElementById('payName').textContent = settings.mpesa_name || 'RASHID SALUM RASHID (Vodacom)';
+                // Populate Game Name and Price in Popup
+                document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
                 document.getElementById('payPostId').value = postId;
                 
-                // Clear promo state
-                window.activeDiscount = 0;
-                document.getElementById('promoCodeInput').value = '';
-                document.getElementById('promoMessage').textContent = '';
-                document.getElementById('promoMessage').style.color = '';
-                
-                // Clear prefill to ensure user knows they must enter it
-                document.getElementById('paySenderNumber').value = '';
-                // Set a custom placeholder that includes a prompt
-                document.getElementById('paySenderNumber').placeholder = "Andika namba yako hapa...";
+                // Prefill autoPayPhone if visitor phone exists
+                if (visitor.phone) {
+                    document.getElementById('autoPayPhone').value = visitor.phone;
+                }
 
-                const payEl = document.getElementById('paymentOverlay');
-                payEl.removeAttribute('hidden');
-                payEl.style.visibility = 'visible';
-                payEl.style.display = 'flex';
-                payEl.classList.add('show');
+                // Show the Payment Overlay
+                const pOverlay = document.getElementById('paymentOverlay');
+                const subtitle = document.getElementById('paymentSubtitle');
+                if(subtitle) subtitle.textContent = game.title; // Set subtitle to game title for better UX
+                
+                pOverlay.style.display = 'flex';
+                pOverlay.style.visibility = 'visible';
+                pOverlay.removeAttribute('hidden');
+                pOverlay.classList.add('show');
             } catch (e) {
-                alert('Tafadhali jaribu tena baadae.');
+                alert('Kuna tatizo la mtandao. Tafadhali jaribu tena.');
             }
         }
 
-        async function applyPromoCode() {
-            const code = document.getElementById('promoCodeInput').value.trim();
-            const msgEl = document.getElementById('promoMessage');
-            const amountEl = document.getElementById('payAmount');
+        async function payWithZenoPay() {
             const postId = document.getElementById('payPostId').value;
+            const phone = document.getElementById('autoPayPhone').value.trim();
+            const btn = document.getElementById('autoPayBtn');
             const game = allGames.find(g => g.id == postId);
+            
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
 
-            if (!code) return;
+            if (!phone || phone.length < 10) {
+                alert('Tafadhali ingiza namba sahihi ya simu!');
+                return;
+            }
 
-            msgEl.textContent = 'Inahakiki...';
-            msgEl.style.color = 'var(--text-dim)';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA MAOMBI...';
 
             try {
-                const res = await fetch('/api/promo/validate', {
+                const response = await fetch('/api/payments/zenopay-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
+                    body: JSON.stringify({
+                        amount: game.price,
+                        phone: phone,
+                        gameTitle: game.title,
+                        visitorId: visitor.id,
+                        postId: postId,
+                        email: `${visitor.phone}@chidyprime.com`, // Fallback email
+                        name: visitor.name
+                    })
                 });
-                const result = await res.json();
 
-                if (result.valid) {
-                    window.activeDiscount = result.discount;
-                    const discountAmount = (game.price * result.discount) / 100;
-                    const finalPrice = game.price - discountAmount;
+                const result = await response.json();
+                console.log('ZenoPay Checkout Result:', result);
+
+                if (result.status === 'success') {
+                    // STK Push initiated
+                    alert('✅ Ombi la Malipo limetumwa! Tafadhali angalia simu yako sasa hivi na uingize PIN kukamilisha malipo.\n\nBaada ya kulipa, game litajifungua lenyewe hapa.');
                     
-                    amountEl.innerHTML = `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.8em;">TSh ${game.price.toLocaleString()}</span> <span style="color: #00d25b;">TSh ${finalPrice.toLocaleString()}</span>`;
-                    msgEl.textContent = `Hongera! Umepata punguzo la ${result.discount}% ✅`;
-                    msgEl.style.color = '#00d25b';
+                    // Show a "Waiting for confirmation" state
+                    btn.innerHTML = '<i class="fas fa-clock fa-spin"></i> TUNASUBIRI PIN YAKO...';
+                    
+                    // Auto-poll to check if access is granted (Polling Mechanism)
+                    let pollCount = 0;
+                    const pollInterval = setInterval(async () => {
+                        pollCount++;
+                        if (pollCount > 20) { // Timeout after 2 minutes (every 6s)
+                            clearInterval(pollInterval);
+                            btn.innerHTML = '<i class="fas fa-check"></i> ANGALIA GAME YAKO';
+                            btn.disabled = false;
+                            btn.onclick = () => { closePayment(); openDetail(postId); };
+                            return;
+                        }
+                        try {
+                            const res = await fetch(`/api/check-access/${visitor.id}/${postId}`);
+                            const access = await res.json();
+                            if (access.has_access) {
+                                clearInterval(pollInterval);
+                                closePayment();
+                                openDetail(postId); // Open game immediately
+                            }
+                        } catch(e){}
+                    }, 6000);
                 } else {
-                    window.activeDiscount = 0;
-                    amountEl.textContent = 'TSh ' + game.price.toLocaleString();
-                    msgEl.textContent = result.message || 'Kodi hii si sahihi ❌';
-                    msgEl.style.color = '#ff3366';
+                    alert('Hitilafu: ' + (result.message || 'Jaribu tena au tumia Manual Payment.'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> TUMA MAOMBI YA KULIPA';
                 }
-            } catch (e) {
-                msgEl.textContent = 'Tatizo la mtandao ⚠️';
+            } catch (err) {
+                console.error(err);
+                alert('Kuna tatizo la mtandao. Jaribu tena.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bolt"></i> TUMA MAOMBI YA KULIPA';
             }
         }
 
         function closePayment() {
-            const payEl = document.getElementById('paymentOverlay');
-            payEl.classList.remove('show');
-            payEl.style.display = 'none';
-            payEl.style.visibility = 'hidden';
-            payEl.setAttribute('hidden', '');
+            document.getElementById('paymentOverlay').classList.remove('show');
         }
 
         function toggleGiftInput() {
@@ -4176,27 +3710,17 @@
             const giftPhone = document.getElementById('giftRecipientPhone').value.trim();
             
             const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            const visitor = JSON.parse(visitorStr);
             const game = allGames.find(g => g.id == postId);
-            
-            if (!visitor || !visitor.id) {
-                alert('Tafadhali jisajili kwanza ili uweze kulipia!');
-                closePayment();
-                openLogin();
-                return;
-            }
 
             if (!senderPhone) {
                 alert('Tafadhali ingiza namba uliyotumia kulipia!');
                 return;
             }
-            // Gift phone is now optional as per user request
-            /* 
             if (isGift && !giftPhone) {
                 alert("Tafadhali ingiza namba ya rafiki unayemzawadia.");
                 return;
             }
-            */
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
@@ -4208,11 +3732,10 @@
                     body: JSON.stringify({
                         visitor_id: visitor.id,
                         post_id: postId,
-                        amount: window.activeDiscount ? (game.price - (game.price * window.activeDiscount / 100)) : game.price,
+                        amount: game.price,
                         phone_number: senderPhone,
                         is_gift: isGift,
-                        gift_phone: giftPhone,
-                        promo_used: window.activeDiscount ? document.getElementById('promoCodeInput').value.trim().toUpperCase() : null
+                        gift_phone: giftPhone
                     })
                 });
                 const result = await res.json();
@@ -4525,55 +4048,6 @@
             }
         });
 
-        // ===== MY GAMES LIBRARY =====
-        async function openMyGames() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) {
-                alert("Tafadhali jiunge (Signup) kwanza ili uone maktaba yako ya games.");
-                document.getElementById('signupOverlay').classList.remove('hidden');
-                document.getElementById('signupOverlay').style.opacity = '1';
-                return;
-            }
-
-            const visitor = JSON.parse(visitorStr);
-            const modal = document.getElementById('myGamesModal');
-            const list = document.getElementById('myGamesList');
-            
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-            list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6c7293; padding: 3rem;"><i class="fas fa-spinner fa-spin"></i> Inatafuta games zako...</div>';
-
-            try {
-                const res = await fetch(`/api/access/${visitor.id}`);
-                const data = await res.json();
-                const games = data.games || [];
-
-                if (games.length === 0) {
-                    list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6c7293; padding: 3rem;">Hauna game lolote ulilolinunua bado.</div>';
-                    return;
-                }
-
-                list.innerHTML = games.map(g => {
-                    const expiry = new Date(g.expires_at).toLocaleDateString();
-                    return `
-                        <div class="mg-item" onclick="closeMyGames(); openDetail('${g.id}')">
-                            <img src="${g.image_url}" alt="${g.title}">
-                            <div class="mg-item-title">${g.title}</div>
-                            <div class="mg-item-expiry">Expires: ${expiry}</div>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (err) {
-                list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ff3366; padding: 3rem;">Hitilafu ya mtandao. Jaribu tena.</div>';
-            }
-        }
-
-        function closeMyGames() {
-            document.getElementById('myGamesModal').classList.remove('show');
-            document.body.style.overflow = '';
-        }
-
         // ===== AI BOT SYSTEM (Msaada) =====
         function openBotChat() {
             document.getElementById('botChatOverlay').classList.add('show');
@@ -4861,9 +4335,8 @@
         }
 
         function renderNotifications() {
-            const body = document.getElementById('notifDropdownBody');
+            const body = document.getElementById('notifBody');
             const badge = document.getElementById('notifBadge');
-            if (!body || !badge) return;
             
             const unread = notifications.filter(n => !n.is_read).length;
             if (unread > 0) {
@@ -4892,7 +4365,6 @@
 
         function toggleNotifDropdown() {
             const dropdown = document.getElementById('notifDropdown');
-            if (!dropdown) return;
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         }
 
@@ -5058,26 +4530,6 @@
                     </div>
                 `;
             });
-
-            // FREE GAMES external link
-            html += `
-                <div style="margin: 10px 15px 0; height: 1px; background: rgba(255,255,255,0.05);"></div>
-                <a href="https://www.chidygaming.online/" target="_blank" rel="noopener"
-                   onclick="toggleSidebar()"
-                   style="display:flex; align-items:center; gap:12px; padding:12px 20px; color:#00d25b;
-                          font-weight:700; font-size:0.9rem; letter-spacing:0.5px; cursor:pointer;
-                          text-decoration:none; border-radius:10px; margin:5px 10px;
-                          background:linear-gradient(135deg,rgba(0,210,91,0.12),rgba(255,180,0,0.05));
-                          border:1px solid rgba(0,210,91,0.25); transition:all 0.2s;
-                          box-shadow:0 0 10px rgba(0,210,91,0.1);"
-                   onmouseover="this.style.background='linear-gradient(135deg,rgba(0,210,91,0.25),rgba(255,180,0,0.1))'; this.style.boxShadow='0 0 18px rgba(0,210,91,0.3)'"
-                   onmouseout="this.style.background='linear-gradient(135deg,rgba(0,210,91,0.12),rgba(255,180,0,0.05))'; this.style.boxShadow='0 0 10px rgba(0,210,91,0.1)'">
-                    <i class="fas fa-gift" style="width:24px;text-align:center;font-size:1.1rem;color:#00d25b;filter:drop-shadow(0 0 6px rgba(0,210,91,0.6));"></i>
-                    FREE GAMES 🎁
-                    <span style="margin-left:auto;font-size:0.6rem;background:#00d25b;color:#000;padding:2px 6px;border-radius:10px;font-weight:800;">BURE</span>
-                </a>
-            `;
-
             sidebarMenu.innerHTML = html;
         }
 
@@ -5093,6 +4545,88 @@
             }
         }
 
+        // SMART HELP LOGIC
+        function toggleBotChat() {
+            const botOverlay = document.getElementById('botChatOverlay');
+            if (botOverlay) {
+                if (botOverlay.classList.contains('show')) {
+                    botOverlay.classList.remove('show');
+                } else {
+                    botOverlay.classList.add('show');
+                    // If no message, start with a greeting
+                    const body = document.getElementById('botMessages');
+                    if (body && body.innerHTML.trim() === '') {
+                        addBotMessage("Habari! Mimi ni Chidy AI Assistant 🤖. Naweza kukusaidia kupata game unayohitaji au kutatua tatizo la malipo. Unahitaji msaada gani?");
+                    }
+                }
+            }
+        }
+
+        async function refreshUserStats() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
+            try {
+                const res = await fetch(`/api/user/stats/${visitor.id}`);
+                const stats = await res.json();
+                if (stats.level) {
+                    const badge = document.getElementById('userLevelBadge');
+                    badge.innerText = stats.level;
+                    badge.style.color = stats.color;
+                }
+            } catch (e) { console.error("Stats error", e); }
+        }
+
+        function toggleGiftInput() {
+            const check = document.getElementById('isGiftCheck');
+            const group = document.getElementById('giftInputGroup');
+            group.style.display = check.checked ? 'block' : 'none';
+        }
+
+        function addBotMessage(text, type = 'bot') {
+            const body = document.getElementById('botMessages');
+            if (!body) return;
+            const msg = document.createElement('div');
+            msg.className = `b-msg ${type}`;
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            msg.innerHTML = `${text}<span class="time">${time}</span>`;
+            body.appendChild(msg);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        async function sendBotMessage() {
+            const input = document.getElementById('botInputUrl');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addBotMessage(text, 'user');
+            input.value = '';
+
+            // Simple Auto-responses for the premium feel
+            setTimeout(() => {
+                if (text.toLowerCase().includes('malipo') || text.toLowerCase().includes('lipa')) {
+                    addBotMessage("Ili kufanya malipo, chagua game unayotaka kisha bonyeza kitufe cha 'Download'. Fuata maelekezo ya kulipia namba iliyowekwa.");
+                } else if (text.toLowerCase().includes('game') || text.toLowerCase().includes('mchezo')) {
+                    addBotMessage("Tuna games nyingi za PPSSPP, Android, na PC. Unaweza kutumia search bar juu upate game unayotaka haraka.");
+                } else {
+                    addBotMessage("Samahani, sijakuelewa vizuri. Unaweza pia kubonyeza kitufe cha WhatsApp hapo chini ili kuongea na msimamizi moja kwa moja.");
+                }
+            }, 1000);
+        }
+
+        // Keep existing openBotChat for real WhatsApp fallback if needed inside the bot
+        function openWhatsAppSupport() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            
+            let message = "Habari Chidy Prime! Nahitaji msaada kitalu cha Gaming.";
+            if (visitor) {
+                message = `Habari Chidy Prime! Mimi ni ${visitor.name}, ID: ${visitor.id.substring(0,6)}. Nahitaji msaada wa huduma zenu.`;
+            }
+            
+            const waUrl = `https://wa.me/255762047805?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank');
+        }
 
         function triggerCelebration() {
             const duration = 3 * 1000;
@@ -5236,20 +4770,6 @@
             
             const visitorStr = localStorage.getItem('chidy_visitor');
             if (visitorStr) {
-                try {
-                    const v = JSON.parse(visitorStr);
-                    if (v.id) {
-                        // CRITICAL: Validate if this ID still exists in DB (fixes orphaned localStorage accounts)
-                        const checkRes = await fetch(`/api/check-user/${v.id}`);
-                        const checkData = await checkRes.json();
-                        if (!checkData.exists) {
-                            console.warn("Visitor ID not found in DB. Clearing orphaned session.");
-                            localStorage.removeItem('chidy_visitor');
-                            localStorage.removeItem('chidy_stats');
-                            window.location.reload();
-                        }
-                    }
-                } catch(e) { console.error("Identity check failed", e); }
                 refreshUserStats();
             }
 
@@ -5273,6 +4793,7 @@
             }
         });
 
+    
     </script>
 </body>
 </html>
