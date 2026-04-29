@@ -3487,7 +3487,8 @@
             const card = document.getElementById('detailCard');
 
             const hasDuration = game.duration_days && game.duration_days > 0;
-            const isFree = !game.price || game.price <= 0;
+            const hasPricedContent = game.price && parseInt(game.price) > 0;
+            const isFree = !hasPricedContent;
 
             // Get visitor info
             const visitorStr = localStorage.getItem('chidy_visitor');
@@ -3598,7 +3599,7 @@
                     `;
                 }
             } else if (!visitor) {
-                // Not logged in - force login for any game (even free ones)
+                // Not logged in
                 accessHtml = `
                     <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
                         <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-user-plus" style="color:var(--gold);"></i> Tafadhali jisajili kwanza ili kupata access ya kudownload.</p>
@@ -3606,17 +3607,35 @@
                     ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                     <button class="dl-btn" onclick="openLogin()" style="width:100%;margin-top:10px;">JISAJILI SASA</button>
                 `;
-            } else {
-                // Logged in but game has no duration/price? Still hit access check to get links
-                // Re-calling with a simplified view or just fallback
+            } else if (hasPricedContent && !hasDuration) {
+                // Paid game but no duration set — still show payment button
                 accessHtml = `
-                    <div class="loader-container" style="padding: 20px;">
-                        <div class="loader-spinner" style="width:25px; height:25px;"></div>
-                        <div class="loader-text">Fetching links...</div>
+                    <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                        <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access yako.</p>
                     </div>
+                    ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                    <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
+                        <i class="fas fa-bolt"></i> LIPA SASA (TSh ${parseInt(game.price).toLocaleString()})
+                    </button>
                 `;
-                // Manually trigger the check if we didn't enter the duration block
-                setTimeout(() => openDetail(id), 100); 
+            } else {
+                // Free game with NO duration and NO price — show links directly or free message
+                const freeLinks = game.download_links || [];
+                if (freeLinks.length > 0) {
+                    accessHtml = `
+                        ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                        <div class="detail-links">
+                            ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name}</a>`).join('')}
+                        </div>
+                    `;
+                } else {
+                    accessHtml = `
+                        <div style="background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.15); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                            <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Game hii bado haina bei wala link za download. Angalia baadaye.</p>
+                        </div>
+                        ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                    `;
+                }
             }
 
             card.innerHTML = `
