@@ -4633,6 +4633,17 @@ function handleNotifClick(id) {
                 <div class="sidebar-item" onclick="toggleSidebar(); showHome();">
                     <i class="fas fa-home"></i> Home
                 </div>
+                <a href="https://chidygaming.online" target="_blank" rel="noopener" class="sidebar-item" style="
+                    display:flex; align-items:center; gap:12px;
+                    text-decoration:none; color:inherit;
+                    background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05));
+                    border: 1px solid rgba(0,210,91,0.3);
+                    animation: pulse-glow-free 2s infinite alternate;
+                " onclick="toggleSidebar();">
+                    <i class="fas fa-gift" style="color:#00d25b;"></i>
+                    <span style="color:#00d25b; font-weight:700;">GAMES ZA BURE</span>
+                    <i class="fas fa-external-link-alt" style="font-size:0.65rem; color:#00d25b; margin-left:auto;"></i>
+                </a>
             `;
             orderedKeys.forEach(cat => {
                 const icon = categoryIcons[cat] || 'fa-gamepad';
