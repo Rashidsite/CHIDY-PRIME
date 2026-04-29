@@ -3619,19 +3619,50 @@
                     </button>
                 `;
             } else {
-                // Free game with NO duration and NO price — show links directly or free message
-                const freeLinks = game.download_links || [];
+                // Free game (no price) — check for links in the game object first, then API
+                const freeLinks = (game.links && Array.isArray(game.links) && game.links.length > 0)
+                    ? game.links
+                    : [];
+
                 if (freeLinks.length > 0) {
                     accessHtml = `
                         ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                         <div class="detail-links">
-                            ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name}</a>`).join('')}
+                            ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name || 'Download'}</a>`).join('')}
                         </div>
                     `;
+                } else if (visitor && visitor.id) {
+                    // Try fetching links via API for free games
+                    try {
+                        const freeRes = await fetch(`/api/check-access/${visitor.id}/${game.id}`);
+                        const freeData = await freeRes.json();
+                        const apiLinks = freeData.links || [];
+                        if (apiLinks.length > 0) {
+                            accessHtml = `
+                                ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                                <div class="detail-links">
+                                    ${apiLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name || 'Download'}</a>`).join('')}
+                                </div>
+                            `;
+                        } else {
+                            accessHtml = `
+                                <div style="background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.15); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                    <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Game hii bado haina link za download. Angalia baadaye.</p>
+                                </div>
+                                ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                            `;
+                        }
+                    } catch(e) {
+                        accessHtml = `
+                            <div style="background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.15); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Game hii bado haina link za download. Angalia baadaye.</p>
+                            </div>
+                        `;
+                    }
                 } else {
                     accessHtml = `
                         <div style="background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.15); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                            <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Game hii bado haina bei wala link za download. Angalia baadaye.</p>
+                            <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Game hii bado haina link za download. Angalia baadaye.</p>
                         </div>
                         ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                     `;

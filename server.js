@@ -243,7 +243,7 @@ app.get('/api/games', async (req, res) => {
 
     const { data, error } = await supabase
         .from('posts')
-        .select('id, title, description, rating, image_url, price, category, youtube_url, status, created_at, duration_days')
+        .select('id, title, description, rating, image_url, price, category, youtube_url, status, created_at, duration_days, links')
         .eq('status', 'published')
         .order('created_at', { ascending: false });
 
