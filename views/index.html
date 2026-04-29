@@ -3680,6 +3680,18 @@
             const visitor = JSON.parse(visitorStr);
 
             try {
+                // Stop any running poll from a previous payment
+                if (window.activePollInterval) {
+                    clearInterval(window.activePollInterval);
+                    window.activePollInterval = null;
+                }
+
+                // Reset button to fresh state for this new game
+                const btn = document.getElementById('autoPayBtn');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-credit-card"></i> <span>Confirm Payment</span>';
+                btn.style.background = '#16a34a';
+
                 // Populate Game Name and Price in Popup
                 document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
                 document.getElementById('payPostId').value = postId;
@@ -3690,6 +3702,10 @@
 
                 // Clear phone field — user must type their number
                 document.getElementById('autoPayPhone').value = '';
+                
+                // Clear promo field
+                document.getElementById('promoCodeInput').value = '';
+                document.getElementById('promoMessage').textContent = '';
 
                 // Show the Payment Overlay
                 const pOverlay = document.getElementById('paymentOverlay');
@@ -3747,10 +3763,13 @@
                     
                     // Auto-poll to check if access is granted (Polling Mechanism)
                     let pollCount = 0;
-                    const pollInterval = setInterval(async () => {
+                    // Clear any previous poll first
+                    if (window.activePollInterval) clearInterval(window.activePollInterval);
+                    window.activePollInterval = setInterval(async () => {
                         pollCount++;
                         if (pollCount > 20) { // Timeout after 2 minutes (every 6s)
-                            clearInterval(pollInterval);
+                            clearInterval(window.activePollInterval);
+                            window.activePollInterval = null;
                             btn.innerHTML = '<i class="fas fa-check"></i> ANGALIA GAME YAKO';
                             btn.disabled = false;
                             btn.onclick = () => { closePayment(); openDetail(postId); };
@@ -3760,9 +3779,10 @@
                             const res = await fetch(`/api/check-access/${visitor.id}/${postId}`);
                             const access = await res.json();
                             if (access.has_access) {
-                                clearInterval(pollInterval);
+                                clearInterval(window.activePollInterval);
+                                window.activePollInterval = null;
                                 closePayment();
-                                openDetail(postId); // Open game immediately
+                                openDetail(postId); // Open that specific game immediately
                             }
                         } catch(e){}
                     }, 6000);
@@ -3780,6 +3800,19 @@
         }
 
         function closePayment() {
+            // Stop any active payment polling
+            if (window.activePollInterval) {
+                clearInterval(window.activePollInterval);
+                window.activePollInterval = null;
+            }
+            // Reset confirm button to fresh state
+            const btn = document.getElementById('autoPayBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-credit-card"></i> <span>Confirm Payment</span>';
+                btn.style.background = '#16a34a';
+                btn.onclick = payWithZenoPay;
+            }
             const pOverlay = document.getElementById('paymentOverlay');
             pOverlay.classList.remove('show');
             pOverlay.style.display = 'none';
