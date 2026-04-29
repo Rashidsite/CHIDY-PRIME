@@ -3018,12 +3018,15 @@
         <div id="payModalCard" style="
             background: #fff;
             border-radius: 18px;
-            width: 92%;
+            width: 94%;
             max-width: 420px;
-            padding: 28px 24px 24px;
+            padding: 24px 20px 20px;
             position: relative;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             animation: paySlideUp 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+            max-height: 92vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         ">
             <!-- Close Button -->
             <button onclick="closePayment()" style="
@@ -3059,22 +3062,25 @@
             </div>
 
             <!-- Phone Number -->
-            <div style="margin-bottom: 22px;">
-                <label style="display:block; font-size:0.82rem; color:#555; margin-bottom:6px; font-weight:600;">Phone Number (Tanzanian)</label>
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-size:0.85rem; color:#333; margin-bottom:8px; font-weight:700;">📱 Namba ya Simu ya Malipo</label>
                 <input
                     type="tel"
                     id="autoPayPhone"
-                    placeholder="Enter your M-Pesa/Tigo Pesa/Airtel Money number"
+                    placeholder="Weka namba yako ya simu (07XXXXXXXX)"
+                    inputmode="numeric"
                     style="
-                        width: 100%; padding: 13px 14px;
-                        border: 1.5px solid #d1d5db; border-radius: 8px;
-                        font-size: 0.95rem; color: #111; outline: none;
+                        width: 100%; padding: 15px 14px;
+                        border: 2px solid #d1d5db; border-radius: 10px;
+                        font-size: 1rem; color: #111; outline: none;
                         background: #fff; box-sizing: border-box;
                         transition: border-color 0.2s;
+                        -webkit-appearance: none;
                     "
                     onfocus="this.style.borderColor='#16a34a'"
                     onblur="this.style.borderColor='#d1d5db'"
                 >
+                <p style="font-size:0.72rem; color:#888; margin-top:5px; margin-bottom:0;">M-Pesa · Tigo Pesa · Airtel Money · Halopesa</p>
             </div>
 
             <!-- Promo Code (collapsed, optional) -->
@@ -3099,10 +3105,10 @@
                 <span>🎁 Buy as Gift for a Friend?</span>
             </label>
             <div id="giftInputGroup" style="display:none; margin-bottom:16px;">
-                <input type="tel" id="giftRecipientPhone" placeholder="Friend's number (07XXXXXXXX)" style="
-                    width:100%; padding:11px 14px; border:1.5px solid #e5e7eb;
-                    border-radius:8px; font-size:0.88rem; color:#111; outline:none;
-                    background:#fff; box-sizing:border-box;
+                <input type="tel" id="giftRecipientPhone" placeholder="Namba ya rafiki yako (07XXXXXXXX)" inputmode="numeric" style="
+                    width:100%; padding:13px 14px; border:2px solid #e5e7eb;
+                    border-radius:10px; font-size:0.95rem; color:#111; outline:none;
+                    background:#fff; box-sizing:border-box; -webkit-appearance:none;
                 ">
             </div>
 
@@ -3138,6 +3144,19 @@
             to   { opacity: 1; transform: translateY(0) scale(1); }
         }
         #payModalCard input::placeholder { color: #aaa; }
+        @media (max-width: 480px) {
+            #payModalCard {
+                width: 96% !important;
+                padding: 20px 16px 18px !important;
+                border-radius: 14px !important;
+                max-height: 88vh !important;
+            }
+            .payment-overlay {
+                padding: 0.75rem !important;
+                align-items: flex-end !important;
+            }
+            #payModalCard { border-radius: 18px 18px 0 0 !important; }
+        }
     </style>
 
 
@@ -3650,10 +3669,8 @@
                 const payContentEl = document.getElementById('payContentName');
                 if (payContentEl) payContentEl.textContent = game.title;
 
-                // Prefill autoPayPhone if visitor phone exists
-                if (visitor.phone) {
-                    document.getElementById('autoPayPhone').value = visitor.phone;
-                }
+                // Clear phone field — user must type their number
+                document.getElementById('autoPayPhone').value = '';
 
                 // Show the Payment Overlay
                 const pOverlay = document.getElementById('paymentOverlay');
