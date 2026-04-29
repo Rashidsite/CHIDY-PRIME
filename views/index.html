@@ -3018,78 +3018,130 @@
         .payment-card-custom::-webkit-scrollbar-thumb { background: rgba(0,242,255,0.4); border-radius: 10px; }
     </style>
     <div class="payment-overlay" id="paymentOverlay" style="display:none !important; visibility:hidden;" hidden>
-        <div class="payment-card payment-card-custom" style="max-height: 90vh; overflow-y: auto;">
-            
-            <button class="close-detail" onclick="closePayment()"><i class="fas fa-times"></i></button>
-            
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.1)); border: 1px solid rgba(0,242,255,0.3); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--primary);">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <h3 style="margin: 0; font-family: 'Orbitron'; font-size: 1.1rem; letter-spacing: 1px; color: #fff;">LIPA SASA</h3>
-                <p id="paymentSubtitle" style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">Chagua njia ya malipo</p>
+        <div id="payModalCard" style="
+            background: #fff;
+            border-radius: 18px;
+            width: 92%;
+            max-width: 420px;
+            padding: 28px 24px 24px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: paySlideUp 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+        ">
+            <!-- Close Button -->
+            <button onclick="closePayment()" style="
+                position: absolute; top: 16px; right: 16px;
+                background: none; border: none; font-size: 1.4rem;
+                color: #888; cursor: pointer; line-height: 1;
+            ">×</button>
+
+            <!-- Title -->
+            <h2 style="
+                font-size: 1.25rem; font-weight: 700;
+                color: #111; margin: 0 0 24px 0;
+            ">Complete Payment</h2>
+
+            <!-- Content (Game Name) -->
+            <div style="margin-bottom: 16px;">
+                <label style="display:block; font-size:0.82rem; color:#555; margin-bottom:6px; font-weight:600;">Content</label>
+                <div id="payContentName" style="
+                    background: #f5f5f5; border-radius: 8px;
+                    padding: 12px 14px; font-size: 0.9rem;
+                    color: #222; font-weight: 600; border: 1px solid #e8e8e8;
+                ">—</div>
             </div>
 
-            <!-- Automated Payment Content Only -->
-            <div id="paymentContentAuto">
-                <div style="background: rgba(0,242,255,0.05); border-radius: 12px; border: 1px solid rgba(0,242,255,0.1); padding: 15px; margin-bottom: 18px; text-align: center;">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
-                        <i class="fas fa-magic" style="color: var(--primary); font-size: 1.2rem;"></i>
-                        <span style="font-size: 0.9rem; color: #fff; font-weight: 700; font-family: 'Orbitron';">MALIPO YA PAPO KWA HAPO</span>
-                    </div>
-                    <p style="font-size: 0.75rem; color: rgba(255,255,255,0.6); line-height: 1.4;">Weka namba yako, bonyeza 'LIPA SASA' na kisha utatokea ujumbe kwenye simu yako ukiomba uweke PIN ili kukamilisha malipo.</p>
-                </div>
-
-                <div style="background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); padding: 15px; text-align: center; margin-bottom: 20px;">
-                    <span style="display: block; font-size: 0.65rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">Kiasi cha Kulipia</span>
-                    <strong id="payAmount" style="display: block; font-family: 'Orbitron'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px rgba(0,242,255,0.3);">...</strong>
-                </div>
-
-                <div style="margin-bottom: 18px;">
-                    <label style="display: block; font-size: 0.75rem; color: #a0a0b0; margin-bottom: 8px; font-weight: bold;"><i class="fas fa-mobile-alt"></i> Namba ya Simu (M-Pesa, Tigo, Airtel):</label>
-                    <div style="position: relative;">
-                        <i class="fas fa-phone-alt" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--primary);"></i>
-                        <input type="tel" id="autoPayPhone" placeholder="Mfano: 07XXXXXXXX" style="width: 100%; padding: 16px 16px 16px 45px; background: rgba(0,0,0,0.6); border: 2px solid rgba(0,242,255,0.2); border-radius: 12px; color: #fff; font-size: 1.1rem; outline: none; font-weight: bold; letter-spacing: 1px; transition: all 0.3s ease;" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 15px rgba(0,242,255,0.3)';" onblur="this.style.borderColor='rgba(0,242,255,0.2)'; this.style.boxShadow='none';">
-                    </div>
-                </div>
-
-                <button class="payment-confirm-btn animated-btn pulse-glow" id="autoPayBtn" onclick="payWithZenoPay()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; font-size: 1.1rem; letter-spacing: 2px; box-shadow: 0 8px 25px rgba(0,242,255,0.4); display: flex; align-items: center; justify-content: center; gap: 12px; text-transform: uppercase;">
-                    <i class="fas fa-bolt"></i> <span>TUMA MAOMBI YA KULIPA</span>
-                </button>
+            <!-- Amount -->
+            <div style="margin-bottom: 16px;">
+                <label style="display:block; font-size:0.82rem; color:#555; margin-bottom:6px; font-weight:600;">Amount</label>
+                <div id="payAmount" style="
+                    background: #f0fdf4; border-radius: 8px;
+                    padding: 12px 14px; font-size: 1rem;
+                    color: #16a34a; font-weight: 700; border: 1px solid #bbf7d0;
+                ">—</div>
             </div>
 
-            <!-- Common Options (Gift/Promo) -->
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
-                <div style="display:flex;gap:12px;margin-bottom:20px;align-items:flex-start;">
-                    <div style="width:24px;height:24px;border-radius:50%;background:rgba(255,180,0,0.1);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:'Orbitron';font-weight:900;font-size:0.75rem;flex-shrink:0;margin-top:2px;"><i class="fas fa-plus" style="font-size: 0.6rem;"></i></div>
-                    <div style="flex:1;">
-                        <div style="display:flex;gap:8px;margin-bottom:12px;">
-                            <div style="position:relative;flex:1;">
-                                <i class="fas fa-ticket-alt" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,180,0,0.5);font-size:0.8rem;"></i>
-                                <input type="text" id="promoCodeInput" placeholder="Promo Code" style="width: 100%; padding: 10px 10px 10px 35px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,180,0,0.2); border-radius: 8px; color: #fff; font-size: 0.8rem; text-transform: uppercase; font-family:'Orbitron'; letter-spacing:1px; outline:none;">
-                            </div>
-                            <button onclick="applyPromoCode()" style="padding: 0 12px; border-radius: 8px; border: 1px solid var(--gold); background: rgba(255,180,0,0.1); color: var(--gold); font-size: 0.7rem; font-weight: bold; cursor: pointer; font-family:'Orbitron';">HAKIKI</button>
-                        </div>
-                        <div id="promoMessage" style="font-size:0.7rem;margin-bottom:12px;font-weight:600;"></div>
-
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: rgba(255,255,255,0.6); font-size: 0.75rem; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                            <input type="checkbox" id="isGiftCheck" onchange="toggleGiftInput()" style="width: 16px; height: 16px; accent-color: var(--secondary);">
-                            <span><i class="fas fa-gift" style="color: var(--secondary); margin-right: 4px;"></i> Nunua kama Zawadi kwa Rafiki?</span>
-                        </label>
-                        <div id="giftInputGroup" style="display: none; margin-top: 8px; position: relative;">
-                            <i class="fas fa-user-friends" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--secondary); font-size: 0.9rem;"></i>
-                            <input type="tel" id="giftRecipientPhone" placeholder="Namba ya Rafiki (07XXXXXXXX)" style="width: 100%; padding: 10px 10px 10px 35px; background: rgba(188,19,254,0.05); border: 1px solid rgba(188,19,254,0.2); color: white; border-radius: 8px; font-size: 0.85rem;">
-                        </div>
-                    </div>
-                </div>
+            <!-- Phone Number -->
+            <div style="margin-bottom: 22px;">
+                <label style="display:block; font-size:0.82rem; color:#555; margin-bottom:6px; font-weight:600;">Phone Number (Tanzanian)</label>
+                <input
+                    type="tel"
+                    id="autoPayPhone"
+                    placeholder="Enter your M-Pesa/Tigo Pesa/Airtel Money number"
+                    style="
+                        width: 100%; padding: 13px 14px;
+                        border: 1.5px solid #d1d5db; border-radius: 8px;
+                        font-size: 0.95rem; color: #111; outline: none;
+                        background: #fff; box-sizing: border-box;
+                        transition: border-color 0.2s;
+                    "
+                    onfocus="this.style.borderColor='#16a34a'"
+                    onblur="this.style.borderColor='#d1d5db'"
+                >
             </div>
-            
-            <p style="text-align: center; margin-top: 15px; font-size: 0.6rem; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 1px;">
-                <i class="fas fa-lock"></i> Protected by Chidy Prime Security
+
+            <!-- Promo Code (collapsed, optional) -->
+            <div style="margin-bottom: 16px;">
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="promoCodeInput" placeholder="Promo code (optional)" style="
+                        flex:1; padding:10px 12px; border:1.5px solid #e5e7eb;
+                        border-radius:8px; font-size:0.82rem; color:#333; outline:none; background:#fff;
+                    ">
+                    <button onclick="applyPromoCode()" style="
+                        padding:0 14px; border-radius:8px; border:1.5px solid #16a34a;
+                        background:#f0fdf4; color:#16a34a; font-size:0.78rem;
+                        font-weight:700; cursor:pointer;
+                    ">Apply</button>
+                </div>
+                <div id="promoMessage" style="font-size:0.75rem; margin-top:6px; font-weight:600;"></div>
+            </div>
+
+            <!-- Gift Option -->
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:20px; font-size:0.82rem; color:#555;">
+                <input type="checkbox" id="isGiftCheck" onchange="toggleGiftInput()" style="width:15px;height:15px;accent-color:#16a34a;">
+                <span>🎁 Buy as Gift for a Friend?</span>
+            </label>
+            <div id="giftInputGroup" style="display:none; margin-bottom:16px;">
+                <input type="tel" id="giftRecipientPhone" placeholder="Friend's number (07XXXXXXXX)" style="
+                    width:100%; padding:11px 14px; border:1.5px solid #e5e7eb;
+                    border-radius:8px; font-size:0.88rem; color:#111; outline:none;
+                    background:#fff; box-sizing:border-box;
+                ">
+            </div>
+
+            <!-- Confirm Button -->
+            <button id="autoPayBtn" onclick="payWithZenoPay()" style="
+                width: 100%; padding: 16px;
+                background: #16a34a; color: #fff;
+                border: none; border-radius: 10px;
+                font-size: 1rem; font-weight: 700;
+                cursor: pointer; display: flex;
+                align-items: center; justify-content: center;
+                gap: 10px; transition: background 0.2s;
+            "
+            onmouseover="this.style.background='#15803d'"
+            onmouseout="this.style.background='#16a34a'"
+            >
+                <i class="fas fa-credit-card"></i>
+                <span>Confirm Payment</span>
+            </button>
+
+            <!-- Security note -->
+            <p style="text-align:center; margin-top:14px; font-size:0.7rem; color:#aaa;">
+                🔒 Secure payment via ZenoPay · STK Push
             </p>
+
             <input type="hidden" id="payPostId">
         </div>
     </div>
+
+    <style>
+        @keyframes paySlideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        #payModalCard input::placeholder { color: #aaa; }
+    </style>
 
 
     <!-- MY GAMES OVERLAY -->
@@ -3597,6 +3649,10 @@
                 document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
                 document.getElementById('payPostId').value = postId;
                 
+                // Populate game title in Content field
+                const payContentEl = document.getElementById('payContentName');
+                if (payContentEl) payContentEl.textContent = game.title;
+
                 // Prefill autoPayPhone if visitor phone exists
                 if (visitor.phone) {
                     document.getElementById('autoPayPhone').value = visitor.phone;
@@ -3604,9 +3660,6 @@
 
                 // Show the Payment Overlay
                 const pOverlay = document.getElementById('paymentOverlay');
-                const subtitle = document.getElementById('paymentSubtitle');
-                if(subtitle) subtitle.textContent = game.title; // Set subtitle to game title for better UX
-                
                 pOverlay.style.display = 'flex';
                 pOverlay.style.visibility = 'visible';
                 pOverlay.removeAttribute('hidden');
