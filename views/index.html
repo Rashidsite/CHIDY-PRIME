@@ -3744,7 +3744,11 @@
         }
 
         function closePayment() {
-            document.getElementById('paymentOverlay').classList.remove('show');
+            const pOverlay = document.getElementById('paymentOverlay');
+            pOverlay.classList.remove('show');
+            pOverlay.style.display = 'none';
+            pOverlay.style.visibility = 'hidden';
+            pOverlay.setAttribute('hidden', 'true');
         }
 
         function toggleGiftInput() {
