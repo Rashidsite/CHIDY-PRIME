@@ -3294,7 +3294,8 @@
         }
 
         // Ordered categories from user's wireframe
-        const categoryOrder = [
+        // Ordered categories from user's wireframe (Default fallback)
+        let categoryOrder = [
             'HOT POST',
             'TANZANIA GAMES',
             'FREE GAMES',
@@ -3350,6 +3351,18 @@
 
         async function fetchGames() {
             try {
+                // Fetch categories from DB to respect Admin Panel ordering
+                try {
+                    const catRes = await fetch('/api/categories');
+                    const catData = await catRes.json();
+                    if (catData && catData.length > 0) {
+                        // Extract just the names in the correct display_order
+                        categoryOrder = catData.map(c => c.name);
+                    }
+                } catch(e) {
+                    console.warn('Could not fetch dynamic categories, using default order');
+                }
+
                 const response = await fetch('/api/games');
                 const games = await response.json();
                 allGames = games;
