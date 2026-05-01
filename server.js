@@ -1265,15 +1265,19 @@ app.post('/api/payments/callback', async (req, res) => {
 app.post('/api/payments/zenopay-checkout', async (req, res) => {
     const { amount, phone, gameTitle, visitorId, postId, email, name } = req.body;
     
-    // Normalize phone (ZenoPay expects 0... or 255...)
+    // Normalize phone
     let formattedPhone = phone.replace(/[^0-9]/g, '');
     if (formattedPhone.startsWith('255')) formattedPhone = '0' + formattedPhone.substring(3);
 
     try {
-        // Create a short, safe order_id (ZenoPay often has 20-30 char limits)
         const shortPostId = postId.split('-')[0];
         const shortTime = Math.floor(Date.now() / 1000).toString().slice(-5);
         const zenoOrderId = `ZP${visitorId}V${shortPostId}T${shortTime}`;
+
+        // Dynamic Webhook URL to avoid redirects (Vercel/Cloudflare)
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        const host = req.headers.host;
+        const webhookUrl = `${protocol}://${host}/api/payments/zenopay-callback`;
 
         const payload = {
             order_id: zenoOrderId,
@@ -1281,7 +1285,7 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
             buyer_name: name || 'Chidy Prime Customer',
             buyer_phone: formattedPhone,
             amount: parseFloat(amount),
-            webhook_url: process.env.ZENOPAY_WEBHOOK_URL || 'https://chidyprime.com/api/payments/zenopay-callback'
+            webhook_url: webhookUrl
         };
 
         console.log('Initiating ZenoPay:', payload);
@@ -1296,9 +1300,7 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
         });
 
         const data = await zenoRes.json();
-        console.log('ZenoPay Response:', data);
-
-        // Fail-safe: Store as pending in case webhook is blocked
+        
         if (data.status === 'success' || data.message === 'success') {
             await supabase.from('payment_orders').insert([{
                 visitor_id: visitorId,
@@ -1319,6 +1321,15 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 
 app.post('/api/payments/zenopay-callback', async (req, res) => {
     console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
+    
+    // DEBUG: Log raw webhook to database
+    try {
+        await supabase.from('daily_stats').insert([{
+            event_type: 'webhook_raw',
+            metadata: { body: req.body, query: req.query }
+        }]);
+    } catch(e) { console.error('Log failed:', e); }
+
     const { status, payment_status, order_id, transaction_id, msisdn, amount } = req.body;
     const currentStatus = (status || payment_status || '').toLowerCase();
 
