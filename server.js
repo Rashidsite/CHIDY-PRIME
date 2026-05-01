@@ -1187,8 +1187,7 @@ app.post('/api/payments/callback', async (req, res) => {
                     post_id: postId,
                     amount: amount,
                     phone_number: msisdn,
-                    status: 'approved',
-                    payment_method: 'AzamPay'
+                    status: 'approved'
                 }])
                 .select()
                 .single();
@@ -1227,7 +1226,7 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 
     try {
         const payload = {
-            order_id: `ZP_${Date.now()}_${visitorId}`,
+            order_id: `ZP_${visitorId}_${postId}_${Date.now()}`,
             buyer_email: email || 'customer@chidyprime.com',
             buyer_name: name || 'Chidy Prime Customer',
             buyer_phone: formattedPhone,
@@ -1250,17 +1249,8 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
         console.log('ZenoPay Response:', data);
 
         // Store temporary order info for reference if needed
-        if (data.status === 'success') {
-             await supabase.from('payment_orders').insert([{
-                visitor_id: visitorId,
-                post_id: postId,
-                amount: amount,
-                phone_number: formattedPhone,
-                status: 'pending',
-                payment_method: 'ZenoPay',
-                external_id: payload.order_id
-            }]);
-        }
+        // (Removed because external_id and payment_method columns don't exist in Supabase!)
+        // The approved order will be inserted directly in the webhook.
 
         res.json(data);
     } catch (err) {
@@ -1278,37 +1268,32 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
 
     if (currentStatus === 'success' || currentStatus === 'completed') {
         try {
-            // Find the pending order
-            const { data: order, error: findErr } = await supabase
+            if (!order_id || !order_id.startsWith('ZP_')) {
+                return res.json({ success: true, message: 'Unhandled order format' });
+            }
+
+            const parts = order_id.split('_');
+            // Format: ZP_{visitorId}_{postId}_{timestamp}
+            const visitorId = parseInt(parts[1]);
+            const postId = parts[2];
+
+            // 1. Create order in database
+            const { data: order, error: updateErr } = await supabase
                 .from('payment_orders')
-                .select('*')
-                .eq('external_id', order_id)
+                .insert([{
+                    visitor_id: visitorId,
+                    post_id: postId,
+                    amount: amount,
+                    phone_number: msisdn || 'ZenoPay',
+                    status: 'approved'
+                }])
+                .select()
                 .single();
-
-            if (findErr || !order) {
-                console.warn('ZenoPay Callback: Order not found for external_id:', order_id);
-                // Try to fallback to logic that creates an order if it doesn't exist
-                return res.json({ success: true, message: 'Order reference not found' });
-            }
-
-            if (order.status === 'approved') {
-                return res.json({ success: true, message: 'Order already approved' });
-            }
-
-            // 1. Update order in database
-            const { error: updateErr } = await supabase
-                .from('payment_orders')
-                .update({ 
-                    status: 'approved', 
-                    updated_at: new Date().toISOString() 
-                })
-                .eq('id', order.id);
 
             if (updateErr) throw updateErr;
 
             // 2. Grant Access (Copied logic from Admin Approval for consistency)
-            const { post_id, visitor_id } = order;
-            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', post_id).single();
+            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', postId).single();
             const dDays = game ? (game.duration_days || 0) : 0;
             const gTitle = game ? game.title : 'Game';
             
@@ -1320,16 +1305,16 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
             }
 
             await supabase.from('user_access').upsert({
-                visitor_id: visitor_id,
-                post_id,
+                visitor_id: visitorId,
+                post_id: postId,
                 granted_at: new Date().toISOString(),
                 expires_at: finalExpiresAt.toISOString()
             }, { onConflict: 'visitor_id,post_id' });
 
             // 3. Notify User
             await supabase.from('notifications').insert({
-                visitor_id: visitor_id,
-                post_id: post_id,
+                visitor_id: visitorId,
+                post_id: postId,
                 title: 'Malipo Yamekubaliwa! ✅',
                 message: `Malipo yako ya game "${gTitle}" kupitia ZenoPay yamehakikiwa. Sasa unaweza kuanza kudownload.`,
                 type: 'success'
@@ -1338,13 +1323,13 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
             // 4. Log Analytics
             await supabase.from('daily_stats').insert([{
                 event_type: 'payment_success',
-                metadata: { amount, msisdn, postId: post_id, method: 'ZenoPay' }
+                metadata: { amount, msisdn, postId, method: 'ZenoPay' }
             }]);
 
             // Telegram Alert
-            sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\n\n<b>Game:</b> ${gTitle}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${msisdn || order.phone_number}\n<b>Method:</b> ZenoPay\n<b>Time:</b> ${new Date().toLocaleString()}`);
+            sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\n\n<b>Game:</b> ${gTitle}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${msisdn || 'ZenoPay'}\n<b>Method:</b> ZenoPay\n<b>Time:</b> ${new Date().toLocaleString()}`);
 
-            return res.json({ success: true });
+            return res.json({ success: true, message: 'Payment approved and access granted' });
 
         } catch (dbErr) {
             console.error('Database Error in ZenoPay Callback:', dbErr);
