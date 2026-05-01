@@ -433,13 +433,17 @@ app.post('/api/log-view', async (req, res) => {
 app.post('/api/signup', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-    const { name, phone } = req.body;
+    const { name, phone, referred_by } = req.body;
     if (!name || !phone) return res.status(400).json({ error: 'Name and phone are required' });
 
     try {
         const { data, error } = await supabase
             .from('visitors')
-            .insert([{ name: name.trim(), phone: phone.trim() }])
+            .insert([{ 
+                name: name.trim(), 
+                phone: phone.trim(),
+                referred_by: referred_by ? parseInt(referred_by) : null
+            }])
             .select();
 
         if (error) throw error;
@@ -1441,7 +1445,44 @@ async function handleSuccessfulPayment(visitorId, game, amount, phone) {
             expires_at: expiresAt.toISOString()
         }, { onConflict: 'visitor_id,post_id' });
 
-        // 3. Notifications
+        // --- REFERRAL COMMISSION LOGIC ---
+        try {
+            // Check if this visitor was referred by someone
+            const { data: visitor } = await supabase
+                .from('visitors')
+                .select('referred_by, name')
+                .eq('id', visitorId)
+                .single();
+
+            if (visitor && visitor.referred_by) {
+                // Calculate 10% commission (You can change this later in settings)
+                const commission = Math.floor(parseFloat(amount) * 0.10); 
+                
+                if (commission > 0) {
+                    // Record the earning
+                    await supabase.from('affiliate_earnings').insert([{
+                        affiliate_id: visitor.referred_by,
+                        buyer_id: visitorId,
+                        amount_paid: amount,
+                        commission: commission,
+                        game_title: game.title
+                    }]);
+
+                    // Notify the affiliate
+                    await supabase.from('notifications').insert({
+                        visitor_id: visitor.referred_by,
+                        title: 'Pesa Imeingia! 💰',
+                        message: `Hongera! Umepata TSh ${commission} kama kamisheni baada ya ${visitor.name || 'rafiki yako'} kununua ${game.title}.`,
+                        type: 'success'
+                    });
+                }
+            }
+        } catch (refErr) {
+            console.error('Referral payout failed:', refErr);
+            // We don't block the main payment flow if referral fails
+        }
+
+        // 3. Notifications for the buyer
         await supabase.from('notifications').insert({
             visitor_id: visitorId, post_id: postId,
             title: 'Malipo Yamekubaliwa! ✅',
@@ -2046,7 +2087,49 @@ app.get('/api/settings/payment', async (req, res) => {
         .single();
     
     if (error) return res.json({ mpesa_number: "07XXXXXXXX", mpesa_name: "CHIDY PRIME" });
-    res.json(data.value);
+// === AFFILIATE SYSTEM ENDPOINTS ===
+
+// Get stats for a specific affiliate
+app.get('/api/affiliate/stats/:visitor_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id } = req.params;
+
+    try {
+        // 1. Get referral count
+        const { count: referralCount } = await supabase
+            .from('visitors')
+            .select('*', { count: 'exact', head: true })
+            .eq('referred_by', parseInt(visitor_id));
+
+        // 2. Get total earnings
+        const { data: earnings } = await supabase
+            .from('affiliate_earnings')
+            .select('commission')
+            .eq('affiliate_id', parseInt(visitor_id));
+
+        const totalEarnings = (earnings || []).reduce((sum, e) => sum + parseFloat(e.commission), 0);
+
+        res.json({ referralCount: referralCount || 0, totalEarnings });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Request withdrawal
+app.post('/api/affiliate/withdraw', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id, amount } = req.body;
+
+    try {
+        // Send alert to admin via Telegram or specialized table
+        sendTelegramAlert(`💸 <b>WITHDRAWAL REQUEST</b> 💸\n\n<b>User ID:</b> ${visitor_id}\n<b>Amount:</b> TSh ${amount.toLocaleString()}\n<b>Time:</b> ${new Date().toLocaleString()}\n\n<i>Tafadhali kagua balance yake na umtumie pesa kwenye namba yake ya simu.</i>`);
+        
+        // You could also log this in a 'withdrawal_requests' table
+        
+        res.json({ success: true, message: 'Request sent to admin' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.listen(port, () => {
