@@ -3783,6 +3783,7 @@
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA MAOMBI...';
+            btn.style.background = '#16a34a';
 
             try {
                 const response = await fetch('/api/payments/zenopay-checkout', {
@@ -3815,12 +3816,13 @@
                     if (window.activePollInterval) clearInterval(window.activePollInterval);
                     window.activePollInterval = setInterval(async () => {
                         pollCount++;
-                        if (pollCount > 20) { // Timeout after 2 minutes (every 6s)
+                        if (pollCount > 15) { // Timeout after 90 seconds (every 6s)
                             clearInterval(window.activePollInterval);
                             window.activePollInterval = null;
-                            btn.innerHTML = '<i class="fas fa-check"></i> ANGALIA GAME YAKO';
+                            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> MUDA UMEISHA. JARIBU TENA';
                             btn.disabled = false;
-                            btn.onclick = () => { closePayment(); openDetail(postId); };
+                            btn.style.background = '#dc2626'; // Red color to indicate timeout/error
+                            btn.onclick = payWithZenoPay;
                             return;
                         }
                         try {
