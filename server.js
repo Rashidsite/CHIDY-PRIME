@@ -1272,9 +1272,11 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 app.post('/api/payments/zenopay-callback', async (req, res) => {
     console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
     // ZenoPay sends data as form-urlencoded or JSON
-    const { status, order_id, transaction_id, msisdn, amount } = req.body;
+    const { status, payment_status, order_id, transaction_id, msisdn, amount } = req.body;
 
-    if (status === 'success' || status === 'COMPLETED') {
+    const currentStatus = (status || payment_status || '').toLowerCase();
+
+    if (currentStatus === 'success' || currentStatus === 'completed') {
         try {
             // Find the pending order
             const { data: order, error: findErr } = await supabase
