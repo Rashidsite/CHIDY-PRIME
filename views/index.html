@@ -25,6 +25,31 @@
 
 
     <style>
+        /* CONTENT PROTECTION: Prevent selection and image interactions */
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* Re-enable selection for specific inputs only */
+        input, textarea, [contenteditable="true"] {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        img {
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            pointer-events: none;
+        }
+
         :root {
             --primary: #00f2ff;
             --secondary: #bc13fe;
@@ -4985,6 +5010,26 @@ function handleNotifClick(id) {
         });
 
     
+        // === CONTENT PROTECTION: Secure against copying and inspection ===
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        
+        document.addEventListener('keydown', e => {
+            // Disable Ctrl+C (Copy), Ctrl+S (Save), Ctrl+U (View Source)
+            if (e.ctrlKey && (['c', 's', 'u', 'a'].includes(e.key.toLowerCase()))) {
+                e.preventDefault();
+                return false;
+            }
+            // Disable F12 and Ctrl+Shift+I (DevTools)
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Disable Image Dragging via JS
+        document.addEventListener('dragstart', e => {
+            if (e.target.nodeName === 'IMG') e.preventDefault();
+        });
     </script>
 </body>
 </html>
