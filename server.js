@@ -1271,7 +1271,6 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 
     try {
         // Create a short, safe order_id (ZenoPay often has 20-30 char limits)
-        // Format: ZP{visitorId}V{first8CharsOfPostId}T{shortTimestamp}
         const shortPostId = postId.split('-')[0];
         const shortTime = Math.floor(Date.now() / 1000).toString().slice(-5);
         const zenoOrderId = `ZP${visitorId}V${shortPostId}T${shortTime}`;
@@ -1299,6 +1298,18 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
         const data = await zenoRes.json();
         console.log('ZenoPay Response:', data);
 
+        // Fail-safe: Store as pending in case webhook is blocked
+        if (data.status === 'success' || data.message === 'success') {
+            await supabase.from('payment_orders').insert([{
+                visitor_id: visitorId,
+                post_id: postId,
+                amount: amount,
+                phone_number: formattedPhone,
+                status: 'pending',
+                promo_used: zenoOrderId
+            }]);
+        }
+
         res.json(data);
     } catch (err) {
         console.error('ZenoPay Checkout Error:', err);
@@ -1309,94 +1320,67 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 app.post('/api/payments/zenopay-callback', async (req, res) => {
     console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
     const { status, payment_status, order_id, transaction_id, msisdn, amount } = req.body;
-
     const currentStatus = (status || payment_status || '').toLowerCase();
 
     if (currentStatus === 'success' || currentStatus === 'completed') {
         try {
-            // Parse ZP{visitorId}V{shortPostId}T{time}
             const match = (order_id || '').match(/ZP(\d+)V([a-f0-9]+)T/i);
-            if (!match) {
-                console.warn('Unhandled ZenoPay order format:', order_id);
-                return res.json({ success: true, message: 'Format not recognized' });
-            }
+            if (!match) return res.json({ success: true });
 
             const visitorId = parseInt(match[1]);
             const shortPostId = match[2];
 
-            // Find full Post ID from short ID
-            const { data: game, error: gameErr } = await supabase
-                .from('posts')
-                .select('id, title, duration_days')
-                .ilike('id', `${shortPostId}%`)
-                .single();
+            const { data: game } = await supabase.from('posts').select('id, title, duration_days').ilike('id', `${shortPostId}%`).single();
+            if (!game) return res.json({ success: true });
 
-            if (gameErr || !game) {
-                console.error('Game not found for short ID:', shortPostId);
-                return res.json({ success: true, message: 'Game reference lost' });
-            }
-
-            const postId = game.id;
-
-            // 1. Create order in database
-            const { error: insErr } = await supabase
-                .from('payment_orders')
-                .insert([{
-                    visitor_id: visitorId,
-                    post_id: postId,
-                    amount: amount,
-                    phone_number: msisdn || 'ZenoPay',
-                    status: 'approved'
-                }]);
-
-            if (insErr) console.warn('Order insert warning (likely duplicate):', insErr.message);
-
-            // 2. Grant Access
-            const dDays = game.duration_days || 0;
-            const gTitle = game.title;
-            
-            let finalExpiresAt = new Date();
-            if (dDays > 0) {
-                finalExpiresAt.setDate(finalExpiresAt.getDate() + dDays);
-            } else {
-                finalExpiresAt = new Date('2099-12-31T23:59:59Z');
-            }
-
-            await supabase.from('user_access').upsert({
-                visitor_id: visitorId,
-                post_id: postId,
-                granted_at: new Date().toISOString(),
-                expires_at: finalExpiresAt.toISOString()
-            }, { onConflict: 'visitor_id,post_id' });
-
-            // 3. Notify User
-            await supabase.from('notifications').insert({
-                visitor_id: visitorId,
-                post_id: postId,
-                title: 'Malipo Yamekubaliwa! ✅',
-                message: `Malipo yako ya game "${gTitle}" kupitia ZenoPay yamehakikiwa. Sasa unaweza kuanza kudownload.`,
-                type: 'success'
-            });
-
-            // 4. Log Analytics
-            await supabase.from('daily_stats').insert([{
-                event_type: 'payment_success',
-                metadata: { amount, msisdn, postId, method: 'ZenoPay' }
-            }]);
-
-            // Telegram Alert
-            sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\n\n<b>Game:</b> ${gTitle}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${msisdn || 'ZenoPay'}\n<b>Method:</b> ZenoPay\n<b>Time:</b> ${new Date().toLocaleString()}`);
-
-            return res.json({ success: true, message: 'Payment approved and access granted' });
-
-        } catch (dbErr) {
-            console.error('Database Error in ZenoPay Callback:', dbErr);
-            return res.status(500).json({ error: 'DB update failed' });
+            await handleSuccessfulPayment(visitorId, game, amount, msisdn || 'ZenoPay');
+            return res.json({ success: true });
+        } catch (err) {
+            console.error('Webhook processing error:', err);
+            return res.status(500).send('Error');
         }
     }
-
-    res.json({ success: false, message: 'Payment status not success' });
+    res.json({ success: false });
 });
+
+async function handleSuccessfulPayment(visitorId, game, amount, phone) {
+    const postId = game.id;
+    
+    // 1. Mark existing or create new approved order
+    await supabase.from('payment_orders').insert([{
+        visitor_id: visitorId,
+        post_id: postId,
+        amount: amount,
+        phone_number: phone,
+        status: 'approved'
+    }]);
+
+    // 2. Grant Access
+    const dDays = game.duration_days || 0;
+    let expiresAt = new Date('2099-12-31T23:59:59Z');
+    if (dDays > 0) {
+        expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + dDays);
+    }
+
+    await supabase.from('user_access').upsert({
+        visitor_id: visitorId,
+        post_id: postId,
+        granted_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString()
+    }, { onConflict: 'visitor_id,post_id' });
+
+    // 3. Notifications
+    await supabase.from('notifications').insert({
+        visitor_id: visitorId, post_id: postId,
+        title: 'Malipo Yamekubaliwa! ✅',
+        message: `Malipo yako ya game "${game.title}" yamehakikiwa.`,
+        type: 'success'
+    });
+
+    // 4. Alerts
+    sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\nGame: ${game.title}\nAmount: ${amount}\nPhone: ${phone}`);
+}
 
 // Create a new manual payment order
 app.post('/api/orders', async (req, res) => {
