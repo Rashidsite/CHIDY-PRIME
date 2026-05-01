@@ -132,6 +132,61 @@ if (supabaseUrl && supabaseKey) {
 // Start health checks after everything is initialized
 runHealthCheck();
 
+// --- AUTOMATED PENDING ORDER WORKER ---
+// This worker automatically checks ZenoPay for pending orders and approves them if paid.
+// This removes the need for manual admin approval.
+setInterval(async () => {
+    if (!supabase) return;
+    try {
+        const { data: pendingOrders } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('status', 'pending')
+            .not('promo_used', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (!pendingOrders || pendingOrders.length === 0) return;
+
+        for (const order of pendingOrders) {
+            const zenoOrderId = order.promo_used;
+            if (!zenoOrderId || !zenoOrderId.startsWith('ZP')) continue;
+
+            // Check if order is older than 5 minutes, if so, maybe mark as failed or just ignore
+            const ageMinutes = (new Date() - new Date(order.created_at)) / 60000;
+            if (ageMinutes > 30) {
+                // Too old, mark as rejected to stop polling it
+                await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', order.id);
+                continue;
+            }
+
+            try {
+                const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ 'x-api-key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
+                });
+                const zData = await zRes.json().catch(() => ({}));
+                const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+
+                if (zStatus === 'success' || zStatus === 'completed') {
+                    console.log(`[AUTO-APPROVE] Order ${zenoOrderId} was paid! Approving...`);
+                    const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
+                    if (game) {
+                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number);
+                        // Update original pending order status to avoid re-processing
+                        await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
+                    }
+                }
+            } catch (e) {
+                // Ignore individual check errors
+            }
+        }
+    } catch (err) {
+        console.error('Pending worker error:', err);
+    }
+}, 30000); // Check every 30 seconds
+
 
 
 // === PERFORMANCE: Gzip compression (reduces response size 60-80%) ===
