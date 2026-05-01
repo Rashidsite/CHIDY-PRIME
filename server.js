@@ -1225,8 +1225,14 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
     if (formattedPhone.startsWith('255')) formattedPhone = '0' + formattedPhone.substring(3);
 
     try {
+        // Create a short, safe order_id (ZenoPay often has 20-30 char limits)
+        // Format: ZP{visitorId}V{first8CharsOfPostId}T{shortTimestamp}
+        const shortPostId = postId.split('-')[0];
+        const shortTime = Math.floor(Date.now() / 1000).toString().slice(-5);
+        const zenoOrderId = `ZP${visitorId}V${shortPostId}T${shortTime}`;
+
         const payload = {
-            order_id: `ZP_${visitorId}_${postId}_${Date.now()}`,
+            order_id: zenoOrderId,
             buyer_email: email || 'customer@chidyprime.com',
             buyer_name: name || 'Chidy Prime Customer',
             buyer_phone: formattedPhone,
@@ -1248,10 +1254,6 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
         const data = await zenoRes.json();
         console.log('ZenoPay Response:', data);
 
-        // Store temporary order info for reference if needed
-        // (Removed because external_id and payment_method columns don't exist in Supabase!)
-        // The approved order will be inserted directly in the webhook.
-
         res.json(data);
     } catch (err) {
         console.error('ZenoPay Checkout Error:', err);
@@ -1261,24 +1263,38 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 
 app.post('/api/payments/zenopay-callback', async (req, res) => {
     console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
-    // ZenoPay sends data as form-urlencoded or JSON
     const { status, payment_status, order_id, transaction_id, msisdn, amount } = req.body;
 
     const currentStatus = (status || payment_status || '').toLowerCase();
 
     if (currentStatus === 'success' || currentStatus === 'completed') {
         try {
-            if (!order_id || !order_id.startsWith('ZP_')) {
-                return res.json({ success: true, message: 'Unhandled order format' });
+            // Parse ZP{visitorId}V{shortPostId}T{time}
+            const match = (order_id || '').match(/ZP(\d+)V([a-f0-9]+)T/i);
+            if (!match) {
+                console.warn('Unhandled ZenoPay order format:', order_id);
+                return res.json({ success: true, message: 'Format not recognized' });
             }
 
-            const parts = order_id.split('_');
-            // Format: ZP_{visitorId}_{postId}_{timestamp}
-            const visitorId = parseInt(parts[1]);
-            const postId = parts[2];
+            const visitorId = parseInt(match[1]);
+            const shortPostId = match[2];
+
+            // Find full Post ID from short ID
+            const { data: game, error: gameErr } = await supabase
+                .from('posts')
+                .select('id, title, duration_days')
+                .ilike('id', `${shortPostId}%`)
+                .single();
+
+            if (gameErr || !game) {
+                console.error('Game not found for short ID:', shortPostId);
+                return res.json({ success: true, message: 'Game reference lost' });
+            }
+
+            const postId = game.id;
 
             // 1. Create order in database
-            const { data: order, error: updateErr } = await supabase
+            const { error: insErr } = await supabase
                 .from('payment_orders')
                 .insert([{
                     visitor_id: visitorId,
@@ -1286,16 +1302,13 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
                     amount: amount,
                     phone_number: msisdn || 'ZenoPay',
                     status: 'approved'
-                }])
-                .select()
-                .single();
+                }]);
 
-            if (updateErr) throw updateErr;
+            if (insErr) console.warn('Order insert warning (likely duplicate):', insErr.message);
 
-            // 2. Grant Access (Copied logic from Admin Approval for consistency)
-            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', postId).single();
-            const dDays = game ? (game.duration_days || 0) : 0;
-            const gTitle = game ? game.title : 'Game';
+            // 2. Grant Access
+            const dDays = game.duration_days || 0;
+            const gTitle = game.title;
             
             let finalExpiresAt = new Date();
             if (dDays > 0) {
