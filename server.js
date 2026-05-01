@@ -1318,7 +1318,7 @@ app.post('/api/payments/callback', async (req, res) => {
 
 // === ZENOPAY INTEGRATION LOGIC ===
 app.post('/api/payments/zenopay-checkout', async (req, res) => {
-    const { amount, phone, gameTitle, visitorId, postId, email, name } = req.body;
+    const { amount, phone, gameTitle, visitorId, postId, email, name, promo_used } = req.body;
     
     // Normalize phone
     let formattedPhone = phone.replace(/[^0-9]/g, '');
@@ -1343,7 +1343,10 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
             webhook_url: webhookUrl
         };
 
-        console.log('Initiating ZenoPay:', payload);
+        console.log('Initiating ZenoPay:', payload, 'Promo Used:', promo_used);
+        if (promo_used) {
+            sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED</b>\n<b>User:</b> ${name} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted Amount:</b> TSh ${parseFloat(amount).toLocaleString()}`);
+        }
 
         const zenoRes = await fetch('https://zenoapi.com/api/payments/mobile_money_tanzania', {
             method: 'POST',
@@ -1363,7 +1366,7 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
                 amount: amount,
                 phone_number: formattedPhone,
                 status: 'pending',
-                promo_used: zenoOrderId
+                promo_used: zenoOrderId // We use this field to track the Zeno order ID for polling/callbacks
             }]);
         }
 
@@ -1515,8 +1518,6 @@ app.post('/api/orders', async (req, res) => {
                 amount: parseFloat(amount),
                 phone_number: phone_number.trim(),
                 status: 'pending',
-                is_gift: req.body.is_gift || false,
-                gift_phone: req.body.gift_phone || null,
                 promo_used: promo_used || null
             }])
             .select();
@@ -1976,16 +1977,58 @@ app.post('/api/promo/validate', async (req, res) => {
             .eq('key', 'promo_codes')
             .single();
             
-        if (error || !data) return res.status(404).json({ valid: false, message: 'Invalid promo code' });
+        if (error || !data) return res.status(404).json({ valid: false, message: 'Promo codes not found' });
         
-        const codes = data.value;
+        const codes = Array.isArray(data.value) ? data.value : [];
         const promo = codes.find(c => c.code.toUpperCase() === code.toUpperCase() && c.active);
         
         if (promo) {
-            res.json({ valid: true, discount: promo.discount });
+            res.json({ 
+                valid: true, 
+                discount: promo.discount, 
+                type: promo.type || 'percentage', // 'percentage' or 'fixed'
+                message: `✅ Promo "${promo.code}" applied! -${promo.discount}${promo.type === 'fixed' ? ' TSh' : '%'}`
+            });
         } else {
-            res.status(404).json({ valid: false, message: 'Promo code not found or inactive' });
+            res.status(404).json({ valid: false, message: 'Promo code is invalid or expired' });
         }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin - Fetch all promo codes
+app.get('/api/admin/promo', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'promo_codes')
+            .single();
+            
+        if (error && error.code !== 'PGRST116') throw error;
+        res.json(data ? data.value : []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin - Save promo codes
+app.post('/api/admin/promo', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { codes } = req.body;
+    try {
+        const { error } = await supabase
+            .from('site_settings')
+            .upsert({ 
+                key: 'promo_codes', 
+                value: codes,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+            
+        if (error) throw error;
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

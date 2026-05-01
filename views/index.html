@@ -16,7 +16,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <!-- manifest removed: PWA install prompt disabled -->
+    <!-- manifest for PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00f2ff">
     <meta name="theme-color" content="#00f2ff">
     <link rel="apple-touch-icon" href="/icon.png">
     <link rel="icon" type="image/png" href="/icon.png">
@@ -2826,6 +2828,9 @@
         <div class="sidebar-menu" id="sidebarMenu">
             <!-- Categories injected here by JS -->
         </div>
+        <div id="installArea" style="display:none; padding: 0 20px 20px;">
+            <button onclick="installPWA()" style="width:100%; padding:12px; border-radius:10px; background:linear-gradient(135deg, var(--primary), var(--secondary)); color:#fff; border:none; font-family:'Orbitron'; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 0 15px rgba(0,242,255,0.3);"><i class="fas fa-download"></i> INSTALL APP</button>
+        </div>
         <div style="padding: 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.7rem; color: #6c7293;">
             &copy; 2026 Chidy Prime
         </div>
@@ -3101,19 +3106,6 @@
                     ">Apply</button>
                 </div>
                 <div id="promoMessage" style="font-size:0.75rem; margin-top:6px; font-weight:600;"></div>
-            </div>
-
-            <!-- Gift Option -->
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:20px; font-size:0.82rem; color:#555;">
-                <input type="checkbox" id="isGiftCheck" onchange="toggleGiftInput()" style="width:15px;height:15px;accent-color:#16a34a;">
-                <span>🎁 Buy as Gift for a Friend?</span>
-            </label>
-            <div id="giftInputGroup" style="display:none; margin-bottom:16px;">
-                <input type="tel" id="giftRecipientPhone" placeholder="Namba ya rafiki yako (07XXXXXXXX)" inputmode="numeric" style="
-                    width:100%; padding:13px 14px; border:2px solid #e5e7eb;
-                    border-radius:10px; font-size:0.95rem; color:#111; outline:none;
-                    background:#fff; box-sizing:border-box; -webkit-appearance:none;
-                ">
             </div>
 
             <!-- Confirm Button -->
@@ -3513,7 +3505,7 @@
 
             let accessHtml = '';
 
-            if (hasDuration && visitor && visitor.id) {
+            if (visitor && visitor.id) {
                 // Check access status
                 try {
                     const res = await fetch(`/api/check-access/${visitor.id}/${game.id}`);
@@ -3521,7 +3513,8 @@
 
                     if (accessData.has_access) {
                         const expiryDate = new Date(accessData.expires_at);
-                        const formattedExpiry = expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const isPermanent = expiryDate.getFullYear() >= 2099;
+                        const formattedExpiry = isPermanent ? 'MAISHA YOTE (KUDUMU)' : expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
                         const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
                         
                         // Use links from access check response
@@ -3536,7 +3529,7 @@
                                 <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">
                                     <i class="fas fa-calendar-alt" style="color:#ffb400;"></i> 
                                     Muda wako unaisha: <strong style="color:#fff;">${formattedExpiry}</strong> 
-                                    ${hasDuration ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
+                                    ${(hasDuration && !isPermanent) ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
                                 </p>
                             </div>
                             <div class="detail-links">
@@ -3743,7 +3736,7 @@
                         <span style="background:rgba(255,180,0,0.1); color:var(--gold); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,180,0,0.2);"><i class="fas fa-star"></i> ${game.rating || '4.5'}</span>
                         <span style="background:rgba(0,242,255,0.1); color:var(--primary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(0,242,255,0.2);">${game.category || 'TANZANIA GAMES'}</span>
                         <span style="background:rgba(188,19,254,0.1); color:var(--secondary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(188,19,254,0.2);">TSh ${parseInt(game.price).toLocaleString()}</span>
-                        <span style="background:rgba(255,255,255,0.05); color:#fff; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> Siku ${game.duration_days || 1}</span>
+                        <span style="background:rgba(255,255,255,0.05); color:#fff; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> ${hasDuration ? `Siku ${game.duration_days}` : 'KUDUMU'}</span>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:15px; border:1px solid rgba(255,255,255,0.05); margin-bottom:20px;">
                         <p style="color:#a0a0b0; font-size:0.85rem; line-height:1.6; margin:0;">${game.description || 'Gundua ulimwengu mpya wa michezo na Chidy Prime. Download sasa na ufurahie uzoefu bora wa gaming.'}</p>
@@ -3802,6 +3795,8 @@
                 // Clear promo field
                 document.getElementById('promoCodeInput').value = '';
                 document.getElementById('promoMessage').textContent = '';
+                window.currentDiscount = 0;
+                window.appliedPromoCode = null;
 
                 // Show the Payment Overlay
                 const pOverlay = document.getElementById('paymentOverlay');
@@ -3811,6 +3806,61 @@
                 pOverlay.classList.add('show');
             } catch (e) {
                 alert('Kuna tatizo la mtandao. Tafadhali jaribu tena.');
+            }
+        }
+
+        async function applyPromoCode() {
+            const code = document.getElementById('promoCodeInput').value.trim();
+            const postId = document.getElementById('payPostId').value;
+            const game = allGames.find(g => g.id == postId);
+            const msgEl = document.getElementById('promoMessage');
+            const amountEl = document.getElementById('payAmount');
+            
+            if (!code) return;
+            
+            msgEl.textContent = 'Inahakiki...';
+            msgEl.style.color = '#888';
+            
+            try {
+                const res = await fetch('/api/promo/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                
+                if (data.valid) {
+                    window.appliedPromoCode = code.toUpperCase();
+                    let discountAmount = 0;
+                    if (data.type === 'fixed') {
+                        discountAmount = data.discount;
+                    } else {
+                        discountAmount = Math.floor(game.price * (data.discount / 100));
+                    }
+                    
+                    window.currentDiscount = discountAmount;
+                    const finalPrice = Math.max(0, game.price - discountAmount);
+                    
+                    msgEl.textContent = data.message;
+                    msgEl.style.color = '#16a34a';
+                    amountEl.innerHTML = `<s>TSh ${parseInt(game.price).toLocaleString()}</s> <span style="color:#16a34a; margin-left:8px;">TSh ${finalPrice.toLocaleString()}</span>`;
+                    
+                    // Small celebration effect
+                    confetti({
+                        particleCount: 20,
+                        spread: 40,
+                        origin: { y: 0.7 }
+                    });
+                } else {
+                    msgEl.textContent = data.message || 'Promo code si sahihi.';
+                    msgEl.style.color = '#ff3366';
+                    window.currentDiscount = 0;
+                    window.appliedPromoCode = null;
+                    amountEl.textContent = 'TSh ' + parseInt(game.price).toLocaleString();
+                }
+            } catch (e) {
+                msgEl.textContent = 'Tatizo la mtandao.';
+                msgEl.style.color = '#ff3366';
             }
         }
 
@@ -3833,18 +3883,21 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA MAOMBI...';
             btn.style.background = '#16a34a';
 
+            const finalAmount = Math.max(0, game.price - (window.currentDiscount || 0));
+
             try {
                 const response = await fetch('/api/payments/zenopay-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        amount: game.price,
+                        amount: finalAmount,
                         phone: phone,
                         gameTitle: game.title,
                         visitorId: visitor.id,
                         postId: postId,
                         email: `${visitor.phone}@chidyprime.com`, // Fallback email
-                        name: visitor.name
+                        name: visitor.name,
+                        promo_used: window.appliedPromoCode || null
                     })
                 });
 
@@ -3943,68 +3996,15 @@
                 btn.onclick = payWithZenoPay;
             }
             const pOverlay = document.getElementById('paymentOverlay');
-            pOverlay.classList.remove('show');
-            pOverlay.style.display = 'none';
-            pOverlay.style.visibility = 'hidden';
-            pOverlay.setAttribute('hidden', 'true');
-        }
-
-        function toggleGiftInput() {
-            const isGift = document.getElementById('isGiftCheck').checked;
-            document.getElementById('giftInputGroup').style.display = isGift ? 'block' : 'none';
-        }
-
-        async function submitPaymentOrder() {
-            const postId = document.getElementById('payPostId').value;
-            const senderPhone = document.getElementById('paySenderNumber').value.trim();
-            const btn = document.getElementById('confirmPayBtn');
-            const isGift = document.getElementById('isGiftCheck').checked;
-            const giftPhone = document.getElementById('giftRecipientPhone').value.trim();
-            
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = JSON.parse(visitorStr);
-            const game = allGames.find(g => g.id == postId);
-
-            if (!senderPhone) {
-                alert('Tafadhali ingiza namba uliyotumia kulipia!');
-                return;
+            if (pOverlay) {
+                pOverlay.classList.remove('show');
+                pOverlay.style.display = 'none';
+                pOverlay.style.visibility = 'hidden';
+                pOverlay.setAttribute('hidden', 'true');
             }
-            if (isGift && !giftPhone) {
-                alert("Tafadhali ingiza namba ya rafiki unayemzawadia.");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
-
-            try {
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        visitor_id: visitor.id,
-                        post_id: postId,
-                        amount: game.price,
-                        phone_number: senderPhone,
-                        is_gift: isGift,
-                        gift_phone: giftPhone
-                    })
-                });
-                const result = await res.json();
-
-                if (result.success) {
-                    alert('✅ Oda yako imepokelewa! Tafadhali subiri Admin athibitishe malipo yako. Utapata taarifa hivi punde.');
-                    closePayment();
-                    openDetail(postId); // Refresh view to show pending status or similar
-                } else {
-                    alert('Imeshindikana: ' + result.error);
-                }
-            } catch (err) {
-                alert('Kuna tatizo la mtandao.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '✅ NIMETUMA PESA';
-            }
+            // Clear manual verify button if exists
+            const vBtn = document.getElementById('manual-verify-btn');
+            if (vBtn) vBtn.remove();
         }
 
         function buildDirectLinks(game, links) {
@@ -4343,41 +4343,53 @@
         function processBotLogic(input) {
             const lowerInput = input.toLowerCase();
             
-            // Greetings
+            // 1. Greetings
             if (lowerInput.match(/^(mambo|niaje|hi|hello|sasa|vp|vipi)/)) {
-                return appendBotMsg("Poa sana Kaka! 🔥 Nipo hapa kukusaidia kupata games zote kali. Unatafuta game la simu, PC au PPSSPP?");
+                return appendBotMsg("Poa sana Kaka! 👋 Mimi ni Chidy AI Bot 🤖. Nipo hapa kukusaidia kupata games zote kali na kutoa msaada wa kuset. Unatafuta game la aina gani au unahitaji msaada gani?");
             }
 
-            // Stop words to remove from natural language phrasing
+            // 2. Contact Admin / "Kunipata"
+            if (lowerInput.includes('admin') || lowerInput.includes('kukuona') || lowerInput.includes('ongea na mtu') || lowerInput.includes('msimamizi') || lowerInput.includes('namba yako')) {
+                return appendBotMsg("Ili kuongea na msimamizi (Admin) moja kwa moja, tafadhali bonyeza kitufe cha WhatsApp kilichopo hapo chini upande wa kushoto wa sehemu ya kuandikia.");
+            }
+
+            // 3. Settings / "Kuset"
+            if (lowerInput.includes('set') || lowerInput.includes('setting') || lowerInput.includes('kusanidi') || lowerInput.includes('config')) {
+                return appendBotMsg("Kuhusu kuset games (mfano PPSSPP), hakikisha unatumia 'Recommended Settings' ambazo zinapatikana ndani ya maelezo ya game husika. Kama umekwama, Admin anaweza kukutumia video ya maelekezo via WhatsApp.");
+            }
+
+            // 4. Installation / "Kuinstall"
+            if (lowerInput.includes('install') || lowerInput.includes('kusanikisha') || lowerInput.includes('weka')) {
+                return appendBotMsg("Baada ya kudownload game, utahitaji app ya **ZArchiver** ili ku-extract mafaili (kama ni zip/7z). Kwa games za PPSSPP, utahitaji app ya **PPSSPP Gold**. Unahitaji link za hizi Apps?");
+            }
+
+            // 5. Payment / "Malipo"
+            if (lowerInput.includes('malipo') || lowerInput.includes('lipa') || lowerInput.includes('pesa')) {
+                return appendBotMsg("Malipo yanafanyika kwa STK Push (Auto). Bonyeza 'Download', weka namba yako, na utapokea ujumbe wa siri kwenye simu yako. Ukimaliza, game itafunguka papo hapo!");
+            }
+
+            // 6. Natural Language Search
             const stopWords = ['nataka', 'naomba', 'magemu', 'magame', 'ya', 'za', 'tafadhali', 'nipatie', 'nipe', 'game', 'games', 'la', 'kuhusu'];
-            
-            // Clean the input to get core keywords
             let keywords = lowerInput.split(' ').filter(word => !stopWords.includes(word) && word.length > 1);
             if (keywords.length === 0) keywords = [lowerInput];
 
-            // Fallback intelligence: Search the games using keywords!
             const matchedGames = allGames.filter(g => {
                 const titleLower = g.title.toLowerCase();
                 const descLower = g.description ? g.description.toLowerCase() : '';
                 const catLower = g.category.toLowerCase();
-
-                // Check if any keyword matches the game title, category, or description
                 let matchCount = 0;
                 keywords.forEach(kw => {
                     if (titleLower.includes(kw) || catLower.includes(kw) || descLower.includes(kw)) {
                         matchCount++;
                     }
                 });
-                
-                // If it matched at least one core keyword, consider it a match
-                // We could also do a strict match (all keywords) but partial is safer
                 return matchCount > 0;
-            }).slice(0, 3); // Max 3 suggestions
+            }).slice(0, 3);
 
             if (matchedGames.length > 0) {
                 appendBotMsg(`Nimekupatia hizi hapa! Chagua mojawapo hapa chini kuitazama: 👇`, matchedGames);
             } else {
-                appendBotMsg(`Dah! 🤔 Sijapata "${keywords.join(' ')}" moja kwa moja. Hebu jaribu kutaja jina lingine au niambie category kama 'PPSSPP' au 'PC Games'. Kama hujanunua au kuupload, hutaikuta hapa.`);
+                appendBotMsg(`Dah! 🤔 Sijapata jibu la moja kwa moja kwa "${keywords.join(' ')}". Hebu jaribu kutumia maneno mafupi zaidi, au bonyeza kitufe cha WhatsApp hapo chini kuongea na Admin.`);
             }
         }
 
@@ -4395,7 +4407,35 @@
             }, 800 + Math.random() * 1000); // 0.8s - 1.8s delay
         }
 
-        // ===== PWA INSTALLATION SYSTEM REMOVED =====
+        // ===== PWA INSTALLATION SYSTEM =====
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('Service Worker registered!');
+                }).catch(err => {
+                    console.log('Service Worker failed:', err);
+                });
+            });
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installArea = document.getElementById('installArea');
+            if (installArea) installArea.style.display = 'block';
+            console.log('PWA Install prompt ready');
+        });
+
+        async function installPWA() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            deferredPrompt = null;
+            const installArea = document.getElementById('installArea');
+            if (installArea) installArea.style.display = 'none';
+        }
 
 
         // Register Service Worker
@@ -4526,7 +4566,7 @@
         }
 
         function renderNotifications() {
-            const body = document.getElementById('notifBody');
+            const body = document.getElementById('notifDropdownBody');
             const badge = document.getElementById('notifBadge');
             
             const unread = notifications.filter(n => !n.is_read).length;
@@ -4766,76 +4806,6 @@ function handleNotifClick(id) {
             }
         }
 
-        // SMART HELP LOGIC
-        function toggleBotChat() {
-            const botOverlay = document.getElementById('botChatOverlay');
-            if (botOverlay) {
-                if (botOverlay.classList.contains('show')) {
-                    botOverlay.classList.remove('show');
-                } else {
-                    botOverlay.classList.add('show');
-                    // If no message, start with a greeting
-                    const body = document.getElementById('botMessages');
-                    if (body && body.innerHTML.trim() === '') {
-                        addBotMessage("Habari! Mimi ni Chidy AI Assistant 🤖. Naweza kukusaidia kupata game unayohitaji au kutatua tatizo la malipo. Unahitaji msaada gani?");
-                    }
-                }
-            }
-        }
-
-        async function refreshUserStats() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) return;
-            const visitor = JSON.parse(visitorStr);
-            try {
-                const res = await fetch(`/api/user/stats/${visitor.id}`);
-                const stats = await res.json();
-                if (stats.level) {
-                    const badge = document.getElementById('userLevelBadge');
-                    badge.innerText = stats.level;
-                    badge.style.color = stats.color;
-                }
-            } catch (e) { console.error("Stats error", e); }
-        }
-
-        function toggleGiftInput() {
-            const check = document.getElementById('isGiftCheck');
-            const group = document.getElementById('giftInputGroup');
-            group.style.display = check.checked ? 'block' : 'none';
-        }
-
-        function addBotMessage(text, type = 'bot') {
-            const body = document.getElementById('botMessages');
-            if (!body) return;
-            const msg = document.createElement('div');
-            msg.className = `b-msg ${type}`;
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            msg.innerHTML = `${text}<span class="time">${time}</span>`;
-            body.appendChild(msg);
-            body.scrollTop = body.scrollHeight;
-        }
-
-        async function sendBotMessage() {
-            const input = document.getElementById('botInputUrl');
-            const text = input.value.trim();
-            if (!text) return;
-
-            addBotMessage(text, 'user');
-            input.value = '';
-
-            // Simple Auto-responses for the premium feel
-            setTimeout(() => {
-                if (text.toLowerCase().includes('malipo') || text.toLowerCase().includes('lipa')) {
-                    addBotMessage("Ili kufanya malipo, chagua game unayotaka kisha bonyeza kitufe cha 'Download'. Fuata maelekezo ya kulipia namba iliyowekwa.");
-                } else if (text.toLowerCase().includes('game') || text.toLowerCase().includes('mchezo')) {
-                    addBotMessage("Tuna games nyingi za PPSSPP, Android, na PC. Unaweza kutumia search bar juu upate game unayotaka haraka.");
-                } else {
-                    addBotMessage("Samahani, sijakuelewa vizuri. Unaweza pia kubonyeza kitufe cha WhatsApp hapo chini ili kuongea na msimamizi moja kwa moja.");
-                }
-            }, 1000);
-        }
-
-        // Keep existing openBotChat for real WhatsApp fallback if needed inside the bot
         function openWhatsAppSupport() {
             const visitorStr = localStorage.getItem('chidy_visitor');
             const visitor = visitorStr ? JSON.parse(visitorStr) : null;
