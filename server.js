@@ -988,7 +988,52 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             });
         }
         
-        // If expired
+        // --- FAIL-SAFE: Check if there's a pending ZenoPay order that was recently paid ---
+        try {
+            const { data: pending } = await supabase
+                .from('payment_orders')
+                .select('*')
+                .eq('visitor_id', parseInt(visitor_id))
+                .eq('post_id', post_id)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (pending && pending.length > 0) {
+                const order = pending[0];
+                const zenoOrderId = order.promo_used; // We used this for order_id
+                
+                if (zenoOrderId && zenoOrderId.startsWith('ZP')) {
+                    console.log('Fail-safe: Checking ZenoPay status for:', zenoOrderId);
+                    const zenoCheck = await fetch('https://zenoapi.com/api/payments/order_status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            'x-api-key': ZENOPAY_API_KEY,
+                            'order_id': zenoOrderId
+                        })
+                    }).then(r => r.json());
+
+                    if (zenoCheck.status === 'success' || zenoCheck.message === 'success' || (zenoCheck.payment_status && zenoCheck.payment_status.toLowerCase() === 'completed')) {
+                        // IT WAS PAID! Manually trigger the success logic
+                        await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number);
+                        
+                        // Mark the pending order as done so we don't check it again
+                        await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
+
+                        return res.json({ 
+                            has_access: true, 
+                            expires_at: '2099-12-31T23:59:59Z',
+                            links: game.links || []
+                        });
+                    }
+                }
+            }
+        } catch (checkErr) {
+            console.error('Fail-safe check error:', checkErr);
+        }
+        
+        // If still no access
         const { data: pendingAfterExpiry } = await supabase
             .from('payment_orders')
             .select('status')
