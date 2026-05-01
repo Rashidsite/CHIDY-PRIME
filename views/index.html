@@ -3562,7 +3562,55 @@
                         // Auto refresh detail modal after 10 seconds to check if approved
                         setTimeout(() => { 
                             if (document.getElementById('detailOverlay').style.display === 'flex') {
-                                openDetail(id); 
+                                const statusText = document.querySelector('#detailOverlay h4');
+                                const payBtn = document.querySelector('#detailOverlay button');
+                                const visitorId = visitor.id;
+                                const postId = id;
+                                
+                                fetch(`/api/check-access/${visitorId}/${postId}`)
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        if (data.has_access) {
+                                            statusText.textContent = 'MALIPO YAMEKUBALIWA! ✅';
+                                            statusText.style.color = '#00ff00';
+                                            payBtn.textContent = 'ANGALIA GAME YAKO';
+                                            payBtn.style.background = 'linear-gradient(45deg, #00ff00, #008800)';
+                                            payBtn.onclick = () => window.location.reload();
+                                            setTimeout(() => window.location.reload(), 2000);
+                                        } else if (data.expired) {
+                                            statusText.textContent = 'MUDA UMEISHA! ⚠️';
+                                            statusText.style.color = '#ff4444';
+                                            payBtn.textContent = 'JARIBU TENA';
+                                            payBtn.style.background = '#ff4444';
+                                        } else {
+                                            if (!document.getElementById('manual-verify-btn')) {
+                                                const verifyBtn = document.createElement('button');
+                                                verifyBtn.id = 'manual-verify-btn';
+                                                verifyBtn.textContent = 'NIMESHALIPIA (THIBITISHA)';
+                                                verifyBtn.style.cssText = 'margin-top: 15px; padding: 12px; width: 100%; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; animation: pulse 2s infinite;';
+                                                verifyBtn.onclick = async () => {
+                                                    verifyBtn.textContent = 'INAHAHIKI...';
+                                                    verifyBtn.disabled = true;
+                                                    try {
+                                                        const vRes = await fetch(`/api/payments/verify-zeno/${visitorId}/${postId}`);
+                                                        const vData = await vRes.json();
+                                                        if (vData.success) {
+                                                            window.location.reload();
+                                                        } else {
+                                                            alert('Bado hatujaona malipo yako. Hakikisha umeweka PIN kwenye simu yako kwanza.');
+                                                            verifyBtn.textContent = 'NIMESHALIPIA (THIBITISHA)';
+                                                            verifyBtn.disabled = false;
+                                                        }
+                                                    } catch(e) {
+                                                        alert('Kuna tatizo la mtandao. Jaribu tena.');
+                                                        verifyBtn.textContent = 'NIMESHALIPIA (THIBITISHA)';
+                                                        verifyBtn.disabled = false;
+                                                    }
+                                                };
+                                                statusText.parentNode.appendChild(verifyBtn);
+                                            }
+                                        }
+                                    });
                             }
                         }, 10000);
                     } else if (accessData.expired) {
@@ -3833,6 +3881,37 @@
                                 window.activePollInterval = null;
                                 closePayment();
                                 openDetail(postId); // Open that specific game immediately
+                            } else {
+                                // Add a manual verify button if not present
+                                if (!document.getElementById('manual-verify-btn')) {
+                                    const verifyBtn = document.createElement('button');
+                                    verifyBtn.id = 'manual-verify-btn';
+                                    verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> NIMESHALIPIA (THIBITISHA)';
+                                    verifyBtn.style.cssText = 'margin-top: 15px; padding: 12px; width: 100%; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; animation: pulse 2s infinite;';
+                                    verifyBtn.onclick = async () => {
+                                        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI...';
+                                        verifyBtn.disabled = true;
+                                        try {
+                                            const vRes = await fetch(`/api/payments/verify-zeno/${visitor.id}/${postId}`);
+                                            const vData = await vRes.json();
+                                            if (vData.success) {
+                                                clearInterval(window.activePollInterval);
+                                                window.activePollInterval = null;
+                                                closePayment();
+                                                openDetail(postId);
+                                            } else {
+                                                alert(vData.message || 'Bado hatujaona malipo yako. Hakikisha umeweka PIN kwanza.');
+                                                verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> NIMESHALIPIA (THIBITISHA)';
+                                                verifyBtn.disabled = false;
+                                            }
+                                        } catch(e) {
+                                            alert('Tatizo la mtandao. Jaribu tena.');
+                                            verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> NIMESHALIPIA (THIBITISHA)';
+                                            verifyBtn.disabled = false;
+                                        }
+                                    };
+                                    btn.parentNode.appendChild(verifyBtn);
+                                }
                             }
                         } catch(e){}
                     }, 6000);

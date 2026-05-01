@@ -1398,6 +1398,50 @@ async function handleSuccessfulPayment(visitorId, game, amount, phone) {
     }
 }
 
+// Manual Verification Endpoint (Fail-safe)
+app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
+    const { visitor_id, post_id } = req.params;
+    try {
+        const { data: pending } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', post_id)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (!pending || pending.length === 0) {
+            return res.json({ success: false, message: 'Hakuna malipo yanayosubiri.' });
+        }
+
+        const order = pending[0];
+        const zenoOrderId = order.promo_used;
+
+        // Call ZenoPay directly (Try a few common endpoints)
+        const checkUrl = 'https://zenoapi.com/api/payments/order_status'; // Default
+        const zRes = await fetch(checkUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ 'x-api-key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
+        });
+        
+        const zData = await zRes.json().catch(() => ({}));
+        const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+
+        if (zStatus === 'success' || zStatus === 'completed') {
+            const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
+            await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number);
+            return res.json({ success: true });
+        }
+
+        res.json({ success: false, message: 'Bado malipo hayajaonekana.' });
+    } catch (e) {
+        console.error('Verify error:', e);
+        res.status(500).json({ success: false });
+    }
+});
+
 // Create a new manual payment order
 app.post('/api/orders', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
