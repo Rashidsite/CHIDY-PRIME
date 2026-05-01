@@ -2087,6 +2087,9 @@ app.get('/api/settings/payment', async (req, res) => {
         .single();
     
     if (error) return res.json({ mpesa_number: "07XXXXXXXX", mpesa_name: "CHIDY PRIME" });
+    res.json(data.value);
+});
+
 // === AFFILIATE SYSTEM ENDPOINTS ===
 
 // Get stats for a specific affiliate
