@@ -1322,13 +1322,15 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 app.post('/api/payments/zenopay-callback', async (req, res) => {
     console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
     
-    // DEBUG: Log raw webhook to database
+    // DEBUG: Log to notifications instead of daily_stats
     try {
-        await supabase.from('daily_stats').insert([{
-            event_type: 'webhook_raw',
-            metadata: { body: req.body, query: req.query }
-        }]);
-    } catch(e) { console.error('Log failed:', e); }
+        await supabase.from('notifications').insert({
+            visitor_id: 1, // Admin or general ID
+            title: 'DEBUG: Zeno Webhook',
+            message: JSON.stringify(req.body).substring(0, 500),
+            type: 'debug'
+        });
+    } catch(e) { console.error('Debug log failed:', e); }
 
     const { status, payment_status, order_id, transaction_id, msisdn, amount } = req.body;
     const currentStatus = (status || payment_status || '').toLowerCase();
@@ -1336,13 +1338,13 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
     if (currentStatus === 'success' || currentStatus === 'completed') {
         try {
             const match = (order_id || '').match(/ZP(\d+)V([a-f0-9]+)T/i);
-            if (!match) return res.json({ success: true });
+            if (!match) return res.json({ success: true, message: 'No match' });
 
             const visitorId = parseInt(match[1]);
             const shortPostId = match[2];
 
             const { data: game } = await supabase.from('posts').select('id, title, duration_days').ilike('id', `${shortPostId}%`).single();
-            if (!game) return res.json({ success: true });
+            if (!game) return res.json({ success: true, message: 'Game not found' });
 
             await handleSuccessfulPayment(visitorId, game, amount, msisdn || 'ZenoPay');
             return res.json({ success: true });
@@ -1356,41 +1358,44 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
 
 async function handleSuccessfulPayment(visitorId, game, amount, phone) {
     const postId = game.id;
-    
-    // 1. Mark existing or create new approved order
-    await supabase.from('payment_orders').insert([{
-        visitor_id: visitorId,
-        post_id: postId,
-        amount: amount,
-        phone_number: phone,
-        status: 'approved'
-    }]);
+    try {
+        // 1. Create approved order
+        await supabase.from('payment_orders').insert([{
+            visitor_id: visitorId,
+            post_id: postId,
+            amount: amount,
+            phone_number: phone,
+            status: 'approved'
+        }]);
 
-    // 2. Grant Access
-    const dDays = game.duration_days || 0;
-    let expiresAt = new Date('2099-12-31T23:59:59Z');
-    if (dDays > 0) {
-        expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + dDays);
+        // 2. Grant Access
+        const dDays = game.duration_days || 0;
+        let expiresAt = new Date('2099-12-31T23:59:59Z');
+        if (dDays > 0) {
+            expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + dDays);
+        }
+
+        await supabase.from('user_access').upsert({
+            visitor_id: visitorId,
+            post_id: postId,
+            granted_at: new Date().toISOString(),
+            expires_at: expiresAt.toISOString()
+        }, { onConflict: 'visitor_id,post_id' });
+
+        // 3. Notifications
+        await supabase.from('notifications').insert({
+            visitor_id: visitorId, post_id: postId,
+            title: 'Malipo Yamekubaliwa! ✅',
+            message: `Malipo yako ya game "${game.title}" yamehakikiwa.`,
+            type: 'success'
+        });
+
+        // 4. Telegram Alert
+        sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\nGame: ${game.title}\nAmount: ${amount}\nPhone: ${phone}`);
+    } catch (e) {
+        console.error('handleSuccessfulPayment Error:', e);
     }
-
-    await supabase.from('user_access').upsert({
-        visitor_id: visitorId,
-        post_id: postId,
-        granted_at: new Date().toISOString(),
-        expires_at: expiresAt.toISOString()
-    }, { onConflict: 'visitor_id,post_id' });
-
-    // 3. Notifications
-    await supabase.from('notifications').insert({
-        visitor_id: visitorId, post_id: postId,
-        title: 'Malipo Yamekubaliwa! ✅',
-        message: `Malipo yako ya game "${game.title}" yamehakikiwa.`,
-        type: 'success'
-    });
-
-    // 4. Alerts
-    sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\nGame: ${game.title}\nAmount: ${amount}\nPhone: ${phone}`);
 }
 
 // Create a new manual payment order
