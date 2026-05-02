@@ -989,7 +989,8 @@ app.get('/api/settings/announcement', async (req, res) => {
 app.post('/api/settings/announcement', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { text } = req.body;
-    const { error } = await supabase.from('site_settings').upsert({ key: 'announcement_text', value: JSON.stringify(text) });
+    // Store text directly as string, not double stringified
+    const { error } = await supabase.from('site_settings').upsert({ key: 'announcement_text', value: text });
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
 });

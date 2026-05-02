@@ -2755,7 +2755,17 @@
             const activeLink = document.querySelector(`.nav-link[data-view="${viewId}"]`);
             if (activeLink) activeLink.classList.add('active');
 
-            if (viewId === 'dashboardView') { fetchOrders(); fetchAnalytics(); fetchAdminData(); }
+            if (viewId === 'dashboardView') { 
+                fetchOrders(); 
+                fetchAnalytics(); 
+                fetchAdminData();
+                // Load current announcement text
+                fetch('/api/settings/announcement')
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('announcementInput').value = data.value || "";
+                    });
+            }
             if (viewId === 'allGamesView') fetchAdminData();
             if (viewId === 'analyticsView') fetchAnalytics();
             if (viewId === 'categoriesView') loadCategories();
