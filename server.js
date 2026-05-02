@@ -186,6 +186,31 @@ setInterval(async () => {
         console.error('Pending worker error:', err);
     }
 }, 30000); // Check every 30 seconds
+ 
+ 
+// --- AUTOMATED ORDER CLEANUP WORKER (Runs every 24 hours) ---
+// This deletes Approved and Rejected orders older than 30 days to keep the DB clean.
+setInterval(async () => {
+    if (!supabase) return;
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        console.log(`[CLEANUP] Starting cleanup of orders older than ${thirtyDaysAgo.toISOString()}...`);
+        
+        const { error } = await supabase
+            .from('payment_orders')
+            .delete()
+            .neq('status', 'pending') // Never delete pending orders automatically
+            .lt('created_at', thirtyDaysAgo.toISOString());
+
+        if (error) throw error;
+        console.log('[CLEANUP] Old orders purged successfully. ✅');
+    } catch (err) {
+        console.error('Cleanup worker error:', err);
+    }
+}, 24 * 60 * 60 * 1000); // Runs once every 24 hours
+
 
 
 
