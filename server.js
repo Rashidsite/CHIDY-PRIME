@@ -746,6 +746,66 @@ app.get('/api/access/:visitor_id', async (req, res) => {
 
 
 
+// Admin: Get all affiliates and stats
+app.get('/api/admin/affiliates', verifyAdmin, async (req, res) => {
+    try {
+        // 1. Get all visitors
+        const { data: allVisitors, error: vError } = await supabase.from('visitors').select('id, name, phone, referred_by');
+        if (vError) throw vError;
+
+        // 2. Get all earnings
+        const { data: earnings } = await supabase.from('affiliate_earnings').select('*');
+        
+        // 3. Get pending withdrawals
+        const { data: withdrawals } = await supabase
+            .from('withdrawals')
+            .select('*, visitors(name, phone)')
+            .eq('status', 'pending');
+
+        const affiliateStats = allVisitors.map(v => {
+            const myEarnings = (earnings || []).filter(e => e.affiliate_id === v.id);
+            const myReferrals = (allVisitors || []).filter(other => other.referred_by === v.id).length;
+            const totalEarned = myEarnings.reduce((sum, e) => sum + parseFloat(e.commission), 0);
+            
+            return {
+                id: v.id,
+                name: v.name,
+                phone: v.phone,
+                referral_count: myReferrals,
+                total_earned: totalEarned
+            };
+        }).filter(a => a.referral_count > 0 || a.total_earned > 0);
+
+        const stats = {
+            totalAffiliates: affiliateStats.length,
+            totalReferrals: allVisitors.filter(v => v.referred_by !== null).length,
+            totalPaid: (earnings || []).filter(e => e.status === 'paid').reduce((sum, e) => sum + parseFloat(e.commission), 0),
+            pendingWithdrawals: (withdrawals || []).length
+        };
+
+        res.json({ success: true, affiliates: affiliateStats, withdrawals: withdrawals || [], stats });
+    } catch (err) {
+        console.error('Admin Affiliates Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Approve withdrawal
+app.post('/api/admin/affiliate/withdraw/:id/approve', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabase
+            .from('withdrawals')
+            .update({ status: 'approved' })
+            .eq('id', id);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Image Upload to Supabase Storage
 app.post('/api/admin/upload', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
