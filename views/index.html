@@ -3389,7 +3389,8 @@
     <!-- NOTIFICATION DROPDOWN -->
     <div class="notif-dropdown" id="notifDropdown" style="display: none;">
         <div class="notif-header">
-            <h4 style="margin: 0; color: #fff;"><i class="fas fa-bell"></i> Taarifa (Notifications)</h4>
+            <h4 style="margin: 0; color: #fff;"><i class="fas fa-bell"></i> Taarifa</h4>
+            <button onclick="clearAllNotifications()" style="background:none; border:none; color:var(--primary); font-size:0.65rem; font-weight:700; cursor:pointer; font-family:'Orbitron'; padding:5px;">FUTA ZOTE</button>
         </div>
         <div class="notif-body" id="notifDropdownBody">
             <!-- Dynamically populated -->
@@ -4811,13 +4812,16 @@
             body.innerHTML = notifications.map(n => {
                 const time = new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 return `
-                    <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}')">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                            <h5 style="margin:0; font-weight:700;">${n.title}</h5>
-                            ${!n.is_read ? '<span style="background:var(--primary); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:4px; font-family:\'Orbitron\'">NEW</span>' : ''}
+                    <div class="notif-item ${n.is_read ? '' : 'unread'}" style="position:relative;">
+                        <div onclick="handleNotifClick('${n.id}')">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-right:20px;">
+                                <h5 style="margin:0; font-weight:700;">${n.title}</h5>
+                                ${!n.is_read ? '<span style="background:var(--primary); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:4px; font-family:\'Orbitron\'">NEW</span>' : ''}
+                            </div>
+                            <p style="margin:5px 0; color:${n.is_read ? '#a0a0b0' : '#fff'}; font-size:0.8rem; line-height:1.4;">${n.message}</p>
+                            <span class="time" style="font-size:0.65rem; color:#6c7293;">${time}</span>
                         </div>
-                        <p style="margin:5px 0; color:${n.is_read ? '#a0a0b0' : '#fff'}; font-size:0.8rem; line-height:1.4;">${n.message}</p>
-                        <span class="time" style="font-size:0.65rem; color:#6c7293;">${time}</span>
+                        <button onclick="deleteNotification('${n.id}', event)" style="position:absolute; top:12px; right:10px; background:none; border:none; color:#6c7293; cursor:pointer; font-size:0.8rem; padding:5px; transition:0.3s;" onmouseover="this.style.color='#ff4444'" onmouseout="this.style.color='#6c7293'"><i class="fas fa-times"></i></button>
                     </div>
                 `;
             }).join('');
@@ -4830,21 +4834,42 @@
 
 // Handle clicking on a notification: mark as read and optionally navigate
 function handleNotifClick(id) {
-    // Mark notification as read via API (adjust endpoint as needed)
+    // Mark notification as read via API
     fetch(`/api/notifications/${id}/read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     })
     .then(() => {
-        // Update local notifications array to set is_read true
         notifications = notifications.map(n => n.id === id ? { ...n, is_read: true } : n);
         renderNotifications();
     })
     .catch(err => console.error('Error marking notification read:', err));
-    // Optionally, close the dropdown after click
+    
     const dropdown = document.getElementById('notifDropdown');
     if (dropdown) dropdown.style.display = 'none';
-    // You can add navigation logic here if notification contains a target URL
+}
+
+async function deleteNotification(id, event) {
+    if (event) event.stopPropagation();
+    try {
+        await fetch(`/api/notifications/${id}/delete`, { method: 'POST' });
+        notifications = notifications.filter(n => n.id !== id);
+        renderNotifications();
+    } catch (e) { console.error("Failed to delete notification", e); }
+}
+
+async function clearAllNotifications() {
+    const visitorStr = localStorage.getItem('chidy_visitor');
+    if (!visitorStr) return;
+    const visitor = JSON.parse(visitorStr);
+    
+    if (!confirm("Je, unataka kufuta taarifa zako zote?")) return;
+    
+    try {
+        await fetch(`/api/notifications/visitor/${visitor.id}/clear`, { method: 'POST' });
+        // After clearing personal ones, re-fetch to see remaining global ones (if any)
+        fetchNotifications();
+    } catch (e) { console.error("Failed to clear notifications", e); }
 }
 
         function showBigNotification(notif) {

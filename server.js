@@ -2044,6 +2044,40 @@ app.get('/api/notifications/:visitor_id', async (req, res) => {
     }
 });
 
+// Mark notification as read
+app.post('/api/notifications/:id/read', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { id } = req.params;
+    try {
+        const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Delete individual notification
+app.post('/api/notifications/:id/delete', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { id } = req.params;
+    try {
+        const { error } = await supabase.from('notifications').delete().eq('id', id);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Clear all notifications for a visitor
+app.post('/api/notifications/visitor/:visitor_id/clear', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id } = req.params;
+    try {
+        // Delete personal notifications
+        const { error } = await supabase.from('notifications').delete().eq('visitor_id', parseInt(visitor_id));
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.post('/api/admin/notifications/broadcast', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { title, message, type } = req.body;
