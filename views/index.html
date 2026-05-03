@@ -3048,112 +3048,173 @@
         .payment-card-custom::-webkit-scrollbar { width: 5px; }
         .payment-card-custom::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
         .payment-card-custom::-webkit-scrollbar-thumb { background: rgba(0,242,255,0.4); border-radius: 10px; }
-    </style>
-    <div class="payment-overlay" id="paymentOverlay" style="display:none !important; visibility:hidden;" hidden>
-        <div id="payModalCard" style="
-            background: #fff;
-            border-radius: 18px;
+
+        /* PREMIUM PAYMENT MODAL STYLES */
+        .payment-modal-card {
+            background: rgba(10, 10, 15, 0.95) !important;
+            backdrop-filter: blur(25px) !important;
+            -webkit-backdrop-filter: blur(25px) !important;
+            border: 1px solid rgba(0, 242, 255, 0.3) !important;
+            border-radius: 28px !important;
             width: 94%;
             max-width: 420px;
-            padding: 24px 20px 20px;
+            padding: 35px 28px !important;
             position: relative;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-            animation: paySlideUp 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0, 242, 255, 0.15) !important;
+            animation: paySlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #fff !important;
             max-height: 92vh;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        ">
+        }
+
+        .payment-step {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .payment-step.active {
+            display: block;
+        }
+
+        .payment-status-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 2.8rem;
+            position: relative;
+        }
+
+        .status-verifying {
+            background: rgba(255, 180, 0, 0.1);
+            color: #ffb400;
+            border: 2px solid rgba(255, 180, 0, 0.3);
+            box-shadow: 0 0 25px rgba(255, 180, 0, 0.25);
+        }
+
+        .status-success {
+            background: rgba(0, 210, 91, 0.1);
+            color: #00d25b;
+            border: 2px solid rgba(0, 210, 91, 0.3);
+            box-shadow: 0 0 25px rgba(0, 210, 91, 0.25);
+        }
+
+        .status-spin-custom {
+            animation: statusSpin 2s linear infinite;
+        }
+
+        @keyframes statusSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .payment-status-title {
+            font-family: 'Orbitron';
+            font-size: 1.4rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .payment-status-msg {
+            color: #a0a0c8;
+            text-align: center;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .premium-payment-label {
+            display: block;
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Orbitron';
+        }
+
+        .premium-payment-display {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .premium-payment-input {
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+            margin-bottom: 5px;
+        }
+
+        .premium-payment-input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 242, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+        }
+
+        .payment-btn-premium {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Orbitron';
+            margin-top: 10px;
+        }
+
+        .payment-btn-premium:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(0, 242, 255, 0.3);
+            filter: brightness(1.2);
+        }
+
+        .payment-btn-premium:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .payment-btn-premium:disabled {
+            background: #333;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            filter: grayscale(1);
+        }
+    </style>
+    <div class="payment-overlay" id="paymentOverlay" style="display:none !important; visibility:hidden;" hidden>
+        <div id="payModalCard" class="payment-modal-card">
             <!-- Close Button -->
             <button onclick="closePayment()" style="
-                position: absolute; top: 16px; right: 16px;
-                background: none; border: none; font-size: 1.4rem;
-                color: #888; cursor: pointer; line-height: 1;
-            ">×</button>
-
-            <!-- Title -->
-            <h2 style="
-                font-size: 1.25rem; font-weight: 700;
-                color: #111; margin: 0 0 24px 0;
-            ">Complete Payment</h2>
-
-            <!-- Content (Game Name) -->
-            <div style="margin-bottom: 16px;">
-                <label style="display:block; font-size:0.82rem; color:#555; margin-bottom:6px; font-weight:600;">Content</label>
-                <div id="payContentName" style="
-                    background: #f5f5f5; border-radius: 8px;
-                    padding: 12px 14px; font-size: 0.9rem;
-                    color: #222; font-weight: 600; border: 1px solid #e8e8e8;
-                ">—</div>
-            </div>
-
-            <!-- Amount -->
-            <div style="margin-bottom: 16px;">
-                <label style="display:block; font-size:0.82rem; color:#555; margin-bottom:6px; font-weight:600;">Amount</label>
-                <div id="payAmount" style="
-                    background: #f0fdf4; border-radius: 8px;
-                    padding: 12px 14px; font-size: 1rem;
-                    color: #16a34a; font-weight: 700; border: 1px solid #bbf7d0;
-                ">—</div>
-            </div>
-
-            <!-- Phone Number -->
-            <div style="margin-bottom: 20px;">
-                <label style="display:block; font-size:0.85rem; color:#333; margin-bottom:8px; font-weight:700;">📱 Namba ya Simu ya Malipo</label>
-                <input
-                    type="tel"
-                    id="autoPayPhone"
-                    placeholder="Weka namba yako ya simu (07XXXXXXXX)"
-                    inputmode="numeric"
-                    style="
-                        width: 100%; padding: 15px 14px;
-                        border: 2px solid #d1d5db; border-radius: 10px;
-                        font-size: 1rem; color: #111; outline: none;
-                        background: #fff; box-sizing: border-box;
-                        transition: border-color 0.2s;
-                        -webkit-appearance: none;
-                    "
-                    onfocus="this.style.borderColor='#16a34a'"
-                    onblur="this.style.borderColor='#d1d5db'"
-                >
-                <p style="font-size:0.72rem; color:#888; margin-top:5px; margin-bottom:0;">M-Pesa · Tigo Pesa · Airtel Money · Halopesa</p>
-            </div>
-
-            <!-- Promo Code (collapsed, optional) -->
-            <div style="margin-bottom: 16px;">
-                <div style="display:flex; gap:8px;">
-                    <input type="text" id="promoCodeInput" placeholder="Promo code (optional)" style="
-                        flex:1; padding:10px 12px; border:1.5px solid #e5e7eb;
-                        border-radius:8px; font-size:0.82rem; color:#333; outline:none; background:#fff;
-                    ">
-                    <button onclick="applyPromoCode()" style="
-                        padding:0 14px; border-radius:8px; border:1.5px solid #16a34a;
-                        background:#f0fdf4; color:#16a34a; font-size:0.78rem;
-                        font-weight:700; cursor:pointer;
-                    ">Apply</button>
-                </div>
-                <div id="promoMessage" style="font-size:0.75rem; margin-top:6px; font-weight:600;"></div>
-            </div>
-
-            <!-- Confirm Button -->
-            <button id="autoPayBtn" onclick="payWithZenoPay()" style="
-                width: 100%; padding: 16px;
-                background: #16a34a; color: #fff;
-                border: none; border-radius: 10px;
-                font-size: 1rem; font-weight: 700;
-                cursor: pointer; display: flex;
-                align-items: center; justify-content: center;
-                gap: 10px; transition: background 0.2s;
-            "
-            onmouseover="this.style.background='#15803d'"
-            onmouseout="this.style.background='#16a34a'"
-            >
-                <i class="fas fa-credit-card"></i>
-                <span>Confirm Payment</span>
-            </button>
-
-            <!-- Security note -->
-            <p style="text-align:center; margin-top:14px; font-size:0.7rem; color:#aaa;">
-                🔒 Secure payment via ZenoPay · STK Push
             </p>
 
             <input type="hidden" id="payPostId">
@@ -3848,17 +3909,13 @@
             const visitor = JSON.parse(visitorStr);
 
             try {
-                // Stop any running poll from a previous payment
-                if (window.activePollInterval) {
-                    clearInterval(window.activePollInterval);
-                    window.activePollInterval = null;
-                }
+                // Reset steps to first step
+                switchPaymentStep('input');
 
                 // Reset button to fresh state for this new game
                 const btn = document.getElementById('autoPayBtn');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-credit-card"></i> <span>Confirm Payment</span>';
-                btn.style.background = '#16a34a';
+                btn.innerHTML = '<i class="fas fa-bolt"></i> <span>Nunua Sasa</span>';
 
                 // Populate Game Name and Price in Popup
                 document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
@@ -3984,11 +4041,8 @@
                 console.log('ZenoPay Checkout Result:', result);
 
                 if (result.status === 'success') {
-                    // STK Push initiated
-                    alert('✅ Ombi la Malipo limetumwa! Tafadhali angalia simu yako sasa hivi na uingize PIN kukamilisha malipo.\n\nBaada ya kulipa, game litajifungua lenyewe hapa.');
-                    
-                    // Show a "Waiting for confirmation" state
-                    btn.innerHTML = '<i class="fas fa-clock fa-spin"></i> TUNASUBIRI PIN YAKO...';
+                    // Switch to Verifying state immediately
+                    switchPaymentStep('verifying');
                     
                     // Auto-poll to check if access is granted (Polling Mechanism)
                     let pollCount = 0;
@@ -3996,13 +4050,15 @@
                     if (window.activePollInterval) clearInterval(window.activePollInterval);
                     window.activePollInterval = setInterval(async () => {
                         pollCount++;
-                        if (pollCount > 15) { // Timeout after 90 seconds (every 6s)
+                        if (pollCount > 30) { // Timeout after ~3 minutes (every 6s)
                             clearInterval(window.activePollInterval);
                             window.activePollInterval = null;
-                            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> MUDA UMEISHA. JARIBU TENA';
+                            
+                            // If timeout, go back to input or show error
+                            alert("Muda wa kuhakiki malipo umeisha. Kama umeshalipia, bonyeza 'Nimeshalipia' au wasiliana nasi.");
+                            switchPaymentStep('input');
                             btn.disabled = false;
-                            btn.style.background = '#dc2626'; // Red color to indicate timeout/error
-                            btn.onclick = payWithZenoPay;
+                            btn.innerHTML = '<i class="fas fa-bolt"></i> <span>Nunua Sasa</span>';
                             return;
                         }
                         try {
@@ -4011,46 +4067,30 @@
                             if (access.has_access) {
                                 clearInterval(window.activePollInterval);
                                 window.activePollInterval = null;
-                                closePayment();
-                                openDetail(postId); // Open that specific game immediately
-                            } else {
-                                // Add a manual verify button if not present
-                                if (!document.getElementById('manual-verify-btn')) {
-                                    const verifyBtn = document.createElement('button');
-                                    verifyBtn.id = 'manual-verify-btn';
-                                    verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> NIMESHALIPIA (THIBITISHA)';
-                                    verifyBtn.style.cssText = 'margin-top: 15px; padding: 12px; width: 100%; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; animation: pulse 2s infinite;';
-                                    verifyBtn.onclick = async () => {
-                                        verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI...';
-                                        verifyBtn.disabled = true;
-                                        try {
-                                            const vRes = await fetch(`/api/payments/verify-zeno/${visitor.id}/${postId}`);
-                                            const vData = await vRes.json();
-                                            if (vData.success) {
-                                                clearInterval(window.activePollInterval);
-                                                window.activePollInterval = null;
-                                                closePayment();
-                                                openDetail(postId);
-                                            } else {
-                                                alert(vData.message || 'Bado hatujaona malipo yako. Hakikisha umeweka PIN kwanza.');
-                                                verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> NIMESHALIPIA (THIBITISHA)';
-                                                verifyBtn.disabled = false;
-                                            }
-                                        } catch(e) {
-                                            alert('Tatizo la mtandao. Jaribu tena.');
-                                            verifyBtn.innerHTML = '<i class="fas fa-check-circle"></i> NIMESHALIPIA (THIBITISHA)';
-                                            verifyBtn.disabled = false;
-                                        }
-                                    };
-                                    btn.parentNode.appendChild(verifyBtn);
-                                }
+                                
+                                // Show Success State!
+                                switchPaymentStep('success');
+                                
+                                // Setup Continue Button
+                                document.getElementById('paymentContinueBtn').onclick = () => {
+                                    closePayment();
+                                    openDetail(postId); // Open that specific game immediately
+                                };
+
+                                // Celebration
+                                confetti({
+                                    particleCount: 150,
+                                    spread: 70,
+                                    origin: { y: 0.6 },
+                                    colors: ['#00f2ff', '#bc13fe', '#00d25b']
+                                });
                             }
                         } catch(e){}
                     }, 6000);
                 } else {
                     alert('Hitilafu: ' + (result.message || 'Jaribu tena au tumia Manual Payment.'));
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-bolt"></i> TUMA MAOMBI YA KULIPA';
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> Nunua Sasa';
                 }
             } catch (err) {
                 console.error(err);
@@ -4070,10 +4110,10 @@
             const btn = document.getElementById('autoPayBtn');
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-credit-card"></i> <span>Confirm Payment</span>';
-                btn.style.background = '#16a34a';
+                btn.innerHTML = '<i class="fas fa-bolt"></i> <span>Nunua Sasa</span>';
                 btn.onclick = payWithZenoPay;
             }
+            switchPaymentStep('input');
             const pOverlay = document.getElementById('paymentOverlay');
             if (pOverlay) {
                 pOverlay.classList.remove('show');
@@ -4098,6 +4138,12 @@
         function closeDetail() {
             document.getElementById('detailOverlay').classList.remove('show');
             document.body.style.overflow = '';
+        }
+
+        function switchPaymentStep(step) {
+            document.querySelectorAll('.payment-step').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(`payment-step-${step}`);
+            if (target) target.classList.add('active');
         }
 
         // Close on overlay click
