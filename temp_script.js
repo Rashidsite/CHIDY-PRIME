@@ -200,6 +200,7 @@
                         <div class="category-header">
                             <div class="category-title">
                                 ${category}
+                                <i class="fas fa-question-circle" style="font-size: 0.8rem; opacity: 0.6; cursor: pointer; margin-left: 8px;" onclick="event.stopPropagation(); toggleHelpModal();" title="Msaada wa kundi hili"></i>
                                 <span class="category-count">${catGames.length}</span>
                             </div>
                             <a href="javascript:void(0)" class="see-all" onclick="filterByCategory('${category.replace(/'/g, "\\'")}')">
