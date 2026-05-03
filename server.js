@@ -1152,7 +1152,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: new URLSearchParams({
-                            'x-api-key': ZENOPAY_API_KEY,
+                            'api_key': ZENOPAY_API_KEY,
                             'order_id': zenoOrderId
                         })
                     }).then(r => r.json());
