@@ -349,19 +349,41 @@
             color: #00f2ff;
             box-shadow: 0 0 15px rgba(0,242,255,0.2);
         }
+        
+        /* Premium Ringing Animation */
+        .notif-bell-btn.has-unread i {
+            animation: bellRing 2.5s infinite;
+            transform-origin: top center;
+            display: inline-block;
+        }
+
+        @keyframes bellRing {
+            0%, 100% { transform: rotate(0); }
+            10%, 20% { transform: rotate(15deg); }
+            15%, 25% { transform: rotate(-15deg); }
+            30% { transform: rotate(0); }
+        }
+
         .notif-badge {
             position: absolute;
-            top: 3px; right: 3px;
-            background: linear-gradient(135deg, #ff3333, #ff6600);
+            top: 2px; right: 2px;
+            background: linear-gradient(135deg, #ff3333, #ff00e5);
             color: #fff;
-            font-size: 0.55rem;
-            min-width: 14px; height: 14px;
+            font-size: 0.6rem;
+            min-width: 16px; height: 16px;
             display: none;
             align-items: center; justify-content: center;
             border-radius: 50%;
-            border: 2px solid #000;
-            font-weight: 700;
-            box-shadow: 0 0 8px rgba(255,51,51,0.6);
+            border: 1.5px solid #000;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(255,51,51,0.6);
+            animation: badgePulse 1.5s infinite alternate;
+            z-index: 2;
+        }
+
+        @keyframes badgePulse {
+            0% { transform: scale(1); box-shadow: 0 0 5px rgba(255,51,51,0.4); }
+            100% { transform: scale(1.2); box-shadow: 0 0 15px rgba(255,0,229,0.8); }
         }
 
         /* --- Premium User Pill --- */
@@ -576,6 +598,10 @@
             cursor: pointer;
         }
         .notif-item:hover { background: rgba(255,255,255,0.04); }
+        .notif-item.unread {
+            background: rgba(0, 242, 255, 0.05);
+            border-left: 3px solid var(--primary);
+        }
         .notif-item.unread { border-left: 3px solid var(--primary); }
         .notif-item h5 { margin: 0 0 5px; color: #fff; font-size: 0.9rem; }
         .notif-item p { margin: 0; font-size: 0.8rem; color: #a0a0b0; line-height: 1.4; }
@@ -4765,13 +4791,16 @@
         function renderNotifications() {
             const body = document.getElementById('notifDropdownBody');
             const badge = document.getElementById('notifBadge');
+            const bell = document.getElementById('notifBell');
             
             const unread = notifications.filter(n => !n.is_read).length;
             if (unread > 0) {
                 badge.innerText = unread;
                 badge.style.display = 'flex';
+                bell.classList.add('has-unread');
             } else {
                 badge.style.display = 'none';
+                bell.classList.remove('has-unread');
             }
 
             if (notifications.length === 0) {
@@ -4783,9 +4812,12 @@
                 const time = new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 return `
                     <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}')">
-                        <h5>${n.title}</h5>
-                        <p>${n.message}</p>
-                        <span class="time">${time}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <h5 style="margin:0; font-weight:700;">${n.title}</h5>
+                            ${!n.is_read ? '<span style="background:var(--primary); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:4px; font-family:\'Orbitron\'">NEW</span>' : ''}
+                        </div>
+                        <p style="margin:5px 0; color:${n.is_read ? '#a0a0b0' : '#fff'}; font-size:0.8rem; line-height:1.4;">${n.message}</p>
+                        <span class="time" style="font-size:0.65rem; color:#6c7293;">${time}</span>
                     </div>
                 `;
             }).join('');
