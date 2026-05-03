@@ -1427,6 +1427,7 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
             buyer_email: email || 'customer@chidyprime.com',
             buyer_name: name || 'Chidy Prime Customer',
             buyer_phone: formattedPhone,
+            msisdn: formattedPhone,
             amount: parseFloat(amount),
             webhook_url: webhookUrl
         };
@@ -1620,7 +1621,7 @@ app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
         const zRes = await fetch(checkUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ 'x-api-key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
+            body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
         });
         
         const zData = await zRes.json().catch(() => ({}));
