@@ -164,18 +164,16 @@ setInterval(async () => {
                 const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ 'x-api-key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
+                    body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
                 });
                 const zData = await zRes.json().catch(() => ({}));
                 const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
 
                 if (zStatus === 'success' || zStatus === 'completed') {
-                    console.log(`[AUTO-APPROVE] Order ${zenoOrderId} was paid! Approving...`);
+                    console.log(`[AUTO-WORKER] Order ${zenoOrderId} was paid! Unlocking...`);
                     const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
                     if (game) {
-                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number);
-                        // Update original pending order status to avoid re-processing
-                        await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
+                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId);
                     }
                 }
             } catch (e) {
@@ -1470,32 +1468,40 @@ app.post('/api/payments/zenopay-checkout', async (req, res) => {
 app.post('/api/payments/zenopay-callback', async (req, res) => {
     console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
     
-    // DEBUG: Log to notifications instead of daily_stats
-    try {
-        await supabase.from('notifications').insert({
-            visitor_id: 1, // Admin or general ID
-            title: 'DEBUG: Zeno Webhook',
-            message: JSON.stringify(req.body).substring(0, 500),
-            type: 'debug'
-        });
-    } catch(e) { console.error('Debug log failed:', e); }
-
-    const { status, payment_status, order_id, transaction_id, msisdn, amount } = req.body;
+    const { status, payment_status, order_id, amount, msisdn } = req.body;
     const currentStatus = (status || payment_status || '').toLowerCase();
 
     if (currentStatus === 'success' || currentStatus === 'completed') {
         try {
+            // 1. Find the order in our DB by the Zeno order_id (stored in promo_used)
+            const { data: order, error: orderErr } = await supabase
+                .from('payment_orders')
+                .select('*')
+                .eq('promo_used', order_id)
+                .single();
+
+            if (order && order.status === 'pending') {
+                const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
+                if (game) {
+                    await handleSuccessfulPayment(order.visitor_id, game, amount || order.amount, msisdn || order.phone_number, order_id);
+                    return res.json({ success: true });
+                }
+            }
+
+            // Fallback: If not found in DB, try parsing the order_id string
             const match = (order_id || '').match(/ZP(\d+)V([a-f0-9]+)T/i);
-            if (!match) return res.json({ success: true, message: 'No match' });
+            if (match) {
+                const visitorId = parseInt(match[1]);
+                const shortPostId = match[2];
+                const { data: game } = await supabase.from('posts').select('*').ilike('id', `${shortPostId}%`).single();
+                
+                if (game) {
+                    await handleSuccessfulPayment(visitorId, game, amount || 0, msisdn || 'ZenoPay', order_id);
+                    return res.json({ success: true });
+                }
+            }
 
-            const visitorId = parseInt(match[1]);
-            const shortPostId = match[2];
-
-            const { data: game } = await supabase.from('posts').select('id, title, duration_days').ilike('id', `${shortPostId}%`).single();
-            if (!game) return res.json({ success: true, message: 'Game not found' });
-
-            await handleSuccessfulPayment(visitorId, game, amount, msisdn || 'ZenoPay');
-            return res.json({ success: true });
+            return res.json({ success: true, message: 'Processed or ignored' });
         } catch (err) {
             console.error('Webhook processing error:', err);
             return res.status(500).send('Error');
@@ -1504,17 +1510,23 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
     res.json({ success: false });
 });
 
-async function handleSuccessfulPayment(visitorId, game, amount, phone) {
+async function handleSuccessfulPayment(visitorId, game, amount, phone, zenoOrderId = null) {
     const postId = game.id;
     try {
-        // 1. Create approved order
-        await supabase.from('payment_orders').insert([{
-            visitor_id: visitorId,
-            post_id: postId,
-            amount: amount,
-            phone_number: phone,
-            status: 'approved'
-        }]);
+        // 1. Update existing order or insert new one
+        if (zenoOrderId) {
+            await supabase.from('payment_orders')
+                .update({ status: 'approved', updated_at: new Date().toISOString() })
+                .eq('promo_used', zenoOrderId);
+        } else {
+            await supabase.from('payment_orders').insert([{
+                visitor_id: visitorId,
+                post_id: postId,
+                amount: amount,
+                phone_number: phone,
+                status: 'approved'
+            }]);
+        }
 
         // 2. Grant Access
         const dDays = game.duration_days || 0;
