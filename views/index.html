@@ -3215,8 +3215,91 @@
         <div id="payModalCard" class="payment-modal-card">
             <!-- Close Button -->
             <button onclick="closePayment()" style="
-            </p>
+                position: absolute; top: 20px; right: 20px;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+                font-size: 1.2rem; color: #888; cursor: pointer; 
+                width: 35px; height: 35px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                transition: 0.3s; z-index: 10;
+            " onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.3)'" 
+               onmouseout="this.style.color='#888';this.style.borderColor='rgba(255,255,255,0.1)'">×</button>
 
+            <!-- STEP 1: INPUT FORM -->
+            <div id="payment-step-input" class="payment-step active">
+                <h2 class="payment-status-title" style="text-align: left; margin-bottom: 25px;">Nunua Game Sasa</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <label class="premium-payment-label">Bidhaa</label>
+                    <div id="payContentName" class="premium-payment-display">—</div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label class="premium-payment-label">Kiasi</label>
+                    <div id="payAmount" class="premium-payment-display" style="color: var(--primary); font-family: 'Orbitron'; font-size: 1.1rem;">—</div>
+                </div>
+
+                <div style="margin-bottom: 25px;">
+                    <label class="premium-payment-label">📱 Namba ya Malipo</label>
+                    <input
+                        type="tel"
+                        id="autoPayPhone"
+                        class="premium-payment-input"
+                        placeholder="07XXXXXXXX"
+                        inputmode="numeric"
+                    >
+                    <p style="font-size:0.7rem; color:#666; margin-top:8px; letter-spacing: 0.5px;">M-PESA · TIGO PESA · AIRTEL MONEY · HALOPESA</p>
+                </div>
+
+                <div style="margin-bottom: 25px;">
+                    <label class="premium-payment-label">Promo Code (Optional)</label>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="promoCodeInput" placeholder="Ingiza Code" class="premium-payment-input" style="margin-bottom: 0; flex: 1;">
+                        <button onclick="applyPromoCode()" style="
+                            padding: 0 20px; border-radius: 14px; border: 1px solid var(--primary);
+                            background: rgba(0,242,255,0.1); color: var(--primary); font-size: 0.75rem;
+                            font-weight: 800; cursor: pointer; font-family: 'Orbitron';
+                        ">Weka</button>
+                    </div>
+                    <div id="promoMessage" style="font-size:0.75rem; margin-top:8px; font-weight: 600;"></div>
+                </div>
+
+                <button id="autoPayBtn" onclick="payWithZenoPay()" class="payment-btn-premium">
+                    <i class="fas fa-bolt"></i> <span>Nunua Sasa</span>
+                </button>
+            </div>
+
+            <!-- STEP 2: VERIFYING -->
+            <div id="payment-step-verifying" class="payment-step">
+                <div class="payment-status-icon status-verifying">
+                    <i class="fas fa-clock status-spin-custom"></i>
+                </div>
+                <h2 class="payment-status-title">Inahakiki...</h2>
+                <p class="payment-status-msg">
+                    Tumetuma ombi la malipo kwenye simu yako.<br>
+                    Tafadhali <b>weka PIN</b> yako sasa hivi kukamilisha malipo.
+                </p>
+                <div style="background: rgba(255,255,255,0.03); border-radius: 15px; padding: 20px; border: 1px dashed rgba(255,255,255,0.1);">
+                    <div style="display:flex; align-items:center; gap:12px; color: #ffb400; font-size: 0.85rem; font-weight: 600;">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Usifunge popup hii mpaka malipo yakamilike.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: SUCCESS -->
+            <div id="payment-step-success" class="payment-step">
+                <div class="payment-status-icon status-success">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2 class="payment-status-title">Malipo Yamefanikiwa!</h2>
+                <p class="payment-status-msg">
+                    Hongera! Malipo yako yamehakikiwa kikamilifu.<br>
+                    Sasa unaweza kuanza kufurahia game lako.
+                </p>
+                <button id="paymentContinueBtn" class="payment-btn-premium">
+                    <i class="fas fa-play"></i> <span>Endelea</span>
+                </button>
+            </div>
             <input type="hidden" id="payPostId">
         </div>
     </div>
