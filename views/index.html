@@ -1391,6 +1391,72 @@
             box-shadow: 0 0 10px var(--primary);
         }
 
+        /* === AFFILIATE PROMO CARD === */
+        .affiliate-promo-card {
+            margin: 20px clamp(1rem, 4vw, 3rem);
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), rgba(0, 255, 0, 0.05));
+            border: 1px solid rgba(0, 255, 0, 0.2);
+            border-radius: 20px;
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.8s ease-out 1s backwards;
+        }
+        .affiliate-promo-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: sweepLine 3s infinite;
+        }
+        .affiliate-promo-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: rgba(0, 255, 0, 0.5);
+            background: rgba(0, 255, 0, 0.12);
+            box-shadow: 0 15px 40px rgba(0, 255, 0, 0.15);
+        }
+        .ap-icon {
+            width: 55px; height: 55px;
+            background: linear-gradient(135deg, #00ff00, #00aa00);
+            color: #000;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        .ap-info { flex: 1; }
+        .ap-info h3 {
+            margin: 0; color: #fff; font-size: 1rem; font-family: 'Orbitron';
+            letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .ap-info p {
+            margin: 5px 0 0; color: #a0a0b0; font-size: 0.8rem; line-height: 1.4;
+        }
+        .ap-arrow {
+            color: #00ff00; font-size: 1.2rem; opacity: 0.5;
+            transition: 0.3s;
+        }
+        .affiliate-promo-card:hover .ap-arrow {
+            opacity: 1; transform: translateX(5px);
+        }
+        
+        .bottom-item.affiliate i {
+            animation: pulseAffIcon 2s infinite;
+        }
+        @keyframes pulseAffIcon {
+            0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(0,255,0,0.4)); }
+            50% { transform: scale(1.2); filter: drop-shadow(0 0 12px rgba(0,255,0,0.8)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(0,255,0,0.4)); }
+        }
+
         /* === LOADING STATE === */
         .loader-container {
             display: flex;
@@ -2903,6 +2969,7 @@
     </aside>
 
     <!-- HERO / SEARCH -->
+    <!-- HERO / SEARCH -->
     <section class="hero-section">
         <div class="hero-content">
             <div class="hero-badge">
@@ -2932,6 +2999,16 @@
             <input type="text" id="searchInput" placeholder="Tafuta game unalolitaka..." data-i18n="search_placeholder">
         </div>
     </section>
+
+    <!-- AFFILIATE PROMO CARD (Wazo Jipya la Kuvutia Watu) -->
+    <div class="affiliate-promo-card" onclick="openAffiliateModal()">
+        <div class="ap-icon"><i class="fas fa-money-bill-trend-up"></i></div>
+        <div class="ap-info">
+            <h3>PATA PESA NA CHIDY PRIME! 💰</h3>
+            <p>Alika rafiki upate 10% ya malipo yake papo hapo kwenye salio lako!</p>
+        </div>
+        <i class="fas fa-chevron-right ap-arrow"></i>
+    </div>
 
     <!-- WINNERS CIRCLE TICKER -->
     <div class="winners-ticker-wrap" id="winnersTickerWrap" style="display: none;">
@@ -2991,6 +3068,10 @@
         <div class="bottom-item" onclick="toggleBotChat()">
             <i class="fas fa-headset" style="color:var(--primary);"></i>
             <span style="color:var(--primary); font-weight:bold;">Msaada</span>
+        </div>
+        <div class="bottom-item affiliate" onclick="openAffiliateModal()">
+            <i class="fas fa-money-bill-wave" style="color: #00ff00;"></i>
+            <span style="color: #00ff00; font-weight: bold;">Pata Pesa</span>
         </div>
         <div class="bottom-item" onclick="openLeaderboard()">
             <i class="fas fa-crown" style="color:var(--gold);"></i>
