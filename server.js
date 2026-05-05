@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const compression = require('compression');
 const os = require('os');
 const https = require('https');
+const webPush = require('web-push');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,6 +14,20 @@ const port = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'chidy_prime_super_secret_2025';
 const ADMIN_PIN = process.env.ADMIN_PIN || '2025';
 const ZENOPAY_API_KEY = process.env.ZENOPAY_API_KEY || 'S7Sy7GYL0qzE4IIaEQvlHreGW6LzkQ4DJDPZLyehi6yL4BbO3HqQyA0wAe5HmktXuln9FFYDszRXJAni_HvuAQ';
+
+// --- WEB PUSH SETUP ---
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+if (vapidPublicKey && vapidPrivateKey) {
+    webPush.setVapidDetails(
+        process.env.VAPID_SUBJECT || 'mailto:admin@chidyprime.com',
+        vapidPublicKey,
+        vapidPrivateKey
+    );
+    console.log('Web Push Notifications: READY ✅');
+} else {
+    console.warn('Web Push Notifications: DISABLED (Missing VAPID keys) ❌');
+}
 
 // --- SYSTEM HEALTH MONITORING ---
 global.systemErrors = [];
@@ -304,6 +319,35 @@ app.post('/api/admin/settings/:key', verifyAdmin, async (req, res) => {
     }
 });
 
+// --- WEB PUSH API ---
+app.get('/api/push/public-key', (req, res) => {
+    if (!vapidPublicKey) return res.status(500).json({ error: 'VAPID keys not configured' });
+    res.json({ publicKey: vapidPublicKey });
+});
+
+app.post('/api/push/subscribe', express.json(), async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const subscription = req.body;
+    
+    // Store subscription in site_settings (using endpoint as unique key hash)
+    try {
+        // Hash the endpoint to create a safe key
+        const crypto = require('crypto');
+        const hash = crypto.createHash('md5').update(subscription.endpoint).digest('hex');
+        const key = `push_sub_${hash}`;
+        
+        await supabase.from('site_settings').upsert({
+            key: key,
+            value: JSON.stringify(subscription)
+        }, { onConflict: 'key' });
+        
+        res.status(201).json({ success: true });
+    } catch (err) {
+        console.error('Subscription error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // API Endpoints
 // Storefront - show only published
 app.get('/api/games', async (req, res) => {
@@ -393,6 +437,51 @@ app.post('/api/games', verifyAdmin, async (req, res) => {
 
         if (error) throw error;
         invalidateGamesCache();
+        
+        // --- SEND PUSH NOTIFICATIONS ---
+        if (vapidPublicKey && vapidPrivateKey) {
+            try {
+                // Fetch all subscriptions
+                const { data: subsData } = await supabase
+                    .from('site_settings')
+                    .select('value')
+                    .like('key', 'push_sub_%');
+                
+                if (subsData && subsData.length > 0) {
+                    const payload = JSON.stringify({
+                        title: 'Mzigo Mpya Umeingia! 🔥',
+                        body: `Game mpya ya ${title} sasa inapatikana Chidy Prime. Iwahie!`,
+                        url: '/'
+                    });
+                    
+                    const sendPromises = subsData.map(async (sub) => {
+                        try {
+                            const subscription = JSON.parse(sub.value);
+                            await webPush.sendNotification(subscription, payload);
+                        } catch (e) {
+                            if (e.statusCode === 410 || e.statusCode === 404) {
+                                // Subscription expired/unsubscribed - ideally delete it from DB here
+                            }
+                        }
+                    });
+                    
+                    // Don't wait for all to finish before responding to admin
+                    Promise.all(sendPromises).catch(console.error);
+                }
+            } catch (pushErr) {
+                console.error("Failed to send push notifications:", pushErr);
+            }
+        }
+        
+        // --- INSERT GLOBAL NOTIFICATION ---
+        try {
+            await supabase.from('notifications').insert({
+                title: 'Mzigo Mpya! 🚀',
+                message: `Game ya ${title} imeshaachiwa! Ingia sasa kudownload.`,
+                type: 'success'
+            });
+        } catch (notifErr) { console.error("Global notif error:", notifErr); }
+
         res.json({ success: true, data });
 
     } catch (err) {

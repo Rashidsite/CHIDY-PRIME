@@ -4329,12 +4329,12 @@
                     // Switch to Verifying state immediately
                     switchPaymentStep('verifying');
                     
-                    // Show manual verify button after 15 seconds as a backup
+                    // Show manual verify button after 10 seconds as a backup
                     if (window.manualVerifyTimeout) clearTimeout(window.manualVerifyTimeout);
                     window.manualVerifyTimeout = setTimeout(() => {
                         const mvBtn = document.getElementById('manual-verify-btn');
                         if (mvBtn) mvBtn.style.display = 'block';
-                    }, 15000);
+                    }, 10000);
                     
                     // Auto-poll to check if access is granted (Polling Mechanism)
                     let pollCount = 0;
@@ -4356,6 +4356,15 @@
                         try {
                             const res = await fetch(`/api/check-access/${visitor.id}/${postId}`);
                             const access = await res.json();
+                            
+                            // Update UI text based on poll count to show it's working
+                            const statusText = document.querySelector('#payment-verifying-step p');
+                            if (statusText) {
+                                if (pollCount % 3 === 0) statusText.innerText = "Tunatekeleza malipo yako...";
+                                else if (pollCount % 3 === 1) statusText.innerText = "Tunahakiki na ZenoPay...";
+                                else statusText.innerText = "Karibu tunamaliza...";
+                            }
+
                             if (access.has_access) {
                                 clearInterval(window.activePollInterval);
                                 window.activePollInterval = null;
@@ -4378,7 +4387,7 @@
                                 });
                             }
                         } catch(e){}
-                    }, 6000);
+                    }, 3000);
                 } else {
                     alert('Hitilafu: ' + (result.message || 'Jaribu tena au tumia Manual Payment.'));
                     btn.disabled = false;
@@ -5584,12 +5593,50 @@ async function clearAllNotifications() {
                 payOverlay.classList.remove('show');
             }
 
-            // --- PWA SERVICE WORKER REGISTRATION ---
+            // --- PWA SERVICE WORKER REGISTRATION & PUSH NOTIFICATIONS ---
             if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js')
-                        .then(reg => console.log('SW Registered!', reg))
-                        .catch(err => console.log('SW registration failed: ', err));
+                window.addEventListener('load', async () => {
+                    try {
+                        const reg = await navigator.serviceWorker.register('/sw.js');
+                        console.log('SW Registered!', reg);
+                        
+                        // Ask for push notification permission
+                        if ('PushManager' in window) {
+                            const permission = await Notification.requestPermission();
+                            if (permission === 'granted') {
+                                // Fetch public key from backend
+                                const res = await fetch('/api/push/public-key');
+                                const { publicKey } = await res.json();
+                                
+                                if (publicKey) {
+                                    // Convert VAPID key to Uint8Array
+                                    const padding = '='.repeat((4 - publicKey.length % 4) % 4);
+                                    const base64 = (publicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                                    const rawData = window.atob(base64);
+                                    const outputArray = new Uint8Array(rawData.length);
+                                    for (let i = 0; i < rawData.length; ++i) {
+                                        outputArray[i] = rawData.charCodeAt(i);
+                                    }
+                                    
+                                    // Subscribe
+                                    const subscription = await reg.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: outputArray
+                                    });
+                                    
+                                    // Send to server
+                                    await fetch('/api/push/subscribe', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(subscription)
+                                    });
+                                    console.log('Push subscription successful!');
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.log('SW or Push failed: ', err);
+                    }
                 });
             }
 
