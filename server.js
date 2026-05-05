@@ -2223,6 +2223,44 @@ app.get('/api/settings/payment', async (req, res) => {
     res.json(data.value);
 });
 
+// Generic Settings Getter
+app.get('/api/settings/:key', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { key } = req.params;
+    try {
+        const { data, error } = await supabase.from('site_settings').select('value').eq('key', key).single();
+        if (error && error.code !== 'PGRST116') throw error;
+        res.json({ key, value: data ? data.value : 0 });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Generic Settings Setter (Admin Only)
+app.post('/api/settings/:key', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { key } = req.params;
+    const { value, text, enabled } = req.body;
+    
+    // Normalize value from various potential request body formats
+    let finalValue = value;
+    if (finalValue === undefined) finalValue = text;
+    if (finalValue === undefined) finalValue = enabled;
+    
+    try {
+        const { error } = await supabase.from('site_settings').upsert({ 
+            key, 
+            value: String(finalValue),
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // === AFFILIATE SYSTEM ENDPOINTS ===
 
 // Get stats for a specific affiliate

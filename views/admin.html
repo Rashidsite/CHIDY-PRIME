@@ -2659,7 +2659,13 @@
                 // Fetch App Installs
                 const resInstall = await fetch('/api/settings/total_installs');
                 const installData = await resInstall.json();
-                document.getElementById('appInstallsCount').innerText = installData.value || 0;
+                const count = installData.value || 0;
+                
+                // Update both UI elements if they exist
+                const el1 = document.getElementById('appInstallsCount');
+                const el2 = document.getElementById('settingsTotalInstalls');
+                if (el1) el1.innerText = count;
+                if (el2) el2.innerText = count;
             } catch (err) {
                 console.error('Error fetching admin stats:', err);
             }
@@ -3747,6 +3753,7 @@
         function refreshAllData() {
             fetchAdminData();
             fetchUserStats();
+            fetchMaintenanceState();
             loadCategories();
             fetchActivity();
             // Always refresh orders for dashboard stats and notification alerts

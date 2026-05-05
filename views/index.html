@@ -5525,6 +5525,31 @@ async function clearAllNotifications() {
                 payOverlay.style.display = 'none';
                 payOverlay.classList.remove('show');
             }
+
+            // --- PWA SERVICE WORKER REGISTRATION ---
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(reg => console.log('SW Registered!', reg))
+                        .catch(err => console.log('SW registration failed: ', err));
+                });
+            }
+
+            // --- PWA INSTALLATION TRACKING ---
+            window.addEventListener('appinstalled', (event) => {
+                console.log('👍', 'appinstalled', event);
+                // Clear the deferredPrompt so it can be garbage collected
+                window.deferredPrompt = null;
+                
+                // Track installation on server
+                fetch('/api/track-install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => console.log('Install tracked:', data))
+                .catch(err => console.error('Failed to track install:', err));
+            });
         });
 
     
