@@ -2988,6 +2988,7 @@
 
 
         let categoryChartInstance = null;
+        let revenueChartInstance = null;
         function updateCategoryChart(orders) {
             const ctx = document.getElementById('categoryChart').getContext('2d');
             const statsList = document.getElementById('categoryStatsList');
@@ -2997,7 +2998,8 @@
             orders.forEach(o => {
                 if (o.status === 'approved' && o.posts) {
                     const cat = o.posts.category || 'HOT POST';
-                    categories[cat] = (categories[cat] || 0) + o.amount;
+                    const amt = parseFloat(o.amount) || 0;
+                    categories[cat] = (categories[cat] || 0) + amt;
                 }
             });
 
@@ -3060,7 +3062,8 @@
                 if (o.status === 'approved') {
                     const date = o.created_at.split('T')[0];
                     if (dailyData[date] !== undefined) {
-                        dailyData[date] += o.amount;
+                        const amt = parseFloat(o.amount) || 0;
+                        dailyData[date] += amt;
                     }
                 }
             });
@@ -4336,9 +4339,17 @@
                         .filter(o => o.status === 'approved')
                         .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
                     : 0;
+                const approvedOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => o.status === 'approved') : [];
                 document.getElementById('totalRevenue').innerText = `TSh ${approvedTotal.toLocaleString()}`;
+                if (document.getElementById('totalDownloads')) document.getElementById('totalDownloads').innerText = approvedOrders.length;
 
                 renderOrdersList();
+
+                // Update Dashboard Charts
+                if (Array.isArray(allOrdersData) && allOrdersData.length > 0) {
+                    updateRevenueChart(allOrdersData);
+                    updateCategoryChart(allOrdersData);
+                }
             } catch (err) {
                 console.error(err);
                 list.innerHTML = '<p style="text-align: center; color: #ff3333; padding: 2rem;">Error sync orders.</p>';
@@ -4522,7 +4533,8 @@
                                 <div class="order-actions">
                                     ${order.status === 'pending' ? `
                                         <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'approved')" style="padding: 6px 14px; font-size: 0.75rem; background: #00d25b; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">Approve</button>
-                                        <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(255,51,51,0.1); border: 1px solid #ff3333; color: #ff3333; border-radius: 4px; font-weight: 500; cursor: pointer;">Reject</button>
+                                        <button class="btn-order-verify" onclick="verifyOrder('${order.id}')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(0, 242, 255, 0.1); border: 1px solid #00f2ff; color: #00f2ff; border-radius: 4px; font-weight: 500; cursor: pointer; margin-left: 5px;" title="Check status directly from ZenoPay">Verify</button>
+                                        <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(255,51,51,0.1); border: 1px solid #ff3333; color: #ff3333; border-radius: 4px; font-weight: 500; cursor: pointer; margin-top: 5px;">Reject</button>
                                     ` : `
                                         <span class="order-status ${statusClass}" style="opacity: 0.8;">${order.status}</span>
                                     `}
@@ -4570,6 +4582,39 @@
             } catch (err) {
                 console.error('Network error:', err);
                 showToast('⚠️ Hitilafu ya mtandao. Jaribu tena.');
+            }
+        }
+
+        async function verifyOrder(orderId) {
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            
+            try {
+                const res = await fetch(`/api/admin/orders/${orderId}/verify`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    showToast('✅ ' + result.message);
+                    fetchOrders();
+                    fetchUserStats();
+                } else {
+                    showToast('ℹ️ ' + (result.message || 'Payment not found yet.'));
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error('Verify error:', err);
+                showToast('⚠️ Error: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
         // Auto-refresh orders every 30 seconds if view is active

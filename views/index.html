@@ -3574,6 +3574,14 @@
                         <span>Usifunge popup hii mpaka malipo yakamilike.</span>
                     </div>
                 </div>
+                <!-- Manual Verify Button (Hidden initially) -->
+                <button id="manual-verify-btn" onclick="manualVerifyPayment()" style="
+                    display:none; width: 100%; margin-top: 20px; padding: 12px;
+                    border-radius: 12px; border: 1px solid var(--primary);
+                    background: rgba(0,242,255,0.1); color: var(--primary);
+                    font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 700;
+                    cursor: pointer; transition: 0.3s;
+                ">BADO SIJAPATA ACCESS? HAKIKI HAPA</button>
             </div>
 
             <!-- STEP 3: SUCCESS -->
@@ -4321,6 +4329,13 @@
                     // Switch to Verifying state immediately
                     switchPaymentStep('verifying');
                     
+                    // Show manual verify button after 15 seconds as a backup
+                    if (window.manualVerifyTimeout) clearTimeout(window.manualVerifyTimeout);
+                    window.manualVerifyTimeout = setTimeout(() => {
+                        const mvBtn = document.getElementById('manual-verify-btn');
+                        if (mvBtn) mvBtn.style.display = 'block';
+                    }, 15000);
+                    
                     // Auto-poll to check if access is granted (Polling Mechanism)
                     let pollCount = 0;
                     // Clear any previous poll first
@@ -4383,6 +4398,10 @@
                 clearInterval(window.activePollInterval);
                 window.activePollInterval = null;
             }
+            if (window.manualVerifyTimeout) {
+                clearTimeout(window.manualVerifyTimeout);
+                window.manualVerifyTimeout = null;
+            }
             // Reset confirm button to fresh state
             const btn = document.getElementById('autoPayBtn');
             if (btn) {
@@ -4398,9 +4417,48 @@
                 pOverlay.style.visibility = 'hidden';
                 pOverlay.setAttribute('hidden', 'true');
             }
-            // Clear manual verify button if exists
-            const vBtn = document.getElementById('manual-verify-btn');
-            if (vBtn) vBtn.remove();
+            
+            // Hide the manual verify button for next time
+            const mvBtn = document.getElementById('manual-verify-btn');
+            if (mvBtn) mvBtn.style.display = 'none';
+        }
+
+        async function manualVerifyPayment() {
+            const btn = document.getElementById('manual-verify-btn');
+            const postId = document.getElementById('payPostId').value;
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI...';
+
+            try {
+                const res = await fetch(`/api/payments/verify-zeno/${visitor.id}/${postId}`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    switchPaymentStep('success');
+                    document.getElementById('paymentContinueBtn').onclick = () => {
+                        closePayment();
+                        openDetail(postId);
+                    };
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#00f2ff', '#bc13fe', '#00d25b']
+                    });
+                } else {
+                    alert(data.message || 'Malipo bado hayajaonekana. Tafadhali subiri kidogo au piga PIN kama bado.');
+                    btn.disabled = false;
+                    btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+                }
+            } catch (err) {
+                alert('Tatizo la mtandao. Jaribu tena.');
+                btn.disabled = false;
+                btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+            }
         }
 
         function buildDirectLinks(game, links) {

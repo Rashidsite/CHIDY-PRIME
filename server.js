@@ -1596,7 +1596,7 @@ async function handleSuccessfulPayment(visitorId, game, amount, phone, zenoOrder
     }
 }
 
-// Manual Verification Endpoint (Fail-safe)
+// Manual Verification Endpoint (Fail-safe for users)
 app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
     const { visitor_id, post_id } = req.params;
     try {
@@ -1616,8 +1616,12 @@ app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
         const order = pending[0];
         const zenoOrderId = order.promo_used;
 
-        // Call ZenoPay directly (Try a few common endpoints)
-        const checkUrl = 'https://zenoapi.com/api/payments/order_status'; // Default
+        if (!zenoOrderId || !zenoOrderId.startsWith('ZP')) {
+             return res.json({ success: false, message: 'Hii ni oda ya manual, tafadhali wasiliana na admin.' });
+        }
+
+        // Call ZenoPay directly
+        const checkUrl = 'https://zenoapi.com/api/payments/order_status';
         const zRes = await fetch(checkUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1629,14 +1633,47 @@ app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
 
         if (zStatus === 'success' || zStatus === 'completed') {
             const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
-            await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number);
+            await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, zenoOrderId);
             return res.json({ success: true });
         }
 
-        res.json({ success: false, message: 'Bado malipo hayajaonekana.' });
+        res.json({ success: false, message: 'Bado malipo hayajaonekana kwenye mfumo.' });
     } catch (e) {
         console.error('Verify error:', e);
         res.status(500).json({ success: false });
+    }
+});
+
+// Admin: Auto-Verify Order via ZenoPay
+app.post('/api/admin/orders/:id/verify', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data: order, error } = await supabase.from('payment_orders').select('*').eq('id', id).single();
+        if (error || !order) return res.status(404).json({ error: 'Oda haijapatikana' });
+
+        const zenoOrderId = order.promo_used;
+        if (!zenoOrderId || !zenoOrderId.startsWith('ZP')) {
+            return res.json({ success: false, message: 'Hii sio oda ya ZenoPay (STK Push).' });
+        }
+
+        const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
+        });
+        
+        const zData = await zRes.json().catch(() => ({}));
+        const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+
+        if (zStatus === 'success' || zStatus === 'completed') {
+            const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
+            await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId);
+            return res.json({ success: true, message: 'Malipo yamehakikiwa na kukubaliwa!' });
+        }
+
+        res.json({ success: false, message: `ZenoPay Status: ${zStatus || 'Pending'}` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -1722,7 +1759,7 @@ app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
         .select(`
             *,
             visitors (name, phone),
-            posts (title)
+            posts (title, category)
         `)
         .order('created_at', { ascending: false });
     
