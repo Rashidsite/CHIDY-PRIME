@@ -212,30 +212,7 @@
             box-shadow: 0 0 15px var(--primary-glow);
         }
 
-        /* Glassmorphism Floating Sidebar Orb */
-        .cyber-orb {
-            position: fixed;
-            left: 20px;
-            bottom: 90px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, var(--primary-glow), transparent);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-            z-index: 5000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
-            animation: orbFloat 4s infinite ease-in-out;
-        }
-        @keyframes orbFloat {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-10px) scale(1.1); box-shadow: 0 15px 30px rgba(188, 19, 254, 0.4); }
-        }
-
+        /* Glassmorphism Floating Sidebar Orb - REMOVED */
         * {
             margin: 0;
             padding: 0;
@@ -2984,10 +2961,7 @@
         </div>
     </div>
 
-    <!-- CYBER ORB -->
-    <div class="cyber-orb" onclick="toggleBotChat()">
-        <i class="fas fa-robot" style="color: #fff; font-size: 1.2rem;"></i>
-    </div>
+
     <!-- SIGNUP OVERLAY (First-time visitors) -->
     <div class="signup-overlay" id="signupOverlay">
         <div class="signup-card">
@@ -3342,9 +3316,9 @@
             </div>
             <span class="wa-label">Channel</span>
         </div>
-        <div class="bottom-item" onclick="toggleBotChat()">
-            <i class="fas fa-headset" style="color:var(--primary);"></i>
-            <span style="color:var(--primary); font-weight:bold;">Msaada</span>
+        <div class="bottom-item" onclick="scrollToVideos()">
+            <i class="fas fa-play-circle" style="color:var(--primary);"></i>
+            <span style="color:var(--primary); font-weight:bold;">Video</span>
         </div>
         <div class="bottom-item affiliate" onclick="openAffiliateModal()">
             <i class="fas fa-money-bill-wave" style="color: #00ff00;"></i>
@@ -3781,25 +3755,7 @@
         </div>
     </div>
 
-    <!-- AI BOT OVERLAY -->
-    <div class="bot-overlay" id="botChatOverlay">
-        <div class="bot-container">
-            <div class="bot-header">
-                <div class="bot-avatar"><i class="fas fa-robot"></i></div>
-                <div class="bot-header-info">
-                    <span class="bot-name">Chidy AI Bot</span>
-                    <span class="bot-status"><i class="fas fa-circle" style="font-size:8px;"></i> Online</span>
-                </div>
-                <button class="bot-close" onclick="toggleBotChat()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="bot-body" id="botMessages"></div>
-            <div class="bot-input-area">
-                <button class="bot-icon-btn" onclick="openWhatsAppSupport()" title="Chat with human"><i class="fab fa-whatsapp"></i></button>
-                <input type="text" id="botInputUrl" placeholder="Uliza swali au andika jina la game..." onkeypress="if(event.key === 'Enter') sendBotMessage()">
-                <button class="bot-btn" onclick="sendBotMessage()"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- AFFILIATE / PATA PESA MODAL -->
     <div class="bot-overlay" id="affiliateModalOverlay">
@@ -4879,186 +4835,14 @@
             }
         });
 
-        // ===== AI BOT SYSTEM (Msaada) =====
-        function openBotChat() {
-            document.getElementById('botChatOverlay').classList.add('show');
-            document.body.style.overflow = 'hidden';
-            if (document.getElementById('botMessages').innerHTML.trim() === '') {
-                appendBotMsg("Mambo vipi Chief! 👋 Mimi ni Chidy AI Bot 🤖. Niko hapa kukusaidia. Unatafuta game la aina gani leo? (Mfano: 'Kazi', 'Mpira', au jina la game)");
+        // ===== SCROLL TO VIDEOS =====
+        function scrollToVideos() {
+            const section = document.getElementById('videoSection');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
 
-        function toggleBotChat() {
-            const overlay = document.getElementById('botChatOverlay');
-            if (overlay.classList.contains('show')) {
-                overlay.classList.remove('show');
-                document.body.style.overflow = '';
-            } else {
-                openBotChat();
-            }
-        }
-
-        // === AFFILIATE SYSTEM FUNCTIONS ===
-        async function openAffiliateModal() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) return openLogin();
-            
-            const visitor = JSON.parse(visitorStr);
-            const overlay = document.getElementById('affiliateModalOverlay');
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
-            
-            // Set referral link
-            const linkInput = document.getElementById('referralLinkInput');
-            linkInput.value = `https://chidyprime.com/?ref=${visitor.id}`;
-            
-            // Fetch stats from backend
-            try {
-                const res = await fetch(`/api/affiliate/stats/${visitor.id}`);
-                const stats = await res.json();
-                document.getElementById('affiliateCount').innerText = stats.referralCount || 0;
-                document.getElementById('affiliateBalance').innerText = (stats.totalEarnings || 0).toLocaleString();
-            } catch (e) {
-                console.error("Failed to fetch affiliate stats");
-            }
-        }
-
-        function closeAffiliateModal() {
-            document.getElementById('affiliateModalOverlay').classList.remove('show');
-            document.body.style.overflow = '';
-        }
-
-        function copyReferralLink() {
-            const input = document.getElementById('referralLinkInput');
-            input.select();
-            input.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(input.value);
-            
-            const btn = event.target;
-            const originalText = btn.innerText;
-            btn.innerText = 'COPIED!';
-            btn.style.background = '#fff';
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.background = '#00ff00';
-            }, 2000);
-        }
-
-        async function requestWithdrawal() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = JSON.parse(visitorStr);
-            const balance = parseInt(document.getElementById('affiliateBalance').innerText.replace(/,/g, ''));
-            
-            if (balance < 5000) {
-                alert("Samahani, lazima ufikishe angalau TSh 5,000 ili uweze kutoa pesa.");
-                return;
-            }
-            
-            if (confirm(`Je, unataka kutoa TSh ${balance.toLocaleString()}? Ombi lako litatumwa kwa Admin.`)) {
-                try {
-                    const res = await fetch('/api/affiliate/withdraw', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ visitor_id: visitor.id, amount: balance })
-                    });
-                    const result = await res.json();
-                    if (result.success) {
-                        alert("Hongera! Ombi lako la kutoa pesa limetumwa. Admin atafanya malipo kwenye namba yako ya simu hivi punde.");
-                        closeAffiliateModal();
-                    }
-                } catch (e) {
-                    alert("Kuna tatizo la mtandao. Jaribu tena.");
-                }
-            }
-        }
-
-        function appendUserMsg(text) {
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const html = `<div class="b-msg user">${text} <span class="time">${time}</span></div>`;
-            const box = document.getElementById('botMessages');
-            box.innerHTML += html;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function appendBotMsg(text, games = []) {
-            let htmlText = text;
-            games.forEach(g => {
-                htmlText += `<a href="#" onclick="toggleBotChat(); openDetail('${g.id}'); return false;" class="chat-game-link"><i class="fas fa-gamepad"></i> Tazama ${g.title}</a>`;
-            });
-
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const html = `<div class="b-msg bot">${htmlText} <span class="time">${time}</span></div>`;
-            const box = document.getElementById('botMessages');
-            box.innerHTML += html;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function processBotLogic(input) {
-            const lowerInput = input.toLowerCase();
-            
-            // 1. Greetings
-            if (lowerInput.match(/^(mambo|niaje|hi|hello|sasa|vp|vipi)/)) {
-                return appendBotMsg("Poa sana Kaka! 👋 Mimi ni Chidy AI Bot 🤖. Nipo hapa kukusaidia kupata games zote kali na kutoa msaada wa kuset. Unatafuta game la aina gani au unahitaji msaada gani?");
-            }
-
-            // 2. Contact Admin / "Kunipata"
-            if (lowerInput.includes('admin') || lowerInput.includes('kukuona') || lowerInput.includes('ongea na mtu') || lowerInput.includes('msimamizi') || lowerInput.includes('namba yako')) {
-                return appendBotMsg("Ili kuongea na msimamizi (Admin) moja kwa moja, tafadhali bonyeza kitufe cha WhatsApp kilichopo hapo chini upande wa kushoto wa sehemu ya kuandikia.");
-            }
-
-            // 3. Settings / "Kuset"
-            if (lowerInput.includes('set') || lowerInput.includes('setting') || lowerInput.includes('kusanidi') || lowerInput.includes('config')) {
-                return appendBotMsg("Kuhusu kuset games (mfano PPSSPP), hakikisha unatumia 'Recommended Settings' ambazo zinapatikana ndani ya maelezo ya game husika. Kama umekwama, Admin anaweza kukutumia video ya maelekezo via WhatsApp.");
-            }
-
-            // 4. Installation / "Kuinstall"
-            if (lowerInput.includes('install') || lowerInput.includes('kusanikisha') || lowerInput.includes('weka')) {
-                return appendBotMsg("Baada ya kudownload game, utahitaji app ya **ZArchiver** ili ku-extract mafaili (kama ni zip/7z). Kwa games za PPSSPP, utahitaji app ya **PPSSPP Gold**. Unahitaji link za hizi Apps?");
-            }
-
-            // 5. Payment / "Malipo"
-            if (lowerInput.includes('malipo') || lowerInput.includes('lipa') || lowerInput.includes('pesa')) {
-                return appendBotMsg("Malipo yanafanyika kwa STK Push (Auto). Bonyeza 'Download', weka namba yako, na utapokea ujumbe wa siri kwenye simu yako. Ukimaliza, game itafunguka papo hapo!");
-            }
-
-            // 6. Natural Language Search
-            const stopWords = ['nataka', 'naomba', 'magemu', 'magame', 'ya', 'za', 'tafadhali', 'nipatie', 'nipe', 'game', 'games', 'la', 'kuhusu'];
-            let keywords = lowerInput.split(' ').filter(word => !stopWords.includes(word) && word.length > 1);
-            if (keywords.length === 0) keywords = [lowerInput];
-
-            const matchedGames = allGames.filter(g => {
-                const titleLower = g.title.toLowerCase();
-                const descLower = g.description ? g.description.toLowerCase() : '';
-                const catLower = g.category.toLowerCase();
-                let matchCount = 0;
-                keywords.forEach(kw => {
-                    if (titleLower.includes(kw) || catLower.includes(kw) || descLower.includes(kw)) {
-                        matchCount++;
-                    }
-                });
-                return matchCount > 0;
-            }).slice(0, 3);
-
-            if (matchedGames.length > 0) {
-                appendBotMsg(`Nimekupatia hizi hapa! Chagua mojawapo hapa chini kuitazama: 👇`, matchedGames);
-            } else {
-                appendBotMsg(`Dah! 🤔 Sijapata jibu la moja kwa moja kwa "${keywords.join(' ')}". Hebu jaribu kutumia maneno mafupi zaidi, au bonyeza kitufe cha WhatsApp hapo chini kuongea na Admin.`);
-            }
-        }
-
-        function sendBotMessage() {
-            const inputEl = document.getElementById('botInputUrl');
-            const text = inputEl.value.trim();
-            if (!text) return;
-            
-            inputEl.value = '';
-            appendUserMsg(text);
-
-            // Typing simulation
-            setTimeout(() => {
-                processBotLogic(text);
-            }, 800 + Math.random() * 1000); // 0.8s - 1.8s delay
-        }
 
         // ===== PWA INSTALLATION SYSTEM =====
         if ('serviceWorker' in navigator) {
