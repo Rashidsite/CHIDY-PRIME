@@ -1010,6 +1010,93 @@ app.patch('/api/categories/order', verifyAdmin, async (req, res) => {
 });
 
 // ============================================
+// VIDEO ENDPOINTS
+// ============================================
+
+// GET all published videos (public storefront)
+app.get('/api/videos', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { data, error } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+});
+
+// GET all videos (admin — includes unpublished)
+app.get('/api/admin/videos', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { data, error } = await supabase
+        .from('videos')
+        .select('*')
+        .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+});
+
+// POST - add new video
+app.post('/api/admin/videos', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { title, youtube_url, description, is_published } = req.body;
+    if (!title || !youtube_url) return res.status(400).json({ error: 'Title na YouTube URL zinahitajika' });
+
+    // Extract YouTube video ID from various URL formats
+    const extractVideoId = (url) => {
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+            /youtube\.com\/shorts\/([^&\n?#]+)/
+        ];
+        for (const p of patterns) {
+            const match = url.match(p);
+            if (match) return match[1];
+        }
+        return null;
+    };
+
+    const video_id = extractVideoId(youtube_url);
+    if (!video_id) return res.status(400).json({ error: 'YouTube URL si sahihi. Tuma link kamili ya YouTube.' });
+
+    const { data, error } = await supabase
+        .from('videos')
+        .insert([{ 
+            title: title.trim(), 
+            youtube_url: youtube_url.trim(),
+            video_id,
+            description: description ? description.trim() : null,
+            is_published: is_published !== false
+        }])
+        .select();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, video: data[0] });
+});
+
+// PATCH - update video (publish/unpublish or edit)
+app.patch('/api/admin/videos/:id', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { id } = req.params;
+    const updates = req.body;
+    const { data, error } = await supabase
+        .from('videos')
+        .update(updates)
+        .eq('id', id)
+        .select();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, video: data[0] });
+});
+
+// DELETE - remove a video
+app.delete('/api/admin/videos/:id', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { id } = req.params;
+    const { error } = await supabase.from('videos').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
+// ============================================
 // SETTINGS ENDPOINTS
 // ============================================
 

@@ -797,165 +797,211 @@
         }
 
         /* === HELP SYSTEM === */
-        .help-trigger-btn {
-            position: fixed;
-            right: 20px;
-            bottom: 80px;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: #000;
+        /* === VIDEO SECTION STYLES === */
+        .video-section {
+            padding: 0 0 clamp(2rem, 5vw, 3rem);
+        }
+        .video-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 clamp(1rem, 4vw, 3rem);
+            margin-bottom: 1.2rem;
+        }
+        .video-section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+        }
+        .video-section-title::before {
+            content: '';
+            width: 5px;
+            height: 26px;
+            background: linear-gradient(to bottom, #ff0000, #bc13fe);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(255,0,0,0.6);
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(10px, 2vw, 16px);
+            padding: 0 clamp(1rem, 4vw, 3rem);
+        }
+        @media (min-width: 768px) {
+            .video-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (min-width: 1100px) {
+            .video-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        .video-card {
+            background: rgba(17, 17, 25, 0.8);
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 0, 0, 0.12);
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        .video-card:hover {
+            border-color: rgba(255, 0, 0, 0.5);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(255, 0, 0, 0.15);
+        }
+        .video-thumb-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+            background: #000;
+        }
+        .video-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.4s ease;
+        }
+        .video-card:hover .video-thumb { transform: scale(1.06); }
+        .video-play-btn {
+            position: absolute;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
-            cursor: pointer;
-            z-index: 4999;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            will-change: transform, box-shadow;
+            background: rgba(0, 0, 0, 0.3);
+            transition: background 0.3s;
         }
-        .help-trigger-btn:hover {
-            transform: scale(1.1) rotate(15deg);
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.6);
-        }
-        .help-trigger-btn::after {
-            content: 'MSAADA';
-            position: absolute;
-            right: 55px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 4px 10px;
-            border-radius: 6px;
+        .video-card:hover .video-play-btn { background: rgba(0, 0, 0, 0.15); }
+        .play-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 0, 0, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
             color: #fff;
-            font-size: 0.65rem;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+            transition: all 0.3s;
+            padding-left: 3px;
+        }
+        .video-card:hover .play-icon {
+            transform: scale(1.15);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+        }
+        .video-card-info {
+            padding: 10px 12px 12px;
+        }
+        .video-card-title {
+            font-size: clamp(0.7rem, 1.6vw, 0.85rem);
             font-weight: 700;
-            opacity: 0;
-            pointer-events: none;
-            transition: 0.3s;
-            white-space: nowrap;
-            border: 1px solid rgba(0, 242, 255, 0.3);
+            color: #e0e0f0;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-        .help-trigger-btn:hover::after {
-            opacity: 1;
-            right: 60px;
-        }
-
-        .help-overlay {
+        /* Video Player Modal */
+        .video-modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
             z-index: 11000;
             display: none;
             align-items: center;
             justify-content: center;
             padding: 20px;
             animation: fadeIn 0.3s ease-out;
-            will-change: opacity, backdrop-filter;
         }
-        .help-overlay.show { display: flex; }
-        .help-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(0, 242, 255, 0.2);
+        .video-modal-overlay.show { display: flex; }
+        .video-modal-card {
+            background: #0a0a12;
+            border: 1px solid rgba(255, 0, 0, 0.3);
             border-radius: 20px;
             width: 100%;
-            max-width: 450px;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding: 25px;
-            position: relative;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-        }
-        .help-header {
-            margin-bottom: 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 15px;
-        }
-        .help-header h2 {
-            font-family: 'Orbitron';
-            font-size: 1.1rem;
-            color: var(--primary);
-            letter-spacing: 1px;
-            margin: 0;
-        }
-        .help-accordion {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .help-item {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
+            max-width: 800px;
             overflow: hidden;
-            transition: all 0.3s;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255,0,0,0.1);
+            animation: slideUpBot 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .help-item-header {
-            padding: 15px;
+        .video-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            cursor: pointer;
-            transition: background 0.3s;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: rgba(255,0,0,0.05);
         }
-        .help-item-header:hover {
-            background: rgba(0, 242, 255, 0.05);
-        }
-        .help-item-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #fff;
-        }
-        .help-item-number {
-            width: 24px;
-            height: 24px;
-            background: rgba(0, 242, 255, 0.1);
-            color: var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
+        .video-modal-title {
             font-family: 'Orbitron';
-            border: 1px solid rgba(0, 242, 255, 0.2);
-        }
-        .help-item-content {
-            max-height: 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            max-width: calc(100% - 50px);
             overflow: hidden;
-            transition: max-height 0.3s ease-out, padding 0.3s;
-            will-change: max-height;
-            background: rgba(0,0,0,0.2);
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        .help-item.active .help-item-content {
-            max-height: 500px;
-            padding: 15px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-        }
-        .help-item.active .help-item-header i {
-            transform: rotate(180deg);
-            color: var(--primary);
-        }
-        .help-item-content p {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            line-height: 1.6;
-            margin: 0;
-        }
-        .help-close-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
+        .video-modal-close {
             color: #a0a0c0;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             transition: 0.3s;
+            background: rgba(255,255,255,0.05);
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
         }
-        .help-close-btn:hover { color: #ff4444; transform: rotate(90deg); }
+        .video-modal-close:hover { color: #ff4444; background: rgba(255,68,68,0.1); transform: rotate(90deg); }
+        .video-embed-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+        .video-embed-wrap iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .video-modal-footer {
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .yt-subscribe-widget {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        /* YouTube subscribe button container */
+        .g-ytsubscribe {
+            display: inline-block !important;
+        }
+        .video-section-empty {
+            text-align: center;
+            padding: 2.5rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            display: none;
+        }
 
         .category-title::before {
             content: '';
@@ -3194,6 +3240,68 @@
         </div>
     </main>
 
+    <!-- ===== VIDEO SECTION ===== -->
+    <section class="video-section" id="videoSection" style="display:none;">
+        <div class="video-section-header">
+            <div class="video-section-title">
+                <i class="fab fa-youtube" style="color:#ff0000; font-size:1.1rem;"></i>
+                CHIDY PRIME TV
+                <span style="background:rgba(255,0,0,0.12); border:1px solid rgba(255,0,0,0.3); color:#ff6666; font-size:0.65rem; padding:3px 10px; border-radius:20px; font-family:'Poppins'; font-weight:600; letter-spacing:1px;" id="videoCount">0</span>
+            </div>
+            <!-- YouTube Subscribe Button -->
+            <div class="yt-subscribe-widget" id="ytSubscribeWidget" style="display:none;">
+                <script src="https://apis.google.com/js/platform.js"></script>
+                <div class="g-ytsubscribe" 
+                     id="ytSubscribeBtn"
+                     data-layout="default" 
+                     data-count="default"
+                     data-theme="dark">
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Grid -->
+        <div class="video-grid" id="videoGrid">
+            <!-- Shimmer Placeholders -->
+            <div class="video-card" style="pointer-events:none;">
+                <div class="video-thumb-wrap" style="background:rgba(255,255,255,0.04); animation:shimmer 1.5s infinite;"></div>
+                <div class="video-card-info"><div style="height:12px; background:rgba(255,255,255,0.05); border-radius:4px; width:80%; animation:shimmer 1.5s infinite;"></div></div>
+            </div>
+            <div class="video-card" style="pointer-events:none;">
+                <div class="video-thumb-wrap" style="background:rgba(255,255,255,0.04); animation:shimmer 1.5s infinite;"></div>
+                <div class="video-card-info"><div style="height:12px; background:rgba(255,255,255,0.05); border-radius:4px; width:60%; animation:shimmer 1.5s infinite;"></div></div>
+            </div>
+        </div>
+        <div class="video-section-empty" id="videoSectionEmpty">
+            <i class="fab fa-youtube" style="font-size:2.5rem; display:block; margin-bottom:10px; opacity:0.2;"></i>
+            Videos hazijawekwa bado
+        </div>
+    </section>
+
+    <!-- VIDEO PLAYER MODAL -->
+    <div class="video-modal-overlay" id="videoModalOverlay" onclick="closeVideoModal(event)">
+        <div class="video-modal-card" id="videoModalCard">
+            <div class="video-modal-header">
+                <span class="video-modal-title" id="videoModalTitle">Video</span>
+                <span class="video-modal-close" onclick="closeVideoModal(null, true)"><i class="fas fa-times"></i></span>
+            </div>
+            <div class="video-embed-wrap">
+                <iframe id="videoIframe"
+                    src=""
+                    title="YouTube Video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <div class="video-modal-footer">
+                <div id="videoModalSubWidget"></div>
+                <a id="videoYtLink" href="#" target="_blank" style="display:flex; align-items:center; gap:6px; color:#ff3333; font-size:0.8rem; font-weight:700; text-decoration:none;">
+                    <i class="fab fa-youtube"></i> Tazama YouTube
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- FOOTER SECTION -->
     <footer class="site-footer">
         <div class="footer-brand">
@@ -5016,6 +5124,7 @@
             }
             
             fetchGames();
+            loadVideos(); // Load videos section concurrently
         }
         
         // Logic initialized at the end of script
@@ -5695,103 +5804,102 @@ async function clearAllNotifications() {
         document.addEventListener('dragstart', e => {
             if (e.target.nodeName === 'IMG') e.preventDefault();
         });
+
+        // ============================================
+        // VIDEO SECTION LOGIC
+        // ============================================
+        async function loadVideos() {
+            try {
+                // Fetch videos
+                const res = await fetch('/api/videos');
+                const videos = await res.json();
+                
+                const section = document.getElementById('videoSection');
+                const grid = document.getElementById('videoGrid');
+                const emptyMsg = document.getElementById('videoSectionEmpty');
+                const countBadge = document.getElementById('videoCount');
+
+                // Only show section if not explicitly viewing a specific category
+                if (!currentCategory) {
+                    section.style.display = 'block';
+                }
+
+                if (!videos || videos.length === 0) {
+                    grid.style.display = 'none';
+                    emptyMsg.style.display = 'block';
+                    countBadge.textContent = '0';
+                } else {
+                    grid.style.display = 'grid';
+                    emptyMsg.style.display = 'none';
+                    countBadge.textContent = videos.length;
+                    grid.innerHTML = videos.map(v => `
+                        <div class="video-card" onclick="openVideoModal('${v.video_id}', '${v.title.replace(/'/g, "\\'")}')">
+                            <div class="video-thumb-wrap">
+                                <img class="video-thumb" src="https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg" alt="${v.title}">
+                                <div class="video-play-btn"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                            </div>
+                            <div class="video-card-info">
+                                <div class="video-card-title">${v.title}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Fetch and render Subscribe widget if Channel ID exists
+                const setRes = await fetch('/api/settings/youtube_channel_id');
+                const setData = await setRes.json();
+                if (setData && setData.value) {
+                    const subWidget = document.getElementById('ytSubscribeWidget');
+                    const btn = document.getElementById('ytSubscribeBtn');
+                    btn.setAttribute('data-channelid', setData.value);
+                    subWidget.style.display = 'flex';
+                    // Re-render Google script if platform.js has loaded
+                    if (window.gapi && window.gapi.ytsubscribe) {
+                        window.gapi.ytsubscribe.go();
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading videos:", error);
+                document.getElementById('videoGrid').innerHTML = '<div style="color:var(--text-dim);grid-column:1/-1;text-align:center;padding:2rem;">Failed to load videos</div>';
+            }
+        }
+
+        function openVideoModal(videoId, title) {
+            const modal = document.getElementById('videoModalOverlay');
+            const iframe = document.getElementById('videoIframe');
+            const titleEl = document.getElementById('videoModalTitle');
+            const linkEl = document.getElementById('videoYtLink');
+            const subWidgetCont = document.getElementById('videoModalSubWidget');
+            const originalSubWidget = document.getElementById('ytSubscribeBtn');
+
+            titleEl.textContent = title;
+            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+            linkEl.href = `https://www.youtube.com/watch?v=${videoId}`;
+            
+            // Clone subscribe widget into modal if it exists
+            subWidgetCont.innerHTML = '';
+            if (originalSubWidget && originalSubWidget.hasAttribute('data-channelid')) {
+                const clone = originalSubWidget.cloneNode(true);
+                subWidgetCont.appendChild(clone);
+                if (window.gapi && window.gapi.ytsubscribe) window.gapi.ytsubscribe.go(subWidgetCont);
+            }
+
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeVideoModal(e, force = false) {
+            if (force || e.target.id === 'videoModalOverlay') {
+                const modal = document.getElementById('videoModalOverlay');
+                const iframe = document.getElementById('videoIframe');
+                modal.classList.remove('show');
+                iframe.src = ''; // Stop video playback immediately
+                document.body.style.overflow = '';
+            }
+        }
     </script>
 
-    <!-- HELP SYSTEM COMPONENTS -->
-    <div class="help-trigger-btn" id="helpTriggerBtn" onclick="toggleHelpModal()">
-        <i class="fas fa-question"></i>
-    </div>
 
-    <div class="help-overlay" id="helpModal" onclick="closeHelpModalOuter(event)">
-        <div class="help-card">
-            <div class="help-close-btn" onclick="toggleHelpModal()">
-                <i class="fas fa-times"></i>
-            </div>
-            <div class="help-header">
-                <h2>MWONGOZO WA CHIDY PRIME</h2>
-            </div>
-            <div class="help-accordion">
-                <!-- Item 1 -->
-                <div class="help-item">
-                    <div class="help-item-header" onclick="toggleHelpAccordion(this)">
-                        <div class="help-item-title">
-                            <span class="help-item-number">1</span>
-                            Jinsi ya Kuelewa Makundi (Categories)
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="help-item-content">
-                        <p>Kila kundi lina aina yake ya michezo. Mfano: <b>SPORTS</b> ni ya mpira, <b>ACTION</b> ni ya vita, na <b>PPSSPP</b> ni michezo ya Emulator. Chagua kundi unalolipenda upande wa menu ili kuona michezo husika.</p>
-                    </div>
-                </div>
-                <!-- Item 2 -->
-                <div class="help-item">
-                    <div class="help-item-header" onclick="toggleHelpAccordion(this)">
-                        <div class="help-item-title">
-                            <span class="help-item-number">2</span>
-                            Jinsi ya Kulipia Game (LIPA SASA)
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="help-item-content">
-                        <p>Bonyeza game unalotaka, kisha bonyeza kitufe cha <b>LIPA SASA</b>. Weka namba yako ya simu (M-Pesa/TigoPesa/AirtelMoney), na utapokea ujumbe wa siri (STK Push) kwenye simu yako kuweka namba ya siri. Ukimaliza, game litafunguka papo hapo!</p>
-                    </div>
-                </div>
-                <!-- Item 3 -->
-                <div class="help-item">
-                    <div class="help-item-header" onclick="toggleHelpAccordion(this)">
-                        <div class="help-item-title">
-                            <span class="help-item-number">3</span>
-                            Jinsi ya Ku-install / Set Game
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="help-item-content">
-                        <p>Baada ya kupakua, tumia app ya <b>ZArchiver</b> kufungua file (extract). Kwa games za PPSSPP, fungua app ya PPSSPP kisha tafuta folder ulikoweka game hilo. Kwa maelezo zaidi ya video, bonyeza icon ya YouTube kwenye game husika.</p>
-                    </div>
-                </div>
-                <!-- Item 4 -->
-                <div class="help-item">
-                    <div class="help-item-header" onclick="toggleHelpAccordion(this)">
-                        <div class="help-item-title">
-                            <span class="help-item-number">4</span>
-                            Kupata Games za Bure
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="help-item-content">
-                        <p>Tuna sehemu maalum ya games za bure! Fungua menu upande wa kushoto na ubonyeze kitufe cha kijani kilichoandikwa <b>GAMES ZA BURE</b> ili kuelekezwa kwenye platform yetu ya bure.</p>
-                    </div>
-                </div>
-                <!-- Item 5 -->
-                <div class="help-item">
-                    <div class="help-item-header" onclick="toggleHelpAccordion(this)">
-                        <div class="help-item-title">
-                            <span class="help-item-number">5</span>
-                            Jinsi ya Kupata Pesa (Affiliate)
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="help-item-content">
-                        <p>Unaweza kuingiza pesa kwa kushiriki link ya Chidy Prime! Nenda kwenye profile yako au sehemu ya <b>Affiliate</b>, nakili (copy) link yako, na isambaze kwa marafiki. Kila mtu atakayenunua game kupitia link yako, unapata <b>Commission</b> ya papo hapo kwenye account yako.</p>
-                    </div>
-                </div>
-                <!-- Item 6 -->
-                <div class="help-item">
-                    <div class="help-item-header" onclick="toggleHelpAccordion(this)">
-                        <div class="help-item-title">
-                            <span class="help-item-number">6</span>
-                            Msaada wa Haraka (Admin)
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="help-item-content">
-                        <p>Kama unakwama sehemu yoyote, bonyeza icon ya WhatsApp kwenye menu au hapa chini kuongea na Admin moja kwa moja kwa msaada zaidi wa haraka (24/7).</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- CUSTOM PUSH NOTIFICATION PROMPT -->
     <div id="pushPrompt" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(10, 10, 15, 0.95); border:1px solid rgba(0,242,255,0.3); padding:20px; border-radius:15px; z-index:9999; width:90%; max-width:400px; backdrop-filter:blur(10px); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">

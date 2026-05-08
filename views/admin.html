@@ -1663,6 +1663,9 @@
             <li class="nav-item">
                 <a href="#" class="nav-link" data-view="settingsView"><i class="fas fa-cog"></i> <span>Store Settings</span></a>
             </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-view="videosView"><i class="fab fa-youtube" style="color:#ff0000;"></i> <span>Videos</span></a>
+            </li>
             <li class="nav-item" style="margin-top: 2rem;">
                 <a href="/" class="nav-link"><i class="fas fa-external-link-alt"></i> View Store</a>
             </li>
@@ -1739,6 +1742,177 @@
                 </div>
             </div>
         </nav>
+
+        <!-- VIDEOS MANAGEMENT VIEW -->
+        <section id="videosView" class="content view-section" style="display:none;">
+            <style>
+                .video-admin-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+                .video-admin-card {
+                    background: #1a1a24;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    border: 1px solid rgba(255,0,0,0.15);
+                    transition: 0.3s;
+                    position: relative;
+                }
+                .video-admin-card:hover {
+                    border-color: rgba(255,0,0,0.4);
+                    transform: translateY(-4px);
+                    box-shadow: 0 10px 30px rgba(255,0,0,0.1);
+                }
+                .video-admin-thumb {
+                    width: 100%;
+                    aspect-ratio: 16/9;
+                    object-fit: cover;
+                    display: block;
+                    background: #000;
+                }
+                .video-admin-info {
+                    padding: 14px;
+                }
+                .video-admin-title {
+                    font-family: 'Orbitron';
+                    font-size: 0.85rem;
+                    color: #fff;
+                    margin-bottom: 6px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .video-admin-actions {
+                    display: flex;
+                    gap: 8px;
+                    margin-top: 10px;
+                }
+                .btn-vid-del {
+                    flex: 1;
+                    padding: 8px;
+                    background: rgba(255,51,51,0.1);
+                    border: 1px solid rgba(255,51,51,0.3);
+                    color: #ff3333;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    transition: 0.2s;
+                }
+                .btn-vid-del:hover { background: rgba(255,51,51,0.25); }
+                .btn-vid-toggle {
+                    flex: 1;
+                    padding: 8px;
+                    background: rgba(0,210,91,0.1);
+                    border: 1px solid rgba(0,210,91,0.3);
+                    color: #00d25b;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    transition: 0.2s;
+                }
+                .btn-vid-toggle:hover { background: rgba(0,210,91,0.2); }
+                .btn-vid-toggle.unpublished {
+                    background: rgba(255,171,0,0.1);
+                    border-color: rgba(255,171,0,0.3);
+                    color: #ffab00;
+                }
+                .vid-status-badge {
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    padding: 3px 10px;
+                    border-radius: 20px;
+                    font-size: 0.65rem;
+                    font-weight: 700;
+                    font-family: 'Orbitron';
+                }
+                .vid-status-badge.pub { background: rgba(0,210,91,0.8); color: #000; }
+                .vid-status-badge.draft { background: rgba(255,171,0,0.8); color: #000; }
+                .yt-subscribe-section {
+                    background: linear-gradient(135deg, rgba(255,0,0,0.08), rgba(0,0,0,0.5));
+                    border: 1px solid rgba(255,0,0,0.25);
+                    border-radius: 14px;
+                    padding: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                    flex-wrap: wrap;
+                    margin-bottom: 2rem;
+                }
+            </style>
+
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:15px;">
+                <div>
+                    <h2 class="view-title"><i class="fab fa-youtube" style="color:#ff0000;"></i> Video Manager</h2>
+                    <p style="color:#6c7293; font-size:0.85rem; margin:5px 0 0;">Simamia videos za YouTube zitakazoonekana kwenye site yako</p>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <span id="videosCountBadge" style="background:rgba(255,0,0,0.1); border:1px solid rgba(255,0,0,0.3); color:#ff6666; padding:6px 14px; border-radius:20px; font-size:0.8rem; font-family:'Orbitron';">0 Videos</span>
+                    <button onclick="loadAdminVideos()" style="padding:10px 20px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; cursor:pointer; font-size:0.85rem;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- YouTube Subscribe Widget Info -->
+            <div class="yt-subscribe-section">
+                <div style="width:50px; height:50px; background:rgba(255,0,0,0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="fab fa-youtube" style="color:#ff0000; font-size:1.6rem;"></i>
+                </div>
+                <div style="flex:1; min-width:200px;">
+                    <div style="font-family:'Orbitron'; font-size:0.9rem; color:#fff; margin-bottom:5px;">YouTube Subscribe Button</div>
+                    <p style="color:#6c7293; font-size:0.8rem; margin:0; line-height:1.5;">
+                        Kitufe cha Subscribe kinaonekana moja kwa moja kwenye site. Badilisha <strong style="color:#00f2ff;">CHANNEL_ID_YAKO</strong> hapa chini na Channel ID yako halisi ya YouTube.
+                    </p>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <input type="text" id="channelIdInput" placeholder="UCxxxxxxxx... (Channel ID)" 
+                        style="padding:10px 14px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; outline:none; font-size:0.85rem; min-width:220px;"
+                        value="">
+                    <button onclick="saveChannelId()" style="padding:10px 20px; background:linear-gradient(135deg,#ff0000,#cc0000); border:none; border-radius:10px; color:#fff; font-family:'Orbitron'; font-size:0.75rem; font-weight:700; cursor:pointer; white-space:nowrap;">
+                        <i class="fas fa-save"></i> HIFADHI
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Video Form -->
+            <div class="admin-card" style="border:1px solid rgba(255,0,0,0.2); margin-bottom:2rem;">
+                <h3 class="card-title"><i class="fas fa-plus-circle" style="color:#ff3333;"></i> Ongeza Video Mpya</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Kichwa cha Video (Title) *</label>
+                        <input type="text" id="newVideoTitle" placeholder="Mfano: FIFA 25 Gameplay Tanzania...">
+                    </div>
+                    <div class="form-group">
+                        <label>YouTube Link *</label>
+                        <input type="url" id="newVideoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Maelezo (si lazima)</label>
+                    <textarea id="newVideoDesc" rows="2" placeholder="Maelezo mafupi ya video..." style="width:100%; background:#2a2d3a; border:1px solid #2a2d3a; padding:0.8rem; border-radius:4px; color:#fff; outline:none; resize:vertical;"></textarea>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+                    <button onclick="addVideo()" id="addVideoBtnAdmin" style="padding:12px 30px; background:linear-gradient(135deg,#ff0000,#bc13fe); border:none; border-radius:10px; color:#fff; font-family:'Orbitron'; font-size:0.85rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 5px 20px rgba(255,0,0,0.3); transition:0.3s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                        <i class="fab fa-youtube"></i> WEKA VIDEO
+                    </button>
+                    <div id="addVideoMsg" style="font-size:0.85rem;"></div>
+                </div>
+            </div>
+
+            <!-- Videos Grid -->
+            <div class="admin-card" style="border:1px solid rgba(255,255,255,0.05);">
+                <h3 class="card-title"><i class="fas fa-film" style="color:#ff3333;"></i> Videos Zote</h3>
+                <div id="adminVideosGrid" class="video-admin-grid">
+                    <div style="color:#6c7293; font-size:0.85rem; text-align:center; padding:3rem; grid-column:1/-1;">
+                        <i class="fas fa-spinner fa-spin"></i> Inapakia videos...
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- AFFILIATES VIEW -->
         <section id="affiliatesView" class="content view-section" style="display:none;">
@@ -4634,6 +4808,163 @@
 
         // Debug: Log when script is fully loaded
         console.log("Admin Dashboard Script: FULLY INITIALIZED ✅");
+
+        // ============================================
+        // VIDEOS MANAGEMENT
+        // ============================================
+        async function loadAdminVideos() {
+            const grid = document.getElementById('adminVideosGrid');
+            const badge = document.getElementById('videosCountBadge');
+            grid.innerHTML = `<div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fas fa-spinner fa-spin"></i> Inapakia videos...</div>`;
+            try {
+                const res = await fetch('/api/admin/videos', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                const videos = await res.json();
+                badge.textContent = `${videos.length} Video${videos.length !== 1 ? 's' : ''}`;
+                if (!videos.length) {
+                    grid.innerHTML = `<div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fab fa-youtube" style="font-size:2rem;display:block;margin-bottom:10px;opacity:0.3;"></i>Bado hujaweka video yoyote. Tumia fomu juu kuongeza!</div>`;
+                    return;
+                }
+                grid.innerHTML = videos.map(v => `
+                    <div class="video-admin-card" id="vcard-${v.id}">
+                        <img class="video-admin-thumb" 
+                             src="https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg" 
+                             alt="${v.title}" 
+                             onerror="this.src='https://img.youtube.com/vi/${v.video_id}/default.jpg'">
+                        <span class="vid-status-badge ${v.is_published ? 'pub' : 'draft'}">${v.is_published ? '✅ LIVE' : '⏸ DRAFT'}</span>
+                        <div class="video-admin-info">
+                            <div class="video-admin-title" title="${v.title}">${v.title}</div>
+                            ${v.description ? `<div style="font-size:0.75rem;color:#6c7293;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.description}</div>` : ''}
+                            <div style="font-size:0.7rem;color:#4a4a6a;">${new Date(v.created_at).toLocaleDateString('sw-TZ', {day:'2-digit',month:'short',year:'numeric'})}</div>
+                            <div class="video-admin-actions">
+                                <button class="btn-vid-toggle ${v.is_published ? '' : 'unpublished'}" onclick="toggleVideoPublish('${v.id}', ${v.is_published})">
+                                    <i class="fas fa-${v.is_published ? 'eye-slash' : 'eye'}"></i> ${v.is_published ? 'Ficha' : 'Chapisha'}
+                                </button>
+                                <button class="btn-vid-del" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g,"\\'")}')">
+                                    <i class="fas fa-trash"></i> Futa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                grid.innerHTML = `<div style="color:#ff3333;text-align:center;padding:2rem;grid-column:1/-1;">Hitilafu: ${e.message}</div>`;
+            }
+        }
+
+        async function addVideo() {
+            const title = document.getElementById('newVideoTitle').value.trim();
+            const url = document.getElementById('newVideoUrl').value.trim();
+            const desc = document.getElementById('newVideoDesc').value.trim();
+            const msgEl = document.getElementById('addVideoMsg');
+            const btn = document.getElementById('addVideoBtnAdmin');
+
+            if (!title || !url) { msgEl.innerHTML = '<span style="color:#ff3333;">⚠️ Jaza Title na YouTube URL</span>'; return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inaweka...';
+            msgEl.innerHTML = '';
+
+            try {
+                const res = await fetch('/api/admin/videos', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ title, youtube_url: url, description: desc, is_published: true })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    msgEl.innerHTML = '<span style="color:#00d25b;">✅ Video imewekwa!</span>';
+                    document.getElementById('newVideoTitle').value = '';
+                    document.getElementById('newVideoUrl').value = '';
+                    document.getElementById('newVideoDesc').value = '';
+                    loadAdminVideos();
+                } else {
+                    msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${result.error}</span>`;
+                }
+            } catch(e) {
+                msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${e.message}</span>`;
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-youtube"></i> WEKA VIDEO';
+        }
+
+        async function toggleVideoPublish(id, isCurrentlyPublished) {
+            try {
+                const res = await fetch(`/api/admin/videos/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ is_published: !isCurrentlyPublished })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(isCurrentlyPublished ? '⏸ Video imefichwa' : '✅ Video imechapishwa!');
+                    loadAdminVideos();
+                } else {
+                    showToast('❌ ' + result.error);
+                }
+            } catch(e) { showToast('❌ ' + e.message); }
+        }
+
+        async function deleteVideo(id, title) {
+            if (!confirm(`Futa video hii?\n\n"${title}"\n\nHii haiwezi kurudishwa!`)) return;
+            try {
+                const res = await fetch(`/api/admin/videos/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('🗑️ Video imefutwa!');
+                    loadAdminVideos();
+                } else {
+                    showToast('❌ ' + result.error);
+                }
+            } catch(e) { showToast('❌ ' + e.message); }
+        }
+
+        async function saveChannelId() {
+            const channelId = document.getElementById('channelIdInput').value.trim();
+            if (!channelId) { showToast('⚠️ Weka Channel ID kwanza'); return; }
+            try {
+                const res = await fetch('/api/admin/settings/youtube_channel_id', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ value: channelId })
+                });
+                const result = await res.json();
+                if (result.success) showToast('✅ Channel ID imehifadhiwa!');
+                else showToast('❌ ' + result.error);
+            } catch(e) { showToast('❌ ' + e.message); }
+        }
+
+        // Load channel ID on page ready
+        async function loadChannelId() {
+            try {
+                const res = await fetch('/api/settings/youtube_channel_id');
+                const data = await res.json();
+                if (data && data.value) {
+                    document.getElementById('channelIdInput').value = data.value;
+                }
+            } catch(e) {}
+        }
+
+        // Trigger video load when Videos tab is clicked
+        document.querySelectorAll('.nav-link[data-view="videosView"]').forEach(link => {
+            link.addEventListener('click', () => {
+                loadAdminVideos();
+                loadChannelId();
+            });
+        });
     </script>
 </body>
 </html>
