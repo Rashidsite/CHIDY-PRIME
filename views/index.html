@@ -4846,6 +4846,87 @@
             }
         });
 
+        // === AFFILIATE SYSTEM FUNCTIONS ===
+        async function openAffiliateModal() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return openLogin();
+            
+            const visitor = JSON.parse(visitorStr);
+            const overlay = document.getElementById('affiliateModalOverlay');
+            if(overlay) overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            
+            // Set referral link
+            const linkInput = document.getElementById('referralLinkInput');
+            if(linkInput) linkInput.value = `https://chidyprime.com/?ref=${visitor.id}`;
+            
+            // Fetch stats from backend
+            try {
+                const res = await fetch(`/api/affiliate/stats/${visitor.id}`);
+                const stats = await res.json();
+                const countEl = document.getElementById('affiliateCount');
+                const balEl = document.getElementById('affiliateBalance');
+                if(countEl) countEl.innerText = stats.referralCount || 0;
+                if(balEl) balEl.innerText = (stats.totalEarnings || 0).toLocaleString();
+            } catch (e) {
+                console.error("Failed to fetch affiliate stats");
+            }
+        }
+
+        function closeAffiliateModal() {
+            const overlay = document.getElementById('affiliateModalOverlay');
+            if(overlay) overlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        function copyReferralLink() {
+            const input = document.getElementById('referralLinkInput');
+            if(!input) return;
+            input.select();
+            input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value);
+            
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = 'COPIED!';
+            btn.style.background = '#fff';
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = '#00ff00';
+            }, 2000);
+        }
+
+        async function requestWithdrawal() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return;
+            const visitor = JSON.parse(visitorStr);
+            const balEl = document.getElementById('affiliateBalance');
+            if(!balEl) return;
+            const balance = parseInt(balEl.innerText.replace(/,/g, ''));
+            
+            if (balance < 5000) {
+                alert("Samahani, lazima ufikishe angalau TSh 5,000 ili uweze kutoa pesa.");
+                return;
+            }
+            
+            if (confirm(`Je, unataka kutoa TSh ${balance.toLocaleString()}? Ombi lako litatumwa kwa Admin.`)) {
+                try {
+                    const res = await fetch('/api/affiliate/withdraw', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ visitor_id: visitor.id, amount: balance })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        alert("Hongera! Ombi lako la kutoa pesa limetumwa. Admin atafanya malipo kwenye namba yako ya simu hivi punde.");
+                        closeAffiliateModal();
+                    }
+                } catch (e) {
+                    alert("Kuna tatizo la mtandao. Jaribu tena.");
+                }
+            }
+        }
+
         // ===== OPEN VIDEO STORE =====
         function openVideoStore() {
             // Hide Home elements
