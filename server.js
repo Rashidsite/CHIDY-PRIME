@@ -230,8 +230,11 @@ setInterval(async () => {
 // === PERFORMANCE: Gzip compression (reduces response size 60-80%) ===
 app.use(compression());
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Only admin upload endpoints need the 50mb limit — all other endpoints use a small cap
+app.use('/api/admin/upload', express.json({ limit: '50mb' }));
+app.use('/api/admin/upload', express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
 // API Request Logging
 app.use((req, res, next) => {
@@ -262,12 +265,24 @@ app.use(express.static('public', {
     }
 }));
 
-// === PERFORMANCE: In-memory cache for games API ===
+// === PERFORMANCE: In-memory multi-purpose cache ===
 let gamesCache = { data: null, timestamp: 0 };
-const CACHE_TTL = 30 * 1000; // 30 seconds
+let categoriesCache = { data: null, timestamp: 0 };
+let settingsCache = {}; // keyed by setting key
+
+const CACHE_TTL        = 5 * 60 * 1000; // 5 minutes for games (was 30s)
+const CATEGORIES_TTL   = 10 * 60 * 1000; // 10 minutes for categories
+const SETTINGS_TTL     = 5 * 60 * 1000; // 5 minutes for settings
 
 function invalidateGamesCache() {
     gamesCache = { data: null, timestamp: 0 };
+}
+function invalidateCategoriesCache() {
+    categoriesCache = { data: null, timestamp: 0 };
+}
+function invalidateSettingsCache(key) {
+    if (key) delete settingsCache[key];
+    else settingsCache = {};
 }
 
 // Login Endpoint
@@ -293,12 +308,23 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
-// Settings Endpoints
+// Settings Endpoints (with in-memory cache)
 app.get('/api/settings/:key', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { key } = req.params;
+
+    const now = Date.now();
+    const cached = settingsCache[key];
+    if (cached && (now - cached.timestamp) < SETTINGS_TTL) {
+        res.set('X-Cache', 'HIT');
+        return res.json(cached.data);
+    }
+
     const { data, error } = await supabase.from('site_settings').select('value').eq('key', key).single();
-    res.json(data || { value: key === 'global_discount' ? 0 : (key === 'total_installs' ? 0 : null) });
+    const result = data || { value: key === 'global_discount' ? 0 : (key === 'total_installs' ? 0 : null) };
+    settingsCache[key] = { data: result, timestamp: now };
+    res.set('X-Cache', 'MISS');
+    res.json(result);
 });
 
 app.post('/api/admin/settings/:key', verifyAdmin, async (req, res) => {
@@ -313,6 +339,7 @@ app.post('/api/admin/settings/:key', verifyAdmin, async (req, res) => {
 
         if (error) return res.status(500).json({ error: error.message });
         if (key === 'global_discount') invalidateGamesCache();
+        invalidateSettingsCache(key); // bust the settings cache too
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -359,7 +386,7 @@ app.get('/api/games', async (req, res) => {
     const now = Date.now();
     if (gamesCache.data && (now - gamesCache.timestamp) < CACHE_TTL) {
         res.set('X-Cache', 'HIT');
-        res.set('Cache-Control', 'public, max-age=30');
+        res.set('Cache-Control', 'public, max-age=300'); // 5 min browser cache
         return res.json(gamesCache.data);
     }
 
@@ -371,12 +398,19 @@ app.get('/api/games', async (req, res) => {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    // Update cache
-    // Fetch Global Discount if exists
+    // Reuse settings cache for global_discount to avoid extra DB hit
     let globalDiscount = 0;
     try {
-        const { data: gDisc } = await supabase.from('site_settings').select('value').eq('key', 'global_discount').single();
-        if (gDisc) globalDiscount = parseInt(gDisc.value);
+        const cachedDisc = settingsCache['global_discount'];
+        if (cachedDisc && (now - cachedDisc.timestamp) < SETTINGS_TTL) {
+            globalDiscount = parseInt(cachedDisc.data.value) || 0;
+        } else {
+            const { data: gDisc } = await supabase.from('site_settings').select('value').eq('key', 'global_discount').single();
+            if (gDisc) {
+                globalDiscount = parseInt(gDisc.value) || 0;
+                settingsCache['global_discount'] = { data: gDisc, timestamp: now };
+            }
+        }
     } catch (e) {}
 
     const processedData = data.map(g => {
@@ -389,7 +423,7 @@ app.get('/api/games', async (req, res) => {
 
     gamesCache = { data: processedData, timestamp: now };
     res.set('X-Cache', 'MISS');
-    res.set('Cache-Control', 'public, max-age=30');
+    res.set('Cache-Control', 'public, max-age=300'); // 5 min browser cache
     res.json(processedData);
 });
 
@@ -950,15 +984,27 @@ app.post('/api/admin/upload', verifyAdmin, async (req, res) => {
 // CATEGORY ENDPOINTS
 // ============================================
 
-// GET all categories
+// GET all categories (with cache)
 app.get('/api/categories', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+
+    const now = Date.now();
+    if (categoriesCache.data && (now - categoriesCache.timestamp) < CATEGORIES_TTL) {
+        res.set('X-Cache', 'HIT');
+        res.set('Cache-Control', 'public, max-age=600');
+        return res.json(categoriesCache.data);
+    }
+
     const { data, error } = await supabase
         .from('categories')
         .select('*')
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
+
+    categoriesCache = { data, timestamp: now };
+    res.set('X-Cache', 'MISS');
+    res.set('Cache-Control', 'public, max-age=600');
     res.json(data);
 });
 
@@ -975,6 +1021,7 @@ app.post('/api/categories', verifyAdmin, async (req, res) => {
         if (error.code === '23505') return res.status(409).json({ error: 'Category already exists' });
         return res.status(500).json({ error: error.message });
     }
+    invalidateCategoriesCache();
     res.json({ success: true, category: data[0] });
 });
 
@@ -987,6 +1034,7 @@ app.delete('/api/categories/:id', verifyAdmin, async (req, res) => {
         .delete()
         .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
+    invalidateCategoriesCache();
     res.json({ success: true });
 });
 
@@ -1003,6 +1051,7 @@ app.patch('/api/categories/order', verifyAdmin, async (req, res) => {
                 .update({ display_order: cat.display_order, is_visible: cat.is_visible })
                 .eq('id', cat.id)
         ));
+        invalidateCategoriesCache();
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });

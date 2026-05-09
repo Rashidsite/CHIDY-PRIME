@@ -5,21 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chidy Prime | Premium Gaming Hub</title>
     <meta name="description" content="Discover and download the hottest games — PPSSPP, Android, PC, Tanzania Games and more. Curated for true gamers.">
+    <meta name="theme-color" content="#00f2ff">
 
     <!-- PERFORMANCE: Preconnect to CDNs (saves ~200ms per resource) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
-    <!-- PERFORMANCE: Load fonts with display=swap (prevents invisible text) -->
+    <!-- PERFORMANCE: Single consolidated font import with display=swap -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- PERFORMANCE: Font Awesome with media trick to avoid render-block -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
+
+    <!-- Confetti: load after page renders (non-blocking) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
+
     <!-- manifest for PWA -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#00f2ff">
-    <meta name="theme-color" content="#00f2ff">
     <link rel="apple-touch-icon" href="/icon.png">
     <link rel="icon" type="image/png" href="/icon.png">
 
@@ -4003,20 +4007,25 @@
 
         async function fetchGames() {
             try {
-                // Fetch categories from DB to respect Admin Panel ordering
-                try {
-                    const catRes = await fetch('/api/categories');
-                    const catData = await catRes.json();
-                    if (catData && catData.length > 0) {
-                        // Extract just the names in the correct display_order
-                        categoryOrder = catData.map(c => c.name);
-                    }
-                } catch(e) {
-                    console.warn('Could not fetch dynamic categories, using default order');
+                // PERFORMANCE: Fetch categories + games in PARALLEL (saves ~400ms)
+                const [catRes, gamesRes] = await Promise.all([
+                    fetch('/api/categories').catch(() => null),
+                    fetch('/api/games')
+                ]);
+
+                // Process categories
+                if (catRes && catRes.ok) {
+                    try {
+                        const catData = await catRes.json();
+                        if (catData && catData.length > 0) {
+                            categoryOrder = catData.map(c => c.name);
+                        }
+                    } catch(e) { /* use default order */ }
                 }
 
-                const response = await fetch('/api/games');
-                const games = await response.json();
+                // Process games
+                if (!gamesRes.ok) throw new Error('Games fetch failed');
+                const games = await gamesRes.json();
                 allGames = games;
                 
                 if (!currentCategory) {
