@@ -886,7 +886,56 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        /* Video Player Modal */
+        .video-price-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(255, 0, 0, 0.85);
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            padding: 3px 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            z-index: 2;
+            letter-spacing: 0.5px;
+        }
+        /* Video Payment Modal */
+        .vid-pay-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(20px);
+            z-index: 12000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .vid-pay-overlay.show { display: flex; }
+        .vid-pay-card {
+            background: linear-gradient(145deg, #0d0d15, #12121f);
+            border: 1px solid rgba(255,0,0,0.3);
+            border-radius: 20px;
+            padding: 30px 24px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 0 40px rgba(255,0,0,0.2);
+            position: relative;
+        }
+        .vid-pay-title { font-family:'Orbitron'; font-size:0.9rem; color:#fff; margin-bottom:6px; }
+        .vid-pay-price { font-family:'Orbitron'; font-size:1.6rem; color:#ff3333; font-weight:800; margin-bottom:20px; }
+        .vid-pay-input { width:100%; padding:14px 16px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:#fff; font-size:1rem; outline:none; margin-bottom:14px; box-sizing:border-box; }
+        .vid-pay-btn { width:100%; padding:16px; background:linear-gradient(135deg,#ff0000,#bc13fe); border:none; border-radius:12px; color:#fff; font-family:'Orbitron'; font-size:0.9rem; font-weight:700; cursor:pointer; box-shadow:0 5px 25px rgba(255,0,0,0.4); transition:0.3s; }
+        .vid-pay-btn:hover { transform:translateY(-2px); }
+        .vid-pay-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.05); border:none; border-radius:50%; width:36px; height:36px; color:#fff; cursor:pointer; font-size:1rem; }
+        .vid-pay-steps { margin:20px 0 0; display:flex; flex-direction:column; gap:10px; }
+        .vid-pay-step { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); font-size:0.82rem; color:#a0a0b0; }
+        .vid-pay-step.active { border-color:rgba(0,242,255,0.3); background:rgba(0,242,255,0.04); color:#00f2ff; }
+        .vid-pay-step.done { border-color:rgba(0,212,83,0.3); background:rgba(0,212,83,0.04); color:#00d453; }
+        .vid-pay-step i { width:20px; text-align:center; }
+
         .video-modal-overlay {
             position: fixed;
             inset: 0;
@@ -3252,6 +3301,30 @@
         </div>
     </main>
 
+
+    <!-- VIDEO PAYMENT MODAL -->
+    <div class="vid-pay-overlay" id="vidPayOverlay">
+        <div class="vid-pay-card">
+            <button class="vid-pay-close" onclick="closeVidPayModal()"><i class="fas fa-times"></i></button>
+            <div style="text-align:center; margin-bottom:16px;">
+                <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#ff0000,#bc13fe); display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:1.5rem;"><i class="fas fa-lock"></i></div>
+                <div class="vid-pay-title" id="vidPayTitle">Tazama Video</div>
+                <div style="color:#6c7293; font-size:0.78rem; margin-bottom:8px;" id="vidPayDurLabel">Ufikiaji wa Kudumu</div>
+                <div class="vid-pay-price" id="vidPayPrice">TSh 0</div>
+            </div>
+            <div id="vidPayForm">
+                <p style="font-size:0.8rem; color:#a0a0b0; margin-bottom:14px; text-align:center;">Weka namba yako ya simu kupokea STK Push ili ulipe na kuangalia video hii</p>
+                <input type="tel" id="vidPayPhone" class="vid-pay-input" placeholder="07XXXXXXXX au 06XXXXXXXX">
+                <div id="vidPayErr" style="color:#ff3333; font-size:0.8rem; margin-bottom:10px; display:none;"></div>
+                <button class="vid-pay-btn" id="vidPayBtn" onclick="initiateVideoPayment()"><i class="fas fa-mobile-alt"></i> LIPA SASA</button>
+            </div>
+            <div id="vidPaySteps" class="vid-pay-steps" style="display:none;">
+                <div class="vid-pay-step done" id="vpStep1"><i class="fas fa-check-circle"></i> STK Push imetumwa kwa simu yako</div>
+                <div class="vid-pay-step active" id="vpStep2"><i class="fas fa-spinner fa-spin"></i> Tunangoja uthibitisho wa malipo...</div>
+                <div class="vid-pay-step" id="vpStep3"><i class="fas fa-play-circle"></i> Video itafunguka baada ya malipo</div>
+            </div>
+        </div>
+    </div>
 
     <!-- VIDEO PLAYER MODAL -->
     <div class="video-modal-overlay" id="videoModalOverlay" onclick="closeVideoModal(event)">
@@ -5716,17 +5789,22 @@ async function clearAllNotifications() {
                     grid.style.display = 'grid';
                     emptyMsg.style.display = 'none';
                     countBadge.textContent = videos.length;
-                    grid.innerHTML = videos.map(v => `
-                        <div class="video-card" onclick="openVideoModal('${v.video_id}', '${v.title.replace(/'/g, "\\'")}')">
+                    grid.innerHTML = videos.map(v => {
+                        const isPaid = v.price && v.price > 0;
+                        const durLabel = isPaid ? (v.duration_days > 0 ? `${v.duration_days} Siku` : 'Kudumu') : '';
+                        return `
+                        <div class="video-card" onclick="openVideoAccess('${v.id}', '${v.video_id}', '${v.title.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', ${v.price || 0}, ${v.duration_days || 0})">
                             <div class="video-thumb-wrap">
-                                <img class="video-thumb" src="https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg" alt="${v.title}">
-                                <div class="video-play-btn"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                                <img class="video-thumb" loading="lazy" src="https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg" alt="${v.title}">
+                                <div class="video-play-btn"><div class="play-icon"><i class="fas ${isPaid ? 'fa-lock' : 'fa-play'}"></i></div></div>
+                                ${isPaid ? `<div class="video-price-badge">TSh ${parseInt(v.price).toLocaleString()}</div>` : '<div class="video-price-badge" style="background:rgba(0,200,83,0.85);">BURE</div>'}
                             </div>
                             <div class="video-card-info">
                                 <div class="video-card-title">${v.title}</div>
+                                ${isPaid ? `<div style="font-size:0.7rem; color:#ff9800; margin-top:4px;"><i class="fas fa-calendar-alt"></i> ${durLabel}</div>` : ''}
                             </div>
-                        </div>
-                    `).join('');
+                        </div>`;
+                    }).join('');
                 }
 
                 // Fetch and render Subscribe widget if Channel ID exists
@@ -5745,6 +5823,125 @@ async function clearAllNotifications() {
             } catch (error) {
                 console.error("Error loading videos:", error);
                 document.getElementById('videoGrid').innerHTML = '<div style="color:var(--text-dim);grid-column:1/-1;text-align:center;padding:2rem;">Failed to load videos</div>';
+            }
+        }
+
+        // ===== VIDEO ACCESS GATE =====
+        let _vidPayData = {}; // holds current video payment context
+        let _vidPayPollInterval = null;
+
+        async function openVideoAccess(videoId, ytId, title, price, durationDays) {
+            if (!price || price <= 0) {
+                // Free video - open directly
+                openVideoModal(ytId, title);
+                return;
+            }
+
+            // Paid video - check if user already has access
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (visitorStr) {
+                const visitor = JSON.parse(visitorStr);
+                try {
+                    const res = await fetch(`/api/check-video-access/${visitor.id}/${videoId}`);
+                    const data = await res.json();
+                    if (data.has_access) {
+                        openVideoModal(ytId, title);
+                        return;
+                    }
+                } catch(e) { /* proceed to payment */ }
+            }
+
+            // Show payment modal
+            _vidPayData = { videoId, ytId, title, price, durationDays };
+            document.getElementById('vidPayTitle').textContent = title;
+            document.getElementById('vidPayPrice').textContent = `TSh ${parseInt(price).toLocaleString()}`;
+            document.getElementById('vidPayDurLabel').textContent = durationDays > 0 ? `Ufikiaji wa Siku ${durationDays}` : 'Ufikiaji wa Kudumu';
+            document.getElementById('vidPayForm').style.display = 'block';
+            document.getElementById('vidPaySteps').style.display = 'none';
+            document.getElementById('vidPayErr').style.display = 'none';
+            document.getElementById('vidPayPhone').value = '';
+            const btn = document.getElementById('vidPayBtn');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-mobile-alt"></i> LIPA SASA';
+            document.getElementById('vidPayOverlay').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeVidPayModal() {
+            document.getElementById('vidPayOverlay').classList.remove('show');
+            document.body.style.overflow = '';
+            if (_vidPayPollInterval) { clearInterval(_vidPayPollInterval); _vidPayPollInterval = null; }
+        }
+
+        async function initiateVideoPayment() {
+            const phone = document.getElementById('vidPayPhone').value.trim();
+            const errEl = document.getElementById('vidPayErr');
+            if (!phone || phone.length < 10) {
+                errEl.textContent = 'Tafadhali weka namba sahihi ya simu (10 digits)';
+                errEl.style.display = 'block'; return;
+            }
+            errEl.style.display = 'none';
+
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) { alert('Tafadhali ingia kwanza!'); return; }
+            const visitor = JSON.parse(visitorStr);
+
+            const btn = document.getElementById('vidPayBtn');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inatuma...';
+
+            try {
+                const res = await fetch('/api/payments/zenopay-video-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: _vidPayData.price,
+                        phone: phone,
+                        videoTitle: _vidPayData.title,
+                        visitorId: visitor.id,
+                        videoId: _vidPayData.videoId,
+                        email: visitor.email || 'customer@chidyprime.com',
+                        name: visitor.name || 'Chidy Customer'
+                    })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success' || data.message === 'success') {
+                    document.getElementById('vidPayForm').style.display = 'none';
+                    document.getElementById('vidPaySteps').style.display = 'flex';
+                    // Start polling
+                    let pollCount = 0;
+                    _vidPayPollInterval = setInterval(async () => {
+                        pollCount++;
+                        if (pollCount > 30) { // 2.5 min max
+                            clearInterval(_vidPayPollInterval);
+                            document.getElementById('vpStep2').className = 'vid-pay-step';
+                            document.getElementById('vpStep2').innerHTML = '<i class="fas fa-times-circle"></i> Malipo hayakupokelewa. Jaribu tena.';
+                            return;
+                        }
+                        try {
+                            const vr = await fetch(`/api/payments/verify-zeno-video/${visitor.id}/${_vidPayData.videoId}`);
+                            const vd = await vr.json();
+                            if (vd.success) {
+                                clearInterval(_vidPayPollInterval);
+                                document.getElementById('vpStep2').className = 'vid-pay-step done';
+                                document.getElementById('vpStep2').innerHTML = '<i class="fas fa-check-circle"></i> Malipo yamekubaliwa!';
+                                document.getElementById('vpStep3').className = 'vid-pay-step done';
+                                document.getElementById('vpStep3').innerHTML = '<i class="fas fa-play-circle"></i> Video inafunguka...';
+                                setTimeout(() => {
+                                    closeVidPayModal();
+                                    openVideoModal(_vidPayData.ytId, _vidPayData.title);
+                                }, 1500);
+                            }
+                        } catch(e) { /* keep polling */ }
+                    }, 5000);
+                } else {
+                    errEl.textContent = data.message || data.error || 'Kuna tatizo. Jaribu tena.';
+                    errEl.style.display = 'block';
+                    btn.disabled = false; btn.innerHTML = '<i class="fas fa-mobile-alt"></i> LIPA SASA';
+                }
+            } catch(e) {
+                errEl.textContent = 'Tatizo la mtandao. Jaribu tena.';
+                errEl.style.display = 'block';
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-mobile-alt"></i> LIPA SASA';
             }
         }
 

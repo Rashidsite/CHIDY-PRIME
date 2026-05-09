@@ -1895,6 +1895,17 @@
                     <label>Maelezo (si lazima)</label>
                     <textarea id="newVideoDesc" rows="2" placeholder="Maelezo mafupi ya video..." style="width:100%; background:#2a2d3a; border:1px solid #2a2d3a; padding:0.8rem; border-radius:4px; color:#fff; outline:none; resize:vertical;"></textarea>
                 </div>
+                <!-- PRICE & DURATION -->
+                <div class="form-row" style="margin-bottom:0;">
+                    <div class="form-group">
+                        <label><i class="fas fa-lock" style="color:#ff3333;"></i> Bei ya Kuona Video (TSh) <span style="color:#6c7293; font-size:0.75rem;">(0 = Bure)</span></label>
+                        <input type="number" id="newVideoPrice" placeholder="Mfano: 2000" min="0" style="border:1px solid rgba(255,0,0,0.2);">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar" style="color:#ff9800;"></i> Muda wa Ufikiaji (Siku) <span style="color:#6c7293; font-size:0.75rem;">(0 = Kudumu)</span></label>
+                        <input type="number" id="newVideoDuration" placeholder="Mfano: 30 (siku)" min="0" style="border:1px solid rgba(255,152,0,0.2);">
+                    </div>
+                </div>
                 <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
                     <button onclick="addVideo()" id="addVideoBtnAdmin" style="padding:12px 30px; background:linear-gradient(135deg,#ff0000,#bc13fe); border:none; border-radius:10px; color:#fff; font-family:'Orbitron'; font-size:0.85rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 5px 20px rgba(255,0,0,0.3); transition:0.3s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                         <i class="fab fa-youtube"></i> WEKA VIDEO
@@ -4857,6 +4868,8 @@
             const title = document.getElementById('newVideoTitle').value.trim();
             const url = document.getElementById('newVideoUrl').value.trim();
             const desc = document.getElementById('newVideoDesc').value.trim();
+            const price = parseInt(document.getElementById('newVideoPrice').value) || 0;
+            const duration_days = parseInt(document.getElementById('newVideoDuration').value) || 0;
             const msgEl = document.getElementById('addVideoMsg');
             const btn = document.getElementById('addVideoBtnAdmin');
 
@@ -4873,7 +4886,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                     },
-                    body: JSON.stringify({ title, youtube_url: url, description: desc, is_published: true })
+                    body: JSON.stringify({ title, youtube_url: url, description: desc, is_published: true, price, duration_days })
                 });
                 const result = await res.json();
                 if (result.success) {
@@ -4881,6 +4894,8 @@
                     document.getElementById('newVideoTitle').value = '';
                     document.getElementById('newVideoUrl').value = '';
                     document.getElementById('newVideoDesc').value = '';
+                    document.getElementById('newVideoPrice').value = '';
+                    document.getElementById('newVideoDuration').value = '';
                     loadAdminVideos();
                 } else {
                     msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${result.error}</span>`;

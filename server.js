@@ -1039,7 +1039,7 @@ app.get('/api/admin/videos', verifyAdmin, async (req, res) => {
 // POST - add new video
 app.post('/api/admin/videos', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    const { title, youtube_url, description, is_published } = req.body;
+    const { title, youtube_url, description, is_published, price, duration_days } = req.body;
     if (!title || !youtube_url) return res.status(400).json({ error: 'Title na YouTube URL zinahitajika' });
 
     // Extract YouTube video ID from various URL formats
@@ -1065,7 +1065,9 @@ app.post('/api/admin/videos', verifyAdmin, async (req, res) => {
             youtube_url: youtube_url.trim(),
             video_id,
             description: description ? description.trim() : null,
-            is_published: is_published !== false
+            is_published: is_published !== false,
+            price: parseInt(price) || 0,
+            duration_days: parseInt(duration_days) || 0
         }])
         .select();
 
@@ -1095,6 +1097,157 @@ app.delete('/api/admin/videos/:id', verifyAdmin, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
 });
+
+// ============================================
+// VIDEO ACCESS & PAYMENT ENDPOINTS
+// ============================================
+
+// CHECK VIDEO ACCESS
+app.get('/api/check-video-access/:visitor_id/:video_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id, video_id } = req.params;
+
+    try {
+        // Get video details
+        const { data: video } = await supabase
+            .from('videos')
+            .select('price, duration_days, title')
+            .eq('id', video_id)
+            .single();
+
+        if (!video) return res.status(404).json({ error: 'Video haijapatikana' });
+
+        // Free video - always accessible
+        if (!video.price || video.price <= 0) {
+            return res.json({ has_access: true, expires_at: '2099-12-31T23:59:59Z' });
+        }
+
+        // Check payment_orders for approved video access
+        const { data: order } = await supabase
+            .from('payment_orders')
+            .select('status, expires_at, created_at')
+            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', video_id)   // we reuse post_id column for video_id
+            .eq('status', 'approved')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (!order) return res.json({ has_access: false });
+
+        // Check expiry
+        const expiresAt = new Date(order.expires_at);
+        if (expiresAt < new Date()) return res.json({ has_access: false, expired: true });
+
+        return res.json({ has_access: true, expires_at: order.expires_at });
+    } catch (e) {
+        console.error('check-video-access error:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+// VIDEO ZENOPAY CHECKOUT
+app.post('/api/payments/zenopay-video-checkout', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { amount, phone, videoTitle, visitorId, videoId, email, name } = req.body;
+    if (!amount || !phone || !visitorId || !videoId) {
+        return res.status(400).json({ error: 'Taarifa zote zinahitajika' });
+    }
+
+    let formattedPhone = phone.replace(/[^0-9]/g, '');
+    if (formattedPhone.startsWith('255')) formattedPhone = '0' + formattedPhone.substring(3);
+
+    try {
+        const shortVideoId = videoId.split('-')[0];
+        const shortTime = Math.floor(Date.now() / 1000).toString().slice(-5);
+        const zenoOrderId = `ZPVID${visitorId}V${shortVideoId}T${shortTime}`;
+
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        const host = req.headers.host;
+        const webhookUrl = `${protocol}://${host}/api/payments/zenopay-callback`;
+
+        const payload = {
+            order_id: zenoOrderId,
+            buyer_email: email || 'customer@chidyprime.com',
+            buyer_name: name || 'Chidy Prime Customer',
+            buyer_phone: formattedPhone,
+            msisdn: formattedPhone,
+            amount: parseFloat(amount),
+            webhook_url: webhookUrl
+        };
+
+        const zenoRes = await fetch('https://zenoapi.com/api/payments/mobile_money_tanzania', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-api-key': ZENOPAY_API_KEY },
+            body: new URLSearchParams(payload)
+        });
+
+        const data = await zenoRes.json();
+
+        if (data.status === 'success' || data.message === 'success') {
+            // Get video for duration info
+            const { data: video } = await supabase.from('videos').select('duration_days').eq('id', videoId).single();
+            const dDays = video ? (video.duration_days || 0) : 0;
+            let expiresAt = new Date('2099-12-31T23:59:59Z');
+            if (dDays > 0) { expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + dDays); }
+
+            // Store pending order — reuse post_id for video_id
+            await supabase.from('payment_orders').insert([{
+                visitor_id: parseInt(visitorId),
+                post_id: videoId,
+                amount: amount,
+                phone_number: formattedPhone,
+                status: 'pending',
+                expires_at: expiresAt.toISOString(),
+                promo_used: zenoOrderId   // track zeno order id
+            }]);
+        }
+
+        res.json(data);
+    } catch (err) {
+        console.error('ZenoPay Video Checkout Error:', err);
+        res.status(500).json({ error: 'ZenoPay service error' });
+    }
+});
+
+// VIDEO ZENOPAY VERIFY (polling from frontend)
+app.get('/api/payments/verify-zeno-video/:visitor_id/:video_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id, video_id } = req.params;
+    try {
+        const { data: order } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', video_id)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (!order) return res.json({ success: false });
+
+        const zenoOrderId = order.promo_used;
+        const zRes = await fetch(`https://zenoapi.com/api/payments/order_status?order_id=${zenoOrderId}`, {
+            headers: { 'x-api-key': ZENOPAY_API_KEY }
+        });
+        const zData = await zRes.json().catch(() => ({}));
+        const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+
+        if (zStatus === 'success' || zStatus === 'completed') {
+            // Approve the order
+            await supabase.from('payment_orders')
+                .update({ status: 'approved', updated_at: new Date().toISOString() })
+                .eq('id', order.id);
+            return res.json({ success: true });
+        }
+
+        res.json({ success: false });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 
 // ============================================
 // SETTINGS ENDPOINTS
