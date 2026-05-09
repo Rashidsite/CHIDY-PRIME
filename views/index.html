@@ -3317,7 +3317,7 @@
             </div>
             <span class="wa-label">Channel</span>
         </div>
-        <div class="bottom-item" onclick="scrollToVideos()">
+        <div class="bottom-item" onclick="openVideoStore()">
             <i class="fas fa-play-circle" style="color:var(--primary);"></i>
             <span style="color:var(--primary); font-weight:bold;">Video</span>
         </div>
@@ -4633,6 +4633,16 @@
         function showHome() {
             currentCategory = null;
             document.getElementById('searchInput').value = '';
+            
+            // Show Home elements
+            document.querySelector('.hero-section').style.display = 'block';
+            const affiliatePromo = document.querySelector('.affiliate-promo-card');
+            if(affiliatePromo) affiliatePromo.style.display = 'flex';
+            document.getElementById('categoriesContainer').style.display = 'block';
+            
+            // Hide Video store
+            document.getElementById('videoSection').style.display = 'none';
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
             renderCategories(allGames);
             setActiveBottom(0);
@@ -4836,12 +4846,23 @@
             }
         });
 
-        // ===== SCROLL TO VIDEOS =====
-        function scrollToVideos() {
+        // ===== OPEN VIDEO STORE =====
+        function openVideoStore() {
+            // Hide Home elements
+            document.querySelector('.hero-section').style.display = 'none';
+            const affiliatePromo = document.querySelector('.affiliate-promo-card');
+            if(affiliatePromo) affiliatePromo.style.display = 'none';
+            document.getElementById('winnersTickerWrap').style.display = 'none';
+            document.getElementById('categoriesContainer').style.display = 'none';
+
+            // Show Video Store
             const section = document.getElementById('videoSection');
             if (section) {
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                section.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
+            
+            setActiveBottom(2);
         }
 
 
@@ -5604,10 +5625,7 @@ async function clearAllNotifications() {
                 const emptyMsg = document.getElementById('videoSectionEmpty');
                 const countBadge = document.getElementById('videoCount');
 
-                // Only show section if not explicitly viewing a specific category
-                if (!currentCategory) {
-                    section.style.display = 'block';
-                }
+                // Removed auto-show to keep it hidden until 'Video' tab is clicked
 
                 if (!videos || videos.length === 0) {
                     grid.style.display = 'none';
