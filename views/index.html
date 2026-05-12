@@ -367,42 +367,6 @@
             100% { transform: scale(1.2); box-shadow: 0 0 15px rgba(255,0,229,0.8); }
         }
 
-        /* --- Premium User Pill --- */
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            padding: 5px 12px 5px 6px;
-            background: rgba(255,255,255,0.04);
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.08);
-            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: visible;
-        }
-        .user-profile::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(0,242,255,0.08), rgba(188,19,254,0.08));
-            opacity: 0;
-            transition: opacity 0.3s;
-            border-radius: 30px;
-        }
-        .user-profile:hover {
-            border-color: rgba(0,242,255,0.35);
-            box-shadow: 0 0 20px rgba(0,242,255,0.12), 0 0 8px rgba(188,19,254,0.1);
-            transform: translateY(-1px);
-        }
-        .user-profile:hover::before { opacity: 1; }
-        .user-avatar {
-            width: 42px; height: 42px; border-radius: 50%;
-            background: url('/assets/admin-avatar.png');
-            background-size: cover; background-position: center;
-            border: 2px solid var(--primary);
-            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4), 0 0 5px rgba(188, 19, 254, 0.3);
-            cursor: pointer;
             transition: all 0.3s ease;
         }
         .user-profile:hover .user-avatar {
@@ -543,6 +507,82 @@
             background: rgba(0,242,255,0.05); border-left-color: #00f2ff; color: #fff;
         }
         .sidebar-item:hover i { color: #00f2ff; transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(0,242,255,0.6)); }
+
+        /* === PREMIUM SIDEBAR PROFILE CARD === */
+        .sidebar-user-card {
+            margin: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        .s-user-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
+            background: linear-gradient(135deg, rgba(0,242,255,0.1), rgba(188,19,254,0.1));
+            filter: blur(15px); z-index: 0;
+        }
+        .s-user-content {
+            padding: 20px; display: flex; align-items: center; gap: 15px; position: relative; z-index: 1;
+        }
+        .s-user-avatar-wrap { position: relative; }
+        .s-user-avatar {
+            width: 50px; height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 1.4rem; color: #000; font-family: 'Orbitron';
+            box-shadow: 0 5px 15px rgba(0,242,255,0.3);
+        }
+        .s-user-status-dot {
+            position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px;
+            background: #00d25b; border: 3px solid #111119; border-radius: 50%;
+            animation: statusPulse 2s infinite;
+        }
+        @keyframes statusPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0,210,91,0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(0,210,91,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,210,91,0); }
+        }
+        .s-user-info { flex: 1; min-width: 0; }
+        .s-user-name {
+            font-size: 1rem; font-weight: 800; color: #fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 2px; letter-spacing: 0.5px;
+        }
+        .s-user-level {
+            font-size: 0.65rem; font-weight: 700; color: var(--primary);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .s-user-expand {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+            transition: 0.3s;
+        }
+        .s-user-expand:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        
+        .s-user-stats {
+            display: flex; padding: 12px 20px; background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.05); gap: 15px;
+        }
+        .s-stat-item { flex: 1; text-align: center; }
+        .s-stat-val { font-size: 0.9rem; font-weight: 800; color: #fff; font-family: 'Orbitron'; }
+        .s-stat-label { font-size: 0.55rem; color: #6c7293; font-weight: 700; letter-spacing: 1px; }
+        .s-stat-divider { width: 1px; background: rgba(255,255,255,0.1); margin: 5px 0; }
+
+        .s-profile-menu {
+            max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out;
+            background: rgba(0,0,0,0.15);
+        }
+        .s-profile-menu.open { max-height: 300px; padding: 10px 0; }
+        .s-menu-item {
+            padding: 10px 20px; font-size: 0.85rem; color: #a0a0c8;
+            display: flex; align-items: center; gap: 12px; cursor: pointer;
+            transition: 0.2s;
+        }
+        .s-menu-item:hover { background: rgba(255,255,255,0.03); color: #fff; }
+        .s-menu-item i { width: 16px; font-size: 0.9rem; opacity: 0.8; }
 
         .notif-dropdown {
             position: fixed;
@@ -3184,24 +3224,6 @@
                 <i class="fas fa-bell"></i>
                 <span class="notif-badge" id="notifBadge"></span>
             </div>
-            <!-- Premium User Pill -->
-            <div class="user-profile" id="userProfileBtn" onclick="toggleProfileDropdown(event)" title="Profile">
-                <div class="user-avatar" id="userAvatar" style="background-image: url('/assets/admin-avatar.png'); background-size: cover; background-position: center; border: 1.5px solid var(--gold); box-shadow: 0 0 10px rgba(255,180,0,0.3);"></div>
-                <div style="display:flex; flex-direction:column; align-items:flex-start;">
-                    <span class="user-name-text" id="userName" style="font-size: 0.85rem;">User</span>
-                    <span id="userLevelBadge" style="font-size: 0.55rem; color: var(--primary); font-weight: 800; letter-spacing: 0.5px;">ROOKIE GAMER</span>
-                </div>
-                
-                <!-- Profile Dropdown -->
-                <div class="profile-dropdown" id="profileDropdown">
-                    <div class="p-drop-item" data-i18n="view_profile"><i class="fas fa-user-circle"></i> View Profile</div>
-                    <div class="p-drop-item" onclick="openOrderHistory()" data-i18n="order_history"><i class="fas fa-history"></i> Order History</div>
-                    <div class="p-drop-item" onclick="openAffiliateModal()" style="color: #00ff00;"><i class="fas fa-money-bill-wave"></i> PATA PESA (REFERRAL)</div>
-                    <div class="user-menu-item" onclick="openMyGames()" data-i18n="my_games"><i class="fas fa-gamepad"></i> MY GAMES</div>
-                        <div class="user-menu-divider"></div>
-                        <div class="user-menu-item logout" onclick="openLogoutModal()" data-i18n="logout"><i class="fas fa-sign-out-alt"></i> LOGOUT</div>
-                </div>
-            </div>
             <!-- Premium Hamburger -->
             <div class="hamburger-btn menu-toggle" onclick="toggleSidebar()" title="Menu">
                 <span class="ham-line"></span>
@@ -3215,8 +3237,49 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <span class="sidebar-title" data-i18n="games_menu">GAMES MENU</span>
+            <div class="brand" style="margin:0;">
+                <span class="brand-chidy">CHIDY</span><span class="brand-prime">PRIME</span>
+            </div>
             <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- New Premium Profile Card in Sidebar -->
+        <div class="sidebar-user-card">
+            <div class="s-user-bg"></div>
+            <div class="s-user-content">
+                <div class="s-user-avatar-wrap">
+                    <div class="s-user-avatar" id="sidebarAvatar">U</div>
+                    <div class="s-user-status-dot"></div>
+                </div>
+                <div class="s-user-info">
+                    <div class="s-user-name" id="sidebarName">User</div>
+                    <div class="s-user-level" id="sidebarLevelBadge">ROOKIE GAMER</div>
+                </div>
+                <button class="s-user-expand" onclick="toggleProfileMenu()">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            
+            <!-- Quick Stats Area -->
+            <div class="s-user-stats">
+                <div class="s-stat-item">
+                    <div class="s-stat-val" id="sidebarStatGames">0</div>
+                    <div class="s-stat-label">GAMES</div>
+                </div>
+                <div class="s-stat-divider"></div>
+                <div class="s-stat-item">
+                    <div class="s-stat-val" id="sidebarStatPoints">0</div>
+                    <div class="s-stat-label">LEVEL</div>
+                </div>
+            </div>
+
+            <!-- Profile Action Menu (Retractable) -->
+            <div class="s-profile-menu" id="sidebarProfileMenu">
+                <div class="s-menu-item" onclick="openMyGames()"><i class="fas fa-gamepad"></i> Library yangu</div>
+                <div class="s-menu-item" onclick="openOrderHistory()"><i class="fas fa-history"></i> Order History</div>
+                <div class="s-menu-item" onclick="openAffiliateModal()" style="color: #00ff00;"><i class="fas fa-money-bill-wave"></i> Pata Pesa (Affiliate)</div>
+                <div class="s-menu-item" onclick="openLogoutModal()" style="color: #ff4444; border-top: 1px solid rgba(255,255,255,0.05);"><i class="fas fa-sign-out-alt"></i> Logout</div>
+            </div>
         </div>
         <div class="sidebar-menu" id="sidebarMenu">
             <!-- Categories injected here by JS -->
@@ -4750,11 +4813,14 @@
         // ===== UPDATE HEADER USER DISPLAY =====
         function setUserDisplay(name) {
             const initial = name ? name.charAt(0).toUpperCase() : 'U';
+            const fullName = name || 'User';
             const shortName = name ? name.split(' ')[0] : 'User';
-            const avatarEl = document.getElementById('userAvatar');
-            const nameEl = document.getElementById('userName');
-            if (avatarEl) avatarEl.textContent = initial;
-            if (nameEl) nameEl.textContent = shortName;
+
+            // Sidebar targets
+            const sAvatar = document.getElementById('sidebarAvatar');
+            const sName = document.getElementById('sidebarName');
+            if (sAvatar) sAvatar.textContent = initial;
+            if (sName) sName.textContent = fullName;
         }
 
         // ===== LOG VIEW =====
@@ -5166,10 +5232,25 @@
             try {
                 const res = await fetch(`/api/user/stats/${visitor.id}`);
                 const stats = await res.json();
-                if (stats.level) {
-                    document.getElementById('userLevelBadge').textContent = stats.level.toUpperCase();
-                }
+                
+                // Update Sidebar
+                const sLevel = document.getElementById('sidebarLevelBadge');
+                const sGames = document.getElementById('sidebarStatGames');
+                const sPoints = document.getElementById('sidebarStatPoints');
+                
+                if (sLevel && stats.level) sLevel.textContent = stats.level.toUpperCase();
+                if (sGames && stats.purchasesCount !== undefined) sGames.textContent = stats.purchasesCount;
+                if (sPoints && stats.level) sPoints.textContent = stats.level.split(' ')[0]; // Quick level shorthand
             } catch (e) { console.error("Stats fetch failed"); }
+        }
+
+        function toggleProfileMenu() {
+            const menu = document.getElementById('sidebarProfileMenu');
+            const btn = document.querySelector('.s-user-expand i');
+            if (menu) {
+                menu.classList.toggle('open');
+                if (btn) btn.style.transform = menu.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
         }
         // Unified Script Continuation
         // ... (Existing Logic)
@@ -5320,24 +5401,7 @@ async function clearAllNotifications() {
                 notifDropdown.style.display = 'none';
             }
 
-            const profileDropdown = document.getElementById('profileDropdown');
-            const userProfileBtn = document.getElementById('userProfileBtn');
-            if (profileDropdown && profileDropdown.classList.contains('show') && !userProfileBtn.contains(e.target)) {
-                profileDropdown.classList.remove('show');
-            }
-        });
-
-        // ===== PROFILE DROPDOWN =====
-        function toggleProfileDropdown(e) {
-            e.stopPropagation();
-            // Only toggle drop-down if user is authenticated (signed up)
-            if (!localStorage.getItem('chidy_visitor')) {
-                openLogin();
-                return;
-            }
-            const dropdown = document.getElementById('profileDropdown');
-            dropdown.classList.toggle('show');
-        }
+        // Profile menu handled by toggleProfileMenu() inside sidebar
 
         // ===== SECURE LOGOUT FLOW =====
         function openLogoutModal() {
