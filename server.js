@@ -167,10 +167,9 @@ setInterval(async () => {
             const zenoOrderId = order.promo_used;
             if (!zenoOrderId || !zenoOrderId.startsWith('ZP')) continue;
 
-            // Check if order is older than 5 minutes, if so, maybe mark as failed or just ignore
+            // Check if order is older than 30 minutes
             const ageMinutes = (new Date() - new Date(order.created_at)) / 60000;
             if (ageMinutes > 30) {
-                // Too old, mark as rejected to stop polling it
                 await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', order.id);
                 continue;
             }
@@ -186,9 +185,17 @@ setInterval(async () => {
 
                 if (zStatus === 'success' || zStatus === 'completed') {
                     console.log(`[AUTO-WORKER] Order ${zenoOrderId} was paid! Unlocking...`);
+                    
+                    // Try to find in posts (games) first
                     const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
                     if (game) {
-                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId);
+                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId, false);
+                    } else {
+                        // Try to find in videos
+                        const { data: video } = await supabase.from('videos').select('*').eq('id', order.post_id).single();
+                        if (video) {
+                            await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, zenoOrderId, true);
+                        }
                     }
                 }
             } catch (e) {
@@ -1277,21 +1284,23 @@ app.get('/api/payments/verify-zeno-video/:visitor_id/:video_id', async (req, res
         if (!order) return res.json({ success: false });
 
         const zenoOrderId = order.promo_used;
-        const zRes = await fetch(`https://zenoapi.com/api/payments/order_status?order_id=${zenoOrderId}`, {
-            headers: { 'x-api-key': ZENOPAY_API_KEY }
+        const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
         });
         const zData = await zRes.json().catch(() => ({}));
         const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
 
         if (zStatus === 'success' || zStatus === 'completed') {
-            // Approve the order
-            await supabase.from('payment_orders')
-                .update({ status: 'approved', updated_at: new Date().toISOString() })
-                .eq('id', order.id);
-            return res.json({ success: true });
+            // Approve the order and grant access using unified logic
+            const { data: video } = await supabase.from('videos').select('*').eq('id', video_id).single();
+            if (video) {
+                await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, zenoOrderId, true);
+                return res.json({ success: true });
+            }
         }
-
-        res.json({ success: false });
+        res.json({ success: false, message: `ZenoPay Status: ${zStatus || 'Pending'}` });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
     }
@@ -1889,8 +1898,8 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
     res.json({ success: false });
 });
 
-async function handleSuccessfulPayment(visitorId, game, amount, phone, zenoOrderId = null) {
-    const postId = game.id;
+async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrderId = null, isVideo = false) {
+    const itemId = item.id;
     try {
         // 1. Update existing order or insert new one
         if (zenoOrderId) {
@@ -1900,15 +1909,15 @@ async function handleSuccessfulPayment(visitorId, game, amount, phone, zenoOrder
         } else {
             await supabase.from('payment_orders').insert([{
                 visitor_id: visitorId,
-                post_id: postId,
+                post_id: itemId,
                 amount: amount,
                 phone_number: phone,
                 status: 'approved'
             }]);
         }
 
-        // 2. Grant Access
-        const dDays = game.duration_days || 0;
+        // 2. Grant Access (for videos we check payment_orders directly, but we'll also record in user_access for consistency)
+        const dDays = item.duration_days || 0;
         let expiresAt = new Date('2099-12-31T23:59:59Z');
         if (dDays > 0) {
             expiresAt = new Date();
@@ -1917,14 +1926,13 @@ async function handleSuccessfulPayment(visitorId, game, amount, phone, zenoOrder
 
         await supabase.from('user_access').upsert({
             visitor_id: visitorId,
-            post_id: postId,
+            post_id: itemId,
             granted_at: new Date().toISOString(),
             expires_at: expiresAt.toISOString()
         }, { onConflict: 'visitor_id,post_id' });
 
         // --- REFERRAL COMMISSION LOGIC ---
         try {
-            // Check if this visitor was referred by someone
             const { data: visitor } = await supabase
                 .from('visitors')
                 .select('referred_by, name')
@@ -1932,43 +1940,41 @@ async function handleSuccessfulPayment(visitorId, game, amount, phone, zenoOrder
                 .single();
 
             if (visitor && visitor.referred_by) {
-                // Calculate 10% commission (You can change this later in settings)
                 const commission = Math.floor(parseFloat(amount) * 0.10); 
-                
                 if (commission > 0) {
-                    // Record the earning
                     await supabase.from('affiliate_earnings').insert([{
                         affiliate_id: visitor.referred_by,
                         buyer_id: visitorId,
                         amount_paid: amount,
                         commission: commission,
-                        game_title: game.title
+                        game_title: item.title
                     }]);
 
-                    // Notify the affiliate
                     await supabase.from('notifications').insert({
                         visitor_id: visitor.referred_by,
                         title: 'Pesa Imeingia! 💰',
-                        message: `Hongera! Umepata TSh ${commission} kama kamisheni baada ya ${visitor.name || 'rafiki yako'} kununua ${game.title}.`,
+                        message: `Hongera! Umepata TSh ${commission} kama kamisheni baada ya ${visitor.name || 'rafiki yako'} kununua ${item.title}.`,
                         type: 'success'
                     });
                 }
             }
         } catch (refErr) {
             console.error('Referral payout failed:', refErr);
-            // We don't block the main payment flow if referral fails
         }
 
         // 3. Notifications for the buyer
         await supabase.from('notifications').insert({
-            visitor_id: visitorId, post_id: postId,
-            title: 'Malipo Yamekubaliwa! ✅',
-            message: `Malipo yako ya game "${game.title}" yamehakikiwa.`,
+            visitor_id: visitorId, 
+            post_id: itemId,
+            title: isVideo ? 'Video Imefunguka! 🎬' : 'Malipo Yamekubaliwa! ✅',
+            message: isVideo 
+                ? `Malipo yako ya video "${item.title}" yamehakikiwa. Sasa unaweza kuitazama.` 
+                : `Malipo yako ya game "${item.title}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
             type: 'success'
         });
 
         // 4. Telegram Alert
-        sendTelegramAlert(`💰 <b>SUCCESSFUL ZENOPAY PAYMENT</b> 💰\nGame: ${game.title}\nAmount: ${amount}\nPhone: ${phone}`);
+        sendTelegramAlert(`💰 <b>SUCCESSFUL ${isVideo ? 'VIDEO' : 'GAME'} PAYMENT</b> 💰\n<b>Item:</b> ${item.title}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${phone}\n<b>Method:</b> ZenoPay`);
     } catch (e) {
         console.error('handleSuccessfulPayment Error:', e);
     }
@@ -2010,9 +2016,19 @@ app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
         const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
 
         if (zStatus === 'success' || zStatus === 'completed') {
+            // Try posts first
             const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
-            await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, zenoOrderId);
-            return res.json({ success: true });
+            if (game) {
+                await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, zenoOrderId, false);
+                return res.json({ success: true });
+            } else {
+                // Try videos
+                const { data: video } = await supabase.from('videos').select('*').eq('id', post_id).single();
+                if (video) {
+                    await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, zenoOrderId, true);
+                    return res.json({ success: true });
+                }
+            }
         }
 
         res.json({ success: false, message: 'Bado malipo hayajaonekana kwenye mfumo.' });
@@ -2044,9 +2060,19 @@ app.post('/api/admin/orders/:id/verify', verifyAdmin, async (req, res) => {
         const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
 
         if (zStatus === 'success' || zStatus === 'completed') {
+            // Try posts first
             const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
-            await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId);
-            return res.json({ success: true, message: 'Malipo yamehakikiwa na kukubaliwa!' });
+            if (game) {
+                await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId, false);
+                return res.json({ success: true, message: 'Malipo yamehakikiwa na kukubaliwa!' });
+            } else {
+                // Try videos
+                const { data: video } = await supabase.from('videos').select('*').eq('id', order.post_id).single();
+                if (video) {
+                    await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, zenoOrderId, true);
+                    return res.json({ success: true, message: 'Malipo ya video yamehakikiwa na kukubaliwa!' });
+                }
+            }
         }
 
         res.json({ success: false, message: `ZenoPay Status: ${zStatus || 'Pending'}` });
