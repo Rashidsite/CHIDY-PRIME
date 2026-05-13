@@ -2252,9 +2252,14 @@
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
+            transition: opacity 0.5s ease-out;
         }
 
-        .signup-overlay.hidden { display: none; }
+        .signup-overlay.hidden { 
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
 
         .signup-card {
             background: rgba(15, 15, 25, 0.95);
@@ -4870,14 +4875,18 @@
         }
 
         function openLogin() {
-            document.getElementById('signupOverlay').classList.remove('hidden');
+            const overlay = document.getElementById('signupOverlay');
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
             document.body.style.overflow = 'hidden';
         }
 
         function closeLogin() {
             // Only allow closing if user is actually registered
             if (localStorage.getItem('chidy_visitor')) {
-                document.getElementById('signupOverlay').classList.add('hidden');
+                const overlay = document.getElementById('signupOverlay');
+                overlay.style.display = 'none';
                 document.body.style.overflow = '';
             }
         }
@@ -4992,18 +5001,27 @@
                     setUserDisplay(name);
                     refreshUserStats();
                     
-                    // Hide signup overlay
+                    // Hide signup overlay with smooth fade
                     const signupOverlay = document.getElementById('signupOverlay');
                     signupOverlay.style.transition = 'opacity 0.5s ease-out';
                     signupOverlay.style.opacity = '0';
+                    signupOverlay.style.pointerEvents = 'none';
                     
                     setTimeout(() => {
-                        signupOverlay.classList.add('hidden');
+                        signupOverlay.style.display = 'none';
+                        document.body.style.overflow = '';
+                        
+                        // Load games if not already loaded
+                        if (!allGames || allGames.length === 0) {
+                            fetchGames();
+                            loadVideos();
+                        }
+                        
                         // Show welcome animation
                         showWelcome(name);
                     }, 500);
                 } else {
-                    throw new Error(result.error);
+                    throw new Error(result.error || 'Tatizo la seva');
                 }
             } catch (err) {
                 errorEl.textContent = 'Kuna tatizo. Jaribu tena: ' + err.message;
