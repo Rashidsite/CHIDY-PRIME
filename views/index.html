@@ -4848,28 +4848,38 @@
             if (visitorStr) {
                 try {
                     const visitor = JSON.parse(visitorStr);
-                    // Verify with backend if user still exists
                     if (visitor.id) {
                         const response = await fetch(`/api/check-user/${visitor.id}`);
                         const result = await response.json();
                         
                         if (result.exists) {
-                            // Still exists in DB, hide overlay
-                            document.getElementById('signupOverlay').classList.add('hidden');
+                            // ✅ User exists in DB - hide overlay and proceed
+                            document.getElementById('signupOverlay').style.display = 'none';
+                            document.body.style.overflow = '';
                             setUserDisplay(visitor.name);
                             refreshUserStats();
                             return true;
+                        } else {
+                            // ❌ User explicitly not found in DB - clear and re-signup
+                            localStorage.removeItem('chidy_visitor');
+                            openLogin();
+                            return false;
                         }
                     }
                 } catch (e) {
-                    console.error("Signup validation error:", e);
+                    // ⚠️ Network/server error - DON'T clear localStorage
+                    // Assume user is still valid to prevent false logout
+                    console.warn('User check failed (network issue), assuming logged in');
+                    const visitor = JSON.parse(visitorStr);
+                    document.getElementById('signupOverlay').style.display = 'none';
+                    document.body.style.overflow = '';
+                    setUserDisplay(visitor.name);
+                    refreshUserStats();
+                    return true;
                 }
-                
-                // If we reach here, user does not exist in DB or data is corrupt
-                localStorage.removeItem('chidy_visitor');
             }
             
-            // If no visitor or deleted from DB, ensure overlay is shown
+            // No visitor in localStorage - show signup
             openLogin();
             return false;
         }
