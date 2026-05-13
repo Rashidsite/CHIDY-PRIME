@@ -113,7 +113,8 @@
             display: flex;
             align-items: center;
             padding: 0.5rem 1rem;
-            width: 400px;
+            flex: 1;
+            max-width: 300px;
         }
 
         .search-box input {
@@ -265,6 +266,7 @@
             transition: 0.3s;
             animation: fadeIn 0.6s ease-out backwards;
             animation-delay: 0.5s;
+            overflow-x: auto;
         }
 
         .admin-card:hover { border-color: rgba(188, 19, 254, 0.3); }
@@ -327,12 +329,14 @@
             font-size: 0.85rem;
             padding: 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            white-space: nowrap;
         }
 
         .game-table td {
             padding: 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 0.9rem;
+            white-space: nowrap;
         }
 
         .game-thumb {
@@ -1674,14 +1678,14 @@
 
     <div class="main-wrapper">
         <nav class="topbar">
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; flex: 1; gap: 15px; overflow: hidden;">
                 <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="adminSearchInput" placeholder="Search / Filter data...">
                 </div>
                 
-                <div class="brand-shooting">
+                <div class="brand-shooting" style="margin-left: auto; flex-shrink: 0;">
                     <div class="gun-icon gun-left">
                         <i class="fas fa-gun"></i>
                         <div class="muzzle-flash flash-left"></div>
@@ -1693,22 +1697,13 @@
                     </div>
                 </div>
 
-                <div class="clock-container">
+                <div class="clock-container" style="margin-left: 0; flex-shrink: 0;">
                     <i class="fas fa-clock clock-icon"></i>
                     <div id="digitalClock">00:00:00 AM</div>
                 </div>
-
-                <div class="ninja-movie-battle">
-                    <div class="ninja-hero"><i class="fas fa-user-ninja"></i></div>
-                    <div class="ninja-shadow shadow-1"><i class="fas fa-user-ninja"></i></div>
-                    <div class="ninja-shadow shadow-2"><i class="fas fa-user-ninja"></i></div>
-                    <div class="ninja-shadow shadow-3"><i class="fas fa-user-ninja"></i></div>
-                    <div class="ninja-shadow shadow-4"><i class="fas fa-user-ninja"></i></div>
-                    <div class="slash-effect"><i class="fas fa-bolt"></i></div>
-                </div>
             </div>
             
-            <div class="user-profile">
+            <div class="user-profile" style="margin-left: 20px; flex-shrink: 0;">
                 <!-- Notifications -->
                 <div class="icon-wrapper" id="notifTrigger">
                     <i class="fas fa-bell"></i>
@@ -2161,7 +2156,7 @@
                     <div style="position: relative; height: 200px; display: flex; justify-content: center;">
                         <canvas id="categoryChart"></canvas>
                     </div>
-                    <div id="categoryStatsList" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; max-height: 120px; overflow-y: auto;">
+                    <div id="categoryStatsList" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; max-height: none; overflow-y: visible;">
                         <!-- Populate via JS -->
                     </div>
                 </div>
@@ -2370,8 +2365,8 @@
 
         <!-- ALL GAMES VIEW -->
         <section id="allGamesView" class="content view-section" style="display: none;">
-            <div class="admin-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div class="admin-card" style="overflow-x: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; min-width: 800px;">
                     <h3 class="card-title" style="margin: 0;" id="tableTitle">All Games</h3>
                     <div style="display: flex; gap: 10px;">
                         <button class="btn-filter active" onclick="filterByStatus('published')">Published (<span id="count-published">0</span>)</button>
