@@ -5216,7 +5216,11 @@
         // Logic initialized at the end of script
 
         // Update view on resize if in home view (THROTTLED for performance)
+        let lastWindowWidth = window.innerWidth;
         window.addEventListener('resize', throttle(() => {
+            if (window.innerWidth === lastWindowWidth) return; // Ignore height-only changes (mobile address bar scroll)
+            lastWindowWidth = window.innerWidth;
+            
             const searchQuery = document.getElementById('searchInput').value;
             if (!currentCategory && !searchQuery && allGames.length > 0) {
                 renderCategories(allGames);
