@@ -3098,7 +3098,7 @@
                     <i class="fas fa-phone-alt"></i>
                     <input type="tel" class="signup-input" id="signupPhone" placeholder="Namba ya simu (e.g. 0712345678)" required autocomplete="tel">
                 </div>
-                <button type="submit" class="btn-signup" id="signupBtn">JOIN NOW</button>
+                <button type="button" class="btn-signup" id="signupBtn" onclick="handleSignupClick()">JOIN NOW</button>
                 <div class="signup-error" id="signupError"></div>
             </form>
         </div>
@@ -4974,8 +4974,7 @@
         }
 
         // Signup form handler
-        document.getElementById('signupForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        window.handleSignupClick = async () => {
             const name = document.getElementById('signupName').value.trim();
             const phone = document.getElementById('signupPhone').value.trim();
             const errorEl = document.getElementById('signupError');
@@ -5038,7 +5037,7 @@
                 btn.disabled = false;
                 btn.textContent = 'JOIN NOW';
             }
-        });
+        };
 
         // === AFFILIATE SYSTEM FUNCTIONS ===
         async function openAffiliateModal() {
