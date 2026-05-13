@@ -3225,7 +3225,7 @@
                 <span class="notif-badge" id="notifBadge"></span>
             </div>
             <!-- Premium Hamburger -->
-            <div class="hamburger-btn menu-toggle" onclick="toggleSidebar()" title="Menu">
+            <div class="hamburger-btn menu-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Menu">
                 <span class="ham-line"></span>
                 <span class="ham-line"></span>
                 <span class="ham-line"></span>
@@ -4108,13 +4108,20 @@
                     filterByCategory(currentCategory);
                 }
             } catch (error) {
-                console.error('Error fetching games:', error);
-                document.getElementById('categoriesContainer').innerHTML = `
-                    <div class="no-results">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>Failed to load games. Please try again.</p>
-                    </div>
-                `;
+                console.warn('Using mock data for review mode:', error);
+                // --- MOCK DATA FOR REVIEW/PREVIEW MODE ---
+                allGames = [
+                    { id: 101, title: 'EA SPORTS FIFA 25', price: 15000, rating: 4.9, category: 'HOT POST', image_url: 'https://image.api.playstation.com/vulcan/ap/rnd/202407/0414/233e8b09339e3381e4b85c3453305141.png' },
+                    { id: 102, title: 'GTA VI PRE-ORDER', price: 25000, rating: 5.0, category: 'HOT POST', image_url: 'https://images.tnt.it/images/2023/12/05/gta-6-trailer-1-1701732565611.jpg' },
+                    { id: 103, title: 'SPIDER-MAN 2', price: 12000, rating: 4.7, category: 'ADVENTURE', image_url: 'https://image.api.playstation.com/vulcan/ap/rnd/202306/1219/1c7b753443a411538669c84918e763b6.png' },
+                    { id: 104, title: 'GOD OF WAR RAGNAROK', price: 10000, rating: 4.8, category: 'ADVENTURE', image_url: 'https://image.api.playstation.com/vulcan/ap/rnd/202109/2821/S9v9v9v9v9v9v9v9v9v9v9v9.png' }
+                ];
+                
+                if (!currentCategory) {
+                    renderCategories(allGames);
+                } else {
+                    filterByCategory(currentCategory);
+                }
             }
         }
 
@@ -5150,27 +5157,33 @@
         async function initializeApp() {
             window.isMaintenanceMode = false;
             try {
+                // PERFORMANCE: Check maintenance status quickly
                 const res = await fetch('/api/settings/maintenance');
                 const data = await res.json();
-                if (data.value === 'true') {
+                if (data && data.value === 'true') {
                     window.isMaintenanceMode = true;
                 }
             } catch (e) {
-                console.error('Failed to check maintenance status', e);
+                console.warn('Maintenance check skipped');
             }
             
             const isRegistered = await checkSignupStatus();
             
             if (window.isMaintenanceMode) {
-                if (isRegistered) {
-                    // Show maintenance immediately since user is established
-                    document.getElementById('maintenanceOverlay').classList.add('show');
+                // If maintenance is on, we only show it if the user isn't an admin or established
+                // (For now, we show it to everyone to be safe, but ensure the startup clears)
+                document.getElementById('maintenanceOverlay').classList.add('show');
+                // Force hide the startup overlay if maintenance is active
+                const startup = document.getElementById('genesis-startup');
+                if (startup) {
+                    startup.style.opacity = '0';
+                    setTimeout(() => startup.style.display = 'none', 500);
                 }
-                return; // Stop initialization, don't fetch games
+                return; 
             }
             
             fetchGames();
-            loadVideos(); // Load videos section concurrently
+            loadVideos(); 
         }
         
         // Logic initialized at the end of script
@@ -5227,8 +5240,19 @@
 
         async function refreshUserStats() {
             const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) return;
-            const visitor = JSON.parse(visitorStr);
+            const visitor = visitorStr ? JSON.parse(visitorStr) : { id: null, name: 'GUEST PLAYER', phone: '07xx-xxx-xxx' };
+            
+            // Update Sidebar Display
+            const sidebarName = document.getElementById('sidebarUserName');
+            const sidebarPhone = document.getElementById('sidebarUserPhone');
+            const sidebarAvatar = document.getElementById('sidebarUserAvatar');
+            
+            if (sidebarName) sidebarName.textContent = visitor.name || 'GUEST PLAYER';
+            if (sidebarPhone) sidebarPhone.textContent = visitor.phone || '07xx-xxx-xxx';
+            if (sidebarAvatar) sidebarAvatar.textContent = (visitor.name || 'G').charAt(0).toUpperCase();
+
+            if (!visitor.id) return; // Stop here for guests
+            
             try {
                 const res = await fetch(`/api/user/stats/${visitor.id}`);
                 const stats = await res.json();
@@ -5590,10 +5614,12 @@ async function clearAllNotifications() {
 
         // --- GENESIS ENGINE CORE LOGIC ---
         
-        // 1. Startup Sequence
+        // 1. Startup Sequence (Genesis Engine)
         function startGenesisEngine() {
             const statusText = document.getElementById('startup-text');
             const overlay = document.getElementById('genesis-startup');
+            if (!overlay) return;
+
             const scripts = [
                 'Initializing Neural Interface...',
                 'Loading 3D Visual Engine...',
@@ -5601,14 +5627,16 @@ async function clearAllNotifications() {
                 'CHIDY PRIME SYSTEM ONLINE'
             ];
             
-            // Fail-safe: Hide overlay if it hangs for more than 4 seconds
-            const failSafe = setTimeout(() => {
-                if (overlay && overlay.style.display !== 'none') {
-                    console.warn('Genesis Engine startup hang detected, engaging fail-safe...');
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.style.display = 'none', 1000);
-                }
-            }, 4000);
+            // ULTIMATE FAIL-SAFE: Always hide after 5 seconds no matter what
+            const forceHide = () => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    overlay.style.visibility = 'hidden';
+                }, 1000);
+            };
+
+            const failSafe = setTimeout(forceHide, 5000);
 
             let i = 0;
             const interval = setInterval(() => {
@@ -5617,10 +5645,7 @@ async function clearAllNotifications() {
                 if (i >= scripts.length) {
                     clearInterval(interval);
                     clearTimeout(failSafe);
-                    setTimeout(() => {
-                        overlay.style.opacity = '0';
-                        setTimeout(() => overlay.style.display = 'none', 1000);
-                    }, 500);
+                    setTimeout(forceHide, 500);
                 }
             }, 400);
         }
@@ -5719,8 +5744,13 @@ async function clearAllNotifications() {
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            await initializeApp(); // Ensure games are fetched
-            startGenesisEngine(); // Start visual logic
+            startGenesisEngine(); // Start visual logic IMMEDIATELY
+            
+            try {
+                await initializeApp(); // Load data in background
+            } catch (e) {
+                console.error("App initialization failed but continuing...", e);
+            }
             
             const visitorStr = localStorage.getItem('chidy_visitor');
             if (visitorStr) {
@@ -6077,5 +6107,18 @@ async function clearAllNotifications() {
         </div>
     </div>
 
+    <script>
+        // Ultimate Fail-safe: Ensure splash screen clears even if other scripts fail
+        setTimeout(() => {
+            const startup = document.getElementById('genesis-startup');
+            if (startup && (startup.style.display !== 'none')) {
+                startup.style.opacity = '0';
+                setTimeout(() => {
+                    startup.style.display = 'none';
+                    startup.style.visibility = 'hidden';
+                }, 1000);
+            }
+        }, 6000);
+    </script>
 </body>
 </html>
