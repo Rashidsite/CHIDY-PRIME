@@ -3224,6 +3224,10 @@
                 <span id="currentLangLabel">SW</span>
                 <i class="fas fa-globe-africa"></i>
             </div>
+            <!-- Install App Button (visible when PWA installable) -->
+            <button id="headerInstallBtn" onclick="installPWA()" title="Install App" style="display:none; align-items:center; gap:6px; background:linear-gradient(135deg,#00f2ff,#bc13fe); border:none; border-radius:20px; padding:7px 14px; color:#000; font-family:'Orbitron'; font-size:0.65rem; font-weight:700; cursor:pointer; box-shadow:0 0 15px rgba(0,242,255,0.4); animation:installPulse 2s infinite; white-space:nowrap;">
+                <i class="fas fa-download"></i> INSTALL
+            </button>
             <!-- Bell -->
             <div class="notif-bell-btn" id="notifBell" onclick="toggleNotifDropdown()" title="Notifications">
                 <i class="fas fa-bell"></i>
@@ -3237,6 +3241,27 @@
             </div>
         </div>
     </header>
+
+    <!-- FLOATING INSTALL BANNER -->
+    <div id="installBanner" style="display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:9000; background:linear-gradient(135deg,rgba(0,10,20,0.97),rgba(20,0,40,0.97)); border:1px solid rgba(0,242,255,0.3); border-radius:16px; padding:14px 20px; box-shadow:0 0 30px rgba(0,242,255,0.2); backdrop-filter:blur(20px); max-width:340px; width:calc(100% - 40px); animation:bannerSlideUp 0.5s cubic-bezier(0.175,0.885,0.32,1.275);">
+        <style>
+            @keyframes installPulse { 0%,100%{box-shadow:0 0 10px rgba(0,242,255,0.4);} 50%{box-shadow:0 0 25px rgba(188,19,254,0.7);} }
+            @keyframes bannerSlideUp { from{opacity:0;transform:translateX(-50%) translateY(30px);} to{opacity:1;transform:translateX(-50%) translateY(0);} }
+        </style>
+        <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#00f2ff,#bc13fe);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 15px rgba(0,242,255,0.4);">
+                <i class="fas fa-gamepad" style="color:#000;font-size:1.2rem;"></i>
+            </div>
+            <div style="flex:1;">
+                <div style="font-family:'Orbitron';font-size:0.75rem;font-weight:700;color:#fff;margin-bottom:2px;">INSTALL CHIDY PRIME</div>
+                <div style="font-size:0.7rem;color:#a0a0b0;">Weka kwenye simu yako — haraka zaidi!</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                <button onclick="installPWA()" style="background:linear-gradient(135deg,#00f2ff,#bc13fe);border:none;border-radius:8px;padding:8px 14px;color:#000;font-family:'Orbitron';font-size:0.65rem;font-weight:700;cursor:pointer;">INSTALL</button>
+                <button onclick="document.getElementById('installBanner').style.display='none'" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:5px 14px;color:#6c7293;font-size:0.65rem;cursor:pointer;">Baadaye</button>
+            </div>
+        </div>
+    </div>
 
     <!-- SIDEBAR MENU -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -5155,17 +5180,27 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            // Show install button in header
+            const headerBtn = document.getElementById('headerInstallBtn');
+            if (headerBtn) headerBtn.style.display = 'flex';
+            // Show floating banner
+            const banner = document.getElementById('installBanner');
+            if (banner) banner.style.display = 'block';
+            // Keep sidebar install button too
             const installArea = document.getElementById('installArea');
             if (installArea) installArea.style.display = 'block';
-            console.log('PWA Install prompt ready');
         });
 
         async function installPWA() {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to the install prompt: ${outcome}`);
             deferredPrompt = null;
+            // Hide all install UI
+            const headerBtn = document.getElementById('headerInstallBtn');
+            if (headerBtn) headerBtn.style.display = 'none';
+            const banner = document.getElementById('installBanner');
+            if (banner) banner.style.display = 'none';
             const installArea = document.getElementById('installArea');
             if (installArea) installArea.style.display = 'none';
         }
@@ -5444,8 +5479,8 @@ async function clearAllNotifications() {
             document.body.appendChild(overlay);
         }
 
-        // Initialize and poll
-        setTimeout(fetchNotifications, 2000);
+        // Initialize and poll — wait 7s before first fetch so user sees the app first
+        setTimeout(fetchNotifications, 7000);
         setInterval(fetchNotifications, 30000); // Check every 30s
 
         // Close dropdowns when clicking outside
