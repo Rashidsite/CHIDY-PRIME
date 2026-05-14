@@ -2775,18 +2775,19 @@
         window.fetch = async function (...args) {
             let resource = args[0];
             let config = args[1];
+            const isAdminApi = typeof resource === 'string' && resource.startsWith('/api/admin/');
             if (typeof resource === 'string' && resource.startsWith('/api/') && resource !== '/api/admin/login') {
                 config = config || {};
                 config.headers = config.headers || {};
                 const token = localStorage.getItem('adminToken');
-                console.log("Injecting token for:", resource);
-                config.headers['Authorization'] = 'Bearer ' + token;
+                if (token) {
+                    config.headers['Authorization'] = 'Bearer ' + token;
+                }
                 args[1] = config;
             }
             const response = await originalFetch(...args);
-            console.log(`Fetch Response [${resource}]: ${response.status}`);
-            if (response.status === 401 || response.status === 403) {
-                // Token invalid or expired, locking vault
+            // Only lock vault if an ADMIN endpoint returned 401/403
+            if (isAdminApi && (response.status === 401 || response.status === 403)) {
                 localStorage.removeItem('adminToken');
                 document.getElementById('vaultOverlay').style.display = 'flex';
                 document.getElementById('vaultOverlay').classList.remove('vault-unlocked');
@@ -3942,9 +3943,9 @@
             if (currentActiveViewId === 'promoView') loadPromoCodesWithStats();
         }
 
-        refreshAllData();
         // Initial view setup if logged in
         if (localStorage.getItem('adminToken')) {
+            refreshAllData();
             showView('dashboardView');
         }
         // Auto-refresh user stats and activity every 30 seconds
