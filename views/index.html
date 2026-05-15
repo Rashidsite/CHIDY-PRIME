@@ -3219,13 +3219,11 @@
             <span class="brand-prime">PRIME</span>
         </div>
         <div class="user-actions">
-            <!-- Language Toggle -->
-            <div class="lang-toggle-btn" onclick="toggleLanguage()" title="Badili Lugha">
-                <span id="currentLangLabel">SW</span>
-                <i class="fas fa-globe-africa"></i>
-            </div>
-            <!-- Install App Button (visible when PWA installable) -->
-            <button id="headerInstallBtn" onclick="installPWA()" title="Install App" style="display:none; align-items:center; gap:6px; background:linear-gradient(135deg,#00f2ff,#bc13fe); border:none; border-radius:20px; padding:7px 14px; color:#000; font-family:'Orbitron'; font-size:0.65rem; font-weight:700; cursor:pointer; box-shadow:0 0 15px rgba(0,242,255,0.4); animation:installPulse 2s infinite; white-space:nowrap;">
+            <!-- Language Toggle Button (Hidden when Install is shown) -->
+            <button class="lang-toggle-btn" id="headerLangBtn" onclick="toggleLanguage()" style="display: flex;">SW</button>
+            
+            <!-- PWA Install Button (Dynamic) -->
+            <button id="headerInstallBtn" onclick="installPWA()" style="display: none; background: linear-gradient(135deg, #00f2ff, #bc13fe); border: none; border-radius: 20px; padding: 6px 12px; color: #000; font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); animation: installPulse 2s infinite; white-space: nowrap; align-items: center; gap: 5px;">
                 <i class="fas fa-download"></i> INSTALL
             </button>
             <!-- Bell -->
@@ -5180,9 +5178,12 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Show install button in header
+            // Show install button in header and HIDE language button
             const headerBtn = document.getElementById('headerInstallBtn');
+            const langBtn = document.getElementById('headerLangBtn');
             if (headerBtn) headerBtn.style.display = 'flex';
+            if (langBtn) langBtn.style.display = 'none';
+
             // Show floating banner
             const banner = document.getElementById('installBanner');
             if (banner) banner.style.display = 'block';
@@ -5196,9 +5197,12 @@
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             deferredPrompt = null;
-            // Hide all install UI
+            // Hide all install UI and RESTORE language button
             const headerBtn = document.getElementById('headerInstallBtn');
+            const langBtn = document.getElementById('headerLangBtn');
             if (headerBtn) headerBtn.style.display = 'none';
+            if (langBtn) langBtn.style.display = 'flex';
+
             const banner = document.getElementById('installBanner');
             if (banner) banner.style.display = 'none';
             const installArea = document.getElementById('installArea');
@@ -5409,9 +5413,19 @@
         }
 
         function toggleNotifDropdown() {
-    const dropdown = document.getElementById('notifDropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-}
+            const dropdown = document.getElementById('notifDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Placeholder for language toggle (to be expanded with full i18n logic)
+        function toggleLanguage() {
+            const btn = document.getElementById('headerLangBtn');
+            if (!btn) return;
+            const current = btn.innerText.trim();
+            btn.innerText = current === 'SW' ? 'EN' : 'SW';
+            // Show a brief toast
+            showPulseNotification(`Language changed to ${btn.innerText === 'SW' ? 'Swahili' : 'English'}`);
+        }
 
 // Handle clicking on a notification: mark as read and optionally navigate
 function handleNotifClick(id) {
@@ -5749,12 +5763,12 @@ async function clearAllNotifications() {
             "Umeona ofa mpya? Angalia sehemu ya HOT POST."
         ];
 
-        function showPulseNotification() {
+        function showPulseNotification(customMsg = null) {
             const toast = document.getElementById('pulse-notification');
             const msg = document.getElementById('pulse-message');
             
             if (toast && msg) {
-                msg.innerText = pulseMessages[Math.floor(Math.random() * pulseMessages.length)];
+                msg.innerText = customMsg || pulseMessages[Math.floor(Math.random() * pulseMessages.length)];
                 toast.classList.add('show');
                 
                 setTimeout(() => {
