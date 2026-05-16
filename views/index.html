@@ -4538,13 +4538,18 @@
 
         // ===== RENDER SINGLE CARD =====
         function renderCard(game) {
-            const priceLabel = game.price > 0 ? `TSh ${parseInt(game.price).toLocaleString()}` : 'FREE ACCESS';
+            const isDiscounted = game.global_discount && game.global_discount > 0 && game.original_price > 0 && game.original_price > game.price;
+            const originalPriceLabel = isDiscounted ? `<s style="color: #ff3366; font-size: 0.7rem; margin-right: 5px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : '';
+            const priceLabel = game.price > 0 ? `${originalPriceLabel}TSh ${parseInt(game.price).toLocaleString()}` : 'FREE ACCESS';
+            
             const priceClass = game.price > 0 ? '' : 'free';
+            const discountBadge = isDiscounted ? `<div style="position: absolute; top: 10px; right: 10px; background: #ff3366; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; z-index: 10; box-shadow: 0 2px 10px rgba(255,51,102,0.4); border: 1px solid rgba(255,255,255,0.2);">-${game.global_discount}%</div>` : '';
             const category = game.category ? game.category.toUpperCase() : 'HOT POST';
 
             return `
                 <div class="game-card" data-game-id="${game.id}" data-category="${category}">
                     <div class="card-image-wrap">
+                        ${discountBadge}
                         <img data-src="${game.image_url}" alt="${game.title}" 
                              onerror="this.src='https://placehold.co/400x600/111119/00f2ff?text=${encodeURIComponent(game.title)}'"
                              loading="lazy" decoding="async" width="175" height="263">
@@ -4581,7 +4586,7 @@
                     <div class="detail-meta" style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
                         <span style="background:rgba(255,180,0,0.1); color:var(--gold); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,180,0,0.2);"><i class="fas fa-star"></i> ${game.rating || '4.5'}</span>
                         <span style="background:rgba(0,242,255,0.1); color:var(--primary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(0,242,255,0.2);">${game.category || 'TANZANIA GAMES'}</span>
-                        <span style="background:rgba(188,19,254,0.1); color:var(--secondary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(188,19,254,0.2);">TSh ${parseInt(game.price).toLocaleString()}</span>
+                        <span style="background:rgba(188,19,254,0.1); color:var(--secondary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(188,19,254,0.2);">${(game.global_discount && game.global_discount > 0 && game.original_price > game.price) ? `<s style="color:#ff3366; margin-right:5px; opacity: 0.8;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : ''}TSh ${parseInt(game.price).toLocaleString()}</span>
                         <span style="background:rgba(255,255,255,0.05); color:#fff; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> ${game.duration_days > 0 ? `Siku ${game.duration_days}` : 'KUDUMU'}</span>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.05); margin-bottom:15px;">
@@ -4683,7 +4688,7 @@
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                                 <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
-                                    <i class="fas fa-bolt"></i> LIPA SASA (TSh ${parseInt(game.price).toLocaleString()})
+                                    <i class="fas fa-bolt"></i> LIPA SASA (${(game.global_discount && game.global_discount > 0 && game.original_price > game.price) ? `<s style="opacity:0.7; margin-right:4px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : ''}TSh ${parseInt(game.price).toLocaleString()})
                                 </button>
                             `;
                         } else {
@@ -4754,7 +4759,12 @@
                 btn.innerHTML = '<i class="fas fa-bolt"></i> <span>Nunua Sasa</span>';
 
                 // Populate Game Name and Price in Popup
-                document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
+                const isDiscounted = game.global_discount && game.global_discount > 0 && game.original_price > 0 && game.original_price > game.price;
+                if (isDiscounted) {
+                    document.getElementById('payAmount').innerHTML = `<s style="color: #ff3366; font-size: 0.8rem; margin-right: 8px;">TSh ${parseInt(game.original_price).toLocaleString()}</s> TSh ${parseInt(game.price).toLocaleString()}`;
+                } else {
+                    document.getElementById('payAmount').textContent = 'TSh ' + parseInt(game.price).toLocaleString();
+                }
                 document.getElementById('payPostId').value = postId;
                 
                 // Populate game title in Content field

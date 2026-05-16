@@ -2147,13 +2147,12 @@ app.get('/api/orders/history/:visitorId', async (req, res) => {
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
-    // Auto-cleanup Pending orders after 24 hours
+    // Auto-cleanup ALL orders older than 7 days
     try {
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         await supabase.from('payment_orders')
             .delete()
-            .eq('status', 'pending')
-            .lt('created_at', oneDayAgo.toISOString());
+            .lt('created_at', sevenDaysAgo.toISOString());
     } catch (e) {
         console.error("Cleanup error:", e);
     }
@@ -2179,7 +2178,7 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
     const { status } = req.body;
     console.log(`[DEBUG] Status Update Request: ID=${id}, Status=${status}, Version=1.5_FIXED`);
     
-    if (!['approved', 'rejected'].includes(status)) {
+    if (!['approved', 'manual_approved', 'rejected'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
     }
     
@@ -2195,7 +2194,7 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
         if (orderErr) throw orderErr;
         
         // 2. If approved, grant access to the game
-        if (status === 'approved') {
+        if (status === 'approved' || status === 'manual_approved') {
             const { post_id, visitor_id } = order;
             
             // 2a. Fetch game info first (REQUIRED for expiresAt and title)
@@ -2274,7 +2273,7 @@ app.get('/api/leaderboard', async (req, res) => {
         const { data, error } = await supabase
             .from('payment_orders')
             .select('visitor_id, visitors(name)')
-            .eq('status', 'approved');
+            .in('status', ['approved', 'manual_approved']);
 
         if (error) throw error;
 

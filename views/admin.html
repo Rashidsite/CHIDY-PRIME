@@ -2138,29 +2138,14 @@
         <section id="dashboardView" class="content view-section">
             <h2 class="view-title"><i class="fas fa-chart-line"></i> Business Analytics</h2>
             
-            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 2rem;">
-                <!-- Main Revenue Chart -->
-                <div class="chart-container" style="position: relative; height:40vh; background: #1a1a24; padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="margin: 0; font-size: 1rem; color: #fff; font-family: 'Orbitron';"><i class="fas fa-chart-area" style="color: #00f2ff;"></i> Revenue Performance</h3>
-                        <span style="font-size: 0.7rem; color: #6c7293;">Last 7 Days (TSh)</span>
-                    </div>
-                    <canvas id="revenueChart"></canvas>
-                </div>
-                
-                <!-- Category Share Card -->
-                <div class="admin-card" style="margin-bottom: 0; padding: 25px;">
-                    <h3 style="margin: 0 0 20px 0; font-size: 1rem; color: #fff; font-family: 'Orbitron';"><i class="fas fa-pie-chart" style="color: #bc13fe;"></i> Sales Distribution</h3>
-                    <div style="position: relative; height: 200px; display: flex; justify-content: center;">
-                        <canvas id="categoryChart"></canvas>
-                    </div>
-                    <div id="categoryStatsList" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; max-height: none; overflow-y: visible;">
-                        <!-- Populate via JS -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="stats-grid">
+        <style>
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+            }
+        </style>
+            <div class="stats-grid" style="margin-bottom: 2rem;">
                 <div class="stat-card">
                     <div>
                         <div class="stat-label">Total Games</div>
@@ -2201,6 +2186,20 @@
                     </div>
                     <i class="fas fa-coins stat-icon" style="color: #00ff88;"></i>
                 </div>
+                <div class="stat-card" style="border-left: 5px solid #ff3366;">
+                    <div>
+                        <div class="stat-label">Failed Trans.</div>
+                        <div class="stat-val" id="failedTransactions">0</div>
+                    </div>
+                    <i class="fas fa-times-circle stat-icon" style="color: #ff3366;"></i>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid #bc13fe;">
+                    <div>
+                        <div class="stat-label">Pending Amt</div>
+                        <div class="stat-val" id="pendingAmount">TSH 0</div>
+                    </div>
+                    <i class="fas fa-wallet stat-icon" style="color: #bc13fe;"></i>
+                </div>
                 <div class="stat-card" style="border-left: 5px solid #00f2ff;">
                     <div>
                         <div class="stat-label">App Installs</div>
@@ -2210,6 +2209,67 @@
                     <i class="fas fa-mobile-alt stat-icon" style="color: #00f2ff;"></i>
                 </div>
             </div>
+
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 2rem;">
+                <!-- Main Revenue Chart -->
+                <div class="chart-container" style="position: relative; height:40vh; background: #1a1a24; padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 1rem; color: #fff; font-family: 'Orbitron';"><i class="fas fa-chart-area" style="color: #00f2ff;"></i> Revenue Performance</h3>
+                        <span style="font-size: 0.7rem; color: #6c7293;">Last 7 Days (TSh)</span>
+                    </div>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                
+                <!-- Category Share Card -->
+                <div class="admin-card" style="margin-bottom: 0; padding: 25px;">
+                    <h3 style="margin: 0 0 20px 0; font-size: 1rem; color: #fff; font-family: 'Orbitron';"><i class="fas fa-pie-chart" style="color: #bc13fe;"></i> Sales Distribution</h3>
+                    <div style="position: relative; height: 200px; display: flex; justify-content: center;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div id="categoryStatsList" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px; max-height: none; overflow-y: visible;">
+                        <!-- Populate via JS -->
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- CHART & ANNOUNCEMENTS -->
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 2rem;">
+                <!-- REVENUE CHART -->
+                <div class="admin-card" style="margin-bottom: 0;">
+                    <h3 class="card-title"><i class="fas fa-chart-line" style="color:var(--primary-color);"></i> Revenue Trend (Daily)</h3>
+                    <div style="height: 250px;">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- CONTROLS -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Maintenance -->
+                    <div class="admin-card" style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 class="card-title" style="margin: 0; color: #ffb400;"><i class="fas fa-tools"></i> Maintenance Mode</h3>
+                            <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
+                                <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()" style="opacity: 0; width: 0; height: 0;">
+                                <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2a2d3a; transition: .4s; border-radius: 34px;"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Announcement -->
+                    <div class="admin-card" style="margin-bottom: 0;">
+                        <h3 class="card-title" style="color:var(--primary-color);"><i class="fas fa-bullhorn"></i> Global Announcement</h3>
+                        <textarea id="announcementInput" placeholder="Enter banner text..." style="width: 100%; height: 60px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 10px; margin-bottom: 10px;"></textarea>
+                        <button class="btn-primary" onclick="updateAnnouncement()" style="width: 100%;"><i class="fas fa-save"></i> UPDATE BANNER</button>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                .switch input:checked + .slider { background-color: #ffb400; box-shadow: 0 0 15px rgba(255, 180, 0, 0.5); }
+                .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+                .switch input:checked + .slider:before { transform: translateX(26px); }
+            </style>
 
             <!-- LIVE ACTIVITY FEED -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 2rem;">
@@ -2249,45 +2309,18 @@
                 </div>
             </div>
 
-            <!-- CHART & ANNOUNCEMENTS -->
-            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 2rem;">
-                <!-- REVENUE CHART -->
-                <div class="admin-card" style="margin-bottom: 0;">
-                    <h3 class="card-title"><i class="fas fa-chart-line" style="color:var(--primary-color);"></i> Revenue Trend (Daily)</h3>
-                    <div style="height: 250px;">
-                        <canvas id="salesChart"></canvas>
-                    </div>
+
+            <!-- Moved Upload New Game from here to All Games View -->
+        </section>
+
+        <!-- ALL GAMES VIEW -->
+        <section id="allGamesView" class="content view-section" style="display: none;">
+            <!-- Upload New Game Section (Hidden by default) -->
+            <div id="uploadGameSection" class="admin-card" style="display: none; margin-bottom: 2rem; border: 1px solid var(--primary-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 class="card-title" style="margin:0;">Upload New Game</h3>
+                    <button onclick="toggleUploadForm()" style="background:none; border:none; color:#ff3366; cursor:pointer; font-size:1.2rem;"><i class="fas fa-times"></i></button>
                 </div>
-
-                <!-- CONTROLS -->
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                    <!-- Maintenance -->
-                    <div class="admin-card" style="margin-bottom: 0;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3 class="card-title" style="margin: 0; color: #ffb400;"><i class="fas fa-tools"></i> Maintenance Mode</h3>
-                            <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
-                                <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()" style="opacity: 0; width: 0; height: 0;">
-                                <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2a2d3a; transition: .4s; border-radius: 34px;"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <!-- Announcement -->
-                    <div class="admin-card" style="margin-bottom: 0;">
-                        <h3 class="card-title" style="color:var(--primary-color);"><i class="fas fa-bullhorn"></i> Global Announcement</h3>
-                        <textarea id="announcementInput" placeholder="Enter banner text..." style="width: 100%; height: 60px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 10px; margin-bottom: 10px;"></textarea>
-                        <button class="btn-primary" onclick="updateAnnouncement()" style="width: 100%;"><i class="fas fa-save"></i> UPDATE BANNER</button>
-                    </div>
-                </div>
-            </div>
-
-            <style>
-                .switch input:checked + .slider { background-color: #ffb400; box-shadow: 0 0 15px rgba(255, 180, 0, 0.5); }
-                .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-                .switch input:checked + .slider:before { transform: translateX(26px); }
-            </style>
-
-            <div class="admin-card">
-                <h3 class="card-title">Upload New Game</h3>
                 <form id="uploadForm">
                     <div class="form-row">
                         <div class="form-group">
@@ -2359,10 +2392,7 @@
                     <p id="statusMsg" style="margin-top: 1rem; font-size: 0.8rem;"></p>
                 </form>
             </div>
-        </section>
 
-        <!-- ALL GAMES VIEW -->
-        <section id="allGamesView" class="content view-section" style="display: none;">
             <div class="admin-card" style="overflow-x: auto;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; min-width: 800px;">
                     <h3 class="card-title" style="margin: 0;" id="tableTitle">All Games</h3>
@@ -2370,7 +2400,7 @@
                         <button class="btn-filter active" onclick="filterByStatus('published')">Published (<span id="count-published">0</span>)</button>
                         <button class="btn-filter" onclick="filterByStatus('draft')">Drafts (<span id="count-draft">0</span>)</button>
                         <button class="btn-filter" onclick="filterByStatus('trash')">Trash (<span id="count-trash">0</span>)</button>
-                        <button class="btn-deploy" onclick="showView('dashboardView')" style="padding: 0.5rem 1.5rem; font-size: 0.8rem; margin-left: 10px;">+ Add New</button>
+                        <button class="btn-deploy" onclick="toggleUploadForm()" style="padding: 0.5rem 1.5rem; font-size: 0.8rem; margin-left: 10px;">+ Add New</button>
                     </div>
                 </div>
                 <table class="game-table">
@@ -2798,6 +2828,16 @@
 
         const form = document.getElementById('uploadForm');
         const statusMsg = document.getElementById('statusMsg');
+        function toggleUploadForm() {
+            const section = document.getElementById('uploadGameSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                section.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
         const fullGameTableBody = document.getElementById('fullGameTableBody');
         const totalGamesLabels = document.querySelectorAll('.totalGamesCount');
         const addLinkBtn = document.getElementById('addLinkBtn');
@@ -4518,9 +4558,20 @@
                         .filter(o => o.status === 'approved')
                         .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
                     : 0;
-                const approvedOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => o.status === 'approved') : [];
+                const pendingTotal = Array.isArray(allOrdersData) 
+                    ? allOrdersData
+                        .filter(o => o.status === 'pending')
+                        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
+                    : 0;
+                const failedCount = Array.isArray(allOrdersData) 
+                    ? allOrdersData.filter(o => o.status === 'failed' || o.status === 'rejected').length
+                    : 0;
+
+                const approvedOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => o.status === 'approved' || o.status === 'manual_approved') : [];
                 document.getElementById('totalRevenue').innerText = `TSh ${approvedTotal.toLocaleString()}`;
                 if (document.getElementById('totalDownloads')) document.getElementById('totalDownloads').innerText = approvedOrders.length;
+                if (document.getElementById('pendingAmount')) document.getElementById('pendingAmount').innerText = `TSh ${pendingTotal.toLocaleString()}`;
+                if (document.getElementById('failedTransactions')) document.getElementById('failedTransactions').innerText = failedCount;
 
                 renderOrdersList();
 
@@ -4661,7 +4712,7 @@
             if (orderBadge) orderBadge.innerText = `${filteredOrders.length} Total`;
 
             list.innerHTML = filteredOrders.map(order => {
-                    const statusClass = `status-${order.status}`;
+                    const statusClass = (order.status === 'approved' || order.status === 'manual_approved') ? 'status-approved' : `status-${order.status}`;
                     const date = new Date(order.created_at).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
                     const guestName = order.visitors ? order.visitors.name : 'Unknown';
                     const guestPhone = order.visitors ? order.visitors.phone : order.phone_number;
@@ -4680,7 +4731,7 @@
                             transition: 0.3s;
                         ">
                             <!-- Glowing edge for status -->
-                            <div style="position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: ${order.status === 'pending' ? '#ffab00' : (order.status === 'approved' ? '#00d25b' : '#ff3333')}"></div>
+                            <div style="position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: ${order.status === 'pending' ? '#ffab00' : ((order.status === 'approved' || order.status === 'manual_approved') ? '#00d25b' : '#ff3333')}"></div>
                             
                             <div class="order-info" style="margin-bottom: 15px;">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -4711,11 +4762,11 @@
                                 </div>
                                 <div class="order-actions">
                                     ${order.status === 'pending' ? `
-                                        <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'approved')" style="padding: 6px 14px; font-size: 0.75rem; background: #00d25b; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">Approve</button>
+                                        <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 6px 14px; font-size: 0.75rem; background: #00d25b; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">Approve</button>
                                         <button class="btn-order-verify" onclick="verifyOrder('${order.id}')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(0, 242, 255, 0.1); border: 1px solid #00f2ff; color: #00f2ff; border-radius: 4px; font-weight: 500; cursor: pointer; margin-left: 5px;" title="Check status directly from ZenoPay">Verify</button>
                                         <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(255,51,51,0.1); border: 1px solid #ff3333; color: #ff3333; border-radius: 4px; font-weight: 500; cursor: pointer; margin-top: 5px;">Reject</button>
                                     ` : `
-                                        <span class="order-status ${statusClass}" style="opacity: 0.8;">${order.status}</span>
+                                        <span class="order-status ${statusClass}" style="opacity: 0.8;">${order.status === 'manual_approved' ? 'APPROVED' : order.status}</span>
                                     `}
                                 </div>
                             </div>
@@ -4725,7 +4776,7 @@
         }
 
         async function updateOrderStatus(orderId, status) {
-            const isApprove = status === 'approved';
+            const isApprove = status === 'approved' || status === 'manual_approved';
             const confirmed = await showConfirmModal(
                 isApprove ? 'APPROVE ORDER' : 'REJECT ORDER',
                 isApprove
