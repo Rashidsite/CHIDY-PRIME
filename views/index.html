@@ -2658,6 +2658,31 @@
             animation: slideUpBot 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
         @media (max-width: 768px) {
+            /* Post Size Reduction (Compact Mode) */
+            .categories-container, .game-grid {
+                grid-template-columns: repeat(3, 1fr) !important; /* 3 items per row on mobile to make them smaller */
+                gap: 8px !important;
+                padding: 5px !important;
+            }
+            .game-card {
+                padding: 6px !important;
+                border-radius: 10px !important;
+            }
+            .card-image-wrap {
+                height: 90px !important;
+            }
+            .card-title {
+                font-size: 0.65rem !important;
+                margin-top: 5px !important;
+            }
+            .game-meta, .game-category {
+                font-size: 0.5rem !important;
+            }
+            .card-actions a, .card-actions button {
+                padding: 4px 6px !important;
+                font-size: 0.6rem !important;
+            }
+
             .bot-overlay { padding: 0; }
             .bot-container { height: 90vh; max-height: 100%; border-radius: 20px 20px 0 0; }
         }
@@ -3059,7 +3084,218 @@
             .mg-list { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
         }
     </style>
+
+    <!-- MOBILE PERFORMANCE OPTIMIZATIONS -->
+    <style>
+        @media (max-width: 768px) {
+            /* Disable expensive blur filters on mobile */
+            .header, .sidebar, .sidebar-overlay, .pulse-toast, #pushPrompt, .premium-overlay, .modal-content, .vp-glass {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+            
+            /* Replace blur with solid or semi-transparent backgrounds for readability */
+            .header { background: rgba(10, 10, 15, 0.98) !important; }
+            .sidebar { background: #0a0a0f !important; }
+            .pulse-toast, #pushPrompt { background: rgba(20, 20, 25, 0.98) !important; border: 1px solid #00f2ff; }
+            
+            /* Hardware acceleration for smooth scrolling */
+            .game-card {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+            }
+            
+            /* Simplify heavy animations on mobile */
+            .startup-logo, .brand-prime, .notif-badge {
+                animation: none !important;
+                filter: none !important;
+            }
+        }
+    </style>
+
+    <!-- PRICE BADGE REDESIGN (PLAN A) -->
+    <style>
+        .price-badge {
+            position: absolute !important;
+            top: 6px !important;
+            right: 6px !important;
+            bottom: auto !important;
+            left: auto !important;
+            transform: none !important;
+            background: rgba(10, 10, 15, 0.85) !important;
+            color: #00f2ff !important;
+            border: 1px solid rgba(0, 242, 255, 0.3) !important;
+            padding: 3px 8px !important;
+            border-radius: 8px !important;
+            font-size: 0.55rem !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.5px !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+            z-index: 10 !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
+            width: auto !important;
+            height: auto !important;
+            line-height: 1.2 !important;
+        }
+        .price-badge.free {
+            background: rgba(10, 20, 15, 0.85) !important;
+            color: #00ff73 !important;
+            border-color: rgba(0, 210, 91, 0.4) !important;
+        }
+    </style>
+
+    <!-- PRICE BADGE REDESIGN (PLAN B - BELOW IMAGE) -->
+    <style>
+        /* Hide the old badge that was over the image */
+        .card-image-wrap .price-badge {
+            display: none !important;
+        }
+        
+        /* Style the new price text */
+        .price-text {
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            margin: 4px 0 5px 0;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            background: linear-gradient(135deg, #00b8cc, #00f2ff);
+            padding: 3px 10px;
+            border-radius: 6px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 242, 255, 0.4);
+        }
+        .price-text.free {
+            color: #fff;
+            background: linear-gradient(135deg, #00a844, #00ff73);
+            box-shadow: 0 2px 8px rgba(0, 210, 91, 0.4);
+        }
+    </style>
+
+    <!-- HIDE REDUNDANT INSTALL BANNER -->
+    <style>
+        #installBanner {
+            display: none !important;
+        }
+    </style>
+
+    <!-- SHRINK HEADER INSTALL BUTTON -->
+    <style>
+        #headerInstallBtn {
+            padding: 4px 10px !important;
+            font-size: 0.55rem !important;
+            border-radius: 12px !important;
+            box-shadow: 0 0 8px rgba(0, 242, 255, 0.3) !important;
+            letter-spacing: 0.5px !important;
+            height: 24px !important;
+        }
+        #headerInstallBtn i {
+            font-size: 0.6rem !important;
+        }
+    </style>
+
+    <!-- SHRINK HERO SECTION ON MOBILE -->
+    <style>
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 1.5rem 1rem 0.5rem !important;
+            }
+            .hero-badge {
+                margin-bottom: 0.5rem !important;
+                font-size: 0.55rem !important;
+                padding: 4px 10px !important;
+            }
+            .hero-title {
+                font-size: 1.4rem !important;
+                margin-bottom: 0.5rem !important;
+                line-height: 1.2 !important;
+            }
+            .hero-subtitle {
+                font-size: 0.75rem !important;
+                margin-bottom: 0.5rem !important;
+                line-height: 1.4 !important;
+            }
+            .hero-stats {
+                display: none !important; /* Hide stats on mobile to bring games up */
+            }
+            .hero-content {
+                margin-bottom: 1rem !important;
+            }
+            .hero-search input {
+                padding: 10px 15px 10px 40px !important;
+            }
+            .hero-search .search-icon {
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+            }
+            .category-section:first-of-type {
+                margin-top: 0 !important;
+            }
+        }
+    </style>
+
+    <!-- SHRINK GAME MODAL ON MOBILE -->
+    <style>
+        @media (max-width: 768px) {
+            .detail-image {
+                height: 160px !important;
+                aspect-ratio: auto !important;
+                object-fit: cover !important;
+            }
+            .detail-body {
+                padding: 15px !important;
+            }
+            .detail-body h2 {
+                font-size: 1.1rem !important;
+                margin-bottom: 10px !important;
+                line-height: 1.3 !important;
+            }
+            .detail-card {
+                max-height: 80vh !important;
+            }
+            .detail-meta {
+                margin-bottom: 12px !important;
+            }
+            .detail-meta span {
+                font-size: 0.65rem !important;
+                padding: 4px 8px !important;
+            }
+        }
+    </style>
+
+    <!-- CENTER AND NARROW MODAL -->
+    <style>
+        @media (max-width: 768px) {
+            .detail-overlay {
+                align-items: center !important; /* Float in middle */
+                padding: 20px !important; /* Spacing from edges */
+            }
+            .detail-card {
+                border-radius: 20px !important;
+                width: 100% !important;
+                max-width: 380px !important; /* Narrower */
+                margin: auto !important;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(0, 242, 255, 0.1) !important;
+                animation: none !important;
+                transform: scale(0.95);
+                animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+            }
+            .detail-image {
+                border-radius: 20px 20px 0 0 !important;
+            }
+        }
+        @keyframes popIn {
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </head>
+
+
+
+
+
+
 <body>
     <!-- GENESIS ENGINE STARTUP -->
     <div id="genesis-startup">
@@ -3504,11 +3740,67 @@
             <i class="fas fa-money-bill-wave" style="color: #00ff00;"></i>
             <span style="color: #00ff00; font-weight: bold;">Pata Pesa</span>
         </div>
-        <div class="bottom-item" onclick="openLeaderboard()">
-            <i class="fas fa-crown" style="color:var(--gold);"></i>
-            <span style="color:var(--gold); font-weight:bold;">Winners</span>
+        <div class="bottom-item" onclick="openProfileModal()" id="bottomProfileBtn">
+            <i class="fas fa-user-circle" style="color:#bc13fe;"></i>
+            <span style="color:#bc13fe; font-weight:bold;">Profile</span>
         </div>
     </nav>
+
+    <!-- ===== PROFILE MODAL ===== -->
+    <div id="profileModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000; overflow-y:auto;">
+        <div style="min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding: 20px 15px 100px;">
+            <div style="width:100%; max-width:420px; animation: slideUp 0.3s ease;">
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                    <div style="font-family:'Orbitron'; font-size:1rem; font-weight:800; color:#fff; letter-spacing:2px;">MY PROFILE</div>
+                    <button onclick="closeProfileModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.1); color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:1rem;"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Profile Card -->
+                <div style="background:linear-gradient(135deg, rgba(0,242,255,0.08), rgba(188,19,254,0.08)); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:20px; margin-bottom:15px; position:relative; overflow:hidden;">
+                    <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #00f2ff, #bc13fe);"></div>
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                        <div id="profileModalAvatar" style="width:56px; height:56px; background:linear-gradient(135deg,#00f2ff,#bc13fe); border-radius:16px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-size:1.5rem; font-weight:900; color:#000; flex-shrink:0;">U</div>
+                        <div style="flex:1; min-width:0;">
+                            <div id="profileModalName" style="font-family:'Orbitron'; font-size:1rem; font-weight:800; color:#fff; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">User</div>
+                            <div id="profileModalPhone" style="font-size:0.75rem; color:#a0a0b0;">--</div>
+                            <div id="profileModalLevel" style="font-size:0.6rem; font-weight:700; color:#00f2ff; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">ROOKIE GAMER</div>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:12px; text-align:center;">
+                            <div id="profileModalGames" style="font-family:'Orbitron'; font-size:1.2rem; font-weight:900; color:#fff;">0</div>
+                            <div style="font-size:0.55rem; color:#6c7293; letter-spacing:1px; font-weight:700;">GAMES</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:12px; text-align:center;">
+                            <div id="profileModalPoints" style="font-family:'Orbitron'; font-size:1.2rem; font-weight:900; color:#fff;">0</div>
+                            <div style="font-size:0.55rem; color:#6c7293; letter-spacing:1px; font-weight:700;">POINTS</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <button onclick="openMyGames(); closeProfileModal();" style="background:rgba(0,242,255,0.08); border:1px solid rgba(0,242,255,0.2); border-radius:12px; padding:12px; color:#00f2ff; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-gamepad"></i> Library Yangu</button>
+                    <button onclick="openOrderHistory(); closeProfileModal();" style="background:rgba(188,19,254,0.08); border:1px solid rgba(188,19,254,0.2); border-radius:12px; padding:12px; color:#bc13fe; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-history"></i> Order History</button>
+                    <button onclick="openAffiliateModal(); closeProfileModal();" style="background:rgba(0,255,0,0.06); border:1px solid rgba(0,255,0,0.2); border-radius:12px; padding:12px; color:#00ff73; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-money-bill-wave"></i> Pata Pesa</button>
+                    <a href="javascript:void(0)" onclick="openWhatsAppSupport(); closeProfileModal();" style="text-decoration:none; background:rgba(255,180,0,0.06); border:1px solid rgba(255,180,0,0.2); border-radius:12px; padding:12px; color:#ffb400; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-question-circle"></i> Msaada</a>
+                    <button onclick="openLogoutModal(); closeProfileModal();" style="grid-column: span 2; background:rgba(255,68,68,0.06); border:1px solid rgba(255,68,68,0.2); border-radius:12px; padding:12px; color:#ff4444; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+
+                <!-- Winners / Leaderboard Section -->
+                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden;">
+                    <div style="padding:15px 15px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <i class="fas fa-crown" style="color:#ffb400;"></i>
+                        <div style="font-family:'Orbitron'; font-size:0.8rem; font-weight:800; color:#fff; letter-spacing:1px;">TOP WINNERS</div>
+                    </div>
+                    <div id="profileLeaderboardList" style="padding:10px; max-height:280px; overflow-y:auto;">
+                        <div style="text-align:center; padding:20px; color:#6c7293; font-size:0.75rem;">Inapakia...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- MY GAMES MODAL -->
     <div class="my-games-modal" id="myGamesModal">
         <div class="mg-header">
@@ -4093,7 +4385,7 @@
 
                 list.innerHTML = purchases.map(p => `
                     <div class="purchased-item">
-                        <img src="${p.posts.image_url}" alt="">
+                        <img loading="lazy" src="${p.posts.image_url}" alt="">
                         <div style="font-size: 0.8rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.posts.title}</div>
                         <a href="${p.posts.download_url}" class="purchased-btn" target="_blank"><i class="fas fa-download"></i> DOWNLOAD</a>
                     </div>
@@ -4256,13 +4548,13 @@
                         <img data-src="${game.image_url}" alt="${game.title}" 
                              onerror="this.src='https://placehold.co/400x600/111119/00f2ff?text=${encodeURIComponent(game.title)}'"
                              loading="lazy" decoding="async" width="175" height="263">
-                        <div class="price-badge ${priceClass}">${priceLabel}</div>
                         <div class="card-rating">
                             <i class="fas fa-star"></i> ${game.rating || '0'}
                         </div>
                     </div>
                     <div class="card-info">
                         <div class="card-title">${game.title}</div>
+                        <div class="price-text ${priceClass}">${priceLabel}</div>
                         <div class="card-desc">${game.description || ''}</div>
                     </div>
                 </div>
@@ -4283,7 +4575,7 @@
             // 1. RENDER SHELL INSTANTLY (0ms Delay)
             card.innerHTML = `
                 <button class="close-detail" onclick="closeDetail()"><i class="fas fa-times"></i></button>
-                <img src="${game.image_url}" alt="${game.title}" class="detail-image">
+                <img loading="lazy" src="${game.image_url}" alt="${game.title}" class="detail-image">
                 <div class="detail-body">
                     <h2 style="font-family:'Orbitron'; color:#fff; font-size:1.4rem; margin-bottom:12px; letter-spacing:1px; text-transform:uppercase;">${game.title}</h2>
                     <div class="detail-meta" style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
@@ -4292,8 +4584,11 @@
                         <span style="background:rgba(188,19,254,0.1); color:var(--secondary); padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(188,19,254,0.2);">TSh ${parseInt(game.price).toLocaleString()}</span>
                         <span style="background:rgba(255,255,255,0.05); color:#fff; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid rgba(255,255,255,0.1);"><i class="fas fa-clock"></i> ${game.duration_days > 0 ? `Siku ${game.duration_days}` : 'KUDUMU'}</span>
                     </div>
-                    <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:15px; border:1px solid rgba(255,255,255,0.05); margin-bottom:20px;">
-                        <p style="color:#a0a0b0; font-size:0.85rem; line-height:1.6; margin:0;">${game.description || 'Gundua ulimwengu mpya wa michezo na Chidy Prime. Download sasa na ufurahie uzoefu bora wa gaming.'}</p>
+                    <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.05); margin-bottom:15px;">
+                        <p id="gameDescText" style="color:#a0a0b0; font-size:0.75rem; line-height:1.6; margin:0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${game.description || 'Gundua ulimwengu mpya wa michezo na Chidy Prime. Download sasa na ufurahie uzoefu bora wa gaming.'}</p>
+                        <div style="text-align:right; margin-top:5px;">
+                            <span id="readMoreBtn" onclick="toggleReadMore()" style="color:var(--primary); font-size:0.7rem; font-weight:700; cursor:pointer; font-family:'Orbitron';">Soma Zaidi <i class="fas fa-chevron-down"></i></span>
+                        </div>
                     </div>
                     <!-- ACCESS SECTION (LOADS ASYNC) -->
                     <div id="detailAccessContainer" class="access-loading-shimmer">
@@ -4849,13 +5144,18 @@
         function setUserDisplay(name) {
             const initial = name ? name.charAt(0).toUpperCase() : 'U';
             const fullName = name || 'User';
-            const shortName = name ? name.split(' ')[0] : 'User';
 
             // Sidebar targets
             const sAvatar = document.getElementById('sidebarAvatar');
             const sName = document.getElementById('sidebarName');
             if (sAvatar) sAvatar.textContent = initial;
             if (sName) sName.textContent = fullName;
+
+            // Profile Modal targets
+            const pAvatar = document.getElementById('profileModalAvatar');
+            const pName = document.getElementById('profileModalName');
+            if (pAvatar) pAvatar.textContent = initial;
+            if (pName) pName.textContent = fullName;
         }
 
         // ===== LOG VIEW =====
@@ -5312,14 +5612,19 @@
             const visitorStr = localStorage.getItem('chidy_visitor');
             const visitor = visitorStr ? JSON.parse(visitorStr) : { id: null, name: 'GUEST PLAYER', phone: '07xx-xxx-xxx' };
             
-            // Update Sidebar Display
-            const sidebarName = document.getElementById('sidebarUserName');
-            const sidebarPhone = document.getElementById('sidebarUserPhone');
-            const sidebarAvatar = document.getElementById('sidebarUserAvatar');
-            
-            if (sidebarName) sidebarName.textContent = visitor.name || 'GUEST PLAYER';
-            if (sidebarPhone) sidebarPhone.textContent = visitor.phone || '07xx-xxx-xxx';
-            if (sidebarAvatar) sidebarAvatar.textContent = (visitor.name || 'G').charAt(0).toUpperCase();
+            // ✅ Update Sidebar (correct IDs)
+            const sAvatar = document.getElementById('sidebarAvatar');
+            const sName = document.getElementById('sidebarName');
+            if (sAvatar) sAvatar.textContent = (visitor.name || 'G').charAt(0).toUpperCase();
+            if (sName) sName.textContent = visitor.name || 'GUEST PLAYER';
+
+            // ✅ Update Profile Modal
+            const pAvatar = document.getElementById('profileModalAvatar');
+            const pName = document.getElementById('profileModalName');
+            const pPhone = document.getElementById('profileModalPhone');
+            if (pAvatar) pAvatar.textContent = (visitor.name || 'G').charAt(0).toUpperCase();
+            if (pName) pName.textContent = visitor.name || 'GUEST PLAYER';
+            if (pPhone) pPhone.textContent = visitor.phone || '--';
 
             if (!visitor.id) return; // Stop here for guests
             
@@ -5327,15 +5632,65 @@
                 const res = await fetch(`/api/user/stats/${visitor.id}`);
                 const stats = await res.json();
                 
-                // Update Sidebar
+                // ✅ Sidebar stats
                 const sLevel = document.getElementById('sidebarLevelBadge');
                 const sGames = document.getElementById('sidebarStatGames');
                 const sPoints = document.getElementById('sidebarStatPoints');
-                
                 if (sLevel && stats.level) sLevel.textContent = stats.level.toUpperCase();
                 if (sGames && stats.purchasesCount !== undefined) sGames.textContent = stats.purchasesCount;
-                if (sPoints && stats.level) sPoints.textContent = stats.level.split(' ')[0]; // Quick level shorthand
+                if (sPoints && stats.level) sPoints.textContent = stats.level.split(' ')[0];
+
+                // ✅ Profile Modal stats
+                const pLevel = document.getElementById('profileModalLevel');
+                const pGames = document.getElementById('profileModalGames');
+                const pPoints = document.getElementById('profileModalPoints');
+                if (pLevel && stats.level) pLevel.textContent = stats.level.toUpperCase();
+                if (pGames && stats.purchasesCount !== undefined) pGames.textContent = stats.purchasesCount;
+                if (pPoints && stats.purchasesCount !== undefined) pPoints.textContent = stats.purchasesCount * 10;
             } catch (e) { console.error("Stats fetch failed"); }
+        }
+
+        // ===== PROFILE MODAL =====
+        async function openProfileModal() {
+            const overlay = document.getElementById('profileModalOverlay');
+            if (!overlay) return;
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            // Refresh user data
+            await refreshUserStats();
+
+            // Load leaderboard inside profile modal
+            const list = document.getElementById('profileLeaderboardList');
+            if (list) {
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:#6c7293; font-size:0.75rem;">Inapakia...</div>';
+                try {
+                    const res = await fetch('/api/leaderboard');
+                    const data = await res.json();
+                    if (data.length === 0) {
+                        list.innerHTML = '<div style="text-align:center; color:#6c7293; padding:20px;">Hakuna mshindi bado. Kuwa wa kwanza!</div>';
+                        return;
+                    }
+                    list.innerHTML = data.map((user, index) => {
+                        let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<span style="font-size:0.75rem; color:#6c7293;">#${index+1}</span>`;
+                        return `<div style="display:flex; align-items:center; justify-content:space-between; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.04);">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div style="width:26px; text-align:center;">${medal}</div>
+                                <div style="font-weight:600; font-size:0.8rem; color:#fff;">${user.name}</div>
+                            </div>
+                            <div style="font-size:0.65rem; padding:3px 8px; background:rgba(0,242,255,0.1); color:#00f2ff; border-radius:6px; font-weight:800;">${user.purchases} GAMES</div>
+                        </div>`;
+                    }).join('');
+                } catch(e) {
+                    list.innerHTML = '<div style="text-align:center; color:#6c7293; padding:20px;">Imeshindwa kupakia.</div>';
+                }
+            }
+        }
+
+        function closeProfileModal() {
+            const overlay = document.getElementById('profileModalOverlay');
+            if (overlay) overlay.style.display = 'none';
+            document.body.style.overflow = '';
         }
 
         function toggleProfileMenu() {
@@ -5604,9 +5959,6 @@ async function clearAllNotifications() {
                 <div class="sidebar-item" onclick="toggleSidebar(); showHome();">
                     <i class="fas fa-home"></i> Home
                 </div>
-                <div class="sidebar-item" onclick="toggleSidebar(); toggleHelpModal();" style="border-left-color: var(--primary); background: rgba(0,242,255,0.05);">
-                    <i class="fas fa-question-circle" style="color: var(--primary);"></i> Msaada (Help Center)
-                </div>
                 <a href="https://chidygaming.online" target="_blank" rel="noopener" class="sidebar-item" style="
                     display:flex; align-items:center; gap:12px;
                     text-decoration:none; color:inherit;
@@ -5643,16 +5995,24 @@ async function clearAllNotifications() {
         }
 
         function openWhatsAppSupport() {
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
-            
-            let message = "Habari Chidy Prime! Nahitaji msaada kitalu cha Gaming.";
-            if (visitor) {
-                message = `Habari Chidy Prime! Mimi ni ${visitor.name}, ID: ${visitor.id.substring(0,6)}. Nahitaji msaada wa huduma zenu.`;
+            try {
+                const visitorStr = localStorage.getItem('chidy_visitor');
+                const visitor = visitorStr ? JSON.parse(visitorStr) : null;
+                
+                let message = "Habari Chidy Prime! Nahitaji msaada kuhusu huduma zenu za Gaming. Nimevutiwa na games zenu!";
+                if (visitor && visitor.id) {
+                    const shortId = String(visitor.id).substring(0, 6);
+                    message = `Habari Chidy Prime! Mimi ni ${visitor.name || 'Mteja'}, ID: ${shortId}. Nahitaji msaada wa huduma zenu.`;
+                }
+                
+                const waUrl = `https://wa.me/255655361060?text=${encodeURIComponent(message)}`;
+                // Use location.href for better mobile compatibility (avoiding popup blockers)
+                window.location.href = waUrl;
+            } catch (e) {
+                console.error("WhatsApp support error:", e);
+                // Fallback for extreme cases
+                window.open("https://wa.me/255655361060", "_blank");
             }
-            
-            const waUrl = `https://wa.me/255762047805?text=${encodeURIComponent(message)}`;
-            window.open(waUrl, '_blank');
         }
 
         function triggerCelebration() {
@@ -6177,16 +6537,20 @@ async function clearAllNotifications() {
 
 
 
-    <!-- CUSTOM PUSH NOTIFICATION PROMPT -->
-    <div id="pushPrompt" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(10, 10, 15, 0.95); border:1px solid rgba(0,242,255,0.3); padding:20px; border-radius:15px; z-index:9999; width:90%; max-width:400px; backdrop-filter:blur(10px); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-        <i class="fas fa-bell" style="font-size:2rem; color:#00f2ff; margin-bottom:10px;"></i>
-        <h3 style="color:#fff; margin:0 0 10px 0; font-size:1.1rem;">Pata Taarifa za Games Mpya!</h3>
-        <p style="color:#a0a0b0; font-size:0.9rem; margin:0 0 15px 0;">Ruhusu notifications ili uwe wa kwanza kupata ujumbe kila tunapoachia game mpya au offa.</p>
-        <div style="display:flex; gap:10px; justify-content:center;">
-            <button id="pushDenyBtn" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 15px; border-radius:8px; cursor:pointer;">Baadaye</button>
-            <button id="pushAllowBtn" style="background:#00f2ff; border:none; color:#000; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">Ruhusu Sasa</button>
+    <!-- PUSH NOTIFICATION PROMPT -->
+    <div id="pushPrompt" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(10, 10, 15, 0.98); border:1px solid rgba(0,242,255,0.4); padding:15px; border-radius:16px; z-index:8000; width:85%; max-width:320px; backdrop-filter:blur(15px); text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.8); animation: slideUp 0.4s ease-out;">
+        <i class="fas fa-bell" style="font-size:1.5rem; color:#00f2ff; margin-bottom:8px;"></i>
+        <h3 style="color:#fff; margin:0 0 6px 0; font-size:0.95rem; font-family:'Orbitron';">Updates & Offa</h3>
+        <p style="color:#a0a0b0; font-size:0.75rem; margin:0 0 12px 0; line-height:1.4;">Ruhusu notifications upate games mpya na offa kali mapema zaidi.</p>
+        <div style="display:flex; gap:8px; justify-content:center;">
+            <button id="pushDenyBtn" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#a0a0b0; padding:8px; border-radius:10px; cursor:pointer; font-size:0.75rem;">Baadaye</button>
+            <button id="pushAllowBtn" style="flex:1; background:linear-gradient(135deg, #00f2ff, #00d2ff); border:none; color:#000; padding:8px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:0.75rem; box-shadow:0 0 15px rgba(0,242,255,0.3);">Ruhusu</button>
         </div>
     </div>
+
+    <style>
+        @keyframes slideUp { from { transform: translate(-50%, 50px); opacity:0; } to { transform: translate(-50%, 0); opacity:1; } }
+    </style>
 
     <script>
         // Ultimate Fail-safe: Ensure splash screen clears even if other scripts fail
@@ -6201,5 +6565,65 @@ async function clearAllNotifications() {
             }
         }, 6000);
     </script>
+
+    <!-- MODAL PERFORMANCE OVERRIDES -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Delay the Push Prompt if it exists
+            const pushPrompt = document.getElementById('pushPrompt');
+            if (pushPrompt && pushPrompt.style.display !== 'none') {
+                pushPrompt.style.display = 'none';
+                setTimeout(() => {
+                    pushPrompt.style.display = 'block';
+                }, 8000); // Wait 8 seconds before showing
+            }
+            
+            // Delay Authentication Modal if it pops up automatically
+            const authModal = document.getElementById('authOverlay');
+            if (authModal && authModal.classList.contains('show')) {
+                authModal.classList.remove('show');
+                setTimeout(() => {
+                    authModal.classList.add('show');
+                }, 12000); // Wait 12 seconds
+            }
+        });
+    </script>
+
+    <!-- MOVE PRICE SCRIPT -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.game-card').forEach(card => {
+                const oldBadge = card.querySelector('.price-badge');
+                const cardTitle = card.querySelector('.card-title');
+                
+                // If there's an old badge and we haven't already added the new text
+                if (oldBadge && cardTitle && !card.querySelector('.price-text')) {
+                    const priceText = document.createElement('div');
+                    priceText.className = 'price-text ' + (oldBadge.classList.contains('free') ? 'free' : '');
+                    priceText.innerHTML = oldBadge.innerHTML;
+                    
+                    // Insert right after card title
+                    cardTitle.parentNode.insertBefore(priceText, cardTitle.nextSibling);
+                }
+            });
+        });
+    </script>
+
+    <!-- TOGGLE READ MORE SCRIPT -->
+    <script>
+        function toggleReadMore() {
+            const desc = document.getElementById('gameDescText');
+            const btn = document.getElementById('readMoreBtn');
+            if (desc.style.webkitLineClamp === '3' || desc.style.webkitLineClamp === 3) {
+                desc.style.webkitLineClamp = 'unset';
+                btn.innerHTML = 'Ficha <i class="fas fa-chevron-up"></i>';
+            } else {
+                desc.style.webkitLineClamp = '3';
+                btn.innerHTML = 'Soma Zaidi <i class="fas fa-chevron-down"></i>';
+            }
+        }
+    </script>
 </body>
+
+
 </html>
