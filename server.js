@@ -312,6 +312,9 @@ app.get('/', (req, res) => {
 });
 
 app.get('/admin', (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
@@ -327,11 +330,39 @@ app.get('/api/settings/:key', async (req, res) => {
         return res.json(cached.data);
     }
 
-    const { data, error } = await supabase.from('site_settings').select('value').eq('key', key).single();
-    const result = data || { value: key === 'global_discount' ? 0 : (key === 'total_installs' ? 0 : null) };
-    settingsCache[key] = { data: result, timestamp: now };
-    res.set('X-Cache', 'MISS');
-    res.json(result);
+    try {
+        const { data, error } = await supabase.from('site_settings').select('value').eq('key', key).single();
+        if (error && error.code !== 'PGRST116') throw error;
+        
+        let result = data;
+        
+        if (key === 'lifetime_revenue' && !data) {
+            // Seed lifetime_revenue from existing approved payments in the DB
+            const { data: approvedOrders } = await supabase
+                .from('payment_orders')
+                .select('amount')
+                .eq('status', 'approved');
+            
+            const totalSum = (approvedOrders || []).reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
+            
+            await supabase.from('site_settings').upsert({
+                key: 'lifetime_revenue',
+                value: String(totalSum),
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+            
+            result = { value: String(totalSum) };
+        } else if (!data) {
+            result = { value: key === 'global_discount' ? 0 : (key === 'total_installs' ? 0 : null) };
+        }
+        
+        settingsCache[key] = { data: result, timestamp: now };
+        res.set('X-Cache', 'MISS');
+        res.json(result);
+    } catch (err) {
+        console.error("Settings getter error:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/api/admin/settings/:key', verifyAdmin, async (req, res) => {
@@ -600,6 +631,10 @@ app.post('/api/signup', async (req, res) => {
             .select();
 
         if (error) throw error;
+        
+        // Notify admin about new signup
+        sendTelegramAlert(`👤 <b>NEW USER SIGNUP</b> 👤\n\n<b>Name:</b> ${name.trim()}\n<b>Phone:</b> ${phone.trim()}\n<b>Time:</b> ${new Date().toLocaleString()}`);
+
         // For XP Levels
         const { count: orderCount } = await supabase
             .from('payment_orders')
@@ -1620,66 +1655,6 @@ app.get('/api/user/purchases/:visitor_id', async (req, res) => {
 // PAYMENT ORDER ENDPOINTS
 // ============================================
 
-// === AZAMPAY INTEGRATION LOGIC ===
-async function getAzamPayToken() {
-    try {
-        const res = await fetch(`${process.env.AZAMPAY_BASE_URL}/azampay/authentication/v1/authenticate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                appName: "Chidy Prime",
-                clientId: process.env.AZAMPAY_CLIENT_ID,
-                clientSecret: process.env.AZAMPAY_SECRET_KEY
-            })
-        });
-        const data = await res.json();
-        return data.data?.accessToken;
-    } catch (err) {
-        console.error('AzamPay Auth Error:', err);
-        return null;
-    }
-}
-
-// Checkout endpoint for Push USSD
-app.post('/api/payments/azampay-checkout', async (req, res) => {
-    const { amount, phone, gameTitle, visitorId, postId } = req.body;
-    
-    // Validate phone (needs 255...)
-    let formattedPhone = phone.replace(/[^0-9]/g, '');
-    if (formattedPhone.startsWith('0')) formattedPhone = '255' + formattedPhone.substring(1);
-    
-    const token = await getAzamPayToken();
-    if (!token) return res.status(500).json({ error: 'Failed to authenticate with AzamPay' });
-
-    try {
-        const azamRes = await fetch(`${process.env.AZAMPAY_BASE_URL}/azampay/checkout/v1/checkout`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                accountNumber: formattedPhone, // The phone number to bill
-                amount: amount.toString(),
-                currency: "TZS",
-                externalId: Date.now().toString(), // Unique ID for this attempt
-                provider: "Airtel", // Default to Airtel or should be dynamic
-                additionalProperties: {
-                    visitorId: visitorId,
-                    postId: postId,
-                    gameTitle: gameTitle
-                }
-            })
-        });
-
-        const data = await azamRes.json();
-        res.json(data);
-    } catch (err) {
-        console.error('AzamPay Checkout Error:', err);
-        res.status(500).json({ error: 'AzamPay service error' });
-    }
-});
-
 // GET User Stats (XP/Level)
 app.get('/api/user/stats/:visitor_id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -1743,52 +1718,6 @@ app.get('/api/admin/analytics/sales', verifyAdmin, async (req, res) => {
         }
         res.json(data);
     } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// Admin Webhook Callback (The "Auto" part)
-app.post('/api/payments/callback', async (req, res) => {
-    console.log('--- AZAMPAY CALLBACK RECEIVED ---', req.body);
-    const { msisdn, amount, status, externalId, additionalProperties } = req.body;
-
-    if (status === 'success' || status === 'Success') {
-        const { visitorId, postId } = additionalProperties || {};
-        
-        try {
-            // 1. Create/Update order in database as Approved
-            const { data: order, error: orderError } = await supabase
-                .from('payment_orders')
-                .insert([{
-                    visitor_id: visitorId,
-                    post_id: postId,
-                    amount: amount,
-                    phone_number: msisdn,
-                    status: 'approved'
-                }])
-                .select()
-                .single();
-
-            if (orderError) throw orderError;
-
-            // 2. Log Analytics
-            await supabase.from('daily_stats').insert([{
-                event_type: 'payment_success',
-                metadata: { amount, msisdn, postId }
-            }]);
-
-            console.log(`Auto-Approved Order ${order.id} for ${msisdn}`);
-            
-            // Telegram Alert for Success
-            sendTelegramAlert(`💰 <b>SUCCESSFUL PAYMENT</b> 💰\n\n<b>Game:</b> ${additionalProperties?.gameTitle || 'Unknown'}\n<b>Amount:</b> TSh ${parseInt(amount).toLocaleString()}\n<b>Phone:</b> ${msisdn}\n<b>Method:</b> AzamPay\n<b>Time:</b> ${new Date().toLocaleString()}`);
-
-            return res.json({ success: true, message: 'Payment recorded and content unlocked' });
-
-        } catch (dbErr) {
-            console.error('Database Error in Callback:', dbErr);
-            return res.status(500).json({ error: 'DB update failed' });
-        }
-    }
-
-    res.json({ success: false, message: 'Payment not successful' });
 });
 
 // === ZENOPAY INTEGRATION LOGIC ===
@@ -1894,6 +1823,8 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
             console.error('Webhook processing error:', err);
             return res.status(500).send('Error');
         }
+    } else {
+        sendTelegramAlert(`❌ <b>FAILED PAYMENT</b> ❌\n\n<b>Order ID:</b> ${order_id}\n<b>Amount:</b> TSh ${amount || 0}\n<b>Phone:</b> ${msisdn || 'Unknown'}\n<b>Method:</b> ZenoPay\n<b>Status:</b> ${currentStatus}\n<b>Time:</b> ${new Date().toLocaleString()}`);
     }
     res.json({ success: false });
 });
@@ -1914,6 +1845,17 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
                 phone_number: phone,
                 status: 'approved'
             }]);
+        }
+
+        // Increment lifetime_revenue setting in site_settings
+        try {
+            const { data: currentRev } = await supabase.from('site_settings').select('value').eq('key', 'lifetime_revenue').single();
+            const currentVal = currentRev ? parseFloat(currentRev.value || 0) : 0;
+            const newVal = currentVal + parseFloat(amount || 0);
+            await supabase.from('site_settings').upsert({ key: 'lifetime_revenue', value: String(newVal) }, { onConflict: 'key' });
+            invalidateSettingsCache('lifetime_revenue');
+        } catch (errRev) {
+            console.error("Failed to increment lifetime_revenue:", errRev);
         }
 
         // 2. Grant Access (for videos we check payment_orders directly, but we'll also record in user_access for consistency)
