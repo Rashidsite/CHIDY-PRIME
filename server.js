@@ -14,6 +14,7 @@ const port = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'chidy_prime_super_secret_2025';
 const ADMIN_PIN = process.env.ADMIN_PIN || '2025';
 const ZENOPAY_API_KEY = process.env.ZENOPAY_API_KEY || 'S7Sy7GYL0qzE4IIaEQvlHreGW6LzkQ4DJDPZLyehi6yL4BbO3HqQyA0wAe5HmktXuln9FFYDszRXJAni_HvuAQ';
+const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_83c505af729a5f9059ef8ea1c6b125e6831adf232da6e387';
 
 // --- WEB PUSH SETUP ---
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -148,7 +149,7 @@ if (supabaseUrl && supabaseKey) {
 runHealthCheck();
 
 // --- AUTOMATED PENDING ORDER WORKER ---
-// This worker automatically checks ZenoPay for pending orders and approves them if paid.
+// This worker automatically checks Haraka Pay and ZenoPay for pending orders and approves them if paid.
 // This removes the need for manual admin approval.
 setInterval(async () => {
     if (!supabase) return;
@@ -164,8 +165,8 @@ setInterval(async () => {
         if (!pendingOrders || pendingOrders.length === 0) return;
 
         for (const order of pendingOrders) {
-            const zenoOrderId = order.promo_used;
-            if (!zenoOrderId || !zenoOrderId.startsWith('ZP')) continue;
+            const extOrderId = order.promo_used;
+            if (!extOrderId) continue;
 
             // Check if order is older than 30 minutes
             const ageMinutes = (new Date() - new Date(order.created_at)) / 60000;
@@ -175,26 +176,42 @@ setInterval(async () => {
             }
 
             try {
-                const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
-                });
-                const zData = await zRes.json().catch(() => ({}));
-                const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+                let isPaid = false;
+                if (extOrderId.startsWith('HP')) {
+                    const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                        method: 'GET',
+                        headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+                    });
+                    const hData = await hRes.json().catch(() => ({}));
+                    const hStatus = (hData.payment && hData.payment.status || '').toLowerCase();
+                    if (hStatus === 'completed' || hStatus === 'success') {
+                        isPaid = true;
+                    }
+                } else if (extOrderId.startsWith('ZP')) {
+                    const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': extOrderId })
+                    });
+                    const zData = await zRes.json().catch(() => ({}));
+                    const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+                    if (zStatus === 'success' || zStatus === 'completed') {
+                        isPaid = true;
+                    }
+                }
 
-                if (zStatus === 'success' || zStatus === 'completed') {
-                    console.log(`[AUTO-WORKER] Order ${zenoOrderId} was paid! Unlocking...`);
+                if (isPaid) {
+                    console.log(`[AUTO-WORKER] Order ${extOrderId} was paid! Unlocking...`);
                     
                     // Try to find in posts (games) first
                     const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
                     if (game) {
-                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId, false);
+                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, extOrderId, false);
                     } else {
                         // Try to find in videos
                         const { data: video } = await supabase.from('videos').select('*').eq('id', order.post_id).single();
                         if (video) {
-                            await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, zenoOrderId, true);
+                            await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, extOrderId, true);
                         }
                     }
                 }
@@ -1237,8 +1254,12 @@ app.get('/api/check-video-access/:visitor_id/:video_id', async (req, res) => {
     }
 });
 
-// VIDEO ZENOPAY CHECKOUT
-app.post('/api/payments/zenopay-video-checkout', async (req, res) => {
+// ============================================
+// HARAKAPAY / ZENOPAY VIDEO CHECKOUT & VERIFY
+// ============================================
+
+// VIDEO HARAKAPAY CHECKOUT
+const initiateVideoCheckout = async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { amount, phone, videoTitle, visitorId, videoId, email, name } = req.body;
     if (!amount || !phone || !visitorId || !videoId) {
@@ -1246,36 +1267,45 @@ app.post('/api/payments/zenopay-video-checkout', async (req, res) => {
     }
 
     let formattedPhone = phone.replace(/[^0-9]/g, '');
-    if (formattedPhone.startsWith('255')) formattedPhone = '0' + formattedPhone.substring(3);
+    if (formattedPhone.startsWith('0')) formattedPhone = '255' + formattedPhone.substring(1);
+    else if (!formattedPhone.startsWith('255')) formattedPhone = '255' + formattedPhone;
 
     try {
-        const shortVideoId = videoId.split('-')[0];
-        const shortTime = Math.floor(Date.now() / 1000).toString().slice(-5);
-        const zenoOrderId = `ZPVID${visitorId}V${shortVideoId}T${shortTime}`;
-
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         const host = req.headers.host;
-        const webhookUrl = `${protocol}://${host}/api/payments/zenopay-callback`;
+        const webhookUrl = `${protocol}://${host}/api/payments/harakapay-callback`;
 
         const payload = {
-            order_id: zenoOrderId,
-            buyer_email: email || 'customer@chidyprime.com',
-            buyer_name: name || 'Chidy Prime Customer',
-            buyer_phone: formattedPhone,
-            msisdn: formattedPhone,
+            phone: formattedPhone,
             amount: parseFloat(amount),
+            description: `Video: ${videoTitle || 'Premium Video'}`,
             webhook_url: webhookUrl
         };
 
-        const zenoRes = await fetch('https://zenoapi.com/api/payments/mobile_money_tanzania', {
+        console.log('Initiating HarakaPay Video Checkout:', payload);
+
+        const hRes = await fetch('https://harakapay.net/api/v1/collect', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-api-key': ZENOPAY_API_KEY },
-            body: new URLSearchParams(payload)
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': HARAKAPAY_API_KEY
+            },
+            body: JSON.stringify(payload)
         });
 
-        const data = await zenoRes.json();
+        const data = await hRes.json();
+        console.log('HarakaPay Video checkout response:', data);
 
-        if (data.status === 'success' || data.message === 'success') {
+        // Map HarakaPay response format to match frontend expectation
+        const result = {
+            status: data.success ? 'success' : 'failed',
+            message: data.message || (data.success ? 'success' : 'failed'),
+            order_id: data.order_id || null
+        };
+
+        if (data.success === true && data.order_id) {
+            const extOrderId = data.order_id;
+            
             // Get video for duration info
             const { data: video } = await supabase.from('videos').select('duration_days').eq('id', videoId).single();
             const dDays = video ? (video.duration_days || 0) : 0;
@@ -1290,19 +1320,22 @@ app.post('/api/payments/zenopay-video-checkout', async (req, res) => {
                 phone_number: formattedPhone,
                 status: 'pending',
                 expires_at: expiresAt.toISOString(),
-                promo_used: zenoOrderId   // track zeno order id
+                promo_used: extOrderId   // track haraka order id
             }]);
         }
 
-        res.json(data);
+        res.json(result);
     } catch (err) {
-        console.error('ZenoPay Video Checkout Error:', err);
-        res.status(500).json({ error: 'ZenoPay service error' });
+        console.error('HarakaPay Video Checkout Error:', err);
+        res.status(500).json({ error: 'HarakaPay service error' });
     }
-});
+};
 
-// VIDEO ZENOPAY VERIFY (polling from frontend)
-app.get('/api/payments/verify-zeno-video/:visitor_id/:video_id', async (req, res) => {
+app.post('/api/payments/harakapay-video-checkout', initiateVideoCheckout);
+app.post('/api/payments/zenopay-video-checkout', initiateVideoCheckout);
+
+// VIDEO HARAKAPAY VERIFY (polling from frontend)
+const verifyVideoPayment = async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { visitor_id, video_id } = req.params;
     try {
@@ -1318,28 +1351,53 @@ app.get('/api/payments/verify-zeno-video/:visitor_id/:video_id', async (req, res
 
         if (!order) return res.json({ success: false });
 
-        const zenoOrderId = order.promo_used;
-        const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
-        });
-        const zData = await zRes.json().catch(() => ({}));
-        const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+        const extOrderId = order.promo_used;
+        let isPaid = false;
+        let statusMessage = 'Pending';
 
-        if (zStatus === 'success' || zStatus === 'completed') {
+        if (extOrderId) {
+            if (extOrderId.startsWith('HP')) {
+                const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                    method: 'GET',
+                    headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+                });
+                const hData = await hRes.json().catch(() => ({}));
+                const hStatus = (hData.payment && hData.payment.status || '').toLowerCase();
+                statusMessage = hStatus || 'Pending';
+                if (hStatus === 'completed' || hStatus === 'success') {
+                    isPaid = true;
+                }
+            } else if (extOrderId.startsWith('ZP')) {
+                const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': extOrderId })
+                });
+                const zData = await zRes.json().catch(() => ({}));
+                const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+                statusMessage = zStatus || 'Pending';
+                if (zStatus === 'success' || zStatus === 'completed') {
+                    isPaid = true;
+                }
+            }
+        }
+
+        if (isPaid) {
             // Approve the order and grant access using unified logic
             const { data: video } = await supabase.from('videos').select('*').eq('id', video_id).single();
             if (video) {
-                await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, zenoOrderId, true);
+                await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, extOrderId, true);
                 return res.json({ success: true });
             }
         }
-        res.json({ success: false, message: `ZenoPay Status: ${zStatus || 'Pending'}` });
+        res.json({ success: false, message: `Status: ${statusMessage}` });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
     }
-});
+};
+
+app.get('/api/payments/verify-haraka-video/:visitor_id/:video_id', verifyVideoPayment);
+app.get('/api/payments/verify-zeno-video/:visitor_id/:video_id', verifyVideoPayment);
 
 
 // ============================================
@@ -1553,7 +1611,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             });
         }
         
-        // --- FAIL-SAFE: Check if there's a pending ZenoPay order that was recently paid ---
+        // --- FAIL-SAFE: Check if there's a pending HarakaPay/ZenoPay order that was recently paid ---
         try {
             const { data: pending } = await supabase
                 .from('payment_orders')
@@ -1566,22 +1624,39 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
 
             if (pending && pending.length > 0) {
                 const order = pending[0];
-                const zenoOrderId = order.promo_used; // We used this for order_id
+                const extOrderId = order.promo_used; // We used this for order_id
                 
-                if (zenoOrderId && zenoOrderId.startsWith('ZP')) {
-                    console.log('Fail-safe: Checking ZenoPay status for:', zenoOrderId);
-                    const zenoCheck = await fetch('https://zenoapi.com/api/payments/order_status', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: new URLSearchParams({
-                            'api_key': ZENOPAY_API_KEY,
-                            'order_id': zenoOrderId
-                        })
-                    }).then(r => r.json());
+                if (extOrderId) {
+                    let isPaid = false;
+                    if (extOrderId.startsWith('HP')) {
+                        console.log('Fail-safe: Checking HarakaPay status for:', extOrderId);
+                        const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                            method: 'GET',
+                            headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+                        }).then(r => r.json()).catch(() => ({}));
+                        const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
+                        if (hStatus === 'completed' || hStatus === 'success') {
+                            isPaid = true;
+                        }
+                    } else if (extOrderId.startsWith('ZP')) {
+                        console.log('Fail-safe: Checking ZenoPay status for:', extOrderId);
+                        const zenoCheck = await fetch('https://zenoapi.com/api/payments/order_status', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({
+                                'api_key': ZENOPAY_API_KEY,
+                                'order_id': extOrderId
+                            })
+                        }).then(r => r.json()).catch(() => ({}));
 
-                    if (zenoCheck.status === 'success' || zenoCheck.message === 'success' || (zenoCheck.payment_status && zenoCheck.payment_status.toLowerCase() === 'completed')) {
+                        if (zenoCheck.status === 'success' || zenoCheck.message === 'success' || (zenoCheck.payment_status && zenoCheck.payment_status.toLowerCase() === 'completed')) {
+                            isPaid = true;
+                        }
+                    }
+
+                    if (isPaid) {
                         // IT WAS PAID! Manually trigger the success logic
-                        await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number);
+                        await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, extOrderId);
                         
                         // Mark the pending order as done so we don't check it again
                         await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
@@ -1720,77 +1795,86 @@ app.get('/api/admin/analytics/sales', verifyAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// === ZENOPAY INTEGRATION LOGIC ===
-app.post('/api/payments/zenopay-checkout', async (req, res) => {
+// === HARAKAPAY / ZENOPAY INTEGRATION LOGIC ===
+const initiateGameCheckout = async (req, res) => {
     const { amount, phone, gameTitle, visitorId, postId, email, name, promo_used } = req.body;
     
     // Normalize phone
     let formattedPhone = phone.replace(/[^0-9]/g, '');
-    if (formattedPhone.startsWith('255')) formattedPhone = '0' + formattedPhone.substring(3);
+    if (formattedPhone.startsWith('0')) formattedPhone = '255' + formattedPhone.substring(1);
+    else if (!formattedPhone.startsWith('255')) formattedPhone = '255' + formattedPhone;
 
     try {
-        const shortPostId = postId.split('-')[0];
-        const shortTime = Math.floor(Date.now() / 1000).toString().slice(-5);
-        const zenoOrderId = `ZP${visitorId}V${shortPostId}T${shortTime}`;
-
         // Dynamic Webhook URL to avoid redirects (Vercel/Cloudflare)
         const protocol = req.headers['x-forwarded-proto'] || 'https';
         const host = req.headers.host;
-        const webhookUrl = `${protocol}://${host}/api/payments/zenopay-callback`;
+        const webhookUrl = `${protocol}://${host}/api/payments/harakapay-callback`;
 
         const payload = {
-            order_id: zenoOrderId,
-            buyer_email: email || 'customer@chidyprime.com',
-            buyer_name: name || 'Chidy Prime Customer',
-            buyer_phone: formattedPhone,
-            msisdn: formattedPhone,
+            phone: formattedPhone,
             amount: parseFloat(amount),
+            description: `Game: ${gameTitle || 'Premium Game'}`,
             webhook_url: webhookUrl
         };
 
-        console.log('Initiating ZenoPay:', payload, 'Promo Used:', promo_used);
+        console.log('Initiating HarakaPay Checkout:', payload, 'Promo Used:', promo_used);
         if (promo_used) {
             sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED</b>\n<b>User:</b> ${name} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted Amount:</b> TSh ${parseFloat(amount).toLocaleString()}`);
         }
 
-        const zenoRes = await fetch('https://zenoapi.com/api/payments/mobile_money_tanzania', {
+        const hRes = await fetch('https://harakapay.net/api/v1/collect', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'x-api-key': ZENOPAY_API_KEY
+                'Content-Type': 'application/json',
+                'X-API-Key': HARAKAPAY_API_KEY
             },
-            body: new URLSearchParams(payload)
+            body: JSON.stringify(payload)
         });
 
-        const data = await zenoRes.json();
-        
-        if (data.status === 'success' || data.message === 'success') {
+        const data = await hRes.json();
+        console.log('HarakaPay response:', data);
+
+        // Map HarakaPay response format to match frontend expectation
+        const result = {
+            status: data.success ? 'success' : 'failed',
+            message: data.message || (data.success ? 'success' : 'failed'),
+            order_id: data.order_id || null
+        };
+
+        if (data.success === true && data.order_id) {
+            const extOrderId = data.order_id;
             await supabase.from('payment_orders').insert([{
                 visitor_id: visitorId,
                 post_id: postId,
                 amount: amount,
                 phone_number: formattedPhone,
                 status: 'pending',
-                promo_used: zenoOrderId // We use this field to track the Zeno order ID for polling/callbacks
+                promo_used: extOrderId // We use this field to track the Haraka order ID for polling/callbacks
             }]);
         }
 
-        res.json(data);
+        res.json(result);
     } catch (err) {
-        console.error('ZenoPay Checkout Error:', err);
-        res.status(500).json({ error: 'ZenoPay service error' });
+        console.error('HarakaPay Checkout Error:', err);
+        res.status(500).json({ error: 'HarakaPay service error' });
     }
-});
+};
 
-app.post('/api/payments/zenopay-callback', async (req, res) => {
-    console.log('--- ZENOPAY CALLBACK RECEIVED ---', req.body);
+app.post('/api/payments/harakapay-checkout', initiateGameCheckout);
+app.post('/api/payments/zenopay-checkout', initiateGameCheckout);
+
+const handlePaymentCallback = async (req, res) => {
+    console.log('--- HARAKAPAY/ZENOPAY CALLBACK RECEIVED ---', req.body);
     
-    const { status, payment_status, order_id, amount, msisdn } = req.body;
+    // Haraka Pay webhook payload: { "order_id": "...", "status": "completed", "amount": ..., "phone": "..." }
+    // ZenoPay webhook payload: { status, payment_status, order_id, amount, msisdn }
+    const { status, payment_status, order_id, amount, msisdn, phone } = req.body;
     const currentStatus = (status || payment_status || '').toLowerCase();
+    const cleanPhone = msisdn || phone || 'Unknown';
 
     if (currentStatus === 'success' || currentStatus === 'completed') {
         try {
-            // 1. Find the order in our DB by the Zeno order_id (stored in promo_used)
+            // 1. Find the order in our DB by the order_id (stored in promo_used)
             const { data: order, error: orderErr } = await supabase
                 .from('payment_orders')
                 .select('*')
@@ -1798,14 +1882,22 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
                 .single();
 
             if (order && order.status === 'pending') {
+                // Try to find in posts (games) first
                 const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
                 if (game) {
-                    await handleSuccessfulPayment(order.visitor_id, game, amount || order.amount, msisdn || order.phone_number, order_id);
+                    await handleSuccessfulPayment(order.visitor_id, game, amount || order.amount, cleanPhone || order.phone_number, order_id, false);
                     return res.json({ success: true });
+                } else {
+                    // Try to find in videos
+                    const { data: video } = await supabase.from('videos').select('*').eq('id', order.post_id).single();
+                    if (video) {
+                        await handleSuccessfulPayment(order.visitor_id, video, amount || order.amount, cleanPhone || order.phone_number, order_id, true);
+                        return res.json({ success: true });
+                    }
                 }
             }
 
-            // Fallback: If not found in DB, try parsing the order_id string
+            // Fallback: If not found in DB, try parsing the order_id string (legacy ZenoPay format)
             const match = (order_id || '').match(/ZP(\d+)V([a-f0-9]+)T/i);
             if (match) {
                 const visitorId = parseInt(match[1]);
@@ -1813,7 +1905,7 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
                 const { data: game } = await supabase.from('posts').select('*').ilike('id', `${shortPostId}%`).single();
                 
                 if (game) {
-                    await handleSuccessfulPayment(visitorId, game, amount || 0, msisdn || 'ZenoPay', order_id);
+                    await handleSuccessfulPayment(visitorId, game, amount || 0, cleanPhone || 'Callback', order_id, false);
                     return res.json({ success: true });
                 }
             }
@@ -1824,10 +1916,13 @@ app.post('/api/payments/zenopay-callback', async (req, res) => {
             return res.status(500).send('Error');
         }
     } else {
-        sendTelegramAlert(`❌ <b>FAILED PAYMENT</b> ❌\n\n<b>Order ID:</b> ${order_id}\n<b>Amount:</b> TSh ${amount || 0}\n<b>Phone:</b> ${msisdn || 'Unknown'}\n<b>Method:</b> ZenoPay\n<b>Status:</b> ${currentStatus}\n<b>Time:</b> ${new Date().toLocaleString()}`);
+        sendTelegramAlert(`❌ <b>FAILED PAYMENT</b> ❌\n\n<b>Order ID:</b> ${order_id}\n<b>Amount:</b> TSh ${amount || 0}\n<b>Phone:</b> ${cleanPhone}\n<b>Method:</b> HarakaPay/ZenoPay\n<b>Status:</b> ${currentStatus}\n<b>Time:</b> ${new Date().toLocaleString()}`);
     }
     res.json({ success: false });
-});
+};
+
+app.post('/api/payments/harakapay-callback', handlePaymentCallback);
+app.post('/api/payments/zenopay-callback', handlePaymentCallback);
 
 async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrderId = null, isVideo = false) {
     const itemId = item.id;
@@ -1916,14 +2011,14 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
         });
 
         // 4. Telegram Alert
-        sendTelegramAlert(`💰 <b>SUCCESSFUL ${isVideo ? 'VIDEO' : 'GAME'} PAYMENT</b> 💰\n<b>Item:</b> ${item.title}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${phone}\n<b>Method:</b> ZenoPay`);
+        const paymentMethod = (zenoOrderId && zenoOrderId.startsWith('HP')) ? 'HarakaPay' : 'ZenoPay';
+        sendTelegramAlert(`💰 <b>SUCCESSFUL ${isVideo ? 'VIDEO' : 'GAME'} PAYMENT</b> 💰\n<b>Item:</b> ${item.title}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${phone}\n<b>Method:</b> ${paymentMethod}`);
     } catch (e) {
         console.error('handleSuccessfulPayment Error:', e);
     }
 }
 
-// Manual Verification Endpoint (Fail-safe for users)
-app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
+const verifyPaymentManual = async (req, res) => {
     const { visitor_id, post_id } = req.params;
     try {
         const { data: pending } = await supabase
@@ -1940,84 +2035,123 @@ app.get('/api/payments/verify-zeno/:visitor_id/:post_id', async (req, res) => {
         }
 
         const order = pending[0];
-        const zenoOrderId = order.promo_used;
+        const extOrderId = order.promo_used;
 
-        if (!zenoOrderId || !zenoOrderId.startsWith('ZP')) {
+        if (!extOrderId) {
              return res.json({ success: false, message: 'Hii ni oda ya manual, tafadhali wasiliana na admin.' });
         }
 
-        // Call ZenoPay directly
-        const checkUrl = 'https://zenoapi.com/api/payments/order_status';
-        const zRes = await fetch(checkUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
-        });
-        
-        const zData = await zRes.json().catch(() => ({}));
-        const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+        let isPaid = false;
+        let statusMessage = 'Pending';
 
-        if (zStatus === 'success' || zStatus === 'completed') {
+        if (extOrderId.startsWith('HP')) {
+            const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                method: 'GET',
+                headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+            });
+            const hData = await hRes.json().catch(() => ({}));
+            const hStatus = (hData.payment && hData.payment.status || '').toLowerCase();
+            statusMessage = hStatus || 'Pending';
+            if (hStatus === 'completed' || hStatus === 'success') {
+                isPaid = true;
+            }
+        } else if (extOrderId.startsWith('ZP')) {
+            const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': extOrderId })
+            });
+            const zData = await zRes.json().catch(() => ({}));
+            const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+            statusMessage = zStatus || 'Pending';
+            if (zStatus === 'success' || zStatus === 'completed') {
+                isPaid = true;
+            }
+        }
+
+        if (isPaid) {
             // Try posts first
             const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
             if (game) {
-                await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, zenoOrderId, false);
+                await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, extOrderId, false);
                 return res.json({ success: true });
             } else {
                 // Try videos
                 const { data: video } = await supabase.from('videos').select('*').eq('id', post_id).single();
                 if (video) {
-                    await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, zenoOrderId, true);
+                    await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, extOrderId, true);
                     return res.json({ success: true });
                 }
             }
         }
 
-        res.json({ success: false, message: 'Bado malipo hayajaonekana kwenye mfumo.' });
+        res.json({ success: false, message: `Bado malipo hayajaonekana kwenye mfumo. Status: ${statusMessage}` });
     } catch (e) {
         console.error('Verify error:', e);
         res.status(500).json({ success: false });
     }
-});
+};
 
-// Admin: Auto-Verify Order via ZenoPay
+app.get('/api/payments/verify-haraka/:visitor_id/:post_id', verifyPaymentManual);
+app.get('/api/payments/verify-zeno/:visitor_id/:post_id', verifyPaymentManual);
+
+// Admin: Auto-Verify Order via HarakaPay/ZenoPay
 app.post('/api/admin/orders/:id/verify', verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         const { data: order, error } = await supabase.from('payment_orders').select('*').eq('id', id).single();
         if (error || !order) return res.status(404).json({ error: 'Oda haijapatikana' });
 
-        const zenoOrderId = order.promo_used;
-        if (!zenoOrderId || !zenoOrderId.startsWith('ZP')) {
-            return res.json({ success: false, message: 'Hii sio oda ya ZenoPay (STK Push).' });
+        const extOrderId = order.promo_used;
+        if (!extOrderId || (!extOrderId.startsWith('HP') && !extOrderId.startsWith('ZP'))) {
+            return res.json({ success: false, message: 'Hii sio oda ya HarakaPay au ZenoPay (STK Push).' });
         }
 
-        const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': zenoOrderId })
-        });
-        
-        const zData = await zRes.json().catch(() => ({}));
-        const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+        let isPaid = false;
+        let statusMessage = 'Pending';
 
-        if (zStatus === 'success' || zStatus === 'completed') {
+        if (extOrderId.startsWith('HP')) {
+            const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                method: 'GET',
+                headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+            });
+            const hData = await hRes.json().catch(() => ({}));
+            const hStatus = (hData.payment && hData.payment.status || '').toLowerCase();
+            statusMessage = hStatus || 'Pending';
+            if (hStatus === 'completed' || hStatus === 'success') {
+                isPaid = true;
+            }
+        } else if (extOrderId.startsWith('ZP')) {
+            const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': extOrderId })
+            });
+            const zData = await zRes.json().catch(() => ({}));
+            const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+            statusMessage = zStatus || 'Pending';
+            if (zStatus === 'success' || zStatus === 'completed') {
+                isPaid = true;
+            }
+        }
+
+        if (isPaid) {
             // Try posts first
             const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
             if (game) {
-                await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, zenoOrderId, false);
+                await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, extOrderId, false);
                 return res.json({ success: true, message: 'Malipo yamehakikiwa na kukubaliwa!' });
             } else {
                 // Try videos
                 const { data: video } = await supabase.from('videos').select('*').eq('id', order.post_id).single();
                 if (video) {
-                    await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, zenoOrderId, true);
+                    await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, extOrderId, true);
                     return res.json({ success: true, message: 'Malipo ya video yamehakikiwa na kukubaliwa!' });
                 }
             }
         }
 
-        res.json({ success: false, message: `ZenoPay Status: ${zStatus || 'Pending'}` });
+        res.json({ success: false, message: `Status: ${statusMessage}` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

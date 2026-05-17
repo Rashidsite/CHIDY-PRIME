@@ -4107,7 +4107,7 @@
                     <div id="promoMessage" style="font-size:0.75rem; margin-top:8px; font-weight: 600;"></div>
                 </div>
 
-                <button id="autoPayBtn" onclick="payWithZenoPay()" class="payment-btn-premium">
+                <button id="autoPayBtn" onclick="payWithHarakaPay()" class="payment-btn-premium">
                     <i class="fas fa-bolt"></i> <span>Nunua Sasa</span>
                 </button>
             </div>
@@ -4846,7 +4846,7 @@
             }
         }
 
-        async function payWithZenoPay() {
+        async function payWithHarakaPay() {
             const postId = document.getElementById('payPostId').value;
             const phone = document.getElementById('autoPayPhone').value.trim();
             const btn = document.getElementById('autoPayBtn');
@@ -4868,7 +4868,7 @@
             const finalAmount = Math.max(0, game.price - (window.currentDiscount || 0));
 
             try {
-                const response = await fetch('/api/payments/zenopay-checkout', {
+                const response = await fetch('/api/payments/harakapay-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4884,9 +4884,9 @@
                 });
 
                 const result = await response.json();
-                console.log('ZenoPay Checkout Result:', result);
+                console.log('HarakaPay Checkout Result:', result);
 
-                if (result.status === 'success') {
+                if (result.status === 'success' || result.success === true) {
                     // Switch to Verifying state immediately
                     switchPaymentStep('verifying');
                     
@@ -4922,7 +4922,7 @@
                             const statusText = document.querySelector('#payment-verifying-step p');
                             if (statusText) {
                                 if (pollCount % 3 === 0) statusText.innerText = "Tunatekeleza malipo yako...";
-                                else if (pollCount % 3 === 1) statusText.innerText = "Tunahakiki na ZenoPay...";
+                                else if (pollCount % 3 === 1) statusText.innerText = "Tunahakiki na HarakaPay...";
                                 else statusText.innerText = "Karibu tunamaliza...";
                             }
 
@@ -4977,7 +4977,7 @@
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-bolt"></i> <span>Nunua Sasa</span>';
-                btn.onclick = payWithZenoPay;
+                btn.onclick = payWithHarakaPay;
             }
             switchPaymentStep('input');
             const pOverlay = document.getElementById('paymentOverlay');
@@ -5004,7 +5004,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI...';
 
             try {
-                const res = await fetch(`/api/payments/verify-zeno/${visitor.id}/${postId}`);
+                const res = await fetch(`/api/payments/verify-haraka/${visitor.id}/${postId}`);
                 const data = await res.json();
                 
                 if (data.success) {
@@ -6454,7 +6454,7 @@ async function clearAllNotifications() {
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inatuma...';
 
             try {
-                const res = await fetch('/api/payments/zenopay-video-checkout', {
+                const res = await fetch('/api/payments/harakapay-video-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -6468,8 +6468,8 @@ async function clearAllNotifications() {
                     })
                 });
                 const data = await res.json();
-
-                if (data.status === 'success' || data.message === 'success') {
+ 
+                if (data.status === 'success' || data.message === 'success' || data.success === true) {
                     document.getElementById('vidPayForm').style.display = 'none';
                     document.getElementById('vidPaySteps').style.display = 'flex';
                     // Start polling
@@ -6483,7 +6483,7 @@ async function clearAllNotifications() {
                             return;
                         }
                         try {
-                            const vr = await fetch(`/api/payments/verify-zeno-video/${visitor.id}/${_vidPayData.videoId}`);
+                            const vr = await fetch(`/api/payments/verify-haraka-video/${visitor.id}/${_vidPayData.videoId}`);
                             const vd = await vr.json();
                             if (vd.success) {
                                 clearInterval(_vidPayPollInterval);
