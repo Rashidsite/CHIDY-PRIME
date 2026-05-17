@@ -1551,6 +1551,80 @@ app.post('/api/promo/validate', async (req, res) => {
 // ============================================
 
 
+// Helper to check and approve pending orders via HarakaPay or ZenoPay
+const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
+    try {
+        const { data: pending } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('visitor_id', parseInt(visitorId))
+            .eq('post_id', postId)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (pending && pending.length > 0) {
+            const order = pending[0];
+            const extOrderId = order.promo_used; // We used this for order_id
+            
+            if (extOrderId) {
+                let isPaid = false;
+                if (extOrderId.startsWith('HP')) {
+                    console.log('Fail-safe: Checking HarakaPay status for:', extOrderId);
+                    const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                        method: 'GET',
+                        headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+                    }).then(r => r.json()).catch(() => ({}));
+                    const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
+                    if (hStatus === 'completed' || hStatus === 'success') {
+                        isPaid = true;
+                    }
+                } else if (extOrderId.startsWith('ZP')) {
+                    console.log('Fail-safe: Checking ZenoPay status for:', extOrderId);
+                    const zenoCheck = await fetch('https://zenoapi.com/api/payments/order_status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            'api_key': ZENOPAY_API_KEY,
+                            'order_id': extOrderId
+                        })
+                    }).then(r => r.json()).catch(() => ({}));
+
+                    if (zenoCheck.status === 'success' || zenoCheck.message === 'success' || (zenoCheck.payment_status && zenoCheck.payment_status.toLowerCase() === 'completed')) {
+                        isPaid = true;
+                    }
+                }
+
+                if (isPaid) {
+                    console.log(`Fail-safe: Order ${extOrderId} paid! Manually triggering success logic...`);
+                    // IT WAS PAID! Manually trigger the success logic
+                    await handleSuccessfulPayment(parseInt(visitorId), game, order.amount, order.phone_number, extOrderId, false);
+                    
+                    // Mark the pending order as approved
+                    await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
+
+                    const dDays = game.duration_days || 0;
+                    let expiresAt = '2099-12-31T23:59:59Z';
+                    if (dDays > 0) {
+                        const expDate = new Date();
+                        expDate.setDate(expDate.getDate() + dDays);
+                        expiresAt = expDate.toISOString();
+                    }
+
+                    return { 
+                        has_access: true, 
+                        expires_at: expiresAt,
+                        links: game.links || []
+                    };
+                }
+            }
+        }
+    } catch (checkErr) {
+        console.error('checkAndApprovePendingOrder error:', checkErr);
+    }
+    return null;
+};
+
 // Check if a visitor has active access to a game
 app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -1561,7 +1635,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         // 1. Fetch game details to check price
         const { data: game, error: gameErr } = await supabase
             .from('posts')
-            .select('price, links')
+            .select('price, links, duration_days, title')
             .eq('id', post_id)
             .single();
 
@@ -1576,7 +1650,13 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             });
         }
 
-        // 3. If game is PAID, check user_access
+        // 3. First, try checkAndApprovePendingOrder as a quick check/fail-safe
+        const approvedAccess = await checkAndApprovePendingOrder(visitor_id, post_id, game);
+        if (approvedAccess) {
+            return res.json(approvedAccess);
+        }
+
+        // 4. Check user_access
         const { data, error } = await supabase
             .from('user_access')
             .select('*')
@@ -1623,69 +1703,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             });
         }
         
-        // --- FAIL-SAFE: Check if there's a pending HarakaPay/ZenoPay order that was recently paid ---
-        try {
-            const { data: pending } = await supabase
-                .from('payment_orders')
-                .select('*')
-                .eq('visitor_id', parseInt(visitor_id))
-                .eq('post_id', post_id)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            if (pending && pending.length > 0) {
-                const order = pending[0];
-                const extOrderId = order.promo_used; // We used this for order_id
-                
-                if (extOrderId) {
-                    let isPaid = false;
-                    if (extOrderId.startsWith('HP')) {
-                        console.log('Fail-safe: Checking HarakaPay status for:', extOrderId);
-                        const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
-                            method: 'GET',
-                            headers: { 'X-API-Key': HARAKAPAY_API_KEY }
-                        }).then(r => r.json()).catch(() => ({}));
-                        const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
-                        if (hStatus === 'completed' || hStatus === 'success') {
-                            isPaid = true;
-                        }
-                    } else if (extOrderId.startsWith('ZP')) {
-                        console.log('Fail-safe: Checking ZenoPay status for:', extOrderId);
-                        const zenoCheck = await fetch('https://zenoapi.com/api/payments/order_status', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: new URLSearchParams({
-                                'api_key': ZENOPAY_API_KEY,
-                                'order_id': extOrderId
-                            })
-                        }).then(r => r.json()).catch(() => ({}));
-
-                        if (zenoCheck.status === 'success' || zenoCheck.message === 'success' || (zenoCheck.payment_status && zenoCheck.payment_status.toLowerCase() === 'completed')) {
-                            isPaid = true;
-                        }
-                    }
-
-                    if (isPaid) {
-                        // IT WAS PAID! Manually trigger the success logic
-                        await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, extOrderId);
-                        
-                        // Mark the pending order as done so we don't check it again
-                        await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
-
-                        return res.json({ 
-                            has_access: true, 
-                            expires_at: '2099-12-31T23:59:59Z',
-                            links: game.links || []
-                        });
-                    }
-                }
-            }
-        } catch (checkErr) {
-            console.error('Fail-safe check error:', checkErr);
-        }
-        
-        // If still no access
+        // If expired, check if there's any pending order (already handled by step 3, but let's do a fallback check or return expired)
         const { data: pendingAfterExpiry } = await supabase
             .from('payment_orders')
             .select('status')
