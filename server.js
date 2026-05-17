@@ -1588,14 +1588,26 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             // Check for pending order before saying "no access"
             const { data: orderData } = await supabase
                 .from('payment_orders')
-                .select('status')
+                .select('status, created_at')
                 .eq('visitor_id', parseInt(visitor_id))
                 .eq('post_id', post_id)
                 .eq('status', 'pending');
 
+            // Only treat it as pending if it's less than 3 minutes old
+            let hasRecentPending = false;
+            if (orderData && orderData.length > 0) {
+                const recentOrders = orderData.filter(o => {
+                    const ageMs = new Date() - new Date(o.created_at);
+                    return ageMs < 3 * 60 * 1000; // 3 minutes
+                });
+                if (recentOrders.length > 0) {
+                    hasRecentPending = true;
+                }
+            }
+
             return res.json({ 
                 has_access: false,
-                pending_order: orderData && orderData.length > 0
+                pending_order: hasRecentPending
             });
         }
         
