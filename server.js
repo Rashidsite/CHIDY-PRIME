@@ -447,8 +447,9 @@ app.get('/api/games', async (req, res) => {
 
     const { data, error } = await supabase
         .from('posts')
-        .select('id, title, description, rating, image_url, price, category, youtube_url, status, created_at, duration_days, links')
+        .select('id, title, description, rating, image_url, price, category, youtube_url, status, created_at, duration_days, links, sort_order')
         .eq('status', 'published')
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: error.message });
@@ -490,6 +491,7 @@ app.get('/api/admin/games', verifyAdmin, async (req, res) => {
     const { data, error } = await supabase
         .from('posts')
         .select('*')
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: error.message });
@@ -520,7 +522,8 @@ app.post('/api/games', verifyAdmin, async (req, res) => {
                     youtube_url: youtube_url || null,
                     links: Array.isArray(links) ? links : JSON.parse(links || '[]'),
                     status: 'published',
-                    duration_days: parseInt(req.body.duration_days || 0)
+                    duration_days: parseInt(req.body.duration_days || 0),
+                    sort_order: parseInt(req.body.sort_order || 9999)
                 }
             ]);
 
