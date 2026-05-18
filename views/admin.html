@@ -362,6 +362,12 @@
             white-space: nowrap;
         }
 
+        .game-table td.game-title-cell {
+            white-space: normal;
+            max-width: 250px;
+            word-wrap: break-word;
+        }
+
         .game-thumb {
             width: 40px;
             height: 40px;
@@ -3923,7 +3929,7 @@
             fullGameTableBody.innerHTML = filtered.map(game => `
                     <tr>
                         <td><img src="${game.image_url}" class="game-thumb"></td>
-                        <td style="font-weight: 600;">${game.title}</td>
+                        <td class="game-title-cell" style="font-weight: 600;">${game.title}</td>
                         <td><span style="font-size: 0.75rem; background: rgba(0, 242, 255, 0.1); color: #00f2ff; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0, 242, 255, 0.2);">${game.category || 'HOT POST'}</span></td>
                         <td style="color: ${game.price > 0 ? '#00f2ff' : '#00d25b'}; font-weight: 700;">
                             ${game.price > 0 ? 'TSh ' + parseInt(game.price).toLocaleString() : 'FREE'}
