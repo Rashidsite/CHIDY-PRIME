@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --sidebar-width: 150px;
+            --sidebar-width: 220px;
             --topbar-height: 70px;
             --sidebar-bg: #0d0d12;
             --body-bg: #000000;
@@ -30,6 +30,7 @@
 
 
         .sidebar {
+            box-sizing: border-box;
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
             height: 100vh;
@@ -38,6 +39,7 @@
             top: 0;
             padding: 1.5rem 1rem;
             z-index: 1000;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
 
@@ -90,6 +92,7 @@
 
         /* Main Content */
         .main-wrapper {
+            box-sizing: border-box;
             margin-left: var(--sidebar-width);
             width: calc(100% - var(--sidebar-width));
             display: flex;
@@ -143,7 +146,8 @@
 
         /* Dashboard Content */
         .content {
-            padding: 2rem 1.5rem 2rem 0.5rem;
+            box-sizing: border-box;
+            padding: 2rem;
             animation: fadeIn 0.4s ease-out;
         }
 

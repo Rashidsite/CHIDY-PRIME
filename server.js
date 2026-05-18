@@ -2514,9 +2514,9 @@ app.get('/api/system/health', verifyAdmin, async (req, res) => {
         
         const stats = {
             supabaseStatus: dbError ? 'ERROR: ' + dbError.message : 'OK (Connected)',
-            cpuLoad: (os.loadavg()[0] * 100 / (os.cpus().length || 1)).toFixed(1),
-            memUsage: ((1 - os.freemem() / os.totalmem()) * 100).toFixed(1),
-            uptime: Math.floor(process.uptime()) + 's',
+            cpuUsage: parseFloat((os.loadavg()[0] * 100 / (os.cpus().length || 1)).toFixed(1)),
+            memoryUsage: parseFloat(((1 - os.freemem() / os.totalmem()) * 100).toFixed(1)),
+            uptime: Math.floor(process.uptime()),
             telegramStatus: process.env.TELEGRAM_BOT_TOKEN ? 'Active' : 'Not Configured'
         };
         res.json({ 
