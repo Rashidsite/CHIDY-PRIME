@@ -8,11 +8,12 @@
 //   Fallback       → Return cached page if offline
 // ============================================================
 
-const CACHE_NAME    = 'chidy-prime-v6';
-const API_CACHE     = 'chidy-api-v6';
+const CACHE_NAME    = 'chidy-prime-v7';
+const API_CACHE     = 'chidy-api-v7';
 const STATIC_ASSETS = [
   '/manifest.json',
-  '/css/style.css'   // cached if it exists
+  '/icon.png',
+  '/maskable-icon.png'
 ];
 
 // API routes that can be served stale for speed
