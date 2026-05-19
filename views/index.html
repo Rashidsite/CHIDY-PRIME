@@ -3455,11 +3455,11 @@
             <span class="brand-prime">PRIME</span>
         </div>
         <div class="user-actions">
-            <!-- Language Toggle Button (Hidden when Install is shown) -->
+            <!-- Language Toggle Button -->
             <button class="lang-toggle-btn" id="headerLangBtn" onclick="toggleLanguage()" style="display: flex;">SW</button>
             
-            <!-- PWA Install Button (Dynamic) -->
-            <button id="headerInstallBtn" onclick="installPWA()" style="display: none; background: linear-gradient(135deg, #00f2ff, #bc13fe); border: none; border-radius: 20px; padding: 6px 12px; color: #000; font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); animation: installPulse 2s infinite; white-space: nowrap; align-items: center; gap: 5px;">
+            <!-- PWA Install Button (Always Visible & Fallback Ready) -->
+            <button id="headerInstallBtn" onclick="installPWA()" style="display: flex; background: linear-gradient(135deg, #00f2ff, #bc13fe); border: none; border-radius: 20px; padding: 6px 12px; color: #000; font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); animation: installPulse 2s infinite; white-space: nowrap; align-items: center; gap: 5px;">
                 <i class="fas fa-download"></i> INSTALL
             </button>
             <!-- Bell -->
@@ -3497,6 +3497,74 @@
         </div>
     </div>
 
+    <!-- PWA INSTALL INSTRUCTIONS MODAL -->
+    <div id="installInstructionsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10100; overflow-y:auto; backdrop-filter:blur(10px);">
+        <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;">
+            <div style="background:linear-gradient(135deg, rgba(0,10,20,0.97), rgba(20,0,40,0.97)); border:1.5px solid rgba(0,242,255,0.3); border-radius:24px; padding:25px; max-width:400px; width:100%; box-shadow:0 0 40px rgba(0,242,255,0.15); animation:bannerSlideUp 0.4s cubic-bezier(0.175,0.885,0.32,1.275); position:relative;">
+                
+                <!-- Close Button -->
+                <button onclick="closeInstallInstructions()" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.9rem; transition:0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <!-- Icon and Title -->
+                <div style="text-align:center; margin-bottom:20px; margin-top:10px;">
+                    <div style="width:65px; height:65px; border-radius:20px; background:linear-gradient(135deg,#00f2ff,#bc13fe); display:flex; align-items:center; justify-content:center; margin:0 auto 15px; box-shadow:0 0 25px rgba(0,242,255,0.4); animation:installPulse 2s infinite;">
+                        <i class="fas fa-download" style="color:#000; font-size:1.8rem;"></i>
+                    </div>
+                    <h3 style="font-family:'Orbitron'; font-size:1.15rem; font-weight:800; color:#fff; margin-bottom:6px; letter-spacing:1px;">WEKA CHIDY PRIME</h3>
+                    <p style="color:#a0a0b0; font-size:0.75rem;">Sakinisha App kwenye simu yako ili kupata kasi zaidi na matumizi rahisi kabisa!</p>
+                </div>
+                
+                <!-- Instructions List -->
+                <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:25px;">
+                    <!-- iOS / Safari -->
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
+                        <div style="color:#ffb400; font-size:1.2rem; display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:rgba(255,180,0,0.1); border-radius:8px; flex-shrink:0;">
+                            <i class="fab fa-apple"></i>
+                        </div>
+                        <div>
+                            <h4 style="color:#fff; font-size:0.8rem; font-weight:700; margin:0 0 3px;">Kama unatumia iPhone (Safari):</h4>
+                            <p style="color:#a0a0b0; font-size:0.7rem; margin:0; line-height:1.4;">
+                                Bonyeza alama ya <strong>Kushiriki (Share)</strong> <i class="fas fa-share-square" style="color:#00f2ff;"></i> chini ya Safari, sogeza chini kisha chagua <strong>'Weka kwenye Skrini ya Nyumbani'</strong> <i class="fas fa-plus-square" style="color:#bc13fe;"></i> (Add to Home Screen).
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Android -->
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
+                        <div style="color:#00d25b; font-size:1.2rem; display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:rgba(0,210,91,0.1); border-radius:8px; flex-shrink:0;">
+                            <i class="fab fa-android"></i>
+                        </div>
+                        <div>
+                            <h4 style="color:#fff; font-size:0.8rem; font-weight:700; margin:0 0 3px;">Kama unatumia Android (Chrome):</h4>
+                            <p style="color:#a0a0b0; font-size:0.7rem; margin:0; line-height:1.4;">
+                                Bonyeza alama ya <strong>vidoti vitatu (3-dots)</strong> <i class="fas fa-ellipsis-v" style="color:#00f2ff;"></i> juu kulia, kisha chagua <strong>'Sakinisha program'</strong> au <strong>'Weka kwenye skrini ya nyumbani'</strong> (Install app / Add to Home Screen).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- PC / Desktop -->
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
+                        <div style="color:#00f2ff; font-size:1.2rem; display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:rgba(0,242,255,0.1); border-radius:8px; flex-shrink:0;">
+                            <i class="fas fa-desktop"></i>
+                        </div>
+                        <div>
+                            <h4 style="color:#fff; font-size:0.8rem; font-weight:700; margin:0 0 3px;">Kwenye Kompyuta (Chrome/Edge):</h4>
+                            <p style="color:#a0a0b0; font-size:0.7rem; margin:0; line-height:1.4;">
+                                Bonyeza alama ya **Install** <i class="fas fa-laptop" style="color:#00f2ff;"></i> iliyopo juu kulia kwenye bar ya anwani (Address bar) ili uweke kwenye desktop.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Button -->
+                <button onclick="closeInstallInstructions()" style="width:100%; border:none; padding:12px; border-radius:12px; background:linear-gradient(135deg,#00f2ff,#bc13fe); color:#000; font-family:'Orbitron'; font-size:0.75rem; font-weight:800; cursor:pointer; box-shadow:0 0 15px rgba(0,242,255,0.3); transition:0.3s;" onmouseover="this.style.boxShadow='0 0 25px rgba(188,19,254,0.5)'" onmouseout="this.style.boxShadow='0 0 15px rgba(0,242,255,0.3)'">NIMEFAELEWA</button>
+                
+            </div>
+        </div>
+    </div>
+
     <!-- SIDEBAR MENU -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
     <aside class="sidebar" id="sidebar">
@@ -3507,44 +3575,7 @@
             <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
         </div>
 
-        <!-- New Premium Profile Card in Sidebar -->
-        <div class="sidebar-user-card">
-            <div class="s-user-bg"></div>
-            <div class="s-user-content">
-                <div class="s-user-avatar-wrap">
-                    <div class="s-user-avatar" id="sidebarAvatar">U</div>
-                    <div class="s-user-status-dot"></div>
-                </div>
-                <div class="s-user-info">
-                    <div class="s-user-name" id="sidebarName">User</div>
-                    <div class="s-user-level" id="sidebarLevelBadge">ROOKIE GAMER</div>
-                </div>
-                <button class="s-user-expand" onclick="toggleProfileMenu()">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-            </div>
-            
-            <!-- Quick Stats Area -->
-            <div class="s-user-stats">
-                <div class="s-stat-item">
-                    <div class="s-stat-val" id="sidebarStatGames">0</div>
-                    <div class="s-stat-label">GAMES</div>
-                </div>
-                <div class="s-stat-divider"></div>
-                <div class="s-stat-item">
-                    <div class="s-stat-val" id="sidebarStatPoints">0</div>
-                    <div class="s-stat-label">LEVEL</div>
-                </div>
-            </div>
 
-            <!-- Profile Action Menu (Retractable) -->
-            <div class="s-profile-menu" id="sidebarProfileMenu">
-                <div class="s-menu-item" onclick="openMyGames()"><i class="fas fa-gamepad"></i> Library yangu</div>
-                <div class="s-menu-item" onclick="openOrderHistory()"><i class="fas fa-history"></i> Order History</div>
-                <div class="s-menu-item" onclick="openAffiliateModal()" style="color: #00ff00;"><i class="fas fa-money-bill-wave"></i> Pata Pesa (Affiliate)</div>
-                <div class="s-menu-item" onclick="openLogoutModal()" style="color: #ff4444; border-top: 1px solid rgba(255,255,255,0.05);"><i class="fas fa-sign-out-alt"></i> Logout</div>
-            </div>
-        </div>
         <div class="sidebar-menu" id="sidebarMenu">
             <!-- Categories injected here by JS -->
         </div>
@@ -5488,11 +5519,6 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Show install button in header and HIDE language button
-            const headerBtn = document.getElementById('headerInstallBtn');
-            const langBtn = document.getElementById('headerLangBtn');
-            if (headerBtn) headerBtn.style.display = 'flex';
-            if (langBtn) langBtn.style.display = 'none';
 
             // Show floating banner
             const banner = document.getElementById('installBanner');
@@ -5503,20 +5529,27 @@
         });
 
         async function installPWA() {
-            if (!deferredPrompt) return;
+            if (!deferredPrompt) {
+                // If browser prompt is not ready (like on iOS or Safari), show our custom instruction modal
+                const instModal = document.getElementById('installInstructionsModal');
+                if (instModal) {
+                    instModal.style.display = 'block';
+                }
+                return;
+            }
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             deferredPrompt = null;
-            // Hide all install UI and RESTORE language button
-            const headerBtn = document.getElementById('headerInstallBtn');
-            const langBtn = document.getElementById('headerLangBtn');
-            if (headerBtn) headerBtn.style.display = 'none';
-            if (langBtn) langBtn.style.display = 'flex';
 
             const banner = document.getElementById('installBanner');
             if (banner) banner.style.display = 'none';
             const installArea = document.getElementById('installArea');
             if (installArea) installArea.style.display = 'none';
+        }
+
+        function closeInstallInstructions() {
+            const instModal = document.getElementById('installInstructionsModal');
+            if (instModal) instModal.style.display = 'none';
         }
 
 
