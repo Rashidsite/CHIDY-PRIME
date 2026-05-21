@@ -1474,6 +1474,370 @@
             transform: scale(1.1);
             box-shadow: 0 0 25px rgba(188, 19, 254, 0.6);
         }
+
+        /* ==========================================================================
+           RESPONSIVE MOBILE STYLES (Added for 100% Smartphone Admin Capability)
+           ========================================================================== */
+        @media (max-width: 768px) {
+            /* 1. Reset root variables & margins */
+            :root {
+                --sidebar-width: 0px !important;
+            }
+            body {
+                background-color: #000000;
+            }
+
+            /* Main wrapper padding to avoid overlapping sticky bottom navigation */
+            .main-wrapper {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding-bottom: 85px !important; /* Leave room for bottom nav */
+            }
+
+            /* Adjust content spacing */
+            .content {
+                padding: 1rem !important;
+            }
+
+            /* 2. Topbar adjustments - hide decorative elements to prevent crowding */
+            .topbar {
+                padding: 0 1rem !important;
+                justify-content: space-between !important;
+            }
+            .topbar > div:first-child {
+                width: 100% !important;
+                justify-content: space-between !important;
+            }
+            .search-box {
+                display: none !important; /* Already handled by theme but let's be absolute */
+            }
+            .brand-shooting {
+                display: none !important; /* Hide neon guns and brand text */
+            }
+            .clock-container {
+                display: none !important; /* Hide digital clock */
+            }
+            .mobile-toggle {
+                display: block !important; /* Show hamburger toggle */
+                font-size: 1.6rem !important;
+                color: var(--primary-color) !important;
+                text-shadow: 0 0 10px rgba(0, 242, 255, 0.5) !important;
+            }
+
+            /* 3. Grid Collapsing (Form rows, columns, grids) */
+            .stats-grid, .grid-2, .grid-3, .form-row, .broadcast-container {
+                grid-template-columns: 1fr !important;
+                gap: 15px !important;
+            }
+            
+            /* Quick action buttons, details blocks */
+            .action-buttons, .buttons-group {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                gap: 10px !important;
+            }
+            .action-buttons button, .buttons-group button, .btn {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            /* 4. Table to Cards Transformation */
+            /* Since the table contents are loaded dynamically via JS, we transform tables using purely CSS block layouts */
+            .game-table, 
+            .game-table tbody, 
+            .game-table tr, 
+            .game-table td {
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            .game-table thead {
+                display: none !important; /* Hide headers */
+            }
+
+            .game-table tr {
+                background: var(--card-dark) !important;
+                border: 1px solid rgba(255, 255, 255, 0.05) !important;
+                border-radius: 12px !important;
+                padding: 15px !important;
+                margin-bottom: 20px !important;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4) !important;
+                position: relative !important;
+                transition: transform 0.2s, border-color 0.2s !important;
+            }
+            
+            .game-table tr:hover {
+                border-color: var(--primary-color) !important;
+                transform: translateY(-2px) !important;
+            }
+
+            .game-table td {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                text-align: right !important;
+                padding: 10px 0 !important;
+                border: none !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+                font-size: 0.85rem !important;
+            }
+
+            .game-table td:last-child {
+                border-bottom: none !important;
+                justify-content: center !important;
+                padding-top: 15px !important;
+            }
+
+            /* Add data labeling using pseudo elements based on Table classes/ids */
+            
+            /* -- Table 1: Payments Table (#paymentsTableBody) -- */
+            /* Order ID, Customer, Phone, Gateway, Content, Amount, Status, Date */
+            #paymentsTableBody td::before {
+                font-weight: 600;
+                color: var(--primary-color);
+                text-align: left;
+                float: left;
+                font-family: 'Orbitron', sans-serif;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                letter-spacing: 0.5px;
+            }
+            #paymentsTableBody td:nth-of-type(1)::before { content: "Order ID"; }
+            #paymentsTableBody td:nth-of-type(2)::before { content: "Customer"; }
+            #paymentsTableBody td:nth-of-type(3)::before { content: "Phone"; }
+            #paymentsTableBody td:nth-of-type(4)::before { content: "Gateway"; }
+            #paymentsTableBody td:nth-of-type(5)::before { content: "Content"; }
+            #paymentsTableBody td:nth-of-type(6)::before { content: "Amount"; }
+            #paymentsTableBody td:nth-of-type(7)::before { content: "Status"; }
+            #paymentsTableBody td:nth-of-type(8)::before { content: "Date"; }
+
+            /* -- Table 2: Games Table (#fullGameTableBody) -- */
+            /* Order, Poster, Title, Category, Price, Rating, Links, Date, Status, Actions */
+            #fullGameTableBody td::before {
+                font-weight: 600;
+                color: var(--primary-color);
+                text-align: left;
+                float: left;
+                font-family: 'Orbitron', sans-serif;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                letter-spacing: 0.5px;
+            }
+            #fullGameTableBody td:nth-of-type(1)::before { content: "Order"; }
+            #fullGameTableBody td:nth-of-type(2)::before { content: "Poster"; }
+            #fullGameTableBody td:nth-of-type(3)::before { content: "Title"; }
+            #fullGameTableBody td:nth-of-type(4)::before { content: "Category"; }
+            #fullGameTableBody td:nth-of-type(5)::before { content: "Price"; }
+            #fullGameTableBody td:nth-of-type(6)::before { content: "Rating"; }
+            #fullGameTableBody td:nth-of-type(7)::before { content: "Links"; }
+            #fullGameTableBody td:nth-of-type(8)::before { content: "Date"; }
+            #fullGameTableBody td:nth-of-type(9)::before { content: "Status"; }
+            #fullGameTableBody td:nth-of-type(10)::before { content: "Actions"; }
+            
+            /* Special adjustment for images/posters in games cards */
+            #fullGameTableBody td:nth-of-type(2) img {
+                margin-left: auto;
+                border-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            /* -- Table 3: Users Table (#usersTableBody) -- */
+            /* ID, Name, Phone, Joined, Actions */
+            #usersTableBody td::before {
+                font-weight: 600;
+                color: var(--primary-color);
+                text-align: left;
+                float: left;
+                font-family: 'Orbitron', sans-serif;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                letter-spacing: 0.5px;
+            }
+            #usersTableBody td:nth-of-type(1)::before { content: "ID"; }
+            #usersTableBody td:nth-of-type(2)::before { content: "Name"; }
+            #usersTableBody td:nth-of-type(3)::before { content: "Phone"; }
+            #usersTableBody td:nth-of-type(4)::before { content: "Joined"; }
+            #usersTableBody td:nth-of-type(5)::before { content: "Actions"; }
+
+            /* -- Table 4: Affiliates Table (#allAffiliatesTableBody) -- */
+            /* Affiliate, Phone, Referrals, Earnings, Status */
+            #allAffiliatesTableBody td::before {
+                font-weight: 600;
+                color: var(--primary-color);
+                text-align: left;
+                float: left;
+                font-family: 'Orbitron', sans-serif;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                letter-spacing: 0.5px;
+            }
+            #allAffiliatesTableBody td:nth-of-type(1)::before { content: "Affiliate"; }
+            #allAffiliatesTableBody td:nth-of-type(2)::before { content: "Phone"; }
+            #allAffiliatesTableBody td:nth-of-type(3)::before { content: "Referrals"; }
+            #allAffiliatesTableBody td:nth-of-type(4)::before { content: "Earnings"; }
+            #allAffiliatesTableBody td:nth-of-type(5)::before { content: "Status"; }
+
+            /* 5. Modals transformed into Native Bottom Slide-up Sheets */
+            .modal-overlay {
+                align-items: flex-end !important; /* Align to the bottom of viewport */
+                justify-content: center !important;
+                padding: 0 !important;
+            }
+            
+            .modal-content {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                border-radius: 24px 24px 0 0 !important;
+                border-left: none !important;
+                border-right: none !important;
+                border-bottom: none !important;
+                border-top: 2px solid var(--primary-color) !important;
+                bottom: 0 !important;
+                top: auto !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+                transform: translateY(100%);
+                animation: slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+                box-shadow: 0 -10px 40px rgba(0, 242, 255, 0.25) !important;
+            }
+            
+            @keyframes slideUpModal {
+                to { transform: translateY(0); }
+            }
+
+            /* Close button in modal bottom sheet */
+            .close-modal {
+                font-size: 1.8rem !important;
+                padding: 10px !important;
+                color: #ff3366 !important;
+            }
+
+            /* Sticky Mobile Bottom Navigation Styles */
+            .mobile-bottom-nav {
+                display: flex !important;
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 70px !important;
+                background: rgba(13, 13, 18, 0.85) !important;
+                backdrop-filter: blur(15px) !important;
+                -webkit-backdrop-filter: blur(15px) !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+                box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.8) !important;
+                z-index: 999 !important;
+                justify-content: space-around !important;
+                align-items: center !important;
+                padding: 0 10px !important;
+                box-sizing: border-box !important;
+            }
+
+            .mobile-bottom-nav .nav-link {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                color: rgba(255, 255, 255, 0.6) !important;
+                text-decoration: none !important;
+                background: none !important;
+                border: none !important;
+                font-family: 'Orbitron', sans-serif !important;
+                font-size: 0.65rem !important;
+                gap: 5px !important;
+                padding: 5px !important;
+                transition: 0.2s !important;
+                flex: 1 !important;
+                height: 100% !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .mobile-bottom-nav .nav-link i {
+                font-size: 1.25rem !important;
+                transition: 0.2s !important;
+                text-shadow: none !important;
+            }
+
+            .mobile-bottom-nav .nav-link:hover, 
+            .mobile-bottom-nav .nav-link.active {
+                color: var(--primary-color) !important;
+                background: none !important;
+                box-shadow: none !important;
+            }
+
+            .mobile-bottom-nav .nav-link.active i {
+                text-shadow: 0 0 10px rgba(0, 242, 255, 0.8) !important;
+                transform: scale(1.1) !important;
+            }
+
+            .mobile-bottom-nav .nav-link span {
+                display: block !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.5px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* 1. Passcode Vault Lockscreen mobile optimization */
+            .security-container {
+                width: 94% !important;
+                max-width: 380px !important;
+                padding: 20px 15px !important;
+                margin: auto !important;
+                box-sizing: border-box !important;
+            }
+
+            .cyber-header h2 {
+                font-size: 1.6rem !important;
+                letter-spacing: 3px !important;
+            }
+
+            .biometric-scanner {
+                width: 70px !important;
+                height: 70px !important;
+                font-size: 2.2rem !important;
+                margin: 15px auto !important;
+            }
+
+            .pin-display-gaming {
+                gap: 12px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .pin-slot {
+                width: 14px !important;
+                height: 14px !important;
+                border-width: 2px !important;
+            }
+
+            .neon-pin-grid {
+                gap: 10px !important;
+                width: 100% !important;
+                max-width: 300px !important;
+            }
+
+            .neon-pin-btn {
+                height: 52px !important;
+                border-radius: 8px !important;
+            }
+
+            .neon-pin-btn .btn-num {
+                font-size: 1.25rem !important;
+            }
+
+            .neon-pin-btn .btn-sub {
+                font-size: 0.5rem !important;
+            }
+            
+            /* Welcome Sequence scaling */
+            .welcome-text {
+                font-size: 2rem !important;
+                letter-spacing: 4px !important;
+            }
+        }
     </style>
 </head>
 <body class="scanning">
@@ -5543,6 +5907,58 @@
                 loadChannelId();
             });
         });
+    </script>
+
+    <!-- Sticky Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav" style="display: none;">
+        <a href="#" class="nav-link active" data-view="dashboardView">
+            <i class="fas fa-th-large"></i>
+            <span>Dash</span>
+        </a>
+        <a href="#" class="nav-link" data-view="ordersView">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Orders</span>
+        </a>
+        <a href="#" class="nav-link" data-view="allGamesView">
+            <i class="fas fa-gamepad"></i>
+            <span>Games</span>
+        </a>
+        <a href="#" class="nav-link" data-view="paymentsView">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+        </a>
+        <a href="#" class="nav-link" onclick="toggleSidebar(); return false;">
+            <i class="fas fa-bars"></i>
+            <span>More</span>
+        </a>
+    </div>
+
+    <script>
+        // Safely intercept showView to keep bottom nav active states in sync
+        (function() {
+            function syncBottomNav() {
+                if (typeof window.showView === 'function' && !window.showView.isIntercepted) {
+                    const originalShowView = window.showView;
+                    window.showView = function(viewId) {
+                        originalShowView(viewId);
+                        document.querySelectorAll('.mobile-bottom-nav .nav-link').forEach(link => {
+                            if (link.getAttribute('data-view') === viewId) {
+                                link.classList.add('active');
+                            } else {
+                                link.classList.remove('active');
+                            }
+                        });
+                    };
+                    window.showView.isIntercepted = true;
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', syncBottomNav);
+            } else {
+                syncBottomNav();
+            }
+            setTimeout(syncBottomNav, 1000);
+        })();
     </script>
 </body>
 </html>
