@@ -22,6 +22,18 @@
     <!-- Confetti: load after page renders (non-blocking) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
 
+    <!-- OneSignal SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignal = window.OneSignal || [];
+      OneSignal.push(function() {
+        OneSignal.init({
+          appId: "33092d7c-9dfb-4f8d-8927-a0192e678827",
+          allowLocalhostAsSecureOrigin: true,
+        });
+      });
+    </script>
+
     <!-- manifest for PWA -->
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icon.png">
@@ -6245,66 +6257,14 @@ async function clearAllNotifications() {
                 payOverlay.classList.remove('show');
             }
 
-            // --- PWA SERVICE WORKER REGISTRATION & PUSH NOTIFICATIONS ---
+            // --- PWA SERVICE WORKER REGISTRATION ---
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', async () => {
                     try {
                         const reg = await navigator.serviceWorker.register('/sw.js');
                         console.log('SW Registered!', reg);
-                        
-                        // Subscription logic
-                        async function subscribeUser() {
-                            try {
-                                const res = await fetch('/api/push/public-key');
-                                const { publicKey } = await res.json();
-                                if (publicKey) {
-                                    const padding = '='.repeat((4 - publicKey.length % 4) % 4);
-                                    const base64 = (publicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
-                                    const rawData = window.atob(base64);
-                                    const outputArray = new Uint8Array(rawData.length);
-                                    for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-                                    
-                                    const subscription = await reg.pushManager.subscribe({
-                                        userVisibleOnly: true,
-                                        applicationServerKey: outputArray
-                                    });
-                                    
-                                    await fetch('/api/push/subscribe', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify(subscription)
-                                    });
-                                    console.log('Push subscription successful!');
-                                }
-                            } catch (e) { console.error('Subscription failed:', e); }
-                        }
-
-                        if ('Notification' in window && 'PushManager' in window) {
-                            if (Notification.permission === 'granted') {
-                                // Already granted, silently subscribe/update
-                                subscribeUser();
-                            } else if (Notification.permission !== 'denied') {
-                                // Show our custom prompt after a small delay
-                                setTimeout(() => {
-                                    const prompt = document.getElementById('pushPrompt');
-                                    if (prompt) prompt.style.display = 'block';
-                                }, 3000);
-
-                                document.getElementById('pushAllowBtn').addEventListener('click', async () => {
-                                    document.getElementById('pushPrompt').style.display = 'none';
-                                    const permission = await Notification.requestPermission();
-                                    if (permission === 'granted') {
-                                        subscribeUser();
-                                    }
-                                });
-                                
-                                document.getElementById('pushDenyBtn').addEventListener('click', () => {
-                                    document.getElementById('pushPrompt').style.display = 'none';
-                                });
-                            }
-                        }
                     } catch (err) {
-                        console.log('SW or Push failed: ', err);
+                        console.log('SW failed: ', err);
                     }
                 });
             }
