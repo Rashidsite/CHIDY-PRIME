@@ -3836,58 +3836,131 @@
     </nav>
 
     <!-- ===== PROFILE MODAL ===== -->
-    <div id="profileModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000; overflow-y:auto;">
-        <div style="min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding: 20px 15px 100px;">
-            <div style="width:100%; max-width:420px; animation: slideUp 0.3s ease;">
-                <!-- Header -->
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-                    <div style="font-family:'Orbitron'; font-size:1rem; font-weight:800; color:#fff; letter-spacing:2px;">MY PROFILE</div>
-                    <button onclick="closeProfileModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.1); color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:1rem;"><i class="fas fa-times"></i></button>
-                </div>
+    <!-- ===== PROFILE FULL PAGE ===== -->
+    <div id="profileModalOverlay" style="display:none; position:fixed; inset:0; background:#0a0a10; z-index:10000; overflow-y:auto; overflow-x:hidden;">
+        <style>
+            #profileModalOverlay {
+                scrollbar-width: none;
+            }
+            #profileModalOverlay::-webkit-scrollbar { display: none; }
 
-                <!-- Profile Card -->
-                <div style="background:linear-gradient(135deg, rgba(0,242,255,0.08), rgba(188,19,254,0.08)); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:20px; margin-bottom:15px; position:relative; overflow:hidden;">
-                    <div style="position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #00f2ff, #bc13fe);"></div>
-                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
-                        <div id="profileModalAvatar" style="width:56px; height:56px; background:linear-gradient(135deg,#00f2ff,#bc13fe); border-radius:16px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-size:1.5rem; font-weight:900; color:#000; flex-shrink:0;">U</div>
-                        <div style="flex:1; min-width:0;">
-                            <div id="profileModalName" style="font-family:'Orbitron'; font-size:1rem; font-weight:800; color:#fff; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">User</div>
-                            <div id="profileModalPhone" style="font-size:0.75rem; color:#a0a0b0;">--</div>
-                            <div id="profileModalLevel" style="font-size:0.6rem; font-weight:700; color:#00f2ff; text-transform:uppercase; letter-spacing:1px; margin-top:2px;">ROOKIE GAMER</div>
-                        </div>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:12px; text-align:center;">
-                            <div id="profileModalGames" style="font-family:'Orbitron'; font-size:1.2rem; font-weight:900; color:#fff;">0</div>
-                            <div style="font-size:0.55rem; color:#6c7293; letter-spacing:1px; font-weight:700;">GAMES</div>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:12px; text-align:center;">
-                            <div id="profileModalPoints" style="font-family:'Orbitron'; font-size:1.2rem; font-weight:900; color:#fff;">0</div>
-                            <div style="font-size:0.55rem; color:#6c7293; letter-spacing:1px; font-weight:700;">POINTS</div>
-                        </div>
-                    </div>
-                </div>
+            @keyframes profileSlideIn {
+                from { opacity:0; transform:translateY(30px); }
+                to   { opacity:1; transform:translateY(0); }
+            }
+            @keyframes avatarPulse {
+                0%,100% { box-shadow: 0 0 0 0 rgba(0,242,255,0.4), 0 0 30px rgba(0,242,255,0.3); }
+                50%     { box-shadow: 0 0 0 12px rgba(0,242,255,0), 0 0 50px rgba(188,19,254,0.4); }
+            }
+            @keyframes statCount {
+                from { opacity:0; transform:scale(0.5); }
+                to   { opacity:1; transform:scale(1); }
+            }
+            .profile-action-btn {
+                display:flex; flex-direction:column; align-items:center; justify-content:center;
+                gap:8px; padding:16px 10px; border-radius:16px; cursor:pointer;
+                transition:all 0.3s ease; border:1px solid; font-family:'Orbitron';
+                font-size:0.6rem; font-weight:800; letter-spacing:0.5px; text-transform:uppercase;
+                text-decoration:none; background:none;
+            }
+            .profile-action-btn:active { transform:scale(0.94); }
+            .profile-action-btn i { font-size:1.3rem; }
+            .profile-lb-row {
+                display:flex; align-items:center; justify-content:space-between;
+                padding:12px 15px; border-bottom:1px solid rgba(255,255,255,0.04);
+                transition:background 0.2s;
+            }
+            .profile-lb-row:last-child { border-bottom:none; }
+            .profile-lb-row:hover { background:rgba(255,255,255,0.02); }
+        </style>
 
-                <!-- Quick Actions -->
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-                    <button onclick="openMyGames(); closeProfileModal();" style="background:rgba(0,242,255,0.08); border:1px solid rgba(0,242,255,0.2); border-radius:12px; padding:12px; color:#00f2ff; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-gamepad"></i> Library Yangu</button>
-                    <button onclick="openOrderHistory(); closeProfileModal();" style="background:rgba(188,19,254,0.08); border:1px solid rgba(188,19,254,0.2); border-radius:12px; padding:12px; color:#bc13fe; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-history"></i> Order History</button>
-                    <button onclick="openAffiliateModal(); closeProfileModal();" style="background:rgba(0,255,0,0.06); border:1px solid rgba(0,255,0,0.2); border-radius:12px; padding:12px; color:#00ff73; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-money-bill-wave"></i> Pata Pesa</button>
-                    <a href="javascript:void(0)" onclick="openWhatsAppSupport(); closeProfileModal();" style="text-decoration:none; background:rgba(255,180,0,0.06); border:1px solid rgba(255,180,0,0.2); border-radius:12px; padding:12px; color:#ffb400; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-question-circle"></i> Msaada</a>
-                    <button onclick="openLogoutModal(); closeProfileModal();" style="grid-column: span 2; background:rgba(255,68,68,0.06); border:1px solid rgba(255,68,68,0.2); border-radius:12px; padding:12px; color:#ff4444; font-size:0.75rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Orbitron';"><i class="fas fa-sign-out-alt"></i> Logout</button>
-                </div>
+        <!-- Top Hero Banner -->
+        <div style="position:relative; background:linear-gradient(135deg, #0d0d1a 0%, #0a0520 50%, #0d0d1a 100%); padding:0; overflow:hidden; min-height:200px;">
+            <!-- Animated bg orbs -->
+            <div style="position:absolute; top:-60px; left:-60px; width:250px; height:250px; background:radial-gradient(circle, rgba(0,242,255,0.12) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+            <div style="position:absolute; bottom:-80px; right:-40px; width:300px; height:300px; background:radial-gradient(circle, rgba(188,19,254,0.1) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+            <!-- Top bar -->
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px 0; position:relative; z-index:2;">
+                <button onclick="closeProfileModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#fff; width:38px; height:38px; border-radius:12px; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div style="font-family:'Orbitron'; font-size:0.75rem; font-weight:800; color:#fff; letter-spacing:3px; text-transform:uppercase;">MY PROFILE</div>
+                <div style="width:38px;"></div>
+            </div>
 
-                <!-- Winners / Leaderboard Section -->
-                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden;">
-                    <div style="padding:15px 15px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <i class="fas fa-crown" style="color:#ffb400;"></i>
-                        <div style="font-family:'Orbitron'; font-size:0.8rem; font-weight:800; color:#fff; letter-spacing:1px;">TOP WINNERS</div>
-                    </div>
-                    <div id="profileLeaderboardList" style="padding:10px; max-height:280px; overflow-y:auto;">
-                        <div style="text-align:center; padding:20px; color:#6c7293; font-size:0.75rem;">Inapakia...</div>
+            <!-- Avatar + Info -->
+            <div style="display:flex; flex-direction:column; align-items:center; padding:24px 18px 30px; position:relative; z-index:2; animation:profileSlideIn 0.5s ease;">
+                <!-- Avatar Circle -->
+                <div style="position:relative; margin-bottom:16px;">
+                    <div id="profileModalAvatar" style="width:88px; height:88px; background:linear-gradient(135deg,#00f2ff,#bc13fe); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Orbitron'; font-size:2.2rem; font-weight:900; color:#000; animation:avatarPulse 3s infinite; border:3px solid rgba(0,242,255,0.4);">U</div>
+                    <!-- Online dot -->
+                    <div style="position:absolute; bottom:4px; right:4px; width:18px; height:18px; background:#00ff73; border-radius:50%; border:3px solid #0a0a10; box-shadow:0 0 10px rgba(0,255,115,0.7);"></div>
+                </div>
+                <!-- Name -->
+                <div id="profileModalName" style="font-family:'Orbitron'; font-size:1.15rem; font-weight:900; color:#fff; letter-spacing:1px; margin-bottom:4px; text-align:center;">User</div>
+                <!-- Phone -->
+                <div id="profileModalPhone" style="font-size:0.75rem; color:#6c7293; margin-bottom:8px;">--</div>
+                <!-- Level Badge -->
+                <div id="profileModalLevel" style="background:linear-gradient(135deg,rgba(0,242,255,0.15),rgba(188,19,254,0.15)); border:1px solid rgba(0,242,255,0.3); color:#00f2ff; font-family:'Orbitron'; font-size:0.6rem; font-weight:800; padding:5px 16px; border-radius:20px; letter-spacing:2px; text-transform:uppercase;">ROOKIE GAMER</div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:rgba(255,255,255,0.06); border-top:1px solid rgba(255,255,255,0.06); position:relative; z-index:2;">
+                <div style="background:#0a0a10; padding:16px 10px; text-align:center;">
+                    <div id="profileModalGames" style="font-family:'Orbitron'; font-size:1.4rem; font-weight:900; color:#00f2ff; animation:statCount 0.6s ease 0.2s both;">0</div>
+                    <div style="font-size:0.55rem; color:#6c7293; letter-spacing:1px; font-weight:700; margin-top:2px;">GAMES</div>
+                </div>
+                <div style="background:#0a0a10; padding:16px 10px; text-align:center; border-left:1px solid rgba(255,255,255,0.06); border-right:1px solid rgba(255,255,255,0.06);">
+                    <div id="profileModalPoints" style="font-family:'Orbitron'; font-size:1.4rem; font-weight:900; color:#bc13fe; animation:statCount 0.6s ease 0.4s both;">0</div>
+                    <div style="font-size:0.55rem; color:#6c7293; letter-spacing:1px; font-weight:700; margin-top:2px;">POINTS</div>
+                </div>
+                <div style="background:#0a0a10; padding:16px 10px; text-align:center;">
+                    <div style="font-family:'Orbitron'; font-size:1.4rem; font-weight:900; color:#ffb400; animation:statCount 0.6s ease 0.6s both;">⭐</div>
+                    <div style="font-size:0.55rem; color:#6c7293; letter-spacing:1px; font-weight:700; margin-top:2px;">MEMBER</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Body Content -->
+        <div style="padding:20px 16px 100px; max-width:500px; margin:0 auto;">
+
+            <!-- Quick Actions Grid -->
+            <div style="font-family:'Orbitron'; font-size:0.65rem; font-weight:800; color:#6c7293; letter-spacing:2px; margin-bottom:12px; padding:0 2px;">MENYU HARAKA</div>
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:24px;">
+                <button class="profile-action-btn" onclick="openMyGames();" style="color:#00f2ff; border-color:rgba(0,242,255,0.2); background:rgba(0,242,255,0.05);">
+                    <i class="fas fa-gamepad"></i>
+                    <span>Library</span>
+                </button>
+                <button class="profile-action-btn" onclick="openOrderHistory();" style="color:#bc13fe; border-color:rgba(188,19,254,0.2); background:rgba(188,19,254,0.05);">
+                    <i class="fas fa-history"></i>
+                    <span>Orders</span>
+                </button>
+                <button class="profile-action-btn" onclick="openAffiliateModal();" style="color:#00ff73; border-color:rgba(0,255,115,0.2); background:rgba(0,255,115,0.05);">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Pata Pesa</span>
+                </button>
+                <a class="profile-action-btn" href="javascript:void(0)" onclick="openWhatsAppSupport();" style="color:#ffb400; border-color:rgba(255,180,0,0.2); background:rgba(255,180,0,0.05);">
+                    <i class="fas fa-headset"></i>
+                    <span>Msaada</span>
+                </a>
+            </div>
+
+            <!-- Leaderboard -->
+            <div style="font-family:'Orbitron'; font-size:0.65rem; font-weight:800; color:#6c7293; letter-spacing:2px; margin-bottom:12px; padding:0 2px;">🏆 TOP WINNERS</div>
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:18px; overflow:hidden; margin-bottom:20px;">
+                <div id="profileLeaderboardList" style="padding:5px 0;">
+                    <div style="text-align:center; padding:30px 20px; color:#6c7293; font-size:0.75rem;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:1.5rem; margin-bottom:10px; display:block; color:#bc13fe;"></i>
+                        Inapakia...
                     </div>
                 </div>
             </div>
+
+            <!-- Danger Zone -->
+            <div style="font-family:'Orbitron'; font-size:0.65rem; font-weight:800; color:#6c7293; letter-spacing:2px; margin-bottom:12px; padding:0 2px;">AKAUNTI</div>
+            <button onclick="openLogoutModal();" style="width:100%; background:rgba(255,68,68,0.06); border:1px solid rgba(255,68,68,0.2); border-radius:14px; padding:15px; color:#ff4444; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'Orbitron'; letter-spacing:1px; transition:all 0.3s;">
+                <i class="fas fa-sign-out-alt"></i> LOGOUT
+            </button>
         </div>
     </div>
     <!-- MY GAMES MODAL -->
@@ -4635,9 +4708,14 @@
             const discountBadge = isDiscounted ? `<div style="position: absolute; top: 10px; right: 10px; background: #ff3366; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; z-index: 10; box-shadow: 0 2px 10px rgba(255,51,102,0.4); border: 1px solid rgba(255,255,255,0.2);">-${game.global_discount}%</div>` : '';
             const category = game.category ? game.category.toUpperCase() : 'HOT POST';
 
+            // NEW badge — inaonekana kwa siku 30 tu baada ya kuchapishwa
+            const isNew = game.created_at && ((Date.now() - new Date(game.created_at).getTime()) < 30 * 24 * 60 * 60 * 1000);
+            const newBadge = isNew ? `<div style="position:absolute; top:8px; left:8px; background:linear-gradient(135deg,#00f2ff,#bc13fe); color:#000; padding:2px 8px; border-radius:20px; font-size:0.6rem; font-weight:900; z-index:10; font-family:'Orbitron'; letter-spacing:1px; box-shadow:0 0 10px rgba(0,242,255,0.5);">NEW</div>` : '';
+
             return `
                 <div class="game-card" data-game-id="${game.id}" data-category="${category}">
                     <div class="card-image-wrap">
+                        ${newBadge}
                         ${discountBadge}
                         <img data-src="${game.image_url}" alt="${game.title}" 
                              onerror="this.src='https://placehold.co/400x600/111119/00f2ff?text=${encodeURIComponent(game.title)}'"
@@ -5787,35 +5865,47 @@
             } catch (e) { console.error("Stats fetch failed"); }
         }
 
-        // ===== PROFILE MODAL =====
+        // ===== PROFILE FULL PAGE =====
         async function openProfileModal() {
             const overlay = document.getElementById('profileModalOverlay');
             if (!overlay) return;
+
+            // Ficha main content, onyesha profile page
             overlay.style.display = 'block';
             document.body.style.overflow = 'hidden';
+            setActiveBottom(4);
 
-            // Refresh user data
+            // Scroll profile page juu
+            overlay.scrollTop = 0;
+
+            // Pakia data ya user
             await refreshUserStats();
 
-            // Load leaderboard inside profile modal
+            // Pakia leaderboard
             const list = document.getElementById('profileLeaderboardList');
             if (list) {
-                list.innerHTML = '<div style="text-align:center; padding:20px; color:#6c7293; font-size:0.75rem;">Inapakia...</div>';
+                list.innerHTML = `<div style="text-align:center; padding:30px 20px; color:#6c7293; font-size:0.75rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:1.5rem; margin-bottom:10px; display:block; color:#bc13fe;"></i>Inapakia...
+                </div>`;
                 try {
                     const res = await fetch('/api/leaderboard');
                     const data = await res.json();
                     if (data.length === 0) {
-                        list.innerHTML = '<div style="text-align:center; color:#6c7293; padding:20px;">Hakuna mshindi bado. Kuwa wa kwanza!</div>';
+                        list.innerHTML = '<div style="text-align:center; color:#6c7293; padding:30px;">Hakuna mshindi bado. Kuwa wa kwanza!</div>';
                         return;
                     }
                     list.innerHTML = data.map((user, index) => {
-                        let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<span style="font-size:0.75rem; color:#6c7293;">#${index+1}</span>`;
-                        return `<div style="display:flex; align-items:center; justify-content:space-between; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.04);">
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <div style="width:26px; text-align:center;">${medal}</div>
-                                <div style="font-weight:600; font-size:0.8rem; color:#fff;">${user.name}</div>
+                        const medals = ['🥇','🥈','🥉'];
+                        const medal = index < 3 ? `<span style="font-size:1.2rem;">${medals[index]}</span>` : `<span style="font-size:0.75rem; color:#6c7293; font-family:'Orbitron'; font-weight:800;">#${index+1}</span>`;
+                        const isTop = index === 0;
+                        return `<div class="profile-lb-row" style="${isTop ? 'background:rgba(255,180,0,0.05);' : ''}">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="width:28px; text-align:center;">${medal}</div>
+                                <div>
+                                    <div style="font-weight:700; font-size:0.85rem; color:${isTop ? '#ffb400' : '#fff'};">${user.name}</div>
+                                </div>
                             </div>
-                            <div style="font-size:0.65rem; padding:3px 8px; background:rgba(0,242,255,0.1); color:#00f2ff; border-radius:6px; font-weight:800;">${user.purchases} GAMES</div>
+                            <div style="font-size:0.65rem; padding:4px 10px; background:rgba(0,242,255,0.1); color:#00f2ff; border-radius:8px; font-weight:800; font-family:'Orbitron';">${user.purchases} GAMES</div>
                         </div>`;
                     }).join('');
                 } catch(e) {
@@ -5828,6 +5918,7 @@
             const overlay = document.getElementById('profileModalOverlay');
             if (overlay) overlay.style.display = 'none';
             document.body.style.overflow = '';
+            setActiveBottom(0);
         }
 
         function toggleProfileMenu() {
