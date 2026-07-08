@@ -3958,7 +3958,7 @@
 
             <!-- Danger Zone -->
             <div style="font-family:'Orbitron'; font-size:0.65rem; font-weight:800; color:#6c7293; letter-spacing:2px; margin-bottom:12px; padding:0 2px;">AKAUNTI</div>
-            <button onclick="openLogoutModal();" style="width:100%; background:rgba(255,68,68,0.06); border:1px solid rgba(255,68,68,0.2); border-radius:14px; padding:15px; color:#ff4444; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'Orbitron'; letter-spacing:1px; transition:all 0.3s;">
+            <button onclick="quickLogout();" style="width:100%; background:rgba(255,68,68,0.06); border:1px solid rgba(255,68,68,0.2); border-radius:14px; padding:15px; color:#ff4444; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'Orbitron'; letter-spacing:1px; transition:all 0.3s;">
                 <i class="fas fa-sign-out-alt"></i> LOGOUT
             </button>
         </div>
@@ -5919,6 +5919,13 @@
             if (overlay) overlay.style.display = 'none';
             document.body.style.overflow = '';
             setActiveBottom(0);
+        }
+
+        function quickLogout() {
+            if (!confirm('Una uhakika unataka kutoka?\nUtahitaji kujisajili tena.')) return;
+            localStorage.removeItem('chidy_visitor');
+            closeProfileModal();
+            location.reload();
         }
 
         function toggleProfileMenu() {
