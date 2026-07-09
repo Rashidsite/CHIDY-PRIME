@@ -6319,6 +6319,56 @@
             }
         }
 
+        // ===== PUSH NOTIFICATION SUBSCRIPTION =====
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function subscribeToPushNotifications(swReg) {
+            try {
+                // Angalia kama notifications zinasaidiwa
+                if (!('Notification' in window) || !('PushManager' in window)) return;
+
+                // Angalia kama tayari amesubscribe
+                const existing = await swReg.pushManager.getSubscription();
+                if (existing) return; // Tayari amesubscribe — hakuna kufanyika
+
+                // Omba permission — ikawa "denied" acha
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') return;
+
+                // Pata VAPID public key kutoka server
+                const res = await fetch('/api/push/public-key');
+                const { publicKey } = await res.json();
+                if (!publicKey) return;
+
+                // Subscribe mtumiaji
+                const subscription = await swReg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicKey)
+                });
+
+                // Hifadhi subscription kwenye server
+                await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscription)
+                });
+
+                console.log('✅ Push notifications: Subscribed!');
+
+            } catch (err) {
+                console.warn('Push subscription failed:', err);
+            }
+        }
+
         function closeProfileModal() {
             const overlay = document.getElementById('profileModalOverlay');
             if (overlay) overlay.style.display = 'none';
@@ -6865,6 +6915,12 @@ async function clearAllNotifications() {
                     try {
                         const reg = await navigator.serviceWorker.register('/sw.js');
                         console.log('SW Registered!', reg);
+
+                        // === PUSH NOTIFICATION SUBSCRIPTION ===
+                        // Subiri SW iwe ready, kisha subscribe mtumiaji
+                        const swReg = await navigator.serviceWorker.ready;
+                        await subscribeToPushNotifications(swReg);
+
                     } catch (err) {
                         console.log('SW failed: ', err);
                     }
