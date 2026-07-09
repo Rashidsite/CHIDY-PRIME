@@ -254,6 +254,33 @@ setInterval(async () => {
 // === PERFORMANCE: Gzip compression (reduces response size 60-80%) ===
 app.use(compression());
 
+// === SECURITY: HTTP Security Headers ===
+app.use((req, res, next) => {
+    // Zuia clickjacking - iframe kutoka domain nyingine hairuhusiwi
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    // Zuia MIME type sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // XSS protection kwa browsers za zamani
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    // HTTPS tu kwa miezi 6
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    // Referrer policy - isionyeshe URL kamili kwa sites nyingine
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Content Security Policy - inaruhusu CDNs na resources zote zinazotumika
+    res.setHeader('Content-Security-Policy', [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.onesignal.com https://cdnjs.cloudflare.com https://apis.google.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+        "img-src 'self' data: blob: https: http:",
+        "media-src 'self' https:",
+        "frame-src 'self' https://www.youtube.com https://youtube.com",
+        "connect-src 'self' https://cdn.onesignal.com https://*.supabase.co wss://*.supabase.co https://api.telegram.org",
+        "worker-src 'self' blob: https://cdn.onesignal.com"
+    ].join('; '));
+    next();
+});
+
 // Only admin upload endpoints need the 50mb limit — all other endpoints use a small cap
 app.use('/api/admin/upload', express.json({ limit: '50mb' }));
 app.use('/api/admin/upload', express.urlencoded({ limit: '50mb', extended: true }));
