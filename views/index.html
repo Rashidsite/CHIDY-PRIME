@@ -217,6 +217,53 @@
         }
         /* ===== END WA MODAL UPGRADE ===== */
 
+        /* ===== GAME DETAIL MODAL PREMIUM ===== */
+        .detail-overlay {
+            background: rgba(2, 8, 15, 0.93) !important;
+            backdrop-filter: blur(25px) !important;
+        }
+        .detail-card {
+            background: linear-gradient(170deg, #071520 0%, #040d12 60%, #0a0f1a 100%) !important;
+            border: 1px solid rgba(0, 242, 255, 0.18) !important;
+            border-radius: 20px !important;
+            box-shadow:
+                0 30px 80px rgba(0,0,0,0.9),
+                0 0 0 1px rgba(0,242,255,0.08),
+                0 0 40px rgba(0,180,180,0.08) !important;
+            position: relative !important;
+        }
+        .detail-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 8%; right: 8%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f2ff, #bc13fe, transparent);
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 0 15px rgba(0,242,255,0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+        .detail-image {
+            border-radius: 20px 20px 0 0 !important;
+        }
+        .close-detail {
+            width: 40px !important;
+            height: 40px !important;
+            background: rgba(4,13,20,0.85) !important;
+            border: 1px solid rgba(0,242,255,0.25) !important;
+            font-size: 1.1rem !important;
+        }
+        .close-detail:hover {
+            background: rgba(0,242,255,0.15) !important;
+            border-color: rgba(0,242,255,0.5) !important;
+            color: #00f2ff !important;
+            box-shadow: 0 0 15px rgba(0,242,255,0.3) !important;
+        }
+        .detail-body {
+            padding: 1.2rem 1.4rem 1.5rem !important;
+        }
+        /* ===== END DETAIL MODAL PREMIUM ===== */
+
         /* ===== END THEME OVERRIDE ===== */
 
         /* Shimmer Loading Effect */
