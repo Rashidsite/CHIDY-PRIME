@@ -132,12 +132,12 @@
             --secondary: #bc13fe;
             --accent: #ff00e5;
             --gold: #ffb400;
-            --bg-dark: #000000;
-            --bg-card: #111119;
-            --bg-surface: #0a0a10;
+            --bg-dark: #040d12;
+            --bg-card: #071a22;
+            --bg-surface: #071520;
             --text-main: #ffffff;
-            --text-dim: #6c7293;
-            --glass: rgba(255, 255, 255, 0.05);
+            --text-dim: #7c9aaa;
+            --glass: rgba(0, 242, 255, 0.04);
             --bottom-bar-height: 65px;
             --primary-glow: #00f2ff;
             --secondary-glow: #bc13fe;
@@ -4391,45 +4391,148 @@
 
 
 
-    <!-- AFFILIATE / PATA PESA MODAL -->
-    <div class="bot-overlay" id="affiliateModalOverlay">
-        <div class="bot-container" style="max-width: 450px; height: auto; max-height: 90vh;">
-            <div class="bot-header" style="background: linear-gradient(135deg, #111119, #1a1a2e); border-bottom: 1px solid rgba(0, 255, 0, 0.2);">
-                <div class="bot-avatar" style="background: rgba(0, 255, 0, 0.1); color: #00ff00;"><i class="fas fa-money-bill-trend-up"></i></div>
-                <div class="bot-header-info">
-                    <span class="bot-name">Programu ya Washirika</span>
-                    <span class="bot-status" style="color: #00ff00;">Chuma Pesa na Chidy Prime</span>
-                </div>
-                <button class="bot-close" onclick="closeAffiliateModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="bot-body" style="padding: 20px; overflow-y: auto;">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <h3 style="color: #fff; font-family: 'Orbitron'; font-size: 1.1rem; margin-bottom: 10px;">Alika Rafiki, Pata Pesa!</h3>
-                    <p style="color: #a0a0b0; font-size: 0.85rem; line-height: 1.5;">Sambaza link yako kwa marafiki. Kila rafiki anaponunua game kupitia link yako, unapata <b>10%</b> ya pesa aliyolipia papo hapo!</p>
-                </div>
-                
-                <div style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(0, 255, 0, 0.3); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                    <label style="color: #00ff00; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 8px;">Link Yako ya Kipekee:</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="referralLinkInput" readonly style="flex: 1; background: #000; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 8px; font-size: 0.85rem;" value="Inapakia...">
-                        <button onclick="copyReferralLink()" style="background: #00ff00; color: #000; border: none; padding: 0 15px; border-radius: 8px; font-weight: 800; cursor: pointer;">COPY</button>
-                    </div>
-                </div>
+    <!-- ===== PATA PESA FULL PAGE ===== -->
+    <div id="affiliateModalOverlay" style="display:none; position:fixed; inset:0; background:#0a0a10; z-index:10000; overflow-y:auto; overflow-x:hidden;">
+        <style>
+            #affiliateModalOverlay { scrollbar-width:none; }
+            #affiliateModalOverlay::-webkit-scrollbar { display:none; }
+            @keyframes affSlideIn {
+                from { opacity:0; transform:translateY(30px); }
+                to   { opacity:1; transform:translateY(0); }
+            }
+            @keyframes moneyPulse {
+                0%,100% { box-shadow:0 0 0 0 rgba(0,255,115,0.4), 0 0 30px rgba(0,255,0,0.3); }
+                50%     { box-shadow:0 0 0 14px rgba(0,255,115,0), 0 0 50px rgba(0,255,0,0.5); }
+            }
+            @keyframes shimmerGreen {
+                0%   { background-position:200% 0; }
+                100% { background-position:-200% 0; }
+            }
+            .aff-stat-card {
+                background:rgba(0,255,115,0.05);
+                border:1px solid rgba(0,255,115,0.15);
+                border-radius:16px;
+                padding:16px 12px;
+                text-align:center;
+                flex:1;
+            }
+            .aff-step {
+                display:flex;
+                align-items:flex-start;
+                gap:14px;
+                padding:14px 16px;
+                background:rgba(255,255,255,0.02);
+                border-radius:14px;
+                border:1px solid rgba(255,255,255,0.05);
+            }
+            .aff-step-num {
+                width:30px;height:30px;
+                border-radius:50%;
+                background:linear-gradient(135deg,#00ff73,#00aa44);
+                color:#000;
+                font-family:'Orbitron';
+                font-size:0.75rem;
+                font-weight:900;
+                display:flex;align-items:center;justify-content:center;
+                flex-shrink:0;
+            }
+        </style>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div style="background: rgba(0,255,0,0.05); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(0,255,0,0.1);">
-                        <div style="font-size: 0.65rem; color: #a0a0b0; text-transform: uppercase;">Watu Uliowaleta</div>
-                        <div id="affiliateCount" style="font-size: 1.2rem; color: #fff; font-weight: 700; font-family: 'Orbitron';">0</div>
-                    </div>
-                    <div style="background: rgba(0,255,0,0.05); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid rgba(0,255,0,0.1);">
-                        <div style="font-size: 0.65rem; color: #a0a0b0; text-transform: uppercase;">Salio la Pesa (TSh)</div>
-                        <div id="affiliateBalance" style="font-size: 1.2rem; color: #00ff00; font-weight: 700; font-family: 'Orbitron';">0</div>
+        <!-- Hero Banner -->
+        <div style="position:relative; background:linear-gradient(135deg,#0a1a0a 0%,#051505 50%,#0a1a0a 100%); overflow:hidden; min-height:190px;">
+            <!-- BG orbs -->
+            <div style="position:absolute;top:-50px;left:-50px;width:250px;height:250px;background:radial-gradient(circle,rgba(0,255,115,0.12) 0%,transparent 70%);border-radius:50%;pointer-events:none;"></div>
+            <div style="position:absolute;bottom:-80px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(0,180,80,0.08) 0%,transparent 70%);border-radius:50%;pointer-events:none;"></div>
+
+            <!-- Top bar -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 0;position:relative;z-index:2;">
+                <button onclick="closeAffiliateModal()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;width:38px;height:38px;border-radius:12px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div style="font-family:'Orbitron';font-size:0.75rem;font-weight:800;color:#fff;letter-spacing:3px;">PATA PESA</div>
+                <div style="width:38px;"></div>
+            </div>
+
+            <!-- Icon + Title -->
+            <div style="display:flex;flex-direction:column;align-items:center;padding:20px 18px 28px;position:relative;z-index:2;animation:affSlideIn 0.5s ease;">
+                <div style="width:80px;height:80px;background:linear-gradient(135deg,#00ff73,#00aa44);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:14px;animation:moneyPulse 3s infinite;border:3px solid rgba(0,255,115,0.4);">💰</div>
+                <div style="font-family:'Orbitron';font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:6px;letter-spacing:1px;">Programu ya Washirika</div>
+                <div style="font-size:0.8rem;color:#6c7293;text-align:center;max-width:280px;line-height:1.5;">Alika marafiki, wapate games — <span style="color:#00ff73;font-weight:700;">upate 10%</span> ya kila nunuzi papo hapo!</div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,0.06);border-top:1px solid rgba(0,255,115,0.1);position:relative;z-index:2;">
+                <div style="background:#0a0a10;padding:16px 10px;text-align:center;">
+                    <div id="affiliateCount" style="font-family:'Orbitron';font-size:1.5rem;font-weight:900;color:#00ff73;">0</div>
+                    <div style="font-size:0.55rem;color:#6c7293;letter-spacing:1px;font-weight:700;margin-top:2px;">WATU ULIOWALETA</div>
+                </div>
+                <div style="background:#0a0a10;padding:16px 10px;text-align:center;border-left:1px solid rgba(0,255,115,0.1);">
+                    <div id="affiliateBalance" style="font-family:'Orbitron';font-size:1.5rem;font-weight:900;color:#ffb400;">0</div>
+                    <div style="font-size:0.55rem;color:#6c7293;letter-spacing:1px;font-weight:700;margin-top:2px;">SALIO (TSh)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:20px 16px 100px;max-width:500px;margin:0 auto;">
+
+            <!-- Link yako -->
+            <div style="font-family:'Orbitron';font-size:0.65rem;font-weight:800;color:#6c7293;letter-spacing:2px;margin-bottom:12px;">LINK YAKO YA KIPEKEE</div>
+            <div style="background:rgba(0,255,115,0.04);border:1px solid rgba(0,255,115,0.2);border-radius:16px;padding:16px;margin-bottom:24px;">
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="text" id="referralLinkInput" readonly
+                        style="flex:1;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);color:#00ff73;padding:12px 14px;border-radius:12px;font-size:0.8rem;font-family:'Orbitron';letter-spacing:0.5px;outline:none;"
+                        value="Inapakia...">
+                    <button onclick="copyReferralLink()"
+                        style="background:linear-gradient(135deg,#00ff73,#00aa44);color:#000;border:none;padding:12px 18px;border-radius:12px;font-weight:900;font-family:'Orbitron';font-size:0.7rem;cursor:pointer;white-space:nowrap;letter-spacing:1px;flex-shrink:0;">
+                        <i class="fas fa-copy"></i> COPY
+                    </button>
+                </div>
+                <div style="margin-top:10px;display:flex;gap:8px;">
+                    <button onclick="shareReferralLink()"
+                        style="flex:1;background:rgba(0,255,115,0.08);border:1px solid rgba(0,255,115,0.2);color:#00ff73;padding:10px;border-radius:10px;font-family:'Orbitron';font-size:0.65rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fas fa-share-alt"></i> SHARE
+                    </button>
+                    <button onclick="shareWhatsApp()"
+                        style="flex:1;background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.2);color:#25d366;padding:10px;border-radius:10px;font-family:'Orbitron';font-size:0.65rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fab fa-whatsapp"></i> WHATSAPP
+                    </button>
+                </div>
+            </div>
+
+            <!-- Jinsi inavyofanya kazi -->
+            <div style="font-family:'Orbitron';font-size:0.65rem;font-weight:800;color:#6c7293;letter-spacing:2px;margin-bottom:12px;">JINSI INAVYOFANYA KAZI</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+                <div class="aff-step">
+                    <div class="aff-step-num">1</div>
+                    <div>
+                        <div style="color:#fff;font-size:0.82rem;font-weight:700;margin-bottom:3px;">Copy link yako</div>
+                        <div style="color:#6c7293;font-size:0.75rem;line-height:1.4;">Kila mtu ana link yake ya kipekee — copy na ushiriki na marafiki wako.</div>
                     </div>
                 </div>
-
-                <button onclick="requestWithdrawal()" id="withdrawBtn" style="width: 100%; background: linear-gradient(135deg, #00ff00, #008800); color: #000; border: none; padding: 14px; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; text-transform: uppercase; font-size: 0.85rem;">OMBA KUTOA PESA (WITHDRAW)</button>
-                <p style="text-align: center; color: #666; font-size: 0.7rem; margin-top: 10px;">Kiwango cha chini cha kutoa ni TSh 5,000.</p>
+                <div class="aff-step">
+                    <div class="aff-step-num">2</div>
+                    <div>
+                        <div style="color:#fff;font-size:0.82rem;font-weight:700;margin-bottom:3px;">Rafiki anunue game</div>
+                        <div style="color:#6c7293;font-size:0.75rem;line-height:1.4;">Rafiki wako anapofungua link yako na kununua game yoyote — unahesabiwa moja kwa moja.</div>
+                    </div>
+                </div>
+                <div class="aff-step">
+                    <div class="aff-step-num">3</div>
+                    <div>
+                        <div style="color:#fff;font-size:0.82rem;font-weight:700;margin-bottom:3px;">Pata <span style="color:#00ff73;">10%</span> papo hapo</div>
+                        <div style="color:#6c7293;font-size:0.75rem;line-height:1.4;">10% ya bei ya game inaongezwa kwenye salio lako mara moja. Toa ukifikia TSh 5,000.</div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Withdraw Button -->
+            <div style="font-family:'Orbitron';font-size:0.65rem;font-weight:800;color:#6c7293;letter-spacing:2px;margin-bottom:12px;">TOA PESA YAKO</div>
+            <button onclick="requestWithdrawal()" id="withdrawBtn"
+                style="width:100%;background:linear-gradient(135deg,#00ff73,#00aa44);color:#000;border:none;padding:16px;border-radius:14px;font-weight:900;font-family:'Orbitron';cursor:pointer;font-size:0.85rem;letter-spacing:1px;box-shadow:0 0 20px rgba(0,255,115,0.3);transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:10px;">
+                <i class="fas fa-wallet"></i> OMBA KUTOA PESA (WITHDRAW)
+            </button>
+            <p style="text-align:center;color:#6c7293;font-size:0.7rem;margin-top:10px;">Kiwango cha chini cha kutoa ni TSh 5,000.</p>
         </div>
     </div>
 
@@ -5597,21 +5700,24 @@
             
             const visitor = JSON.parse(visitorStr);
             const overlay = document.getElementById('affiliateModalOverlay');
-            if(overlay) overlay.classList.add('show');
+            if (!overlay) return;
+
+            overlay.style.display = 'block';
+            overlay.scrollTop = 0;
             document.body.style.overflow = 'hidden';
             
             // Set referral link
             const linkInput = document.getElementById('referralLinkInput');
-            if(linkInput) linkInput.value = `https://chidyprime.com/?ref=${visitor.id}`;
+            if (linkInput) linkInput.value = `https://chidyprime.com/?ref=${visitor.id}`;
             
-            // Fetch stats from backend
+            // Fetch stats
             try {
                 const res = await fetch(`/api/affiliate/stats/${visitor.id}`);
                 const stats = await res.json();
                 const countEl = document.getElementById('affiliateCount');
                 const balEl = document.getElementById('affiliateBalance');
-                if(countEl) countEl.innerText = stats.referralCount || 0;
-                if(balEl) balEl.innerText = (stats.totalEarnings || 0).toLocaleString();
+                if (countEl) countEl.innerText = stats.referralCount || 0;
+                if (balEl) balEl.innerText = (stats.totalEarnings || 0).toLocaleString();
             } catch (e) {
                 console.error("Failed to fetch affiliate stats");
             }
@@ -5619,8 +5725,29 @@
 
         function closeAffiliateModal() {
             const overlay = document.getElementById('affiliateModalOverlay');
-            if(overlay) overlay.classList.remove('show');
+            if (overlay) overlay.style.display = 'none';
             document.body.style.overflow = '';
+        }
+
+        function shareReferralLink() {
+            const input = document.getElementById('referralLinkInput');
+            if (!input) return;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Chidy Prime - Premium Gaming',
+                    text: '🎮 Jiunge na Chidy Prime kupitia link yangu na pata games bora Tanzania!',
+                    url: input.value
+                });
+            } else {
+                copyReferralLink();
+            }
+        }
+
+        function shareWhatsApp() {
+            const input = document.getElementById('referralLinkInput');
+            if (!input) return;
+            const msg = encodeURIComponent(`🎮 Jiunge na Chidy Prime kupitia link yangu!\n\nPata games bora Tanzania — PPSSPP, Android, PC na zaidi.\n\n👇 Bonyeza hapa:\n${input.value}`);
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
         }
 
         function copyReferralLink() {
