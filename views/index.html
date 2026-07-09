@@ -3856,20 +3856,82 @@
 
     <!-- FOOTER SECTION -->
     <footer class="site-footer">
-        <div class="footer-brand">
-            <span class="brand-chidy">CHIDY</span><span class="brand-prime">PRIME</span>
+
+        <!-- Brand Logo kubwa na glow -->
+        <div class="footer-brand" style="margin-bottom:1.2rem;">
+            <span class="brand-chidy" style="font-size:2rem; text-shadow:0 0 30px rgba(0,242,255,0.5);">CHIDY</span><span class="brand-prime" style="font-size:2rem; text-shadow:0 0 30px rgba(188,19,254,0.5);">PRIME</span>
         </div>
-        <div class="footer-links" style="display: none;">
-            <a href="#"><i class="fab fa-facebook"></i></a>
-            <a href="#"><i class="fab fa-instagram"></i></a>
-            <a href="#"><i class="fab fa-tiktok"></i></a>
-            <a href="#"><i class="fab fa-whatsapp"></i></a>
+
+        <!-- Tagline -->
+        <p style="font-family:'Poppins'; font-size:0.78rem; color:#7c9aaa; letter-spacing:2px; text-transform:uppercase; margin-bottom:1.8rem;">Premium Gaming Hub · Tanzania 🇹🇿</p>
+
+        <!-- Neon Divider -->
+        <div style="width:80px; height:2px; background:linear-gradient(90deg, transparent, #00f2ff, #bc13fe, transparent); margin:0 auto 1.8rem; border-radius:2px;"></div>
+
+        <!-- Social Media Icons -->
+        <div class="footer-links" style="display:flex; justify-content:center; gap:18px; margin-bottom:2rem;">
+            <a href="https://www.instagram.com/live_ftb_highlights" target="_blank" 
+               style="width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; color:#e1306c; font-size:1.1rem; transition:all 0.3s;"
+               onmouseover="this.style.background='rgba(225,48,108,0.15)'; this.style.borderColor='rgba(225,48,108,0.4)'; this.style.transform='translateY(-4px)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)'">
+                <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://www.facebook.com/share/1D3B5rjgZR/" target="_blank"
+               style="width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; color:#1877f2; font-size:1.1rem; transition:all 0.3s;"
+               onmouseover="this.style.background='rgba(24,119,242,0.15)'; this.style.borderColor='rgba(24,119,242,0.4)'; this.style.transform='translateY(-4px)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)'">
+                <i class="fab fa-facebook"></i>
+            </a>
+            <a href="https://www.tiktok.com/@chidyprime" target="_blank"
+               style="width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; transition:all 0.3s;"
+               onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.3)'; this.style.transform='translateY(-4px)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)'">
+                <i class="fab fa-tiktok"></i>
+            </a>
+            <a href="https://youtube.com/@chidyprime2050" target="_blank"
+               style="width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; color:#ff0000; font-size:1.1rem; transition:all 0.3s;"
+               onmouseover="this.style.background='rgba(255,0,0,0.15)'; this.style.borderColor='rgba(255,0,0,0.4)'; this.style.transform='translateY(-4px)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)'">
+                <i class="fab fa-youtube"></i>
+            </a>
+            <a href="https://wa.me/255655361060" target="_blank"
+               style="width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; color:#25d366; font-size:1.1rem; transition:all 0.3s;"
+               onmouseover="this.style.background='rgba(37,211,102,0.15)'; this.style.borderColor='rgba(37,211,102,0.4)'; this.style.transform='translateY(-4px)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)'">
+                <i class="fab fa-whatsapp"></i>
+            </a>
         </div>
+
+        <!-- Quick Links -->
+        <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-bottom:2rem;">
+            <span onclick="showHome()" style="color:#7c9aaa; font-size:0.72rem; cursor:pointer; transition:color 0.2s; letter-spacing:0.5px;"
+                onmouseover="this.style.color='#00f2ff'" onmouseout="this.style.color='#7c9aaa'">
+                <i class="fas fa-home" style="margin-right:4px;"></i>Home
+            </span>
+            <span onclick="openVideoStore()" style="color:#7c9aaa; font-size:0.72rem; cursor:pointer; transition:color 0.2s; letter-spacing:0.5px;"
+                onmouseover="this.style.color='#00f2ff'" onmouseout="this.style.color='#7c9aaa'">
+                <i class="fas fa-play-circle" style="margin-right:4px;"></i>Videos
+            </span>
+            <span onclick="openAffiliateModal()" style="color:#7c9aaa; font-size:0.72rem; cursor:pointer; transition:color 0.2s; letter-spacing:0.5px;"
+                onmouseover="this.style.color='#00ff73'" onmouseout="this.style.color='#7c9aaa'">
+                <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Pata Pesa
+            </span>
+            <span onclick="openWhatsAppSupport()" style="color:#7c9aaa; font-size:0.72rem; cursor:pointer; transition:color 0.2s; letter-spacing:0.5px;"
+                onmouseover="this.style.color='#25d366'" onmouseout="this.style.color='#7c9aaa'">
+                <i class="fas fa-headset" style="margin-right:4px;"></i>Support
+            </span>
+        </div>
+
+        <!-- Neon Divider bottom -->
+        <div style="width:100%; height:1px; background:linear-gradient(90deg, transparent, rgba(0,242,255,0.15), rgba(188,19,254,0.15), transparent); margin-bottom:1.5rem;"></div>
+
+        <!-- Copyright -->
         <div class="footer-info">
-            <p>&copy; 2026 Chidy Prime Gaming. All Rights Reserved.</p>
-            <p>Designed with ❤️ by <span class="designer-credit">CHIDY PRIME</span></p>
-            <p style="font-size: 0.7rem; margin-top: 10px; opacity: 0.5;">Providing premium gaming experiences across Tanzania and beyond.</p>
+            <p style="font-size:0.78rem;">&copy; 2026 Chidy Prime Gaming. All Rights Reserved.</p>
+            <p style="font-size:0.72rem;">Made with ❤️ in <strong style="color:#fff;">Tanzania 🇹🇿</strong> by <span class="designer-credit">CHIDY PRIME</span></p>
+            <p style="font-size:0.65rem; margin-top:8px; opacity:0.4;">Providing premium gaming experiences across Tanzania and beyond.</p>
         </div>
+
     </footer>
 
     <!-- GAME DETAIL MODAL -->
