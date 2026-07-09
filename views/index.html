@@ -3773,7 +3773,7 @@
                 <!-- Instructions List -->
                 <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:25px;">
                     <!-- iOS / Safari -->
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
+                    <div class="install-instruction-section" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
                         <div style="color:#ffb400; font-size:1.2rem; display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:rgba(255,180,0,0.1); border-radius:8px; flex-shrink:0;">
                             <i class="fab fa-apple"></i>
                         </div>
@@ -3786,7 +3786,7 @@
                     </div>
                     
                     <!-- Android -->
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
+                    <div class="install-instruction-section" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
                         <div style="color:#00d25b; font-size:1.2rem; display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:rgba(0,210,91,0.1); border-radius:8px; flex-shrink:0;">
                             <i class="fab fa-android"></i>
                         </div>
@@ -3799,7 +3799,7 @@
                     </div>
 
                     <!-- PC / Desktop -->
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
+                    <div class="install-instruction-section" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:12px; display:flex; gap:12px;">
                         <div style="color:#00f2ff; font-size:1.2rem; display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:rgba(0,242,255,0.1); border-radius:8px; flex-shrink:0;">
                             <i class="fas fa-desktop"></i>
                         </div>
@@ -6091,22 +6091,48 @@
         });
 
         async function installPWA() {
-            if (!deferredPrompt) {
-                // If browser prompt is not ready (like on iOS or Safari), show our custom instruction modal
-                const instModal = document.getElementById('installInstructionsModal');
-                if (instModal) {
-                    instModal.style.display = 'block';
-                }
+            // Kama deferredPrompt ipo — Android/Chrome — prompt moja kwa moja
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                const banner = document.getElementById('installBanner');
+                if (banner) banner.style.display = 'none';
+                const installArea = document.getElementById('installArea');
+                if (installArea) installArea.style.display = 'none';
                 return;
             }
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            deferredPrompt = null;
 
-            const banner = document.getElementById('installBanner');
-            if (banner) banner.style.display = 'none';
-            const installArea = document.getElementById('installArea');
-            if (installArea) installArea.style.display = 'none';
+            // Kama deferredPrompt haipo bado — subiri sekunde 1 kisha jaribu tena
+            const btn = document.getElementById('headerInstallBtn');
+            if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+            await new Promise(r => setTimeout(r, 1200));
+            if (btn) { btn.innerHTML = '<i class="fas fa-download" style="font-size:0.65rem;"></i> INSTALL'; }
+
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                return;
+            }
+
+            // iPhone (Safari) au browser isiyoiunga mkono PWA — onyesha maelekezo
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const instModal = document.getElementById('installInstructionsModal');
+            if (isIOS && instModal) {
+                // Ficha maelekezo ya Android na Computer — onyesha iPhone tu
+                const sections = instModal.querySelectorAll('.install-instruction-section');
+                sections.forEach((s, i) => {
+                    // section 0 = iPhone, 1 = Android, 2 = Computer
+                    s.style.display = i === 0 ? 'flex' : 'none';
+                });
+                instModal.style.display = 'block';
+            } else if (instModal) {
+                // Desktop au browser nyingine — onyesha zote
+                const sections = instModal.querySelectorAll('.install-instruction-section');
+                sections.forEach(s => s.style.display = 'flex');
+                instModal.style.display = 'block';
+            }
         }
 
         function closeInstallInstructions() {
