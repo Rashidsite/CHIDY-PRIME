@@ -164,6 +164,59 @@
             box-shadow: 0 0 15px rgba(0,242,255,0.2) !important;
             transform: translateY(-4px) !important;
         }
+
+        /* ===== WA CHANNEL MODAL PREMIUM UPGRADE ===== */
+        .wa-modal-overlay {
+            background: rgba(0,8,5,0.92) !important;
+            backdrop-filter: blur(20px) !important;
+        }
+        .wa-modal-card {
+            background: linear-gradient(170deg, #071a10 0%, #040d12 55%, #071a10 100%) !important;
+            border: 1px solid rgba(37,211,102,0.35) !important;
+            box-shadow:
+                0 -25px 80px rgba(37,211,102,0.2),
+                0 0 0 1px rgba(37,211,102,0.12),
+                inset 0 1px 0 rgba(37,211,102,0.1) !important;
+        }
+        /* Top glow bar */
+        .wa-modal-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10%; right: 10%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #25D366, #00f2ff, #25D366, transparent);
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 0 20px rgba(37,211,102,0.6);
+        }
+        /* Stars glow */
+        .wa-modal-stars span {
+            text-shadow: 0 0 10px rgba(37,211,102,0.8) !important;
+            font-size: 1rem !important;
+        }
+        /* Benefits list */
+        .wa-benefits {
+            background: rgba(37,211,102,0.05) !important;
+            border: 1px solid rgba(37,211,102,0.2) !important;
+        }
+        .wa-benefits li {
+            font-size: 0.85rem !important;
+            padding: 8px 0 !important;
+            color: #e0f0e0 !important;
+        }
+        .wa-benefits li i {
+            font-size: 0.9rem !important;
+            filter: drop-shadow(0 0 4px rgba(37,211,102,0.6));
+        }
+        /* Member count */
+        .wa-member-count {
+            background: rgba(37,211,102,0.06);
+            border: 1px solid rgba(37,211,102,0.15);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.78rem !important;
+        }
+        /* ===== END WA MODAL UPGRADE ===== */
+
         /* ===== END THEME OVERRIDE ===== */
 
         /* Shimmer Loading Effect */
