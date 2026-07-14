@@ -441,7 +441,7 @@
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @media (max-width: 576px) {
-            .pulse-toast { left: 20px; right: 20px; bottom: 85px; }
+            .pulse-toast { left: 20px; right: 20px; bottom: 75px; }
         }
         .pulse-toast.show { transform: translateX(0); }
         .pulse-user-icon {
@@ -1011,7 +1011,7 @@
 
         /* === CATEGORY SECTIONS === */
         .categories-container {
-            padding: 0.5rem 0 0.5rem;
+            padding: 0.5rem 0 1.5rem;
         }
 
         .category-section {
@@ -1934,11 +1934,11 @@
             content: '';
             position: absolute;
             top: -1px;
-            width: 25px;
+            width: 32px;
             height: 3px;
             background: var(--primary);
             border-radius: 0 0 4px 4px;
-            box-shadow: 0 0 10px var(--primary);
+            box-shadow: 0 0 12px var(--primary);
         }
 
         /* === AFFILIATE PROMO CARD === */
@@ -2083,7 +2083,7 @@
             }
 
             .game-card {
-                flex: 0 0 120px;
+                flex: 0 0 145px;
                 backdrop-filter: none;
                 -webkit-backdrop-filter: none;
                 background: #111119;
@@ -2104,9 +2104,9 @@
             }
 
             .card-title {
-                font-size: 0.72rem;
+                font-size: 0.75rem;
                 -webkit-line-clamp: 2;
-                line-height: 1.25;
+                line-height: 1.3;
             }
 
             .header {
@@ -2214,8 +2214,8 @@
 
             /* Compact games row */
             .games-row {
-                gap: 10px;
-                padding: 5px 10px 25px;
+                gap: 12px;
+                padding: 5px 10px 30px;
             }
 
             /* Compact category headers */
@@ -2359,11 +2359,11 @@
 
             /* Bottom padding */
             body {
-                padding-bottom: calc(var(--bottom-bar-height) + 30px);
+                padding-bottom: calc(var(--bottom-bar-height) + 60px);
             }
 
             .site-footer {
-                padding: 2rem 1rem 5rem;
+                padding: 2rem 1rem 7rem;
                 margin-top: 2rem;
             }
 
@@ -5708,7 +5708,8 @@
             document.getElementById('searchInput').value = '';
             
             // Show Home elements
-            document.querySelector('.hero-section').style.display = 'block';
+            const heroSectionEl = document.querySelector('.hero-section');
+            if (heroSectionEl) heroSectionEl.style.display = 'block';
             const affiliatePromo = document.querySelector('.affiliate-promo-card');
             if(affiliatePromo) affiliatePromo.style.display = 'flex';
             document.getElementById('categoriesContainer').style.display = 'block';
@@ -6057,10 +6058,12 @@
         // ===== OPEN VIDEO STORE =====
         function openVideoStore() {
             // Hide Home elements
-            document.querySelector('.hero-section').style.display = 'none';
+            const heroSection = document.querySelector('.hero-section');
+            if (heroSection) heroSection.style.display = 'none';
             const affiliatePromo = document.querySelector('.affiliate-promo-card');
             if(affiliatePromo) affiliatePromo.style.display = 'none';
-            document.getElementById('winnersTickerWrap').style.display = 'none';
+            const winnersTicker = document.getElementById('winnersTickerWrap');
+            if (winnersTicker) winnersTicker.style.display = 'none';
             document.getElementById('categoriesContainer').style.display = 'none';
 
             // Show Video Store
