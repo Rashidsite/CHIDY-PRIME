@@ -289,3 +289,92 @@ body.chidy-elite .welcome-msg {
   .chidy-portal-inner { padding: 14px; gap: 10px; }
   .chidy-portal-icon { width: 34px; height: 34px; font-size: 14px; }
 }
+
+/* ═════════════════════════════════════════════════════════
+   UNIFIED BLUE BOTTOM NAVIGATION
+   Owner request: navigation za chini ziwe zote za blue.
+   Overrides the previous multi-colour scheme (green whatsapp,
+   green pata pesa, purple profile, cyan video) with a single
+   professional blue system. Active item pops brighter.
+   ═════════════════════════════════════════════════════════ */
+
+body.chidy-elite .bottom-bar {
+  background: #ffffff !important;
+  border-top: 1px solid #dbeafe !important;
+  box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* All nav items: neutral slate, blue on hover/active */
+body.chidy-elite .bottom-bar .bottom-item,
+body.chidy-elite .bottom-bar .bottom-item * {
+  color: #475569 !important;
+}
+body.chidy-elite .bottom-bar .bottom-item i,
+body.chidy-elite .bottom-bar .bottom-item .fab,
+body.chidy-elite .bottom-bar .bottom-item .fas {
+  color: #475569 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+body.chidy-elite .bottom-bar .bottom-item span {
+  color: #475569 !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+/* Hover — accent blue */
+body.chidy-elite .bottom-bar .bottom-item:hover,
+body.chidy-elite .bottom-bar .bottom-item:hover * {
+  color: #2563eb !important;
+}
+body.chidy-elite .bottom-bar .bottom-item:hover i {
+  transform: scale(1.08);
+}
+
+/* Active — deep blue with underline pop */
+body.chidy-elite .bottom-bar .bottom-item.active,
+body.chidy-elite .bottom-bar .bottom-item.active * {
+  color: #1d4ed8 !important;
+}
+body.chidy-elite .bottom-bar .bottom-item.active i {
+  filter: drop-shadow(0 4px 10px rgba(37, 99, 235, 0.35)) !important;
+  transform: scale(1.15);
+}
+body.chidy-elite .bottom-bar .bottom-item.active::after {
+  background: #2563eb !important;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.6) !important;
+}
+
+/* Neutralise the animated WhatsApp pulse rings — keep the icon,
+   drop the green glow so it matches the blue system. */
+body.chidy-elite .bottom-bar .wa-channel-btn .wa-icon-wrap i {
+  color: #475569 !important;
+  filter: none !important;
+  text-shadow: none !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+          background-clip: initial !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+body.chidy-elite .bottom-bar .wa-channel-btn:hover .wa-icon-wrap i,
+body.chidy-elite .bottom-bar .wa-channel-btn.active .wa-icon-wrap i {
+  color: #2563eb !important;
+  filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.5)) !important;
+}
+body.chidy-elite .bottom-bar .wa-pulse-ring,
+body.chidy-elite .bottom-bar .wa-pulse-ring-2 {
+  border-color: rgba(37, 99, 235, 0.45) !important;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* Neutralise the affiliate green pulse */
+body.chidy-elite .bottom-bar .bottom-item.affiliate i {
+  animation: none !important;
+  color: #475569 !important;
+}
+body.chidy-elite .bottom-bar .bottom-item.affiliate:hover i,
+body.chidy-elite .bottom-bar .bottom-item.affiliate.active i {
+  color: #2563eb !important;
+}
