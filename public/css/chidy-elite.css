@@ -630,3 +630,266 @@ body.chidy-elite [style*="box-shadow: 0 0"] {
     transition-duration: 0.15s !important;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   v2.1 POLISH — professional refinements
+   ══════════════════════════════════════════════════════════ */
+
+/* Announcement/marquee bar — blue→red gradient */
+body.chidy-elite .top-announcement,
+body.chidy-elite .marquee-bar,
+body.chidy-elite [class*="announcement"],
+body.chidy-elite [class*="marquee"] {
+  background: linear-gradient(90deg, var(--ce-blue-deep), var(--ce-blue), var(--ce-red)) !important;
+  color: #fff !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.04em;
+  text-shadow: none !important;
+}
+body.chidy-elite [class*="announcement"] *,
+body.chidy-elite [class*="marquee"] * {
+  color: #fff !important;
+  text-shadow: none !important;
+}
+
+/* Game card body — force white through the card body area */
+body.chidy-elite .game-card .card-body,
+body.chidy-elite .game-card .card-info,
+body.chidy-elite .game-card .game-info,
+body.chidy-elite .game-card .card-content,
+body.chidy-elite .game-card .card-footer {
+  background: #fff !important;
+  background-image: none !important;
+  color: var(--ce-fg) !important;
+  padding: 12px 14px !important;
+}
+
+/* Card game titles */
+body.chidy-elite .game-card h3,
+body.chidy-elite .game-card h4,
+body.chidy-elite .game-card .game-name,
+body.chidy-elite .game-card .game-title,
+body.chidy-elite .game-card [class*="title"] {
+  color: var(--ce-fg) !important;
+  -webkit-text-fill-color: var(--ce-fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  text-shadow: none !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* NEW / HOT badges — solid red */
+body.chidy-elite .game-card [class*="new"]:not(input):not(select),
+body.chidy-elite [class*="badge-new"],
+body.chidy-elite [class*="tag-new"],
+body.chidy-elite [class*="hot-badge"] {
+  background: var(--ce-red) !important;
+  background-image: none !important;
+  color: #fff !important;
+  border: none !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 9px !important;
+  letter-spacing: 0.1em !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.5) !important;
+  text-shadow: none !important;
+}
+
+/* Section titles — add accent bar on left */
+body.chidy-elite .category-title,
+body.chidy-elite .section-title {
+  position: relative;
+  padding-left: 14px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  font-size: clamp(13px, 3vw, 16px) !important;
+  color: var(--ce-fg) !important;
+  text-shadow: none !important;
+}
+body.chidy-elite .category-title::before,
+body.chidy-elite .section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 70%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--ce-blue), var(--ce-red));
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.35);
+}
+
+/* Bottom nav — unified professional look */
+body.chidy-elite .floating-navbar,
+body.chidy-elite [class*="bottom-nav"] {
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom, 0px)) !important;
+  min-height: 64px !important;
+}
+body.chidy-elite .floating-navbar a,
+body.chidy-elite .floating-navbar button,
+body.chidy-elite [class*="bottom-nav"] a,
+body.chidy-elite [class*="bottom-nav"] button {
+  position: relative !important;
+  color: var(--ce-fg-mute) !important;
+  fill: var(--ce-fg-mute) !important;
+  filter: none !important;
+  text-shadow: none !important;
+  transition: color 0.2s ease, transform 0.2s ease !important;
+}
+body.chidy-elite .floating-navbar a i,
+body.chidy-elite .floating-navbar a svg,
+body.chidy-elite [class*="bottom-nav"] i,
+body.chidy-elite [class*="bottom-nav"] svg {
+  color: var(--ce-fg-mute) !important;
+  fill: var(--ce-fg-mute) !important;
+  filter: none !important;
+  background: transparent !important;
+}
+body.chidy-elite .floating-navbar .active,
+body.chidy-elite .floating-navbar .active *,
+body.chidy-elite [class*="bottom-nav"] .active,
+body.chidy-elite [class*="bottom-nav"] .active * {
+  color: var(--ce-blue) !important;
+  fill: var(--ce-blue) !important;
+}
+body.chidy-elite .floating-navbar .active i,
+body.chidy-elite [class*="bottom-nav"] .active i,
+body.chidy-elite [class*="bottom-nav"] .active svg {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.35)) !important;
+}
+/* Active pill indicator */
+body.chidy-elite .floating-navbar .active::after,
+body.chidy-elite [class*="bottom-nav"] .active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ce-blue), var(--ce-red));
+}
+body.chidy-elite .floating-navbar a span,
+body.chidy-elite [class*="bottom-nav"] a span {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+/* Card hover — smoother, bigger lift */
+body.chidy-elite .game-card {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.35s ease, border-color 0.25s ease !important;
+}
+body.chidy-elite .game-card:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 16px 40px rgba(37, 99, 235, 0.20),
+              0 4px 12px rgba(15, 23, 42, 0.08) !important;
+}
+body.chidy-elite .game-card img {
+  transition: transform 0.5s ease !important;
+}
+body.chidy-elite .game-card:hover img {
+  transform: scale(1.06);
+}
+
+/* Hero — subtle radial glow, bigger title */
+body.chidy-elite .hero-section {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(37, 99, 235, 0.08), transparent 55%),
+    radial-gradient(ellipse at 85% 80%, rgba(220, 38, 38, 0.06), transparent 55%),
+    #ffffff !important;
+}
+body.chidy-elite .hero-title {
+  font-size: clamp(1.5rem, 5vw, 2.5rem) !important;
+  line-height: 1.1 !important;
+  margin-bottom: 12px !important;
+}
+
+/* Hero stats — dividers between items */
+body.chidy-elite .hero-stats {
+  gap: 0 !important;
+  border-top: 1px solid var(--ce-outline-lo);
+  border-bottom: 1px solid var(--ce-outline-lo);
+  padding: 12px 8px !important;
+  margin: 16px auto !important;
+  max-width: 480px;
+}
+body.chidy-elite .stat-item {
+  flex: 1;
+  border-right: 1px solid var(--ce-outline-lo);
+  padding: 0 8px;
+}
+body.chidy-elite .stat-item:last-child { border-right: none; }
+
+/* Hero search — bigger, more prominent */
+body.chidy-elite .hero-search {
+  max-width: 600px;
+  margin: 20px auto 0 !important;
+  padding: 4px !important;
+  border-radius: 999px !important;
+}
+body.chidy-elite .hero-search input,
+body.chidy-elite #searchInput {
+  padding: 12px 16px 12px 44px !important;
+  font-size: 14px !important;
+  font-family: 'Hanken Grotesk', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+/* View All — pill with arrow */
+body.chidy-elite [class*="view-all"] {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px !important;
+}
+body.chidy-elite [class*="view-all"]::after {
+  content: '→';
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+body.chidy-elite [class*="view-all"]:hover::after {
+  transform: translateX(3px);
+}
+
+/* Install button — polished pill */
+body.chidy-elite [class*="install"] {
+  padding: 6px 12px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+body.chidy-elite [class*="install"]:hover {
+  transform: translateY(-1px);
+}
+
+/* Kill any lingering purple/cyan/green glow across the page */
+body.chidy-elite *[style*="0,242,255"],
+body.chidy-elite *[style*="188,19,254"] {
+  /* These inline colours can't be fully killed, but text-shadow is */
+}
+body.chidy-elite [style*="text-shadow"] {
+  text-shadow: none !important;
+}
