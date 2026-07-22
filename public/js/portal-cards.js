@@ -31,7 +31,7 @@
     }
 
     // Pick a thumbnail for a category:
-    //  1. admin-uploaded thumb (cache filled by /api/portal-thumbs later)
+    //  1. admin-uploaded thumb (cache filled from /api/settings/portal_thumbs)
     //  2. poster of the first game in that category
     //  3. empty placeholder
     function pickThumb(category, games) {
@@ -42,6 +42,27 @@
         const first = (games || []).find(g => g.image_url || g.poster_url || g.image);
         if (first) return first.image_url || first.poster_url || first.image;
         return '';
+    }
+
+    // Fetch admin-uploaded thumbnails once per page load. On success, update the
+    // cache and re-render the portal if the home view is showing.
+    function refreshThumbsFromServer() {
+        fetch('/api/settings/portal_thumbs', { credentials: 'same-origin' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(raw => {
+                if (!raw) return;
+                let val = raw.value;
+                if (typeof val === 'string') {
+                    try { val = JSON.parse(val); } catch (_) { val = null; }
+                }
+                if (val && typeof val === 'object') {
+                    try { localStorage.setItem(THUMB_STORAGE, JSON.stringify(val)); } catch (_) {}
+                    if (!window.currentCategory && Array.isArray(window.allGames)) {
+                        try { renderPortal(window.allGames); } catch (_) {}
+                    }
+                }
+            })
+            .catch(() => { /* ignore — fallback to game posters */ });
     }
 
     // Category icons — matches the app's own map
@@ -242,6 +263,7 @@
     // ── boot ───────────────────────────────────────────────
     function boot() {
         if (patchRenderCategories()) {
+            refreshThumbsFromServer();
             if (Array.isArray(window.allGames) && !window.currentCategory) {
                 try { window.renderCategories(window.allGames); } catch (_) {}
             }

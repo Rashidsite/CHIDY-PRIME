@@ -3164,6 +3164,25 @@
                 </div>
             </div>
         </div>
+
+        <!-- PORTAL CARD THUMBNAILS -->
+        <div class="admin-card" style="margin-top: 2rem;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem;">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(220,38,38,0.15)); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #2563EB;">
+                    <i class="fas fa-images"></i>
+                </div>
+                <div>
+                    <h3 class="card-title" style="margin: 0;">Portal Card Thumbnails</h3>
+                    <p style="color: #6c7293; font-size: 0.85rem; margin: 4px 0 0;">Weka picha ya kila category itakayoonekana kwenye home page cards</p>
+                </div>
+            </div>
+
+            <div id="portalThumbsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
+                <div style="color: #6c7293; font-size: 0.9rem; grid-column: 1/-1;">Loading portal thumbnails...</div>
+            </div>
+
+            <p id="portalThumbsMsg" style="margin-top: 1rem; font-size: 0.85rem; display: none;"></p>
+        </div>
     </section>
 
     <!-- USER DETAIL MODAL -->
@@ -4053,8 +4072,162 @@
                 isCatDirty = false; // Reset on load
                 renderCategoriesView();
                 populateCategoryDropdowns();
+                // Also load portal thumbs for the same view
+                loadPortalThumbs();
             } catch (err) {
                 console.error('Failed to load categories:', err);
+            }
+        }
+
+        // ============================================
+        // PORTAL CARD THUMBNAILS
+        // ============================================
+        let portalThumbs = {}; // { "TANZANIA GAMES": "https://…", ... }
+
+        async function loadPortalThumbs() {
+            try {
+                const res = await fetch('/api/settings/portal_thumbs');
+                if (res.ok) {
+                    const raw = await res.json();
+                    let val = raw && raw.value;
+                    if (typeof val === 'string') {
+                        try { val = JSON.parse(val); } catch (_) { val = {}; }
+                    }
+                    portalThumbs = val && typeof val === 'object' ? val : {};
+                }
+            } catch (_) {
+                portalThumbs = {};
+            }
+            renderPortalThumbs();
+        }
+
+        function renderPortalThumbs() {
+            const list = document.getElementById('portalThumbsList');
+            if (!list) return;
+            if (!Array.isArray(allCategories) || allCategories.length === 0) {
+                list.innerHTML = '<div style="color:#6c7293;grid-column:1/-1;">Ongeza category kwanza kabla ya kuweka thumbnail.</div>';
+                return;
+            }
+            list.innerHTML = allCategories.map(c => {
+                const name = c.name;
+                const url  = portalThumbs[name] || '';
+                const safe = String(name).replace(/'/g, "\\'");
+                return `
+                <div class="portal-thumb-item" data-cat="${name}"
+                     style="background:rgba(37,99,235,0.05);border:1px solid rgba(37,99,235,0.2);border-radius:12px;padding:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <div style="color:#e0e0e0;font-weight:700;letter-spacing:1px;font-size:0.9rem;">${name}</div>
+                        ${url ? `<button onclick="clearPortalThumb('${safe}')" title="Ondoa" style="background:none;border:none;color:#ff3366;cursor:pointer;font-size:0.9rem;"><i class="fas fa-trash-alt"></i></button>` : ''}
+                    </div>
+                    <div style="aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:rgba(0,0,0,0.25);border:1px dashed rgba(37,99,235,0.35);display:flex;align-items:center;justify-content:center;margin-bottom:10px;">
+                        ${url
+                            ? `<img src="${url}" alt="${name}" style="width:100%;height:100%;object-fit:cover;" referrerpolicy="no-referrer">`
+                            : `<div style="color:#6c7293;font-size:0.8rem;text-align:center;padding:0 10px;"><i class="fas fa-image" style="font-size:1.4rem;display:block;margin-bottom:6px;opacity:0.6;"></i>Hakuna picha bado</div>`
+                        }
+                    </div>
+                    <label class="btn-primary" style="display:block;text-align:center;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:0.85rem;background:linear-gradient(45deg,#2563EB,#DC2626);color:#fff;font-weight:600;">
+                        <i class="fas fa-upload"></i> ${url ? 'Badilisha' : 'Pakia'} Picha
+                        <input type="file" accept="image/*" style="display:none;"
+                               onchange="uploadPortalThumb(this, '${safe}')">
+                    </label>
+                </div>`;
+            }).join('');
+        }
+
+        function showPortalThumbsMsg(text, color) {
+            const el = document.getElementById('portalThumbsMsg');
+            if (!el) return;
+            el.textContent = text;
+            el.style.color = color;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        async function uploadPortalThumb(input, categoryName) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            if (!/^image\//.test(file.type)) {
+                showPortalThumbsMsg('Chagua picha tu (jpg/png/webp).', '#ff3366');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showPortalThumbsMsg('Picha ni kubwa sana (kikomo 10MB).', '#ff3366');
+                return;
+            }
+
+            // Find the item + its upload label to show a loading state
+            const item = document.querySelector(`.portal-thumb-item[data-cat="${CSS.escape(categoryName)}"]`);
+            const btn  = item ? item.querySelector('label.btn-primary') : null;
+            const originalBtnHtml = btn ? btn.innerHTML : null;
+            if (btn) { btn.style.pointerEvents = 'none'; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inapakia...'; }
+
+            try {
+                const dataUrl = await new Promise((resolve, reject) => {
+                    const r = new FileReader();
+                    r.onload = () => resolve(r.result);
+                    r.onerror = reject;
+                    r.readAsDataURL(file);
+                });
+
+                const token = localStorage.getItem('adminToken');
+                // 1) Upload the image to Supabase storage via existing endpoint
+                const upRes = await fetch('/api/admin/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ image: dataUrl, fileName: `portal_${categoryName.replace(/\s+/g,'_')}.jpg` })
+                });
+                const upData = await upRes.json();
+                if (!upRes.ok || !upData.url) throw new Error(upData.error || 'Upload imeshindwa');
+
+                // 2) Persist to portal_thumbs settings
+                portalThumbs[categoryName] = upData.url;
+                const saveRes = await fetch('/api/admin/settings/portal_thumbs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ value: JSON.stringify(portalThumbs) })
+                });
+                if (!saveRes.ok) {
+                    const err = await saveRes.json().catch(() => ({}));
+                    throw new Error(err.error || 'Kuhifadhi kumeshindwa');
+                }
+
+                showPortalThumbsMsg(`✅ "${categoryName}" imesasishwa!`, '#00d25b');
+                renderPortalThumbs();
+            } catch (err) {
+                showPortalThumbsMsg('Hitilafu: ' + (err.message || 'Jaribu tena'), '#ff3366');
+                if (btn && originalBtnHtml) { btn.style.pointerEvents = ''; btn.innerHTML = originalBtnHtml; }
+            } finally {
+                input.value = '';
+            }
+        }
+
+        async function clearPortalThumb(categoryName) {
+            const ok = await showConfirmModal('ONDOA THUMBNAIL', `Ondoa picha ya "${categoryName}"?`);
+            if (!ok) return;
+            try {
+                const next = Object.assign({}, portalThumbs);
+                delete next[categoryName];
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch('/api/admin/settings/portal_thumbs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ value: JSON.stringify(next) })
+                });
+                if (!res.ok) throw new Error();
+                portalThumbs = next;
+                renderPortalThumbs();
+                showPortalThumbsMsg(`🗑️ Picha ya "${categoryName}" imeondolewa.`, '#6c7293');
+            } catch {
+                showPortalThumbsMsg('Hitilafu wakati wa kuondoa!', '#ff3366');
             }
         }
 
