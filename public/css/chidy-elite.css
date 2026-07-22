@@ -1,480 +1,574 @@
 /* ============================================================
-   CHIDY PRIME — AETHER ELITE THEME (overlay)
-   Palette + typography from ui DES/DESIGN.md
-   Scoped to body.chidy-elite. Zero JavaScript changes.
+   CHIDY PRIME — RED + BLUE THEME (overlay)
+   Background: pure white. Primary blue #2563EB. Accent red #DC2626.
+   Scoped to body.chidy-elite. Overrides existing dark palette.
    ============================================================ */
 
-/* ── Design tokens ────────────────────────────────────────── */
 :root {
-  /* Primary — deep vibrant violet */
-  --ce-primary:               #4700af;
-  --ce-primary-hover:         #5c0ec9;
-  --ce-primary-container:     #6200ea;
-  --ce-primary-fixed:         #e9ddff;
-  --ce-primary-fixed-dim:     #cfbcff;
-  --ce-on-primary:            #ffffff;
-  --ce-on-primary-container:  #cfbcff;
-  --ce-on-primary-fixed:      #22005d;
-  --ce-on-primary-fixed-var:  #5400cc;
+  /* Primary — vivid blue */
+  --ce-blue:               #2563eb;
+  --ce-blue-deep:          #1d4ed8;
+  --ce-blue-bright:        #3b82f6;
+  --ce-blue-light:         #dbeafe;
+  --ce-blue-tint:          rgba(37, 99, 235, 0.08);
+  --ce-blue-glow:          rgba(37, 99, 235, 0.25);
 
-  /* Secondary — electric cyan */
-  --ce-secondary:             #006875;
-  --ce-secondary-container:   #00e3fd;
-  --ce-secondary-fixed:       #9cf0ff;
-  --ce-secondary-fixed-dim:   #00daf3;
-  --ce-on-secondary:          #ffffff;
-  --ce-on-secondary-container:#00616d;
+  /* Accent — deep red */
+  --ce-red:                #dc2626;
+  --ce-red-deep:           #991b1b;
+  --ce-red-bright:         #ef4444;
+  --ce-red-light:          #fee2e2;
+  --ce-red-tint:           rgba(220, 38, 38, 0.08);
 
-  /* Tertiary — architectural neutral */
-  --ce-tertiary:              #3c3b3c;
-  --ce-tertiary-container:    #535253;
-  --ce-on-tertiary:           #ffffff;
-  --ce-on-tertiary-container: #c8c5c6;
+  /* Neutrals */
+  --ce-bg:                 #ffffff;
+  --ce-surface:            #ffffff;
+  --ce-surface-lo:         #f8fafc;
+  --ce-surface-mid:        #f1f5f9;
+  --ce-surface-hi:         #e2e8f0;
 
-  /* Surface hierarchy — clean, airy whites */
-  --ce-surface:               #f8f9fa;
-  --ce-surface-bright:        #f8f9fa;
-  --ce-surface-dim:           #d9dadb;
-  --ce-surface-container-lo:  #f3f4f5;
-  --ce-surface-container:     #edeeef;
-  --ce-surface-container-hi:  #e7e8e9;
-  --ce-surface-container-max: #e1e3e4;
-  --ce-surface-container-min: #ffffff;
-  --ce-surface-variant:       #e1e3e4;
-  --ce-surface-tint:          rgba(98, 0, 234, 0.05);
-  --ce-inverse-surface:       #2e3132;
-  --ce-inverse-on-surface:    #f0f1f2;
-
-  /* Text */
-  --ce-on-surface:            #191c1d;
-  --ce-on-surface-variant:    #494456;
-  --ce-outline:               #7b7488;
-  --ce-outline-variant:       #cbc3d9;
-  --ce-on-background:         #191c1d;
-  --ce-background:            #f8f9fa;
+  --ce-fg:                 #0f172a;
+  --ce-fg-dim:             #334155;
+  --ce-fg-mute:            #64748b;
+  --ce-outline:            #cbd5e1;
+  --ce-outline-lo:         #e2e8f0;
 
   /* Semantic */
-  --ce-error:                 #ba1a1a;
-  --ce-error-container:       #ffdad6;
-  --ce-on-error:              #ffffff;
-  --ce-on-error-container:    #93000a;
-
-  /* Radii — from DESIGN.md */
-  --ce-r-sm:   4px;    /* sm  */
-  --ce-r-md:   8px;    /* DEFAULT */
-  --ce-r-lg:   12px;   /* md  */
-  --ce-r-xl:   16px;   /* lg  */
-  --ce-r-2xl:  24px;   /* xl  */
-  --ce-r-pill: 9999px; /* full */
-
-  /* Spacing */
-  --ce-sp-unit:      8px;
-  --ce-sp-gutter:    24px;
-  --ce-sp-margin-mobile:  20px;
-  --ce-sp-margin-desktop: 64px;
-  --ce-container-max: 1440px;
-
-  /* Ambient shadow (purple-tinted, per DESIGN.md) */
-  --ce-shadow-1: 0 2px 8px rgba(98, 0, 234, 0.04);
-  --ce-shadow-2: 0 4px 24px rgba(98, 0, 234, 0.06);
-  --ce-shadow-3: 0 12px 40px rgba(98, 0, 234, 0.10);
+  --ce-success:            #059669;
+  --ce-success-tint:       #d1fae5;
+  --ce-warning:            #d97706;
+  --ce-warning-tint:       #fef3c7;
 }
 
 /* ══════════════════════════════════════════════════════════
-   BASE — page background + typography
+   BASE — pure white page, dark text
    ══════════════════════════════════════════════════════════ */
+html { background: var(--ce-bg) !important; }
+
 body.chidy-elite {
-  background: var(--ce-background) !important;
-  color: var(--ce-on-surface) !important;
+  background: var(--ce-bg) !important;
+  color: var(--ce-fg) !important;
   font-family: 'Hanken Grotesk', 'Poppins', system-ui, -apple-system, sans-serif !important;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Headings — Plus Jakarta Sans, tight tracking, editorial feel */
+/* Kill dark decorative backgrounds from the old theme */
+body.chidy-elite::before,
+body.chidy-elite::after,
+body.chidy-elite .starfield,
+body.chidy-elite .particle-bg,
+body.chidy-elite .gradient-mesh {
+  display: none !important;
+  background: transparent !important;
+}
+
+/* Default text tones */
+body.chidy-elite p,
+body.chidy-elite span,
+body.chidy-elite li,
+body.chidy-elite td,
+body.chidy-elite label {
+  color: var(--ce-fg-dim);
+}
+body.chidy-elite strong,
+body.chidy-elite b {
+  color: var(--ce-fg);
+  font-weight: 700;
+}
+
+/* Headings */
 body.chidy-elite h1,
 body.chidy-elite h2,
 body.chidy-elite h3,
 body.chidy-elite h4,
 body.chidy-elite h5,
-body.chidy-elite h6,
-body.chidy-elite .heading,
-body.chidy-elite .title,
-body.chidy-elite .section-title,
-body.chidy-elite .hero-title {
+body.chidy-elite h6 {
   font-family: 'Plus Jakarta Sans', 'Orbitron', system-ui, sans-serif !important;
-  color: var(--ce-on-surface) !important;
-  letter-spacing: -0.01em;
+  color: var(--ce-fg) !important;
   font-weight: 700;
+  letter-spacing: -0.01em;
+  text-shadow: none !important;
 }
-body.chidy-elite h1 { font-size: clamp(28px, 5vw, 48px); line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; }
-body.chidy-elite h2 { font-size: clamp(24px, 3.5vw, 32px); line-height: 1.25; font-weight: 700; }
-body.chidy-elite h3 { font-size: 20px; line-height: 28px; font-weight: 600; }
-body.chidy-elite h4 { font-size: 18px; line-height: 26px; font-weight: 600; }
+body.chidy-elite h1 { font-weight: 800; letter-spacing: -0.02em; }
 
-/* Body text */
-body.chidy-elite p,
-body.chidy-elite li,
-body.chidy-elite .body-text {
-  color: var(--ce-on-surface-variant) !important;
-  font-family: 'Hanken Grotesk', 'Poppins', sans-serif !important;
-}
-body.chidy-elite strong,
-body.chidy-elite b {
-  color: var(--ce-on-surface) !important;
-}
-
-/* Small labels, badges, technical data — monospace */
-body.chidy-elite .label,
-body.chidy-elite .badge,
-body.chidy-elite .chip,
-body.chidy-elite .tag,
-body.chidy-elite .stat-label,
-body.chidy-elite time,
-body.chidy-elite code {
-  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace !important;
-  letter-spacing: 0.05em;
-  font-weight: 500;
-}
-
-/* Links — always purple */
+/* Links — blue */
 body.chidy-elite a {
-  color: var(--ce-primary-container) !important;
-  text-decoration: none;
+  color: var(--ce-blue) !important;
 }
-body.chidy-elite a:hover {
-  color: var(--ce-primary) !important;
-}
-/* Exception: buttons/nav items should inherit their own colours (handled below) */
-body.chidy-elite a.btn,
-body.chidy-elite a.button,
-body.chidy-elite .btn a,
-body.chidy-elite nav a { color: inherit !important; }
+body.chidy-elite a:hover { color: var(--ce-blue-deep) !important; }
+/* Preserve button links, nav, cards */
+body.chidy-elite .game-card a,
+body.chidy-elite nav a,
+body.chidy-elite button a { color: inherit !important; }
 
 /* ══════════════════════════════════════════════════════════
-   HEADER / NAVBAR — glassmorphic
+   TOP HEADER / LOGO
    ══════════════════════════════════════════════════════════ */
 body.chidy-elite header,
 body.chidy-elite .navbar,
-body.chidy-elite .top-nav,
+body.chidy-elite .top-header,
 body.chidy-elite .site-header {
-  background: rgba(248, 249, 250, 0.85) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(203, 195, 217, 0.35) !important;
-  box-shadow: none !important;
-  color: var(--ce-on-surface) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1px solid var(--ce-outline-lo) !important;
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.04) !important;
 }
-body.chidy-elite header .logo,
-body.chidy-elite .navbar .logo,
+
+/* Logo — blue + red split */
+body.chidy-elite .logo,
 body.chidy-elite .brand,
+body.chidy-elite .startup-logo,
 body.chidy-elite .site-title {
-  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
-  color: var(--ce-primary) !important;
+  color: var(--ce-blue) !important;
+  text-shadow: none !important;
   font-weight: 800 !important;
-  letter-spacing: -0.02em;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  animation: none !important;
+  filter: none !important;
 }
-
-/* Header nav links */
-body.chidy-elite header nav a,
-body.chidy-elite .navbar a,
-body.chidy-elite .site-header a {
-  color: var(--ce-on-surface-variant) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transition: color 0.2s ease;
-}
-body.chidy-elite header nav a:hover,
-body.chidy-elite .navbar a:hover,
-body.chidy-elite header nav a.active,
-body.chidy-elite .navbar a.active {
-  color: var(--ce-primary) !important;
+body.chidy-elite .logo .accent,
+body.chidy-elite .brand .accent,
+body.chidy-elite .logo-red {
+  color: var(--ce-red) !important;
 }
 
 /* ══════════════════════════════════════════════════════════
-   BUTTONS — Corporate Modern
+   HERO SECTION
    ══════════════════════════════════════════════════════════ */
-body.chidy-elite .btn,
-body.chidy-elite .button,
-body.chidy-elite button.primary,
-body.chidy-elite .btn-primary,
-body.chidy-elite input[type="submit"] {
-  background: var(--ce-primary-container) !important;
-  color: var(--ce-on-secondary) !important;
-  border: none !important;
-  border-radius: var(--ce-r-lg) !important;
-  padding: 14px 28px !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease !important;
-  box-shadow: 0 8px 24px rgba(98, 0, 234, 0.28) !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+body.chidy-elite .hero-section {
+  background: linear-gradient(180deg,
+    #ffffff 0%,
+    var(--ce-surface-lo) 100%) !important;
+  color: var(--ce-fg) !important;
 }
-body.chidy-elite .btn:hover,
-body.chidy-elite .button:hover,
-body.chidy-elite button.primary:hover,
-body.chidy-elite .btn-primary:hover {
-  background: var(--ce-primary) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 12px 32px rgba(98, 0, 234, 0.36) !important;
+body.chidy-elite .hero-section::before,
+body.chidy-elite .hero-section::after {
+  display: none !important;
 }
-body.chidy-elite .btn:active,
-body.chidy-elite .button:active,
-body.chidy-elite .btn-primary:active { transform: scale(0.97); }
 
-/* Secondary / outline button */
-body.chidy-elite .btn-secondary,
-body.chidy-elite .btn-outline,
-body.chidy-elite button.secondary,
-body.chidy-elite .btn-ghost {
-  background: transparent !important;
-  color: var(--ce-primary-container) !important;
-  border: 2px solid var(--ce-primary-container) !important;
+body.chidy-elite .hero-badge {
+  background: var(--ce-blue-light) !important;
+  color: var(--ce-blue-deep) !important;
+  border: 1px solid var(--ce-blue-tint) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
   box-shadow: none !important;
 }
-body.chidy-elite .btn-secondary:hover,
-body.chidy-elite .btn-outline:hover,
-body.chidy-elite .btn-ghost:hover {
-  background: var(--ce-primary-fixed) !important;
-  color: var(--ce-primary) !important;
+body.chidy-elite .hero-badge i,
+body.chidy-elite .hero-badge svg {
+  color: var(--ce-red) !important;
 }
 
-/* Danger */
-body.chidy-elite .btn-danger,
-body.chidy-elite button.danger {
-  background: var(--ce-error) !important;
-  color: var(--ce-on-error) !important;
-  box-shadow: 0 6px 20px rgba(186, 26, 26, 0.28) !important;
+body.chidy-elite .hero-title {
+  color: var(--ce-fg) !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: var(--ce-fg) !important;
+  background-clip: unset !important;
+  text-shadow: none !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+/* Highlight span inside hero title (e.g., "Gaming Realm") gets blue */
+body.chidy-elite .hero-title span,
+body.chidy-elite .hero-title em,
+body.chidy-elite .hero-title strong {
+  color: var(--ce-blue) !important;
+  -webkit-text-fill-color: var(--ce-blue) !important;
+  font-style: normal;
+  font-weight: 800;
 }
 
-/* ══════════════════════════════════════════════════════════
-   CARDS — no border, subtle ambient shadow, 16px radius
-   ══════════════════════════════════════════════════════════ */
-body.chidy-elite .card,
-body.chidy-elite .game-card,
-body.chidy-elite .post,
-body.chidy-elite .feature-card,
-body.chidy-elite .category-card,
-body.chidy-elite article {
-  background: var(--ce-surface-container-min) !important;
+body.chidy-elite .hero-stats {
+  border-top: 1px solid var(--ce-outline-lo);
+  border-bottom: 1px solid var(--ce-outline-lo);
+  padding: 12px 0;
+}
+body.chidy-elite .stat-value {
+  color: var(--ce-blue) !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: var(--ce-blue) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+}
+body.chidy-elite .stat-item:nth-child(2) .stat-value { color: var(--ce-red) !important; -webkit-text-fill-color: var(--ce-red) !important; }
+body.chidy-elite .stat-item:nth-child(3) .stat-value { color: var(--ce-fg) !important; -webkit-text-fill-color: var(--ce-fg) !important; }
+
+body.chidy-elite .stat-label {
+  color: var(--ce-fg-mute) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+}
+
+/* Hero search bar */
+body.chidy-elite .hero-search {
+  background: var(--ce-surface-lo) !important;
+  border: 2px solid var(--ce-outline-lo) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.04) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+body.chidy-elite .hero-search:focus-within {
+  border-color: var(--ce-blue) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+}
+body.chidy-elite .hero-search input,
+body.chidy-elite #searchInput {
+  background: transparent !important;
+  color: var(--ce-fg) !important;
   border: none !important;
-  border-radius: var(--ce-r-xl) !important;
-  box-shadow: var(--ce-shadow-2) !important;
-  color: var(--ce-on-surface) !important;
-  overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
 }
-body.chidy-elite .card:hover,
-body.chidy-elite .game-card:hover,
-body.chidy-elite .post:hover,
-body.chidy-elite .feature-card:hover,
-body.chidy-elite .category-card:hover,
-body.chidy-elite article:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--ce-shadow-3) !important;
+body.chidy-elite .hero-search input::placeholder,
+body.chidy-elite #searchInput::placeholder {
+  color: var(--ce-fg-mute) !important;
+  opacity: 0.85;
+}
+body.chidy-elite .search-icon,
+body.chidy-elite .hero-search i {
+  color: var(--ce-blue) !important;
 }
 
 /* ══════════════════════════════════════════════════════════
-   BADGES / CHIPS — pill shape with JetBrains Mono
+   SECTION TITLES ("GAMES MPYA ZA MABASI", "TANZANIA GAMES")
    ══════════════════════════════════════════════════════════ */
-body.chidy-elite .badge,
-body.chidy-elite .chip,
-body.chidy-elite .tag,
-body.chidy-elite .status,
-body.chidy-elite .pill {
-  display: inline-flex !important;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px !important;
-  border-radius: var(--ce-r-pill) !important;
-  background: var(--ce-primary-fixed) !important;
-  color: var(--ce-on-primary-fixed-var) !important;
+body.chidy-elite .category-title,
+body.chidy-elite .section-title,
+body.chidy-elite h2.category-title,
+body.chidy-elite [class*="section-header"] h2 {
+  color: var(--ce-fg) !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: var(--ce-fg) !important;
+  text-shadow: none !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  filter: none !important;
+}
+
+/* View All link/button */
+body.chidy-elite .view-all,
+body.chidy-elite .view-all-btn,
+body.chidy-elite [class*="viewall"],
+body.chidy-elite [class*="view-all"] {
+  color: var(--ce-blue) !important;
+  background: transparent !important;
+  border: 1px solid var(--ce-blue) !important;
+  border-radius: 999px !important;
+  padding: 4px 12px !important;
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 11px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.06em;
-  border: 1px solid rgba(98, 0, 234, 0.15) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+  text-shadow: none !important;
 }
-body.chidy-elite .badge.elite,
-body.chidy-elite .badge.pro,
-body.chidy-elite .badge.live,
-body.chidy-elite .chip.elite,
-body.chidy-elite .pill.elite {
-  background: var(--ce-secondary-fixed) !important;
-  color: var(--ce-on-secondary-container) !important;
-  border-color: rgba(0, 227, 253, 0.35) !important;
-}
-body.chidy-elite .badge.success,
-body.chidy-elite .badge.approved,
-body.chidy-elite .status-success {
-  background: #d3f9dc !important;
-  color: #0d5324 !important;
-  border-color: rgba(0, 97, 36, 0.3) !important;
-}
-body.chidy-elite .badge.error,
-body.chidy-elite .badge.failed,
-body.chidy-elite .status-error {
-  background: var(--ce-error-container) !important;
-  color: var(--ce-on-error-container) !important;
-  border-color: rgba(186, 26, 26, 0.3) !important;
-}
-body.chidy-elite .badge.warning,
-body.chidy-elite .badge.pending,
-body.chidy-elite .status-warning {
-  background: #fff2cc !important;
-  color: #7a5a00 !important;
-  border-color: rgba(184, 134, 11, 0.3) !important;
+body.chidy-elite .view-all:hover,
+body.chidy-elite .view-all-btn:hover {
+  background: var(--ce-blue) !important;
+  color: #ffffff !important;
 }
 
 /* ══════════════════════════════════════════════════════════
-   INPUTS — light neutral bg, 2px purple focus border
+   GAME CARDS — light with subtle shadow (background WHITE)
    ══════════════════════════════════════════════════════════ */
-body.chidy-elite input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-body.chidy-elite select,
-body.chidy-elite textarea {
-  background: var(--ce-surface) !important;
-  color: var(--ce-on-surface) !important;
-  border: 1px solid var(--ce-outline-variant) !important;
-  border-bottom: 2px solid var(--ce-outline-variant) !important;
-  border-radius: var(--ce-r-md) !important;
-  padding: 12px 16px !important;
-  font-family: 'Hanken Grotesk', sans-serif !important;
-  font-size: 15px !important;
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease !important;
-  outline: none;
-}
-body.chidy-elite input:not([type="submit"]):focus,
-body.chidy-elite select:focus,
-body.chidy-elite textarea:focus {
-  border-color: var(--ce-primary-container) !important;
-  border-bottom: 2px solid var(--ce-primary-container) !important;
+body.chidy-elite .game-card,
+body.chidy-elite .video-card,
+body.chidy-elite .card {
   background: #ffffff !important;
-  box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.12) !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid var(--ce-outline-lo) !important;
+  border-radius: 16px !important;
+  color: var(--ce-fg) !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06) !important;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
 }
-body.chidy-elite input::placeholder,
-body.chidy-elite textarea::placeholder {
-  color: var(--ce-outline) !important;
-  opacity: 0.7;
-}
-
-/* ══════════════════════════════════════════════════════════
-   HERO ACCENTS
-   ══════════════════════════════════════════════════════════ */
-body.chidy-elite .hero,
-body.chidy-elite .hero-section,
-body.chidy-elite section.hero {
-  background: radial-gradient(circle at top right, rgba(98, 0, 234, 0.06), transparent 55%),
-              var(--ce-background) !important;
-}
-body.chidy-elite .hero h1,
-body.chidy-elite .hero-title,
-body.chidy-elite .hero-heading {
-  color: var(--ce-on-surface) !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.02em;
-}
-/* Highlight span inside hero (e.g., "Gaming Realm") gets purple */
-body.chidy-elite .hero h1 .accent,
-body.chidy-elite .hero h1 .highlight,
-body.chidy-elite .hero-title .accent,
-body.chidy-elite .hero-title span:only-child,
-body.chidy-elite .hero-heading .highlight {
-  color: var(--ce-primary-container) !important;
+body.chidy-elite .game-card:hover,
+body.chidy-elite .video-card:hover,
+body.chidy-elite .card:hover {
+  transform: translateY(-4px);
+  border-color: var(--ce-blue) !important;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.18) !important;
 }
 
-/* Small pill above hero title */
-body.chidy-elite .hero-badge,
-body.chidy-elite .eyebrow {
-  display: inline-block;
-  background: var(--ce-primary-fixed) !important;
-  color: var(--ce-on-primary-fixed-var) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  padding: 6px 16px;
-  border-radius: var(--ce-r-pill);
-}
-
-/* Stats row */
-body.chidy-elite .stat-value,
-body.chidy-elite .stat-number,
-body.chidy-elite .metric-value {
+/* Card titles inside */
+body.chidy-elite .game-card h3,
+body.chidy-elite .game-card h4,
+body.chidy-elite .game-card .card-title,
+body.chidy-elite .game-card .game-name,
+body.chidy-elite .video-card h3,
+body.chidy-elite .video-card h4 {
+  color: var(--ce-fg) !important;
+  background: none !important;
+  -webkit-text-fill-color: var(--ce-fg) !important;
+  text-shadow: none !important;
   font-family: 'Plus Jakarta Sans', sans-serif !important;
-  color: var(--ce-primary) !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.01em;
+  font-weight: 700 !important;
 }
-body.chidy-elite .stat-label,
-body.chidy-elite .metric-label {
+body.chidy-elite .game-card p,
+body.chidy-elite .game-card span,
+body.chidy-elite .game-card .card-desc {
+  color: var(--ce-fg-dim) !important;
+}
+
+/* "NEW" badge on card */
+body.chidy-elite .game-card .badge,
+body.chidy-elite .game-card .tag-new,
+body.chidy-elite .new-badge,
+body.chidy-elite [class*="badge-new"] {
+  background: var(--ce-red) !important;
+  color: #ffffff !important;
   font-family: 'JetBrains Mono', monospace !important;
-  color: var(--ce-on-surface-variant) !important;
-  font-size: 12px !important;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  letter-spacing: 0.05em !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  text-shadow: none !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35) !important;
+}
+
+/* Card action button (Download, Play, etc) */
+body.chidy-elite .game-card button,
+body.chidy-elite .game-card .btn-download,
+body.chidy-elite .video-card button {
+  background: var(--ce-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-family: 'Hanken Grotesk', sans-serif !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28) !important;
+}
+body.chidy-elite .game-card button:hover {
+  background: var(--ce-blue-deep) !important;
 }
 
 /* ══════════════════════════════════════════════════════════
-   MODALS
+   BUTTONS — generic
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite button.primary,
+body.chidy-elite .btn-primary,
+body.chidy-elite .btn.primary {
+  background: var(--ce-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.30) !important;
+  text-shadow: none !important;
+}
+body.chidy-elite button.primary:hover,
+body.chidy-elite .btn-primary:hover {
+  background: var(--ce-blue-deep) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.40) !important;
+}
+
+body.chidy-elite .btn-danger,
+body.chidy-elite button.danger {
+  background: var(--ce-red) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.30) !important;
+}
+
+body.chidy-elite .btn-outline,
+body.chidy-elite .btn-secondary {
+  background: transparent !important;
+  color: var(--ce-blue) !important;
+  border: 2px solid var(--ce-blue) !important;
+  border-radius: 12px !important;
+}
+body.chidy-elite .btn-outline:hover {
+  background: var(--ce-blue-light) !important;
+}
+
+/* Install button in header */
+body.chidy-elite [class*="install"] {
+  background: var(--ce-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   USER PROFILE / AVATAR
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .user-profile,
+body.chidy-elite .user-menu {
+  background: transparent !important;
+}
+body.chidy-elite .user-avatar {
+  background: linear-gradient(135deg, var(--ce-blue), var(--ce-red)) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.30) !important;
+}
+body.chidy-elite .user-name-text {
+  color: var(--ce-fg) !important;
+}
+body.chidy-elite .profile-dropdown {
+  background: #ffffff !important;
+  border: 1px solid var(--ce-outline-lo) !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12) !important;
+  border-radius: 12px !important;
+  color: var(--ce-fg) !important;
+}
+
+/* Hamburger */
+body.chidy-elite .hamburger,
+body.chidy-elite [class*="menu-toggle"] {
+  color: var(--ce-fg) !important;
+}
+body.chidy-elite .lang-toggle-btn i {
+  color: var(--ce-blue) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BOTTOM NAVIGATION
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .floating-navbar,
+body.chidy-elite .bottom-navbar,
+body.chidy-elite [class*="bottom-nav"],
+body.chidy-elite nav[class*="bottom"] {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--ce-outline-lo) !important;
+  box-shadow: 0 -4px 24px rgba(37, 99, 235, 0.08) !important;
+}
+
+/* All nav items default to grey */
+body.chidy-elite .floating-navbar a,
+body.chidy-elite .floating-navbar button,
+body.chidy-elite [class*="bottom-nav"] a,
+body.chidy-elite [class*="bottom-nav"] button {
+  color: var(--ce-fg-mute) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+body.chidy-elite .floating-navbar a i,
+body.chidy-elite .floating-navbar button i,
+body.chidy-elite [class*="bottom-nav"] a i,
+body.chidy-elite [class*="bottom-nav"] button i {
+  color: var(--ce-fg-mute) !important;
+  filter: none !important;
+}
+
+/* Active nav item — blue */
+body.chidy-elite .floating-navbar a.active,
+body.chidy-elite .floating-navbar button.active,
+body.chidy-elite [class*="bottom-nav"] a.active,
+body.chidy-elite [class*="bottom-nav"] .active {
+  color: var(--ce-blue) !important;
+}
+body.chidy-elite .floating-navbar a.active i,
+body.chidy-elite [class*="bottom-nav"] .active i {
+  color: var(--ce-blue) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MODALS / OVERLAYS
    ══════════════════════════════════════════════════════════ */
 body.chidy-elite .modal,
 body.chidy-elite .modal-content,
-body.chidy-elite .dialog {
-  background: var(--ce-surface-container-min) !important;
-  color: var(--ce-on-surface) !important;
+body.chidy-elite .dialog,
+body.chidy-elite .wa-modal-overlay .modal {
+  background: #ffffff !important;
+  color: var(--ce-fg) !important;
   border: none !important;
-  border-radius: var(--ce-r-xl) !important;
-  box-shadow: var(--ce-shadow-3), 0 24px 60px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.20) !important;
 }
 body.chidy-elite .modal-backdrop,
 body.chidy-elite .overlay-backdrop {
-  background: rgba(25, 28, 29, 0.35) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(8px);
 }
 
 /* ══════════════════════════════════════════════════════════
-   TABLES — high-fidelity data view
+   INPUTS
    ══════════════════════════════════════════════════════════ */
-body.chidy-elite table {
-  background: transparent !important;
-  color: var(--ce-on-surface) !important;
-  border-collapse: separate;
-  border-spacing: 0;
+body.chidy-elite input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(#searchInput),
+body.chidy-elite select,
+body.chidy-elite textarea {
+  background: var(--ce-surface-lo) !important;
+  color: var(--ce-fg) !important;
+  border: 1px solid var(--ce-outline-lo) !important;
+  border-radius: 10px !important;
+  padding: 12px 14px !important;
+  font-family: 'Hanken Grotesk', sans-serif !important;
+  outline: none;
 }
-body.chidy-elite table thead {
-  background: var(--ce-surface-container-lo) !important;
+body.chidy-elite input:focus,
+body.chidy-elite select:focus,
+body.chidy-elite textarea:focus {
+  border-color: var(--ce-blue) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
 }
-body.chidy-elite table th {
-  color: var(--ce-outline) !important;
+body.chidy-elite input::placeholder,
+body.chidy-elite textarea::placeholder {
+  color: var(--ce-fg-mute) !important;
+  opacity: 0.85;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BADGES / CHIPS (generic)
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .badge,
+body.chidy-elite .chip,
+body.chidy-elite .tag {
   font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 600 !important;
+  border-radius: 999px !important;
+  text-shadow: none !important;
+  padding: 3px 10px !important;
   font-size: 11px !important;
-  text-transform: uppercase;
-  font-weight: 500 !important;
-  letter-spacing: 0.06em;
-  border-bottom: 1px solid var(--ce-outline-variant) !important;
-  padding: 14px 12px !important;
+  letter-spacing: 0.04em !important;
 }
-body.chidy-elite table td {
-  color: var(--ce-on-surface) !important;
-  border-bottom: 1px solid #e9ecef !important;
-  padding: 14px 12px !important;
-  font-size: 14px !important;
+
+/* ══════════════════════════════════════════════════════════
+   ANNOUNCEMENT TICKER (top bar with "Chidy Prime! Pata games...")
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .announcement-bar,
+body.chidy-elite .marquee,
+body.chidy-elite .ticker-bar,
+body.chidy-elite [class*="announcement"],
+body.chidy-elite [class*="ticker"] {
+  background: linear-gradient(90deg, var(--ce-blue), var(--ce-red)) !important;
+  color: #ffffff !important;
+  border: none !important;
+  text-shadow: none !important;
 }
-body.chidy-elite table tr:hover td {
-  background: var(--ce-surface-tint) !important;
+body.chidy-elite .announcement-bar *,
+body.chidy-elite .ticker-bar *,
+body.chidy-elite [class*="announcement"] *,
+body.chidy-elite [class*="ticker"] * {
+  color: #ffffff !important;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -482,49 +576,52 @@ body.chidy-elite table tr:hover td {
    ══════════════════════════════════════════════════════════ */
 body.chidy-elite footer,
 body.chidy-elite .site-footer {
-  background: var(--ce-surface-container-lo) !important;
-  color: var(--ce-on-surface-variant) !important;
-  border-top: 1px solid var(--ce-outline-variant) !important;
+  background: var(--ce-surface-lo) !important;
+  color: var(--ce-fg-dim) !important;
+  border-top: 1px solid var(--ce-outline-lo) !important;
 }
 body.chidy-elite footer h3,
 body.chidy-elite footer h4,
-body.chidy-elite footer .footer-title,
 body.chidy-elite footer strong {
-  color: var(--ce-on-surface) !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  color: var(--ce-fg) !important;
 }
 body.chidy-elite footer a {
-  color: var(--ce-on-surface-variant) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px !important;
-  letter-spacing: 0.02em;
+  color: var(--ce-fg-dim) !important;
 }
 body.chidy-elite footer a:hover {
-  color: var(--ce-primary) !important;
+  color: var(--ce-blue) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   VIDEO SECTION HEADER
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .video-section-title {
+  color: var(--ce-fg) !important;
 }
 
 /* ══════════════════════════════════════════════════════════
    SCROLLBAR
    ══════════════════════════════════════════════════════════ */
 body.chidy-elite::-webkit-scrollbar { width: 10px; height: 10px; }
-body.chidy-elite::-webkit-scrollbar-track { background: var(--ce-surface-container-lo); }
-body.chidy-elite::-webkit-scrollbar-thumb {
-  background: var(--ce-outline-variant);
-  border-radius: var(--ce-r-pill);
-}
-body.chidy-elite::-webkit-scrollbar-thumb:hover { background: var(--ce-primary-container); }
+body.chidy-elite::-webkit-scrollbar-track { background: var(--ce-surface-lo); }
+body.chidy-elite::-webkit-scrollbar-thumb { background: var(--ce-outline); border-radius: 999px; }
+body.chidy-elite::-webkit-scrollbar-thumb:hover { background: var(--ce-blue); }
 
-/* ══════════════════════════════════════════════════════════
-   SELECTION
-   ══════════════════════════════════════════════════════════ */
+/* Selection */
 body.chidy-elite ::selection {
-  background: var(--ce-primary-fixed);
-  color: var(--ce-on-primary-fixed);
+  background: var(--ce-blue-light);
+  color: var(--ce-blue-deep);
 }
 
 /* ══════════════════════════════════════════════════════════
-   REDUCE MOTION
+   KILL DARK GLOW EFFECTS FROM ORIGINAL THEME
    ══════════════════════════════════════════════════════════ */
+body.chidy-elite [style*="text-shadow"],
+body.chidy-elite [style*="box-shadow: 0 0"] {
+  /* Won't override inline entirely, but neutralises glow tone at layer above */
+}
+
+/* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   body.chidy-elite *,
   body.chidy-elite *::before,
