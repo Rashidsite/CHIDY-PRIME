@@ -1,0 +1,535 @@
+/* ============================================================
+   CHIDY PRIME — AETHER ELITE THEME (overlay)
+   Palette + typography from ui DES/DESIGN.md
+   Scoped to body.chidy-elite. Zero JavaScript changes.
+   ============================================================ */
+
+/* ── Design tokens ────────────────────────────────────────── */
+:root {
+  /* Primary — deep vibrant violet */
+  --ce-primary:               #4700af;
+  --ce-primary-hover:         #5c0ec9;
+  --ce-primary-container:     #6200ea;
+  --ce-primary-fixed:         #e9ddff;
+  --ce-primary-fixed-dim:     #cfbcff;
+  --ce-on-primary:            #ffffff;
+  --ce-on-primary-container:  #cfbcff;
+  --ce-on-primary-fixed:      #22005d;
+  --ce-on-primary-fixed-var:  #5400cc;
+
+  /* Secondary — electric cyan */
+  --ce-secondary:             #006875;
+  --ce-secondary-container:   #00e3fd;
+  --ce-secondary-fixed:       #9cf0ff;
+  --ce-secondary-fixed-dim:   #00daf3;
+  --ce-on-secondary:          #ffffff;
+  --ce-on-secondary-container:#00616d;
+
+  /* Tertiary — architectural neutral */
+  --ce-tertiary:              #3c3b3c;
+  --ce-tertiary-container:    #535253;
+  --ce-on-tertiary:           #ffffff;
+  --ce-on-tertiary-container: #c8c5c6;
+
+  /* Surface hierarchy — clean, airy whites */
+  --ce-surface:               #f8f9fa;
+  --ce-surface-bright:        #f8f9fa;
+  --ce-surface-dim:           #d9dadb;
+  --ce-surface-container-lo:  #f3f4f5;
+  --ce-surface-container:     #edeeef;
+  --ce-surface-container-hi:  #e7e8e9;
+  --ce-surface-container-max: #e1e3e4;
+  --ce-surface-container-min: #ffffff;
+  --ce-surface-variant:       #e1e3e4;
+  --ce-surface-tint:          rgba(98, 0, 234, 0.05);
+  --ce-inverse-surface:       #2e3132;
+  --ce-inverse-on-surface:    #f0f1f2;
+
+  /* Text */
+  --ce-on-surface:            #191c1d;
+  --ce-on-surface-variant:    #494456;
+  --ce-outline:               #7b7488;
+  --ce-outline-variant:       #cbc3d9;
+  --ce-on-background:         #191c1d;
+  --ce-background:            #f8f9fa;
+
+  /* Semantic */
+  --ce-error:                 #ba1a1a;
+  --ce-error-container:       #ffdad6;
+  --ce-on-error:              #ffffff;
+  --ce-on-error-container:    #93000a;
+
+  /* Radii — from DESIGN.md */
+  --ce-r-sm:   4px;    /* sm  */
+  --ce-r-md:   8px;    /* DEFAULT */
+  --ce-r-lg:   12px;   /* md  */
+  --ce-r-xl:   16px;   /* lg  */
+  --ce-r-2xl:  24px;   /* xl  */
+  --ce-r-pill: 9999px; /* full */
+
+  /* Spacing */
+  --ce-sp-unit:      8px;
+  --ce-sp-gutter:    24px;
+  --ce-sp-margin-mobile:  20px;
+  --ce-sp-margin-desktop: 64px;
+  --ce-container-max: 1440px;
+
+  /* Ambient shadow (purple-tinted, per DESIGN.md) */
+  --ce-shadow-1: 0 2px 8px rgba(98, 0, 234, 0.04);
+  --ce-shadow-2: 0 4px 24px rgba(98, 0, 234, 0.06);
+  --ce-shadow-3: 0 12px 40px rgba(98, 0, 234, 0.10);
+}
+
+/* ══════════════════════════════════════════════════════════
+   BASE — page background + typography
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite {
+  background: var(--ce-background) !important;
+  color: var(--ce-on-surface) !important;
+  font-family: 'Hanken Grotesk', 'Poppins', system-ui, -apple-system, sans-serif !important;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings — Plus Jakarta Sans, tight tracking, editorial feel */
+body.chidy-elite h1,
+body.chidy-elite h2,
+body.chidy-elite h3,
+body.chidy-elite h4,
+body.chidy-elite h5,
+body.chidy-elite h6,
+body.chidy-elite .heading,
+body.chidy-elite .title,
+body.chidy-elite .section-title,
+body.chidy-elite .hero-title {
+  font-family: 'Plus Jakarta Sans', 'Orbitron', system-ui, sans-serif !important;
+  color: var(--ce-on-surface) !important;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+body.chidy-elite h1 { font-size: clamp(28px, 5vw, 48px); line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; }
+body.chidy-elite h2 { font-size: clamp(24px, 3.5vw, 32px); line-height: 1.25; font-weight: 700; }
+body.chidy-elite h3 { font-size: 20px; line-height: 28px; font-weight: 600; }
+body.chidy-elite h4 { font-size: 18px; line-height: 26px; font-weight: 600; }
+
+/* Body text */
+body.chidy-elite p,
+body.chidy-elite li,
+body.chidy-elite .body-text {
+  color: var(--ce-on-surface-variant) !important;
+  font-family: 'Hanken Grotesk', 'Poppins', sans-serif !important;
+}
+body.chidy-elite strong,
+body.chidy-elite b {
+  color: var(--ce-on-surface) !important;
+}
+
+/* Small labels, badges, technical data — monospace */
+body.chidy-elite .label,
+body.chidy-elite .badge,
+body.chidy-elite .chip,
+body.chidy-elite .tag,
+body.chidy-elite .stat-label,
+body.chidy-elite time,
+body.chidy-elite code {
+  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace !important;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+/* Links — always purple */
+body.chidy-elite a {
+  color: var(--ce-primary-container) !important;
+  text-decoration: none;
+}
+body.chidy-elite a:hover {
+  color: var(--ce-primary) !important;
+}
+/* Exception: buttons/nav items should inherit their own colours (handled below) */
+body.chidy-elite a.btn,
+body.chidy-elite a.button,
+body.chidy-elite .btn a,
+body.chidy-elite nav a { color: inherit !important; }
+
+/* ══════════════════════════════════════════════════════════
+   HEADER / NAVBAR — glassmorphic
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite header,
+body.chidy-elite .navbar,
+body.chidy-elite .top-nav,
+body.chidy-elite .site-header {
+  background: rgba(248, 249, 250, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(203, 195, 217, 0.35) !important;
+  box-shadow: none !important;
+  color: var(--ce-on-surface) !important;
+}
+body.chidy-elite header .logo,
+body.chidy-elite .navbar .logo,
+body.chidy-elite .brand,
+body.chidy-elite .site-title {
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  color: var(--ce-primary) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+}
+
+/* Header nav links */
+body.chidy-elite header nav a,
+body.chidy-elite .navbar a,
+body.chidy-elite .site-header a {
+  color: var(--ce-on-surface-variant) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+body.chidy-elite header nav a:hover,
+body.chidy-elite .navbar a:hover,
+body.chidy-elite header nav a.active,
+body.chidy-elite .navbar a.active {
+  color: var(--ce-primary) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BUTTONS — Corporate Modern
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .btn,
+body.chidy-elite .button,
+body.chidy-elite button.primary,
+body.chidy-elite .btn-primary,
+body.chidy-elite input[type="submit"] {
+  background: var(--ce-primary-container) !important;
+  color: var(--ce-on-secondary) !important;
+  border: none !important;
+  border-radius: var(--ce-r-lg) !important;
+  padding: 14px 28px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+  box-shadow: 0 8px 24px rgba(98, 0, 234, 0.28) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+body.chidy-elite .btn:hover,
+body.chidy-elite .button:hover,
+body.chidy-elite button.primary:hover,
+body.chidy-elite .btn-primary:hover {
+  background: var(--ce-primary) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(98, 0, 234, 0.36) !important;
+}
+body.chidy-elite .btn:active,
+body.chidy-elite .button:active,
+body.chidy-elite .btn-primary:active { transform: scale(0.97); }
+
+/* Secondary / outline button */
+body.chidy-elite .btn-secondary,
+body.chidy-elite .btn-outline,
+body.chidy-elite button.secondary,
+body.chidy-elite .btn-ghost {
+  background: transparent !important;
+  color: var(--ce-primary-container) !important;
+  border: 2px solid var(--ce-primary-container) !important;
+  box-shadow: none !important;
+}
+body.chidy-elite .btn-secondary:hover,
+body.chidy-elite .btn-outline:hover,
+body.chidy-elite .btn-ghost:hover {
+  background: var(--ce-primary-fixed) !important;
+  color: var(--ce-primary) !important;
+}
+
+/* Danger */
+body.chidy-elite .btn-danger,
+body.chidy-elite button.danger {
+  background: var(--ce-error) !important;
+  color: var(--ce-on-error) !important;
+  box-shadow: 0 6px 20px rgba(186, 26, 26, 0.28) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CARDS — no border, subtle ambient shadow, 16px radius
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .card,
+body.chidy-elite .game-card,
+body.chidy-elite .post,
+body.chidy-elite .feature-card,
+body.chidy-elite .category-card,
+body.chidy-elite article {
+  background: var(--ce-surface-container-min) !important;
+  border: none !important;
+  border-radius: var(--ce-r-xl) !important;
+  box-shadow: var(--ce-shadow-2) !important;
+  color: var(--ce-on-surface) !important;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+body.chidy-elite .card:hover,
+body.chidy-elite .game-card:hover,
+body.chidy-elite .post:hover,
+body.chidy-elite .feature-card:hover,
+body.chidy-elite .category-card:hover,
+body.chidy-elite article:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ce-shadow-3) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BADGES / CHIPS — pill shape with JetBrains Mono
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .badge,
+body.chidy-elite .chip,
+body.chidy-elite .tag,
+body.chidy-elite .status,
+body.chidy-elite .pill {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px !important;
+  border-radius: var(--ce-r-pill) !important;
+  background: var(--ce-primary-fixed) !important;
+  color: var(--ce-on-primary-fixed-var) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(98, 0, 234, 0.15) !important;
+}
+body.chidy-elite .badge.elite,
+body.chidy-elite .badge.pro,
+body.chidy-elite .badge.live,
+body.chidy-elite .chip.elite,
+body.chidy-elite .pill.elite {
+  background: var(--ce-secondary-fixed) !important;
+  color: var(--ce-on-secondary-container) !important;
+  border-color: rgba(0, 227, 253, 0.35) !important;
+}
+body.chidy-elite .badge.success,
+body.chidy-elite .badge.approved,
+body.chidy-elite .status-success {
+  background: #d3f9dc !important;
+  color: #0d5324 !important;
+  border-color: rgba(0, 97, 36, 0.3) !important;
+}
+body.chidy-elite .badge.error,
+body.chidy-elite .badge.failed,
+body.chidy-elite .status-error {
+  background: var(--ce-error-container) !important;
+  color: var(--ce-on-error-container) !important;
+  border-color: rgba(186, 26, 26, 0.3) !important;
+}
+body.chidy-elite .badge.warning,
+body.chidy-elite .badge.pending,
+body.chidy-elite .status-warning {
+  background: #fff2cc !important;
+  color: #7a5a00 !important;
+  border-color: rgba(184, 134, 11, 0.3) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   INPUTS — light neutral bg, 2px purple focus border
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body.chidy-elite select,
+body.chidy-elite textarea {
+  background: var(--ce-surface) !important;
+  color: var(--ce-on-surface) !important;
+  border: 1px solid var(--ce-outline-variant) !important;
+  border-bottom: 2px solid var(--ce-outline-variant) !important;
+  border-radius: var(--ce-r-md) !important;
+  padding: 12px 16px !important;
+  font-family: 'Hanken Grotesk', sans-serif !important;
+  font-size: 15px !important;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease !important;
+  outline: none;
+}
+body.chidy-elite input:not([type="submit"]):focus,
+body.chidy-elite select:focus,
+body.chidy-elite textarea:focus {
+  border-color: var(--ce-primary-container) !important;
+  border-bottom: 2px solid var(--ce-primary-container) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.12) !important;
+}
+body.chidy-elite input::placeholder,
+body.chidy-elite textarea::placeholder {
+  color: var(--ce-outline) !important;
+  opacity: 0.7;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HERO ACCENTS
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .hero,
+body.chidy-elite .hero-section,
+body.chidy-elite section.hero {
+  background: radial-gradient(circle at top right, rgba(98, 0, 234, 0.06), transparent 55%),
+              var(--ce-background) !important;
+}
+body.chidy-elite .hero h1,
+body.chidy-elite .hero-title,
+body.chidy-elite .hero-heading {
+  color: var(--ce-on-surface) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+}
+/* Highlight span inside hero (e.g., "Gaming Realm") gets purple */
+body.chidy-elite .hero h1 .accent,
+body.chidy-elite .hero h1 .highlight,
+body.chidy-elite .hero-title .accent,
+body.chidy-elite .hero-title span:only-child,
+body.chidy-elite .hero-heading .highlight {
+  color: var(--ce-primary-container) !important;
+}
+
+/* Small pill above hero title */
+body.chidy-elite .hero-badge,
+body.chidy-elite .eyebrow {
+  display: inline-block;
+  background: var(--ce-primary-fixed) !important;
+  color: var(--ce-on-primary-fixed-var) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: var(--ce-r-pill);
+}
+
+/* Stats row */
+body.chidy-elite .stat-value,
+body.chidy-elite .stat-number,
+body.chidy-elite .metric-value {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  color: var(--ce-primary) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+}
+body.chidy-elite .stat-label,
+body.chidy-elite .metric-label {
+  font-family: 'JetBrains Mono', monospace !important;
+  color: var(--ce-on-surface-variant) !important;
+  font-size: 12px !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MODALS
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite .modal,
+body.chidy-elite .modal-content,
+body.chidy-elite .dialog {
+  background: var(--ce-surface-container-min) !important;
+  color: var(--ce-on-surface) !important;
+  border: none !important;
+  border-radius: var(--ce-r-xl) !important;
+  box-shadow: var(--ce-shadow-3), 0 24px 60px rgba(0, 0, 0, 0.15) !important;
+}
+body.chidy-elite .modal-backdrop,
+body.chidy-elite .overlay-backdrop {
+  background: rgba(25, 28, 29, 0.35) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABLES — high-fidelity data view
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite table {
+  background: transparent !important;
+  color: var(--ce-on-surface) !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+body.chidy-elite table thead {
+  background: var(--ce-surface-container-lo) !important;
+}
+body.chidy-elite table th {
+  color: var(--ce-outline) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--ce-outline-variant) !important;
+  padding: 14px 12px !important;
+}
+body.chidy-elite table td {
+  color: var(--ce-on-surface) !important;
+  border-bottom: 1px solid #e9ecef !important;
+  padding: 14px 12px !important;
+  font-size: 14px !important;
+}
+body.chidy-elite table tr:hover td {
+  background: var(--ce-surface-tint) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite footer,
+body.chidy-elite .site-footer {
+  background: var(--ce-surface-container-lo) !important;
+  color: var(--ce-on-surface-variant) !important;
+  border-top: 1px solid var(--ce-outline-variant) !important;
+}
+body.chidy-elite footer h3,
+body.chidy-elite footer h4,
+body.chidy-elite footer .footer-title,
+body.chidy-elite footer strong {
+  color: var(--ce-on-surface) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+body.chidy-elite footer a {
+  color: var(--ce-on-surface-variant) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  letter-spacing: 0.02em;
+}
+body.chidy-elite footer a:hover {
+  color: var(--ce-primary) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SCROLLBAR
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite::-webkit-scrollbar { width: 10px; height: 10px; }
+body.chidy-elite::-webkit-scrollbar-track { background: var(--ce-surface-container-lo); }
+body.chidy-elite::-webkit-scrollbar-thumb {
+  background: var(--ce-outline-variant);
+  border-radius: var(--ce-r-pill);
+}
+body.chidy-elite::-webkit-scrollbar-thumb:hover { background: var(--ce-primary-container); }
+
+/* ══════════════════════════════════════════════════════════
+   SELECTION
+   ══════════════════════════════════════════════════════════ */
+body.chidy-elite ::selection {
+  background: var(--ce-primary-fixed);
+  color: var(--ce-on-primary-fixed);
+}
+
+/* ══════════════════════════════════════════════════════════
+   REDUCE MOTION
+   ══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  body.chidy-elite *,
+  body.chidy-elite *::before,
+  body.chidy-elite *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.15s !important;
+  }
+}
