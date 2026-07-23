@@ -16,6 +16,16 @@ const ADMIN_PIN = process.env.ADMIN_PIN || '2025';
 const ZENOPAY_API_KEY = process.env.ZENOPAY_API_KEY || 'S7Sy7GYL0qzE4IIaEQvlHreGW6LzkQ4DJDPZLyehi6yL4BbO3HqQyA0wAe5HmktXuln9FFYDszRXJAni_HvuAQ';
 const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_83c505af729a5f9059ef8ea1c6b125e6831adf232da6e387';
 
+// PressoPay client (added alongside existing gateways — HarakaPay/ZenoPay
+// paths untouched). Keys pulled from env; missing keys leave endpoints
+// dormant so the app still boots.
+const pressopay = require('./pressopay');
+if (pressopay.isConfigured()) {
+    console.log('PressoPay: READY ✅');
+} else {
+    console.warn('PressoPay: DISABLED (missing PRESSOPAY_API_KEY / PRESSOPAY_API_SECRET) ⚠️');
+}
+
 // --- WEB PUSH SETUP ---
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
@@ -197,6 +207,19 @@ setInterval(async () => {
                     const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
                     if (zStatus === 'success' || zStatus === 'completed') {
                         isPaid = true;
+                    }
+                } else if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+                    // PressoPay reference is stored with a "PP:" prefix so we
+                    // can distinguish it from HarakaPay/ZenoPay ids. Strip the
+                    // prefix before calling status.
+                    const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+                    try {
+                        const pStatus = await pressopay.checkPaymentStatus(ref);
+                        if (pStatus && (pStatus.status || '').toUpperCase() === 'COMPLETED') {
+                            isPaid = true;
+                        }
+                    } catch (e) {
+                        // Non-fatal — try again on next tick
                     }
                 }
 
@@ -1922,6 +1945,194 @@ const initiateGameCheckout = async (req, res) => {
 
 app.post('/api/payments/harakapay-checkout', initiateGameCheckout);
 app.post('/api/payments/zenopay-checkout', initiateGameCheckout);
+
+// ─── PRESSOPAY CHECKOUT (game) ────────────────────────────
+// Same request shape as HarakaPay/ZenoPay so the frontend can switch
+// providers without any payload changes. Orders are stored with a
+// "PP:" prefix so the auto-worker knows which gateway to poll.
+const initiatePressopayGameCheckout = async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    if (!pressopay.isConfigured()) {
+        return res.status(503).json({ status: 'failed', message: 'PressoPay haijawekwa (missing API keys)' });
+    }
+
+    const { amount, phone, gameTitle, visitorId, postId, email, name, promo_used } = req.body;
+    if (!amount || !phone || !visitorId || !postId) {
+        return res.status(400).json({ status: 'failed', message: 'Taarifa zote zinahitajika' });
+    }
+
+    let normalizedPhone;
+    try {
+        normalizedPhone = pressopay.normalizePhoneNumber(phone);
+    } catch (err) {
+        return res.status(400).json({ status: 'failed', message: err.message });
+    }
+
+    // Use own merchant reference so we can trace on both sides.
+    const merchantReference = `CHIDY-${postId}-${visitorId}-${Date.now()}`;
+
+    try {
+        if (promo_used) {
+            sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED (PressoPay)</b>\n<b>User:</b> ${name || 'Anon'} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted:</b> TSh ${parseFloat(amount).toLocaleString()}`);
+        }
+
+        const result = await pressopay.createCheckout({
+            merchantReference,
+            amountMinor: parseInt(amount, 10),
+            buyerName: name || 'Chidy Customer',
+            buyerEmail: email || `${normalizedPhone}@chidyprime.com`,
+            buyerPhone: normalizedPhone,
+            description: `Game: ${gameTitle || 'Premium Game'}`
+        });
+
+        const extOrderId = `PP:${result.reference}`;
+
+        await supabase.from('payment_orders').insert([{
+            visitor_id: parseInt(visitorId, 10),
+            post_id: postId,
+            amount: amount,
+            phone_number: normalizedPhone,
+            status: 'pending',
+            promo_used: extOrderId
+        }]);
+
+        return res.json({
+            status: 'success',
+            message: 'Angalia simu yako kukamilisha malipo',
+            order_id: extOrderId,
+            checkout_url: result.checkoutUrl || null,
+            provider: 'pressopay'
+        });
+    } catch (err) {
+        console.error('PressoPay Game Checkout Error:', err);
+        return res.status(500).json({ status: 'failed', message: err.message || 'PressoPay service error' });
+    }
+};
+app.post('/api/payments/pressopay-checkout', initiatePressopayGameCheckout);
+
+// PressoPay video checkout — mirrors the game endpoint but stores against
+// the videos table via the shared post_id column.
+const initiatePressopayVideoCheckout = async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    if (!pressopay.isConfigured()) {
+        return res.status(503).json({ status: 'failed', message: 'PressoPay haijawekwa' });
+    }
+
+    const { amount, phone, videoTitle, visitorId, videoId, email, name } = req.body;
+    if (!amount || !phone || !visitorId || !videoId) {
+        return res.status(400).json({ status: 'failed', message: 'Taarifa zote zinahitajika' });
+    }
+
+    let normalizedPhone;
+    try {
+        normalizedPhone = pressopay.normalizePhoneNumber(phone);
+    } catch (err) {
+        return res.status(400).json({ status: 'failed', message: err.message });
+    }
+
+    const merchantReference = `CHIDY-VID-${videoId}-${visitorId}-${Date.now()}`;
+
+    try {
+        const result = await pressopay.createCheckout({
+            merchantReference,
+            amountMinor: parseInt(amount, 10),
+            buyerName: name || 'Chidy Customer',
+            buyerEmail: email || `${normalizedPhone}@chidyprime.com`,
+            buyerPhone: normalizedPhone,
+            description: `Video: ${videoTitle || 'Premium Video'}`
+        });
+
+        const extOrderId = `PP:${result.reference}`;
+
+        // Duration → expires_at
+        const { data: video } = await supabase.from('videos').select('duration_days').eq('id', videoId).single();
+        const dDays = video ? (video.duration_days || 0) : 0;
+        let expiresAt = new Date('2099-12-31T23:59:59Z');
+        if (dDays > 0) { expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + dDays); }
+
+        await supabase.from('payment_orders').insert([{
+            visitor_id: parseInt(visitorId, 10),
+            post_id: videoId,
+            amount: amount,
+            phone_number: normalizedPhone,
+            status: 'pending',
+            expires_at: expiresAt.toISOString(),
+            promo_used: extOrderId
+        }]);
+
+        return res.json({
+            status: 'success',
+            message: 'Angalia simu yako kukamilisha malipo',
+            order_id: extOrderId,
+            checkout_url: result.checkoutUrl || null,
+            provider: 'pressopay'
+        });
+    } catch (err) {
+        console.error('PressoPay Video Checkout Error:', err);
+        return res.status(500).json({ status: 'failed', message: err.message || 'PressoPay service error' });
+    }
+};
+app.post('/api/payments/pressopay-video-checkout', initiatePressopayVideoCheckout);
+
+// ─── PRESSOPAY CALLBACK ───────────────────────────────────
+// PressoPay POSTs the payment result here. Payload shape:
+//   { reference, merchantReference, status, amountMinor, ... }
+// Signature is verified via HMAC to prevent spoofed unlocks.
+app.post('/api/payments/pressopay-callback', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+
+    // Capture raw body for signature verification. If body-parser already
+    // parsed the JSON we re-stringify with stable ordering — pressopay
+    // signs the RAW body, so ideally clients send small enough payloads
+    // that our re-stringify matches. If verification fails we still fall
+    // back to a status re-check against the API for safety.
+    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {});
+    const sigOk = pressopay.verifyWebhookSignature(req.headers, rawBody, '/api/payments/pressopay-callback');
+
+    const payload = typeof req.body === 'string' ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
+    const { reference, status: bodyStatus } = payload;
+
+    console.log(`[PressoPay callback] reference=${reference} status=${bodyStatus} sigOk=${sigOk}`);
+
+    if (!reference) return res.status(400).json({ error: 'reference missing' });
+
+    try {
+        // Trust the API over the body — always re-check status.
+        const check = await pressopay.checkPaymentStatus(reference);
+        const finalStatus = (check.status || '').toUpperCase();
+
+        const extOrderId = `PP:${reference}`;
+        const { data: order } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('promo_used', extOrderId)
+            .single();
+
+        if (!order) {
+            console.warn(`[PressoPay callback] order not found for ${extOrderId}`);
+            return res.json({ received: true });
+        }
+
+        if (finalStatus === 'COMPLETED') {
+            const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
+            if (game) {
+                await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, extOrderId, false);
+            } else {
+                const { data: video } = await supabase.from('videos').select('*').eq('id', order.post_id).single();
+                if (video) {
+                    await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, extOrderId, true);
+                }
+            }
+        } else if (['FAILED', 'CANCELLED', 'EXPIRED'].includes(finalStatus)) {
+            await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', order.id);
+        }
+
+        res.json({ received: true, status: finalStatus });
+    } catch (err) {
+        console.error('PressoPay callback error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 const handlePaymentCallback = async (req, res) => {
     console.log('--- HARAKAPAY/ZENOPAY CALLBACK RECEIVED ---', req.body);
