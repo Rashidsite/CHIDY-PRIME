@@ -796,3 +796,361 @@ body.chidy-elite #profileModalOverlay [style*="ROOKIE"],
 body.chidy-elite #profileModalOverlay [style*="GAMER"] {
   border: 2px solid #0b0f1a !important;
 }
+
+/* ═════════════════════════════════════════════════════════
+   ROUND 3 POLISH — profile winners blue, pata pesa readable
+   headings blue, video page standalone, whatsapp full-page,
+   search bar premium blue.
+   ═════════════════════════════════════════════════════════ */
+
+/* ─── 1. TOP WINNERS — names in brand blue ──────────────── */
+body.chidy-elite #profileModalOverlay [style*="Top Winners"] ~ div *,
+body.chidy-elite #profileModalOverlay [class*="winner"] *,
+body.chidy-elite #profileModalOverlay [class*="Winner"] *,
+body.chidy-elite #profileModalOverlay [class*="leader"] * {
+  color: var(--pmm-blue-700) !important;
+  -webkit-text-fill-color: var(--pmm-blue-700) !important;
+  font-weight: 700 !important;
+}
+body.chidy-elite #profileModalOverlay [style*="Top Winners"] ~ div [style*="GAMES"],
+body.chidy-elite #profileModalOverlay [class*="winner"] [style*="GAMES"],
+body.chidy-elite #profileModalOverlay [class*="Winner"] [style*="GAMES"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+/* Medal emoji stays original */
+body.chidy-elite #profileModalOverlay [class*="winner"] [style*="medal"],
+body.chidy-elite #profileModalOverlay [class*="winner"] .fa-medal {
+  color: initial !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+/* ─── 2. PATA PESA — readable copy + blue headings ──────── */
+/* Force ALL text inside affiliate page to be dark unless
+   specifically green/blue accent. */
+body.chidy-elite #affiliateModalOverlay,
+body.chidy-elite #affiliateModalOverlay * {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+}
+/* Restore intentional highlights */
+body.chidy-elite #affiliateModalOverlay [style*="upate 10"],
+body.chidy-elite #affiliateModalOverlay [style*="10%"] {
+  color: var(--pmm-blue-700) !important;
+  -webkit-text-fill-color: var(--pmm-blue-700) !important;
+  font-weight: 900 !important;
+}
+body.chidy-elite #affiliateModalOverlay #affiliateCount,
+body.chidy-elite #affiliateModalOverlay #affiliateBalance {
+  color: var(--pmm-blue-700) !important;
+  -webkit-text-fill-color: var(--pmm-blue-700) !important;
+}
+/* Programu ya Washirika + hero title heavy */
+body.chidy-elite #affiliateModalOverlay [style*="Programu ya Washirika"] {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+/* Section labels: LINK YAKO YA KIPEKEE, JINSI INAVYOFANYA KAZI,
+   TOA PESA YAKO — force brand blue + spaced letters. */
+body.chidy-elite #affiliateModalOverlay [style*="letter-spacing"][style*="text-transform"],
+body.chidy-elite #affiliateModalOverlay [style*="letter-spacing:2px"],
+body.chidy-elite #affiliateModalOverlay [style*="letter-spacing:1"] {
+  color: var(--pmm-blue-700) !important;
+  -webkit-text-fill-color: var(--pmm-blue-700) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+}
+/* Step body row containers get black borders */
+body.chidy-elite #affiliateModalOverlay [style*="background:rgba(255,255,255,0.02)"],
+body.chidy-elite #affiliateModalOverlay [style*="background: rgba(255,255,255,0.02)"],
+body.chidy-elite #affiliateModalOverlay [style*="rgba(0,255,115,0.05)"] {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 14px !important;
+  box-shadow: 0 6px 14px rgba(11,15,26,0.08) !important;
+  padding: 14px 16px !important;
+}
+/* Step description strong text */
+body.chidy-elite #affiliateModalOverlay [style*="Copy link"],
+body.chidy-elite #affiliateModalOverlay [style*="Rafiki anunue"],
+body.chidy-elite #affiliateModalOverlay [style*="Pata 10"] {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  font-weight: 800 !important;
+}
+/* WITHDRAW button — solid blue gradient not green */
+body.chidy-elite #affiliateModalOverlay [onclick*="withdraw"],
+body.chidy-elite #affiliateModalOverlay [onclick*="Withdraw"],
+body.chidy-elite #affiliateModalOverlay [style*="OMBA KUTOA"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  background-image: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid var(--pmm-blue-900) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.1em !important;
+  box-shadow: 0 10px 24px rgba(37,99,235,0.32) !important;
+  animation: pmmGlowPulse 3s infinite;
+}
+body.chidy-elite #affiliateModalOverlay [onclick*="withdraw"] *,
+body.chidy-elite #affiliateModalOverlay [onclick*="Withdraw"] * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+/* Green medallion / step badges → blue */
+body.chidy-elite #affiliateModalOverlay [style*="linear-gradient(135deg,#00ff73"],
+body.chidy-elite #affiliateModalOverlay [style*="linear-gradient(135deg, #00ff73"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  background-image: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  border-color: var(--pmm-blue-900) !important;
+}
+/* Boundary card wrapping the stats + referral link — black */
+body.chidy-elite #affiliateModalOverlay [style*="border-radius:20px"][style*="rgba(0,255,115"] {
+  border-color: #0b0f1a !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(11,15,26,0.08) !important;
+}
+
+/* ─── 3. VIDEO PAGE — standalone, hide home when active ── */
+body.mode-videos .hero-section,
+body.mode-videos .affiliate-promo-card,
+body.mode-videos .winners-ticker-wrap,
+body.mode-videos #categoriesContainer,
+body.mode-videos .category-section,
+body.mode-videos .chidy-portal-card,
+body.mode-videos .categories-container {
+  display: none !important;
+}
+body.mode-videos #videoSection { display: block !important; }
+body.mode-home #videoSection    { display: none  !important; }
+
+/* Standalone video section header */
+body.chidy-elite.mode-videos #videoSection {
+  margin-top: 12px !important;
+}
+
+/* ─── 4. WHATSAPP CHANNEL — full-page premium takeover ─── */
+body.chidy-elite .wa-modal-overlay {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+body.chidy-elite .wa-modal-card {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  max-height: none !important;
+  max-width: none !important;
+  padding: 32px 22px 40px !important;
+  overflow-y: auto !important;
+  color: #0b0f1a !important;
+  animation: pmmFadeUp 0.35s ease !important;
+  position: relative;
+}
+/* Kill the dark glow behind the card */
+body.chidy-elite .wa-modal-bg-glow {
+  display: none !important;
+}
+/* Header bar area — back arrow style close button */
+body.chidy-elite .wa-modal-card::before {
+  content: '←';
+  position: fixed;
+  top: 16px; left: 16px;
+  z-index: 10;
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 2px solid #0b0f1a;
+  color: #0b0f1a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(11,15,26,0.10);
+  pointer-events: none; /* the parent overlay handles clicks */
+}
+/* WhatsApp icon medallion at top */
+body.chidy-elite .wa-modal-card > [class*="icon"]:first-of-type,
+body.chidy-elite .wa-modal-card > div:first-child,
+body.chidy-elite .wa-modal-card .wa-icon-wrap,
+body.chidy-elite .wa-modal-card [style*="border-radius:50%"]:first-of-type {
+  background: linear-gradient(135deg, #25D366, #128C7E) !important;
+  border: 3px solid #0b0f1a !important;
+  box-shadow: 0 12px 26px rgba(37,211,102,0.35), 0 0 0 6px rgba(37,211,102,0.10) !important;
+  animation: pmmGlowPulse 3s infinite !important;
+  margin: 40px auto 20px !important;
+}
+/* Sparkle row */
+body.chidy-elite .wa-modal-card [class*="sparkle"],
+body.chidy-elite .wa-modal-card [style*="✦"] {
+  color: #f59e0b !important;
+  -webkit-text-fill-color: #f59e0b !important;
+  filter: drop-shadow(0 0 6px rgba(245,158,11,0.5));
+}
+/* Title */
+body.chidy-elite .wa-modal-title {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  background: none !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: clamp(1.1rem, 4.5vw, 1.4rem) !important;
+  letter-spacing: 0.04em !important;
+  text-shadow: none !important;
+  text-align: center !important;
+}
+/* Subtitle */
+body.chidy-elite .wa-modal-subtitle {
+  color: var(--pmm-ink-500) !important;
+  -webkit-text-fill-color: var(--pmm-ink-500) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.92rem !important;
+  line-height: 1.55 !important;
+  text-align: center !important;
+  margin: 0 auto 22px !important;
+  max-width: 380px !important;
+}
+/* Benefits list rows — clean pills with black borders */
+body.chidy-elite .wa-benefits {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 auto 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  max-width: 460px !important;
+}
+body.chidy-elite .wa-benefits li,
+body.chidy-elite .wa-benefits > * {
+  background: #ffffff !important;
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  box-shadow: 0 4px 10px rgba(11,15,26,0.06) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: pmmFadeUp 0.4s ease both;
+}
+body.chidy-elite .wa-benefits li:hover {
+  transform: translateX(4px);
+  box-shadow: 0 8px 20px rgba(37,99,235,0.15) !important;
+  border-color: var(--pmm-blue-600) !important;
+}
+body.chidy-elite .wa-benefits li i,
+body.chidy-elite .wa-benefits li .fa,
+body.chidy-elite .wa-benefits li .fas {
+  color: var(--pmm-blue-600) !important;
+  font-size: 1.1rem !important;
+  min-width: 24px !important;
+}
+/* Live count "Wanachama wanaongezeka" pill */
+body.chidy-elite .wa-modal-card [style*="Wanachama"] {
+  background: linear-gradient(135deg, var(--pmm-blue-50), #ffffff) !important;
+  background-image: linear-gradient(135deg, var(--pmm-blue-50), #ffffff) !important;
+  border: 2px solid var(--pmm-blue-600) !important;
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+  border-radius: 999px !important;
+  padding: 10px 18px !important;
+  text-align: center !important;
+  margin: 0 auto 22px !important;
+  max-width: 340px !important;
+  font-weight: 700 !important;
+  animation: pmmGlowPulse 3s infinite !important;
+}
+/* Main CTA button — solid green with strong outline */
+body.chidy-elite .wa-modal-card [onclick*="wa.me"],
+body.chidy-elite .wa-modal-card [onclick*="whatsapp"],
+body.chidy-elite .wa-modal-card a[href*="wa.me"],
+body.chidy-elite .wa-modal-card a[href*="whatsapp"],
+body.chidy-elite .wa-modal-card .wa-cta,
+body.chidy-elite .wa-modal-card button[style*="JIUNGE SASA"] {
+  background: linear-gradient(135deg, #25D366, #128C7E) !important;
+  background-image: linear-gradient(135deg, #25D366, #128C7E) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 14px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  padding: 16px 22px !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 460px !important;
+  margin: 0 auto 12px !important;
+  text-align: center !important;
+  box-shadow: 0 12px 30px rgba(37,211,102,0.40) !important;
+  transition: transform 0.2s !important;
+  animation: pmmGlowPulse 3s infinite !important;
+}
+body.chidy-elite .wa-modal-card [onclick*="wa.me"]:hover,
+body.chidy-elite .wa-modal-card a[href*="wa.me"]:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+}
+/* "Bonyeza nje kufunga" small text */
+body.chidy-elite .wa-modal-card [style*="kufunga"] {
+  color: var(--pmm-ink-300) !important;
+  -webkit-text-fill-color: var(--pmm-ink-300) !important;
+  text-align: center !important;
+  font-size: 0.72rem !important;
+  margin-top: 6px !important;
+}
+
+/* ─── 5. SEARCH BAR — premium blue boundary + focus glow ─ */
+body.chidy-elite .hero-search {
+  position: relative;
+  max-width: 620px;
+  margin: 8px auto 4px;
+}
+body.chidy-elite .hero-search input,
+body.chidy-elite #searchInput {
+  background: #ffffff !important;
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  border: 2px solid var(--pmm-blue-600) !important;
+  border-radius: 999px !important;
+  padding: 14px 20px 14px 52px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.16),
+              0 0 0 4px rgba(37,99,235,0.06) !important;
+  outline: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+body.chidy-elite .hero-search input::placeholder,
+body.chidy-elite #searchInput::placeholder {
+  color: var(--pmm-ink-300) !important;
+  font-weight: 500 !important;
+}
+body.chidy-elite .hero-search input:focus,
+body.chidy-elite #searchInput:focus {
+  border-color: var(--pmm-blue-900) !important;
+  box-shadow: 0 10px 28px rgba(37,99,235,0.28),
+              0 0 0 6px rgba(37,99,235,0.14) !important;
+  transform: translateY(-1px);
+}
+body.chidy-elite .hero-search .search-icon,
+body.chidy-elite .hero-search i.fa-search {
+  color: var(--pmm-blue-600) !important;
+  font-size: 1rem !important;
+  left: 20px !important;
+}

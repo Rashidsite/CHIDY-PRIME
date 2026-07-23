@@ -77,7 +77,7 @@
     <script src="/js/portal-cards.js?v=1.9" defer></script>
 
     <!-- Premium overlay: notifications, profile, pata pesa, videos -->
-    <link rel="stylesheet" href="/css/premium.css?v=1.1">
+    <link rel="stylesheet" href="/css/premium.css?v=1.2">
 
     <!-- Confetti: load after page renders (non-blocking) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
@@ -3576,7 +3576,7 @@
 
 
 
-<body class="chidy-elite">
+<body class="chidy-elite mode-home">
     <!-- GENESIS ENGINE STARTUP -->
     <div id="genesis-startup">
         <div class="startup-logo">CHIDY<br>PRIME</div>
@@ -5815,14 +5815,18 @@
         function showHome() {
             currentCategory = null;
             document.getElementById('searchInput').value = '';
-            
+
+            // Switch page mode
+            document.body.classList.remove('mode-videos');
+            document.body.classList.add('mode-home');
+
             // Show Home elements
             const heroSectionEl = document.querySelector('.hero-section');
             if (heroSectionEl) heroSectionEl.style.display = 'block';
             const affiliatePromo = document.querySelector('.affiliate-promo-card');
             if(affiliatePromo) affiliatePromo.style.display = 'flex';
             document.getElementById('categoriesContainer').style.display = 'block';
-            
+
             // Hide Video store
             document.getElementById('videoSection').style.display = 'none';
 
@@ -6174,7 +6178,12 @@
 
         // ===== OPEN VIDEO STORE =====
         function openVideoStore() {
-            // Hide Home elements
+            // Switch page mode — CSS in premium.css handles the actual
+            // hide/show so the video page is a truly standalone view.
+            document.body.classList.remove('mode-home');
+            document.body.classList.add('mode-videos');
+
+            // Belt-and-suspenders: keep old inline hides for older callers
             const heroSection = document.querySelector('.hero-section');
             if (heroSection) heroSection.style.display = 'none';
             const affiliatePromo = document.querySelector('.affiliate-promo-card');
@@ -6189,7 +6198,7 @@
                 section.style.display = 'block';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
-            
+
             setActiveBottom(2);
         }
 
