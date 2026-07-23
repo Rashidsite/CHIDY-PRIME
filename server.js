@@ -1432,6 +1432,15 @@ const verifyVideoPayment = async (req, res) => {
                 if (zStatus === 'success' || zStatus === 'completed') {
                     isPaid = true;
                 }
+            } else if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+                const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+                try {
+                    const pStatus = await pressopay.checkPaymentStatus(ref);
+                    statusMessage = (pStatus.status || 'PENDING').toLowerCase();
+                    if ((pStatus.status || '').toUpperCase() === 'COMPLETED') isPaid = true;
+                } catch (e) {
+                    statusMessage = 'pending';
+                }
             }
         }
 
@@ -2337,6 +2346,15 @@ const verifyPaymentManual = async (req, res) => {
             statusMessage = zStatus || 'Pending';
             if (zStatus === 'success' || zStatus === 'completed') {
                 isPaid = true;
+            }
+        } else if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+            const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+            try {
+                const pStatus = await pressopay.checkPaymentStatus(ref);
+                statusMessage = (pStatus.status || 'PENDING').toLowerCase();
+                if ((pStatus.status || '').toUpperCase() === 'COMPLETED') isPaid = true;
+            } catch (e) {
+                statusMessage = 'pending';
             }
         }
 

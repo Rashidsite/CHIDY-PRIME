@@ -5479,23 +5479,39 @@
             const finalAmount = Math.max(0, game.price - (window.currentDiscount || 0));
 
             try {
-                const response = await fetch('/api/payments/harakapay-checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amount: finalAmount,
-                        phone: phone,
-                        gameTitle: game.title,
-                        visitorId: visitor.id,
-                        postId: postId,
-                        email: `${visitor.phone}@chidyprime.com`, // Fallback email
-                        name: visitor.name,
-                        promo_used: window.appliedPromoCode || null
-                    })
+                const checkoutBody = JSON.stringify({
+                    amount: finalAmount,
+                    phone: phone,
+                    gameTitle: game.title,
+                    visitorId: visitor.id,
+                    postId: postId,
+                    email: `${visitor.phone}@chidyprime.com`, // Fallback email
+                    name: visitor.name,
+                    promo_used: window.appliedPromoCode || null
                 });
 
-                const result = await response.json();
-                console.log('HarakaPay Checkout Result:', result);
+                // PressoPay is now the primary gateway. If it returns "not
+                // configured" or a network/server error, fall back to
+                // HarakaPay automatically so the payment flow never breaks.
+                let response = await fetch('/api/payments/pressopay-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: checkoutBody
+                });
+                let result = await response.json().catch(() => ({}));
+
+                const looksMisconfigured = response.status === 503
+                    || (result && result.status === 'failed' && /haijawekwa|not configured|missing API/i.test(result.message || ''));
+                if (!response.ok || looksMisconfigured) {
+                    console.warn('[Payment] PressoPay unavailable, falling back to HarakaPay:', result && result.message);
+                    response = await fetch('/api/payments/harakapay-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: checkoutBody
+                    });
+                    result = await response.json().catch(() => ({}));
+                }
+                console.log('Payment Checkout Result:', result);
 
                 if (result.status === 'success' || result.success === true) {
                     // Switch to Verifying state immediately
@@ -7140,20 +7156,34 @@ async function clearAllNotifications() {
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inatuma...';
 
             try {
-                const res = await fetch('/api/payments/harakapay-video-checkout', {
+                const videoCheckoutBody = JSON.stringify({
+                    amount: _vidPayData.price,
+                    phone: phone,
+                    videoTitle: _vidPayData.title,
+                    visitorId: visitor.id,
+                    videoId: _vidPayData.videoId,
+                    email: visitor.email || 'customer@chidyprime.com',
+                    name: visitor.name || 'Chidy Customer'
+                });
+
+                // PressoPay first, HarakaPay fallback (same shape).
+                let res = await fetch('/api/payments/pressopay-video-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amount: _vidPayData.price,
-                        phone: phone,
-                        videoTitle: _vidPayData.title,
-                        visitorId: visitor.id,
-                        videoId: _vidPayData.videoId,
-                        email: visitor.email || 'customer@chidyprime.com',
-                        name: visitor.name || 'Chidy Customer'
-                    })
+                    body: videoCheckoutBody
                 });
-                const data = await res.json();
+                let data = await res.json().catch(() => ({}));
+                const looksMisconfigured = res.status === 503
+                    || (data && data.status === 'failed' && /haijawekwa|not configured|missing API/i.test(data.message || ''));
+                if (!res.ok || looksMisconfigured) {
+                    console.warn('[Payment] PressoPay video unavailable, falling back to HarakaPay:', data && data.message);
+                    res = await fetch('/api/payments/harakapay-video-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: videoCheckoutBody
+                    });
+                    data = await res.json().catch(() => ({}));
+                }
  
                 if (data.status === 'success' || data.message === 'success' || data.success === true) {
                     document.getElementById('vidPayForm').style.display = 'none';
