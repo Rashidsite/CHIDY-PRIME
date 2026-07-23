@@ -73,8 +73,8 @@
     <link rel="stylesheet" href="/css/chidy-elite.css?v=2.1">
 
     <!-- Portal Cards overlay (home page category tiles) -->
-    <link rel="stylesheet" href="/css/portal-cards.css?v=1.4">
-    <script src="/js/portal-cards.js?v=1.4" defer></script>
+    <link rel="stylesheet" href="/css/portal-cards.css?v=1.5">
+    <script src="/js/portal-cards.js?v=1.5" defer></script>
 
     <!-- Confetti: load after page renders (non-blocking) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
@@ -2519,18 +2519,24 @@
             width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.95);
             z-index: 9999;
-            display: flex;
+            /* Hidden by default — portal card CTA opens it on demand */
+            display: none;
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
             transition: opacity 0.5s ease-out;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .signup-overlay.hidden { 
+        .signup-overlay.hidden {
             display: none !important;
             opacity: 0 !important;
             pointer-events: none !important;
         }
+
+        /* When JS explicitly opens it, openLogin() sets display:flex inline
+           and opacity:1 — no extra CSS needed for the visible state. */
 
         .signup-card {
             background: rgba(15, 15, 25, 0.95);
@@ -5823,8 +5829,16 @@
                 }
             }
             
-            // No visitor in localStorage - show signup
-            openLogin();
+            // No visitor in localStorage — do NOT auto-open the signup modal.
+            // Portal cards (portal-cards.js) will open it when a first-time
+            // visitor taps the SIGNUP CTA on any category card.
+            const overlay = document.getElementById('signupOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+            }
+            document.body.style.overflow = '';
             return false;
         }
 
