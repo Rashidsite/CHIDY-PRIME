@@ -248,6 +248,13 @@
 
         container.classList.add('chidy-portal');
         container.innerHTML = keys.map(k => renderPortalCard(k, grouped[k])).join('');
+
+        // Also populate the side drawer with the same category list so
+        // hamburger → menu shows categories (the app used to do this from
+        // its own renderCategories which our patch replaces).
+        if (typeof window.populateSidebarCategories === 'function') {
+            try { window.populateSidebarCategories(keys); } catch (_) {}
+        }
     }
 
     // Monkey-patch: home view → portal cards, category view → app's grid

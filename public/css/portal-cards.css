@@ -599,3 +599,366 @@ body.chidy-elite .signup-error {
   color: #dc2626 !important;
   font-weight: 600 !important;
 }
+
+/* ═════════════════════════════════════════════════════════
+   SIDEBAR DRAWER — light professional theme
+   The hamburger drawer used a dark gradient with white text
+   which clashed with the new white theme AND was showing an
+   empty menu (categories were being rendered by the app's
+   original renderCategories which our portal patch bypasses).
+   The populate call was added in portal-cards.js. Here we
+   re-skin the drawer to match the light theme.
+   ═════════════════════════════════════════════════════════ */
+
+body.chidy-elite .sidebar-overlay {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(6px);
+}
+
+body.chidy-elite .sidebar {
+  background: #ffffff !important;
+  background-image: none !important;
+  border-left: 1px solid #e2e8f0 !important;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.14) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: #0f172a !important;
+}
+
+body.chidy-elite .sidebar-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 22px 20px !important;
+}
+
+body.chidy-elite .sidebar-header .brand,
+body.chidy-elite .sidebar-header .brand-chidy {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+}
+body.chidy-elite .sidebar-header .brand-prime {
+  color: #2563eb !important;
+  -webkit-text-fill-color: #2563eb !important;
+  background: none !important;
+}
+
+/* Close (X) button on drawer header */
+body.chidy-elite .close-sidebar {
+  background: #ffffff !important;
+  border: 1.5px solid #0f172a !important;
+  color: #0f172a !important;
+}
+body.chidy-elite .close-sidebar:hover {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+}
+
+body.chidy-elite .sidebar-menu {
+  padding: 10px 12px !important;
+  gap: 4px !important;
+}
+
+/* Each menu row — pill-style hover, blue accent on active */
+body.chidy-elite .sidebar-item {
+  color: #0f172a !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-left: 3px solid transparent !important;
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  margin: 2px 0 !important;
+}
+body.chidy-elite .sidebar-item i {
+  color: #2563eb !important;
+  width: 22px !important;
+  font-size: 1rem !important;
+}
+body.chidy-elite .sidebar-item:hover {
+  background: #eff6ff !important;
+  border-color: #dbeafe !important;
+  border-left-color: #2563eb !important;
+  color: #1d4ed8 !important;
+}
+body.chidy-elite .sidebar-item:hover i {
+  color: #1d4ed8 !important;
+  filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.35)) !important;
+}
+
+/* Games za Bure — keep the green highlight but on white */
+body.chidy-elite a.sidebar-item[href*="chidygaming"] {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.03)) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  animation: none !important;
+}
+body.chidy-elite a.sidebar-item[href*="chidygaming"] span {
+  color: #059669 !important;
+}
+body.chidy-elite a.sidebar-item[href*="chidygaming"] i {
+  color: #10b981 !important;
+}
+
+/* User profile card inside sidebar */
+body.chidy-elite .sidebar-user-card {
+  background: linear-gradient(135deg, #eff6ff, #ffffff) !important;
+  border: 1px solid #dbeafe !important;
+  color: #0f172a !important;
+}
+body.chidy-elite .sidebar-user-card * {
+  color: inherit;
+}
+
+/* Bottom "© 2026 Chidy Prime" footer inside drawer */
+body.chidy-elite .sidebar > div:last-child {
+  border-top: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* ═════════════════════════════════════════════════════════
+   SITE FOOTER — light premium tone
+   ═════════════════════════════════════════════════════════ */
+
+body.chidy-elite .site-footer {
+  background: linear-gradient(to bottom, #ffffff, #f8fafc) !important;
+  background-image: linear-gradient(to bottom, #ffffff, #f8fafc) !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  padding-top: 2.5rem !important;
+}
+
+/* Brand wordmark at footer top */
+body.chidy-elite .site-footer .footer-brand .brand-chidy {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+  text-shadow: none !important;
+}
+body.chidy-elite .site-footer .footer-brand .brand-prime {
+  color: #2563eb !important;
+  -webkit-text-fill-color: #2563eb !important;
+  background: none !important;
+  text-shadow: none !important;
+}
+
+/* Tagline "Premium Gaming Hub · Tanzania" */
+body.chidy-elite .site-footer > p:first-of-type {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+/* Neon dividers → subtle blue line */
+body.chidy-elite .site-footer > div[style*="height:2px"],
+body.chidy-elite .site-footer > div[style*="height:1px"] {
+  background: linear-gradient(90deg, transparent, #2563eb, #dc2626, transparent) !important;
+  opacity: 0.6;
+}
+
+/* Social pills — white with brand outline */
+body.chidy-elite .site-footer .footer-links a {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+body.chidy-elite .site-footer .footer-links a:hover {
+  border-color: #2563eb !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18) !important;
+  transform: translateY(-4px) !important;
+}
+
+/* Quick links (Home, Videos, Pata Pesa, Support) */
+body.chidy-elite .site-footer > div[style*="justify-content:center"][style*="gap:20px"] span {
+  color: #475569 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 600 !important;
+  padding: 8px 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  transition: 0.2s !important;
+}
+body.chidy-elite .site-footer > div[style*="justify-content:center"][style*="gap:20px"] span:hover {
+  color: #1d4ed8 !important;
+  border-color: #2563eb !important;
+  background: #eff6ff !important;
+}
+
+/* Footer info block (copyright, made with love, disclaimer) */
+body.chidy-elite .site-footer .footer-info,
+body.chidy-elite .site-footer .footer-info p {
+  color: #475569 !important;
+}
+body.chidy-elite .site-footer .footer-info strong {
+  color: #0f172a !important;
+}
+body.chidy-elite .site-footer .footer-info .designer-credit {
+  color: #2563eb !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ═════════════════════════════════════════════════════════
+   GAME DETAIL MODAL — premium light look
+   Users tap a game card and this modal opens with poster,
+   title, price chip, description and CTA. Rebuild for the
+   white theme with strong typography and a proper blue CTA.
+   ═════════════════════════════════════════════════════════ */
+
+body.chidy-elite .detail-overlay {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+body.chidy-elite .detail-card {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25) !important;
+  color: #0f172a !important;
+}
+
+/* Poster image at top of the card */
+body.chidy-elite .detail-card .detail-image {
+  border-radius: 20px 20px 0 0 !important;
+  aspect-ratio: 16 / 9 !important;
+  object-fit: cover !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Body padding + typography */
+body.chidy-elite .detail-body {
+  padding: 1.5rem 1.4rem 1.6rem !important;
+}
+body.chidy-elite .detail-body h2 {
+  color: #0f172a !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: clamp(1.05rem, 3.6vw, 1.25rem) !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0.01em !important;
+  margin-bottom: 0.8rem !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+}
+
+/* Meta pills row (rating, category, price, duration) */
+body.chidy-elite .detail-meta {
+  gap: 8px !important;
+  margin-bottom: 1.2rem !important;
+}
+body.chidy-elite .detail-meta span {
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  padding: 5px 12px !important;
+  letter-spacing: 0.03em !important;
+}
+/* Rating chip — amber */
+body.chidy-elite .detail-meta span:has(> .fa-star),
+body.chidy-elite .detail-meta span[style*="star"] {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+/* Category chip — brand blue */
+body.chidy-elite .detail-meta span:nth-child(2) {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1d4ed8 !important;
+}
+/* Price chip — red accent */
+body.chidy-elite .detail-meta span[style*="TSh"],
+body.chidy-elite .detail-meta span[style*="Tsh"],
+body.chidy-elite .detail-meta span[style*="TSH"] {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+/* Description text */
+body.chidy-elite .detail-body p {
+  color: #334155 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.9rem !important;
+  line-height: 1.65 !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 14px 16px !important;
+  margin-bottom: 1.2rem !important;
+}
+
+/* "Soma Zaidi" toggle link */
+body.chidy-elite .detail-body p a,
+body.chidy-elite .detail-body p span[onclick] {
+  color: #2563eb !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+}
+
+/* Notice card ("Game hii ni ya kulipia. Lipia sasa...") */
+body.chidy-elite .detail-body div[style*="background: rgba"]:not(.detail-meta) {
+  background: linear-gradient(135deg, #eff6ff, #ffffff) !important;
+  border: 1px solid #93c5fd !important;
+  border-radius: 12px !important;
+  color: #1d4ed8 !important;
+}
+body.chidy-elite .detail-body div[style*="background: rgba"]:not(.detail-meta) * {
+  color: inherit !important;
+}
+
+/* CTA button "LIPA SASA ..." — solid brand gradient */
+body.chidy-elite .dl-btn {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #dc2626) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 14px !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.08em !important;
+  padding: 14px 22px !important;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.35) !important;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, filter 0.2s ease !important;
+}
+body.chidy-elite .dl-btn:hover {
+  background: linear-gradient(135deg, #1e40af, #2563eb 55%, #b91c1c) !important;
+  color: #ffffff !important;
+  filter: brightness(1.05) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.45) !important;
+}
+/* YouTube variant */
+body.chidy-elite .dl-btn.youtube {
+  background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+  border: none !important;
+  color: #ffffff !important;
+  animation: none !important;
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.35) !important;
+}
+body.chidy-elite .dl-btn.youtube:hover {
+  background: linear-gradient(135deg, #b91c1c, #dc2626) !important;
+}
+
+/* Close (X) button on detail card */
+body.chidy-elite .close-detail {
+  background: #ffffff !important;
+  border: 1.5px solid #0f172a !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+}
+body.chidy-elite .close-detail:hover {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+  transform: rotate(90deg) !important;
+}
