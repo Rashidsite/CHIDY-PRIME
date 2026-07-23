@@ -1,0 +1,625 @@
+/* ============================================================
+   CHIDY PRIME — PREMIUM OVERLAY (v1)
+   Rebuilds five overlays / sections in a premium light theme:
+     1. Notification dropdown (bell popup)
+     2. Post detail modal (final polish)
+     3. Profile full-page
+     4. Pata Pesa (affiliate) full-page
+     5. CHIDY PRIME TV — standalone video section
+   Palette: deep BLUE (#0f172a/#1e3a8a/#2563eb/#3b82f6) + BLACK
+   accents on WHITE backgrounds. Animations everywhere.
+   All rules scoped to body.chidy-elite so nothing else leaks.
+   ============================================================ */
+
+:root {
+  --pmm-blue-950: #0a1930;
+  --pmm-blue-900: #0f172a;
+  --pmm-blue-800: #1e293b;
+  --pmm-blue-700: #1d4ed8;
+  --pmm-blue-600: #2563eb;
+  --pmm-blue-500: #3b82f6;
+  --pmm-blue-400: #60a5fa;
+  --pmm-blue-100: #dbeafe;
+  --pmm-blue-50:  #eff6ff;
+
+  --pmm-ink-900:  #0b0f1a;
+  --pmm-ink-700:  #1f2937;
+  --pmm-ink-500:  #475569;
+  --pmm-ink-300:  #94a3b8;
+
+  --pmm-surface:  #ffffff;
+  --pmm-line:     #e2e8f0;
+
+  --pmm-shadow-lg: 0 24px 60px rgba(15,23,42,0.20);
+  --pmm-shadow-md: 0 10px 30px rgba(15,23,42,0.10);
+  --pmm-shadow-sm: 0 4px 12px rgba(15,23,42,0.06);
+}
+
+/* ═════════════════════════════════════════════════════════
+   Shared premium animations
+   ═════════════════════════════════════════════════════════ */
+@keyframes pmmFadeUp   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pmmFadeIn   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pmmSlideDown{ from { transform: translateY(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pmmBorderFlow {
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+@keyframes pmmGlowPulse {
+  0%,100% { box-shadow: 0 0 0 rgba(37,99,235,0.35); }
+  50%     { box-shadow: 0 0 24px rgba(37,99,235,0.35); }
+}
+@keyframes pmmShimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(220%); }
+}
+@keyframes pmmCountUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes pmmBadgeGlow {
+  0%,100% { filter: drop-shadow(0 0 4px rgba(37,99,235,0.4)); }
+  50%     { filter: drop-shadow(0 0 12px rgba(37,99,235,0.75)); }
+}
+
+/* ═════════════════════════════════════════════════════════
+   1. NOTIFICATION DROPDOWN — light, animated, professional
+   ═════════════════════════════════════════════════════════ */
+body.chidy-elite .notif-dropdown {
+  background: #ffffff !important;
+  border: 1px solid var(--pmm-blue-100) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--pmm-shadow-lg) !important;
+  overflow: hidden !important;
+  animation: pmmFadeUp 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+body.chidy-elite .notif-header {
+  background: linear-gradient(135deg, var(--pmm-blue-900), var(--pmm-blue-700)) !important;
+  border-bottom: none !important;
+  padding: 16px 18px !important;
+  position: relative;
+  overflow: hidden;
+}
+/* Animated shimmer overlay across the header */
+body.chidy-elite .notif-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(59,130,246,0.35), transparent);
+  transform: translateX(-100%);
+  animation: pmmShimmer 3.6s infinite;
+  pointer-events: none;
+}
+body.chidy-elite .notif-header > * { position: relative; z-index: 1; }
+body.chidy-elite .notif-header,
+body.chidy-elite .notif-header * {
+  color: #ffffff !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+body.chidy-elite .notif-header strong,
+body.chidy-elite .notif-header > *:first-child {
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  font-size: 0.92rem !important;
+}
+body.chidy-elite .notif-header > *:last-child {
+  cursor: pointer;
+  background: rgba(255,255,255,0.12) !important;
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.08em !important;
+  transition: 0.2s !important;
+}
+body.chidy-elite .notif-header > *:last-child:hover {
+  background: rgba(255,255,255,0.22) !important;
+}
+body.chidy-elite .notif-body {
+  max-height: 62vh !important;
+  background: #ffffff !important;
+}
+body.chidy-elite .notif-item {
+  padding: 14px 18px !important;
+  border-bottom: 1px solid var(--pmm-line) !important;
+  background: #ffffff !important;
+  transition: background 0.2s ease, transform 0.2s ease !important;
+  position: relative;
+  animation: pmmFadeUp 0.28s ease both;
+}
+body.chidy-elite .notif-item:hover {
+  background: var(--pmm-blue-50) !important;
+  transform: translateX(2px);
+}
+body.chidy-elite .notif-item.unread {
+  background: linear-gradient(90deg, var(--pmm-blue-50), #ffffff) !important;
+  border-left: 3px solid var(--pmm-blue-600) !important;
+}
+body.chidy-elite .notif-item.unread::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--pmm-blue-600);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.15);
+  animation: pmmGlowPulse 2s infinite;
+}
+body.chidy-elite .notif-item h5 {
+  color: var(--pmm-blue-900) !important;
+  font-weight: 800 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.9rem !important;
+}
+body.chidy-elite .notif-item p {
+  color: var(--pmm-ink-500) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  line-height: 1.5 !important;
+}
+body.chidy-elite .notif-item .time {
+  color: var(--pmm-blue-600) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em;
+}
+/* Close button (X) on each notif */
+body.chidy-elite .notif-item .fa-times,
+body.chidy-elite .notif-item [onclick*="markRead"] {
+  color: var(--pmm-ink-300) !important;
+  transition: 0.2s !important;
+}
+body.chidy-elite .notif-item .fa-times:hover,
+body.chidy-elite .notif-item [onclick*="markRead"]:hover {
+  color: var(--pmm-blue-600) !important;
+}
+
+/* ═════════════════════════════════════════════════════════
+   2. POST DETAIL MODAL — final readability polish
+   Some chips + description text were still leaning cream/grey.
+   ═════════════════════════════════════════════════════════ */
+body.chidy-elite .detail-body h2,
+body.chidy-elite .detail-body .card-title {
+  -webkit-text-fill-color: #0b0f1a !important;
+  color: #0b0f1a !important;
+  text-shadow: none !important;
+}
+/* "Siku X" duration chip — force strong blue-black */
+body.chidy-elite .detail-meta span {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+}
+body.chidy-elite .detail-meta span[style*="fa-clock"],
+body.chidy-elite .detail-meta span:has(> .fa-clock) {
+  background: var(--pmm-blue-50) !important;
+  border-color: var(--pmm-blue-100) !important;
+  color: var(--pmm-blue-700) !important;
+}
+body.chidy-elite .detail-meta span i.fa-clock {
+  color: var(--pmm-blue-600) !important;
+}
+/* Description panel */
+body.chidy-elite .detail-body p {
+  color: #1f2937 !important;
+  background: linear-gradient(180deg, #f8fafc, #ffffff) !important;
+  border-color: var(--pmm-line) !important;
+}
+
+/* ═════════════════════════════════════════════════════════
+   3. PROFILE FULL PAGE — deep-blue to white, premium
+   ═════════════════════════════════════════════════════════ */
+body.chidy-elite #profileModalOverlay {
+  background: #ffffff !important;
+  color: var(--pmm-ink-900) !important;
+}
+/* Header banner behind avatar — soft blue-tinted white */
+body.chidy-elite #profileModalOverlay > div:first-of-type,
+body.chidy-elite #profileModalOverlay [style*="linear-gradient"][style*="0,242,255"],
+body.chidy-elite #profileModalOverlay [style*="linear-gradient"][style*="bc13fe"] {
+  background: linear-gradient(135deg, var(--pmm-blue-50), #ffffff 65%, var(--pmm-blue-50)) !important;
+  background-image: linear-gradient(135deg, var(--pmm-blue-50), #ffffff 65%, var(--pmm-blue-50)) !important;
+}
+/* Top bar: back arrow + "MY PROFILE" title */
+body.chidy-elite #profileModalOverlay [style*="MY PROFILE"],
+body.chidy-elite #profileModalOverlay [style*="MY PROFILE"] * {
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+}
+body.chidy-elite #profileModalOverlay button[onclick*="closeProfile"],
+body.chidy-elite #profileModalOverlay button[onclick*="Profile"] {
+  background: #ffffff !important;
+  border: 1.5px solid var(--pmm-blue-900) !important;
+  color: var(--pmm-blue-900) !important;
+  box-shadow: var(--pmm-shadow-sm) !important;
+  transition: 0.25s !important;
+}
+body.chidy-elite #profileModalOverlay button[onclick*="closeProfile"]:hover,
+body.chidy-elite #profileModalOverlay button[onclick*="Profile"]:hover {
+  background: var(--pmm-blue-900) !important;
+  color: #ffffff !important;
+  transform: translateX(-2px);
+}
+/* Avatar circle — blue gradient with pulsing halo */
+body.chidy-elite #profileModalOverlay [style*="border-radius:50%"][style*="linear-gradient"]:first-of-type,
+body.chidy-elite #profileModalOverlay [class*="avatar"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 0 rgba(37,99,235,0.5), var(--pmm-shadow-md) !important;
+  animation: pmmGlowPulse 3s infinite !important;
+}
+/* Name */
+body.chidy-elite #profileModalOverlay h2,
+body.chidy-elite #profileModalOverlay [style*="font-family:'Orbitron'"][style*="1.4rem"] {
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+  background: none !important;
+  text-shadow: none !important;
+}
+/* Phone number */
+body.chidy-elite #profileModalOverlay [style*="+255"] {
+  color: var(--pmm-ink-500) !important;
+}
+/* "ROOKIE GAMER" badge */
+body.chidy-elite #profileModalOverlay [style*="ROOKIE"],
+body.chidy-elite #profileModalOverlay [style*="GAMER"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  color: #ffffff !important;
+  border: none !important;
+  animation: pmmBadgeGlow 3s infinite;
+}
+/* Stat tiles (GAMES / POINTS / MEMBER) */
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div {
+  background: #ffffff !important;
+  border: 1px solid var(--pmm-line) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--pmm-shadow-sm) !important;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+}
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div:hover {
+  transform: translateY(-3px);
+  border-color: var(--pmm-blue-600) !important;
+  box-shadow: 0 12px 26px rgba(37,99,235,0.18) !important;
+}
+/* Stat labels + values */
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div > * {
+  color: var(--pmm-ink-500) !important;
+}
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div i {
+  color: var(--pmm-blue-600) !important;
+}
+/* Section headings — MENYU HARAKA, TOP WINNERS, AKAUNTI */
+body.chidy-elite #profileModalOverlay [style*="letter-spacing"][style*="Orbitron"],
+body.chidy-elite #profileModalOverlay h3,
+body.chidy-elite #profileModalOverlay h4 {
+  color: var(--pmm-blue-900) !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+}
+/* Menu tiles (LIBRARY, ORDERS, PATA PESA, MSAADA) — light pills */
+body.chidy-elite #profileModalOverlay [onclick*="Library"],
+body.chidy-elite #profileModalOverlay [onclick*="Orders"],
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"],
+body.chidy-elite #profileModalOverlay [onclick*="Support"],
+body.chidy-elite #profileModalOverlay [onclick*="Help"],
+body.chidy-elite #profileModalOverlay .menu-tile {
+  background: #ffffff !important;
+  border: 1.5px solid var(--pmm-line) !important;
+  border-radius: 14px !important;
+  color: var(--pmm-blue-900) !important;
+  box-shadow: var(--pmm-shadow-sm) !important;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+body.chidy-elite #profileModalOverlay [onclick*="Library"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Support"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Help"]:hover {
+  border-color: var(--pmm-blue-600) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(37,99,235,0.18) !important;
+}
+body.chidy-elite #profileModalOverlay [onclick*="Library"] *,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"] *,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"] *,
+body.chidy-elite #profileModalOverlay [onclick*="Support"] *,
+body.chidy-elite #profileModalOverlay [onclick*="Help"] * {
+  color: var(--pmm-blue-900) !important;
+}
+body.chidy-elite #profileModalOverlay [onclick*="Library"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Support"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Help"] i {
+  color: var(--pmm-blue-600) !important;
+}
+/* Top winners row */
+body.chidy-elite #profileModalOverlay [style*="Top Winners"] ~ div,
+body.chidy-elite #profileModalOverlay .top-winner-row {
+  background: linear-gradient(90deg, var(--pmm-blue-50), #ffffff) !important;
+  border: 1px solid var(--pmm-blue-100) !important;
+  color: var(--pmm-blue-900) !important;
+}
+/* Logout button */
+body.chidy-elite #profileModalOverlay [onclick*="logout"],
+body.chidy-elite #profileModalOverlay [onclick*="Logout"] {
+  background: #ffffff !important;
+  border: 1.5px solid #dc2626 !important;
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  transition: 0.25s !important;
+}
+body.chidy-elite #profileModalOverlay [onclick*="logout"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Logout"]:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(220,38,38,0.28) !important;
+}
+
+/* ═════════════════════════════════════════════════════════
+   4. PATA PESA (AFFILIATE) — premium blue-black on white
+   ═════════════════════════════════════════════════════════ */
+body.chidy-elite #affiliateModalOverlay {
+  background: #ffffff !important;
+  color: var(--pmm-ink-900) !important;
+}
+/* Header bar area (back arrow row) */
+body.chidy-elite #affiliateModalOverlay > div:first-of-type,
+body.chidy-elite #affiliateModalOverlay [style*="PATA PESA"] {
+  background: linear-gradient(135deg, var(--pmm-blue-50), #ffffff 65%, var(--pmm-blue-50)) !important;
+  background-image: linear-gradient(135deg, var(--pmm-blue-50), #ffffff 65%, var(--pmm-blue-50)) !important;
+  color: var(--pmm-blue-900) !important;
+}
+body.chidy-elite #affiliateModalOverlay [style*="PATA PESA"],
+body.chidy-elite #affiliateModalOverlay [style*="PATA PESA"] * {
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+}
+/* Back button */
+body.chidy-elite #affiliateModalOverlay [onclick*="closeAffiliate"],
+body.chidy-elite #affiliateModalOverlay [onclick*="closeModal"] {
+  background: #ffffff !important;
+  border: 1.5px solid var(--pmm-blue-900) !important;
+  color: var(--pmm-blue-900) !important;
+  box-shadow: var(--pmm-shadow-sm) !important;
+}
+body.chidy-elite #affiliateModalOverlay [onclick*="closeAffiliate"]:hover,
+body.chidy-elite #affiliateModalOverlay [onclick*="closeModal"]:hover {
+  background: var(--pmm-blue-900) !important;
+  color: #ffffff !important;
+  transform: translateX(-2px);
+}
+/* Hero medallion (money bag) */
+body.chidy-elite #affiliateModalOverlay [style*="width:80px"][style*="height:80px"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  border: 3px solid var(--pmm-blue-100) !important;
+  animation: pmmGlowPulse 3s infinite !important;
+  filter: drop-shadow(0 12px 24px rgba(37,99,235,0.30));
+}
+/* Programu ya Washirika title */
+body.chidy-elite #affiliateModalOverlay [style*="Programu ya Washirika"] {
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+}
+/* Subtitle */
+body.chidy-elite #affiliateModalOverlay [style*="Alika marafiki"] {
+  color: var(--pmm-ink-500) !important;
+}
+body.chidy-elite #affiliateModalOverlay [style*="upate 10"] {
+  color: var(--pmm-blue-700) !important;
+  font-weight: 800 !important;
+}
+/* Stats cards (Watu Uliowaleta / Salio) */
+body.chidy-elite #affiliateModalOverlay [style*="grid-template-columns:1fr 1fr"] {
+  background: transparent !important;
+  border-top: 1px solid var(--pmm-line) !important;
+  gap: 12px !important;
+  padding: 0 16px !important;
+  margin-top: 4px;
+}
+body.chidy-elite #affiliateModalOverlay [style*="grid-template-columns:1fr 1fr"] > div {
+  background: #ffffff !important;
+  border: 1px solid var(--pmm-blue-100) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--pmm-shadow-sm) !important;
+  padding: 16px 10px !important;
+  transition: transform 0.25s;
+}
+body.chidy-elite #affiliateModalOverlay [style*="grid-template-columns:1fr 1fr"] > div:hover {
+  transform: translateY(-3px);
+  border-color: var(--pmm-blue-600) !important;
+}
+body.chidy-elite #affiliateModalOverlay #affiliateCount,
+body.chidy-elite #affiliateModalOverlay #affiliateBalance {
+  color: var(--pmm-blue-700) !important;
+  font-family: 'JetBrains Mono', 'Orbitron', monospace !important;
+  animation: pmmCountUp 0.5s ease both;
+}
+body.chidy-elite #affiliateModalOverlay [style*="grid-template-columns:1fr 1fr"] > div > div:last-child {
+  color: var(--pmm-ink-500) !important;
+}
+/* Link box + Copy button */
+body.chidy-elite #affiliateModalOverlay input[value*="?ref="],
+body.chidy-elite #affiliateModalOverlay input[readonly] {
+  background: #ffffff !important;
+  border: 1.5px solid var(--pmm-line) !important;
+  color: var(--pmm-blue-900) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+body.chidy-elite #affiliateModalOverlay [onclick*="copy"],
+body.chidy-elite #affiliateModalOverlay button[onclick*="Copy"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  box-shadow: 0 8px 20px rgba(37,99,235,0.30) !important;
+  transition: 0.25s !important;
+}
+body.chidy-elite #affiliateModalOverlay [onclick*="copy"]:hover,
+body.chidy-elite #affiliateModalOverlay button[onclick*="Copy"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37,99,235,0.40) !important;
+  filter: brightness(1.05);
+}
+/* Share + WhatsApp buttons */
+body.chidy-elite #affiliateModalOverlay [onclick*="share"],
+body.chidy-elite #affiliateModalOverlay [onclick*="Share"],
+body.chidy-elite #affiliateModalOverlay [onclick*="WhatsApp"],
+body.chidy-elite #affiliateModalOverlay [onclick*="whatsapp"] {
+  background: #ffffff !important;
+  border: 1.5px solid var(--pmm-blue-600) !important;
+  color: var(--pmm-blue-700) !important;
+  font-weight: 800 !important;
+  transition: 0.25s !important;
+}
+body.chidy-elite #affiliateModalOverlay [onclick*="share"]:hover,
+body.chidy-elite #affiliateModalOverlay [onclick*="Share"]:hover,
+body.chidy-elite #affiliateModalOverlay [onclick*="WhatsApp"]:hover,
+body.chidy-elite #affiliateModalOverlay [onclick*="whatsapp"]:hover {
+  background: var(--pmm-blue-600) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(37,99,235,0.28) !important;
+}
+/* Section headings inside affiliate */
+body.chidy-elite #affiliateModalOverlay [style*="letter-spacing"][style*="text-transform"],
+body.chidy-elite #affiliateModalOverlay h3,
+body.chidy-elite #affiliateModalOverlay h4 {
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+  font-weight: 800 !important;
+}
+/* Numbered steps (1, 2, 3) */
+body.chidy-elite #affiliateModalOverlay [style*="border-radius:50%"][style*="width:32px"],
+body.chidy-elite #affiliateModalOverlay [style*="border-radius:50%"][style*="width:28px"],
+body.chidy-elite #affiliateModalOverlay .step-badge {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.35) !important;
+}
+/* Step title + description */
+body.chidy-elite #affiliateModalOverlay [style*="1)"] ~ div,
+body.chidy-elite #affiliateModalOverlay .step-row,
+body.chidy-elite #affiliateModalOverlay [style*="Copy link"],
+body.chidy-elite #affiliateModalOverlay [style*="Rafiki anunue"],
+body.chidy-elite #affiliateModalOverlay [style*="Pata 10"] {
+  color: var(--pmm-blue-900) !important;
+}
+/* Step body row */
+body.chidy-elite #affiliateModalOverlay [style*="background:rgba(255,255,255,0.02)"],
+body.chidy-elite #affiliateModalOverlay [style*="background: rgba(255,255,255,0.02)"] {
+  background: #ffffff !important;
+  border: 1px solid var(--pmm-line) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--pmm-shadow-sm) !important;
+}
+
+/* ═════════════════════════════════════════════════════════
+   5. CHIDY PRIME TV — video section as a standalone stage
+   ═════════════════════════════════════════════════════════ */
+body.chidy-elite #videoSection {
+  background: #ffffff !important;
+  padding: 24px 18px 40px !important;
+  margin: 20px auto !important;
+  max-width: 1440px;
+  border: 1px solid var(--pmm-blue-100) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--pmm-shadow-md) !important;
+  position: relative;
+  overflow: hidden;
+}
+/* Animated top border strip — brand blue flow */
+body.chidy-elite #videoSection::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--pmm-blue-600), var(--pmm-blue-900), var(--pmm-blue-500), var(--pmm-blue-600));
+  background-size: 300% 100%;
+  animation: pmmBorderFlow 5s linear infinite;
+}
+/* Section title + count badge */
+body.chidy-elite #videoSection .video-section-title,
+body.chidy-elite #videoSection h2 {
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  background: none !important;
+  text-shadow: none !important;
+}
+body.chidy-elite #videoSection .video-section-title i.fa-youtube,
+body.chidy-elite #videoSection .video-section-title .fab {
+  color: #ff0033 !important;
+  filter: drop-shadow(0 4px 10px rgba(255,0,51,0.35));
+}
+body.chidy-elite #videoSection [id="videoCount"],
+body.chidy-elite #videoSection .video-section-title span:last-child {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 800 !important;
+  animation: pmmBadgeGlow 3s infinite;
+}
+/* Video cards themselves */
+body.chidy-elite #videoSection .video-card,
+body.chidy-elite #videoSection [class*="video-item"] {
+  background: #ffffff !important;
+  border: 1px solid var(--pmm-blue-100) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--pmm-shadow-sm) !important;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s, box-shadow 0.25s;
+  animation: pmmFadeUp 0.4s ease both;
+}
+body.chidy-elite #videoSection .video-card:hover,
+body.chidy-elite #videoSection [class*="video-item"]:hover {
+  transform: translateY(-4px);
+  border-color: var(--pmm-blue-600) !important;
+  box-shadow: 0 16px 34px rgba(37,99,235,0.20) !important;
+}
+/* Video title beneath thumbnail */
+body.chidy-elite #videoSection .video-card h3,
+body.chidy-elite #videoSection .video-card h4,
+body.chidy-elite #videoSection .video-card .video-title,
+body.chidy-elite #videoSection .video-card p:first-of-type {
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+  background: none !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+}
+body.chidy-elite #videoSection .video-card p {
+  color: var(--pmm-ink-500) !important;
+}
+/* "BURE" badge on free videos — brand blue instead of green */
+body.chidy-elite #videoSection [class*="free-badge"],
+body.chidy-elite #videoSection [style*="BURE"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-700)) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.35) !important;
+}
+/* Big red play button — softer palette */
+body.chidy-elite #videoSection [class*="play"],
+body.chidy-elite #videoSection .video-card::after {
+  filter: drop-shadow(0 6px 18px rgba(220,38,38,0.35));
+}
+/* Empty state */
+body.chidy-elite #videoSection .video-section-empty {
+  color: var(--pmm-ink-500) !important;
+  background: linear-gradient(135deg, var(--pmm-blue-50), #ffffff) !important;
+  border: 1.5px dashed var(--pmm-blue-100) !important;
+  border-radius: 16px !important;
+}
