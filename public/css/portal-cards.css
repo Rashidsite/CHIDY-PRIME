@@ -8,10 +8,44 @@
 
 body.chidy-elite .categories-container.chidy-portal {
   padding: 12px 14px 88px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 20px !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;   /* mobile: single column stack */
+  gap: 18px !important;
   background: #ffffff !important;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* Tablet: 2 across */
+@media (min-width: 640px) {
+  body.chidy-elite .categories-container.chidy-portal {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 22px !important;
+    padding: 16px 20px 100px !important;
+  }
+}
+/* Laptop: 3 across, tighter cards */
+@media (min-width: 1024px) {
+  body.chidy-elite .categories-container.chidy-portal {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 24px !important;
+    padding: 22px 28px 110px !important;
+  }
+}
+/* Wide desktop: 4 across, extra breathing room */
+@media (min-width: 1280px) {
+  body.chidy-elite .categories-container.chidy-portal {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 26px !important;
+    padding: 24px 32px 120px !important;
+  }
+}
+/* Ultrawide: keep cards from getting too wide */
+@media (min-width: 1600px) {
+  body.chidy-elite .categories-container.chidy-portal {
+    grid-template-columns: repeat(4, 1fr) !important;
+    max-width: 1440px;
+  }
 }
 
 /* Individual portal card */
@@ -961,4 +995,30 @@ body.chidy-elite .close-detail:hover {
   color: #ffffff !important;
   border-color: #0f172a !important;
   transform: rotate(90deg) !important;
+}
+
+/* ═════════════════════════════════════════════════════════
+   DESKTOP CARD SIZING — keep them elegant when there are
+   multiple columns; larger screens should feel airy, not
+   like giant single tiles.
+   ═════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  .chidy-portal-inner   { padding: 14px !important; gap: 10px !important; }
+  .chidy-portal-icon    { width: 34px !important; height: 34px !important; font-size: 14px !important; }
+  .chidy-portal-name    { font-size: 14px !important; letter-spacing: 0.02em !important; }
+  .chidy-portal-count   { font-size: 10px !important; padding: 2px 8px !important; }
+  .chidy-portal-thumb   { aspect-ratio: 16 / 10 !important; }
+  .chidy-portal-btn     { padding: 10px 14px !important; font-size: 12px !important; letter-spacing: 0.06em !important; }
+  .chidy-portal-card    { border-radius: 16px !important; }
+  .chidy-portal-card::before { border-radius: 16px !important; }
+  .chidy-portal-inner   { border-radius: 13px !important; }
+}
+
+@media (min-width: 1280px) {
+  .chidy-portal-inner  { padding: 13px !important; }
+  .chidy-portal-icon   { width: 32px !important; height: 32px !important; }
+  .chidy-portal-name   { font-size: 13px !important; }
+  .chidy-portal-btn    { padding: 9px 12px !important; font-size: 11.5px !important; }
+  .chidy-portal-thumb  { aspect-ratio: 16 / 11 !important; }
 }
