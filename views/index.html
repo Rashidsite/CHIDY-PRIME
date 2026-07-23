@@ -73,8 +73,8 @@
     <link rel="stylesheet" href="/css/chidy-elite.css?v=2.1">
 
     <!-- Portal Cards overlay (home page category tiles) -->
-    <link rel="stylesheet" href="/css/portal-cards.css?v=1.8">
-    <script src="/js/portal-cards.js?v=1.8" defer></script>
+    <link rel="stylesheet" href="/css/portal-cards.css?v=1.9">
+    <script src="/js/portal-cards.js?v=1.9" defer></script>
 
     <!-- Confetti: load after page renders (non-blocking) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
@@ -5234,10 +5234,30 @@
 
             let accessHtml = '';
 
+            // Fetch access with a short timeout + one retry so occasional
+            // Vercel cold starts / flaky Wi-Fi don't wall the user off with
+            // a scary "Network error" screen. On real failure we fall back
+            // to a safe "assume no access" state and still show the CTA.
+            async function fetchAccessOnce(timeoutMs) {
+                const ac = new AbortController();
+                const timer = setTimeout(() => ac.abort(), timeoutMs);
+                try {
+                    const r = await fetch(`/api/check-access/${visitor.id}/${game.id}`, { signal: ac.signal });
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return await r.json();
+                } finally { clearTimeout(timer); }
+            }
+
             try {
                 if (visitor && visitor.id) {
-                    const res = await fetch(`/api/check-access/${visitor.id}/${game.id}`);
-                    const accessData = await res.json();
+                    let accessData;
+                    try {
+                        accessData = await fetchAccessOnce(6000);
+                    } catch (firstErr) {
+                        console.warn('[access-check] first attempt failed, retrying…', firstErr);
+                        await new Promise(r => setTimeout(r, 800));
+                        accessData = await fetchAccessOnce(8000);
+                    }
 
                     if (accessData.has_access) {
                         const expiryDate = new Date(accessData.expires_at);
@@ -5334,7 +5354,38 @@
                 }
             } catch (e) {
                 console.error('Access check failed:', e);
-                accessHtml = `<div style="text-align:center; padding: 20px; color: #ff4444;"><i class="fas fa-wifi"></i> Network error. Please try again.</div>`;
+                // Graceful fallback — don't wall the user off. Show the pay
+                // (or download) CTA anyway with a small notice so they can
+                // still transact; when the request eventually goes through
+                // the button will do its own check.
+                const hasPricedContent = game.price && parseInt(game.price) > 0;
+                const trailerBtn = game.youtube_url
+                    ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : '';
+                if (hasPricedContent) {
+                    accessHtml = `
+                        <div style="background:linear-gradient(135deg,rgba(255,180,0,0.10),rgba(255,180,0,0.04));border:1px solid rgba(255,180,0,0.25);border-radius:12px;padding:12px 14px;margin-bottom:15px;">
+                            <p style="color:#a0a0b0;font-size:0.82rem;margin:0;line-height:1.5;">
+                                <i class="fas fa-triangle-exclamation" style="color:#ffb400;"></i>
+                                Tumeshindwa kupima hali ya malipo kwa sasa. Bado unaweza kulipia — mfumo utafungua kiotomatiki mara access ikithibitika.
+                            </p>
+                        </div>
+                        ${trailerBtn}
+                        <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);">
+                            <i class="fas fa-bolt"></i> LIPA SASA (TSh ${parseInt(game.price).toLocaleString()})
+                        </button>
+                    `;
+                } else {
+                    // Free game — still show trailer + free download links from game object
+                    const freeLinks = (game.links && Array.isArray(game.links)) ? game.links : [];
+                    accessHtml = `
+                        ${trailerBtn}
+                        ${freeLinks.length ? `<div class="detail-links">${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name || 'Download'}</a>`).join('')}</div>` : `
+                            <div style="text-align:center;padding:14px;color:#a0a0b0;font-size:0.82rem;">
+                                <i class="fas fa-wifi" style="color:#ffb400;"></i> Mtandao umekuwa polepole — rudi tena baada ya sekunde chache.
+                            </div>
+                        `}
+                    `;
+                }
             }
 
             container.innerHTML = accessHtml;
