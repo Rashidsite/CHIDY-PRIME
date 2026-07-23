@@ -2918,85 +2918,140 @@
 
         <!-- ALL GAMES VIEW -->
         <section id="allGamesView" class="content view-section" style="display: none;">
-            <!-- Upload New Game Section (Hidden by default) -->
-            <div id="uploadGameSection" class="admin-card" style="display: none; margin-bottom: 2rem; border: 1px solid var(--primary-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 class="card-title" style="margin:0;">Upload New Game</h3>
-                    <button onclick="toggleUploadForm()" style="background:none; border:none; color:#ff3366; cursor:pointer; font-size:1.2rem;"><i class="fas fa-times"></i></button>
+            <!-- Upload New Game Section (Hidden by default) — Professional layout -->
+            <div id="uploadGameSection" class="admin-card" style="display: none; margin-bottom: 2rem; border: 1px solid rgba(0,242,255,0.25); background: linear-gradient(180deg, rgba(0,242,255,0.03), rgba(15,15,25,0.6)); padding: 0; overflow: hidden;">
+                <!-- Header bar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 1.4rem 1.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.15);">
+                    <div style="display:flex; align-items:center; gap: 14px;">
+                        <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, rgba(0,242,255,0.2), rgba(188,19,254,0.15)); display:flex; align-items:center; justify-content:center; color: #00f2ff; font-size: 1.1rem;">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin:0; color:#fff; font-family:'Orbitron'; font-size:1rem; letter-spacing:1px;">Ongeza Game Mpya</h3>
+                            <p style="margin:4px 0 0; color:#6c7293; font-size:0.75rem;">Jaza taarifa zote muhimu. Fields zenye <span style="color:#ff3366;">*</span> ni lazima.</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleUploadForm()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.3);color:#ff3366;cursor:pointer;font-size:0.95rem;transition:0.2s;" onmouseover="this.style.background='rgba(255,51,102,0.25)'; this.style.transform='rotate(90deg)'" onmouseout="this.style.background='rgba(255,51,102,0.1)'; this.style.transform='none'"><i class="fas fa-times"></i></button>
                 </div>
-                <form id="uploadForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Game Title</label>
-                            <input type="text" name="title" required placeholder="Enter game name">
+
+                <form id="uploadForm" style="padding: 1.8rem;">
+                    <!-- SECTION 1: Msingi (Title, Category, Description) -->
+                    <div class="upload-section" style="margin-bottom: 1.8rem;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
+                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00f2ff,#0090e7); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">1</span>
+                            <h4 style="margin:0; color:#00f2ff; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">TAARIFA ZA MSINGI</h4>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-gamepad" style="color:#00f2ff;"></i> Jina la Game <span style="color:#ff3366;">*</span></label>
+                                <input type="text" name="title" required placeholder="Mfano: FIFA 25 — Tanzania Edition">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-tags" style="color:#bc13fe;"></i> Category <span style="color:#ff3366;">*</span></label>
+                                <input type="text" name="category" list="categoryOptions" id="uploadCategory" required placeholder="Chagua au andika category" autocomplete="off" value="HOT POST">
+                                <datalist id="categoryOptions"></datalist>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label>Category</label>
-                            <input type="text" name="category" list="categoryOptions" id="uploadCategory" required placeholder="Type or select category" autocomplete="off" value="HOT POST">
-                            <datalist id="categoryOptions"></datalist>
+                            <label><i class="fas fa-align-left" style="color:#6c7293;"></i> Maelezo <small style="color:#6c7293;">(itaonyeshwa kwenye detail modal)</small></label>
+                            <textarea name="description" rows="4" placeholder="Andika maelezo mafupi ya game — vipengele muhimu, storyline, requirements..."></textarea>
+                            <small id="descCounter" style="color:#6c7293;font-size:0.72rem;display:block;text-align:right;margin-top:4px;">0 herufi</small>
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Rating (0-5)</label>
-                            <input type="number" name="rating" step="0.1" min="0" max="5" required value="4.5">
-                        </div>
-                        <div class="form-group">
-                            <label>Price (Set 0 for FREE)</label>
-                            <input type="number" name="price" step="0.01" min="0" required value="0">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label><i class="fas fa-clock" style="color:#ffb400;"></i> Duration (Siku) <span style="color:#6c7293;font-size:0.75rem;">(0 = Permanent)</span></label>
-                            <input type="number" name="duration_days" min="0" value="0" placeholder="Mfano: 7 = siku 7 za access">
-                        </div>
-                        <div class="form-group" style="display:flex;align-items:flex-end;">
-                            <p style="color:#6c7293;font-size:0.8rem;margin:0;padding-bottom:0.8rem;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Ukiweka 0 mteja atadownload milele. Ukiweka namba mfano 7, mteja atakuwa na siku 7 tu baada ya kupata access.</p>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>YouTube Trailer URL</label>
-                            <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
-                        </div>
-                        <div class="form-group">
-                            <label>Order (Namba Mlolongo)</label>
-                            <input type="number" name="sort_order" min="1" value="9999" required placeholder="1 = Kwanza, 9999 = Mwisho">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea name="description" rows="4" placeholder="Briefly describe the game..."></textarea>
                     </div>
 
-                    <div class="form-group">
-                        <label>Download / Payment Links</label>
+                    <!-- SECTION 2: Bei na Muda -->
+                    <div class="upload-section" style="margin-bottom: 1.8rem;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
+                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#ffb400,#ff8c00); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">2</span>
+                            <h4 style="margin:0; color:#ffb400; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">BEI &amp; MUDA WA ACCESS</h4>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-money-bill-wave" style="color:#00d25b;"></i> Bei (TSh) <span style="color:#6c7293;font-size:0.72rem;">— 0 kwa FREE</span></label>
+                                <input type="number" name="price" step="0.01" min="0" required value="0" placeholder="Mfano: 2000">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-clock" style="color:#ffb400;"></i> Muda wa Access (Siku) <span style="color:#6c7293;font-size:0.72rem;">— 0 kwa milele</span></label>
+                                <input type="number" name="duration_days" min="0" value="0" placeholder="Mfano: 7 = siku 7 za access">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-star" style="color:#ffcc00;"></i> Rating (0 – 5)</label>
+                                <input type="number" name="rating" step="0.1" min="0" max="5" required value="4.5">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fas fa-sort-numeric-up" style="color:#00f2ff;"></i> Order / Mpangilio</label>
+                                <input type="number" name="sort_order" min="1" value="9999" required placeholder="1 = Kwanza kabisa; 9999 = Mwisho">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3: Media (Poster + Trailer) -->
+                    <div class="upload-section" style="margin-bottom: 1.8rem;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
+                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#bc13fe,#8b00ff); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">3</span>
+                            <h4 style="margin:0; color:#bc13fe; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">PICHA &amp; TRAILER</h4>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-image" style="color:#bc13fe;"></i> Poster / Cover <span style="color:#ff3366;">*</span></label>
+                            <div style="display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+                                <input type="url" name="image_url" id="createImageUrl" placeholder="https://example.com/poster.jpg" required style="flex:1; min-width: 220px;">
+                                <label style="margin:0; cursor:pointer; padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(188,19,254,0.1)); border: 1px solid rgba(0,242,255,0.4); color: #00f2ff; font-weight: 700; font-family:'Poppins';">
+                                    <i class="fas fa-upload"></i> PAKIA
+                                    <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'createImageUrl', 'createUploadStatus')">
+                                </label>
+                            </div>
+                            <p id="createUploadStatus" style="font-size: 0.75rem; margin: 0; min-height: 1rem;"></p>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fab fa-youtube" style="color:#ff0000;"></i> YouTube Trailer URL <span style="color:#6c7293;font-size:0.72rem;">(hiari)</span></label>
+                            <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
+                        </div>
+                    </div>
+
+                    <!-- SECTION 4: Links za Download / Payment -->
+                    <div class="upload-section" style="margin-bottom: 1.8rem;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
+                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00d25b,#00b34a); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">4</span>
+                            <h4 style="margin:0; color:#00d25b; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">LINKS ZA DOWNLOAD</h4>
+                            <span style="color:#6c7293; font-size:0.72rem;">— Ongeza kadhaa kwa alternatives</span>
+                        </div>
                         <div id="linksContainer">
                             <div class="form-row link-row">
-                                <input type="text" placeholder="Link Name (e.g. Mediafire)" class="link-name">
+                                <input type="text" placeholder="Jina la Link (mfano: Mediafire)" class="link-name">
                                 <input type="url" placeholder="URL (https://...)" class="link-url">
                             </div>
                         </div>
-                        <button type="button" id="addLinkBtn" style="background: rgba(188, 19, 254, 0.2); color: var(--secondary-color); font-size: 0.8rem; margin-top: 0.5rem; width: auto; padding: 0.5rem 1rem;">
-                            <i class="fas fa-plus"></i> Add Another Link
+                        <button type="button" id="addLinkBtn" style="background: rgba(188, 19, 254, 0.15); color: var(--secondary-color); font-size: 0.8rem; margin-top: 0.5rem; width: auto; padding: 0.6rem 1.2rem; border: 1px solid rgba(188, 19, 254, 0.35); border-radius: 8px; cursor: pointer;">
+                            <i class="fas fa-plus"></i> Ongeza Link Nyingine
                         </button>
                     </div>
 
-                    <div class="form-group">
-                        <label>Post Image</label>
-                        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                            <input type="url" name="image_url" id="createImageUrl" placeholder="https://example.com/image.jpg" required style="flex: 1;">
-                            <label class="btn-secondary" style="margin:0; cursor:pointer; padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.3); color: var(--primary);">
-                                <i class="fas fa-upload"></i> UPLOAD
-                                <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'createImageUrl', 'createUploadStatus')">
-                            </label>
+                    <!-- SECTION 5: Publish options -->
+                    <div class="upload-section" style="margin-bottom: 1.5rem; padding: 1.2rem; background: rgba(0,0,0,0.15); border: 1px solid rgba(0,242,255,0.15); border-radius: 12px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
+                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00f2ff,#bc13fe); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">5</span>
+                            <h4 style="margin:0; color:#fff; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">PUBLISH</h4>
                         </div>
-                        <p id="createUploadStatus" style="font-size: 0.75rem; margin: 0; min-height: 1rem;"></p>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-check" style="color:#00b4ff;"></i> Schedule (Hiari) — chapisha wakati maalum</label>
+                            <input type="datetime-local" name="scheduled_at" id="uploadScheduledAt">
+                            <small style="color:#6c7293; font-size:0.72rem;">Weka tarehe ya baadaye kama unataka game ijichapishe yenyewe. Acha wazi kwa kuchapisha sasa.</small>
+                        </div>
                     </div>
-                    <button type="submit" class="btn-deploy" id="submitBtn">Deploy To Store</button>
 
-                    <p id="statusMsg" style="margin-top: 1rem; font-size: 0.8rem;"></p>
+                    <!-- ACTIONS -->
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:1rem;">
+                        <button type="submit" class="btn-deploy" id="submitBtn" style="flex:1; min-width:220px; padding: 14px; font-family:'Orbitron'; font-size:0.9rem; letter-spacing:1.5px;">
+                            <i class="fas fa-rocket"></i> CHAPISHA SASA
+                        </button>
+                        <button type="button" id="saveDraftBtn" onclick="submitAsDraft()" style="flex:1; min-width:200px; padding: 14px; background:rgba(255,171,0,0.12); border:1px solid rgba(255,171,0,0.45); color:#ffab00; font-family:'Orbitron'; font-size:0.85rem; font-weight:700; letter-spacing:1.5px; border-radius:10px; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(255,171,0,0.25)'" onmouseout="this.style.background='rgba(255,171,0,0.12)'">
+                            <i class="fas fa-file-alt"></i> HIFADHI KAMA DRAFT
+                        </button>
+                    </div>
+
+                    <p id="statusMsg" style="margin-top: 1rem; font-size: 0.85rem;"></p>
                 </form>
             </div>
 
@@ -5104,47 +5159,121 @@
         }
 
 
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
+        // Live character counter for description textarea
+        (function () {
+            const desc = form.querySelector('textarea[name="description"]');
+            const counter = document.getElementById('descCounter');
+            if (desc && counter) {
+                const paint = () => { counter.textContent = `${desc.value.length} herufi`; };
+                desc.addEventListener('input', paint);
+                paint();
+            }
+        })();
+
+        // Shared submit — supports Publish, Draft, and Schedule modes.
+        //   mode 'publish' → published now (unless a schedule is set → stays draft until then)
+        //   mode 'draft'   → hidden from store; admin publishes later
+        async function submitGameForm(mode) {
+            const btn = mode === 'draft'
+                ? document.getElementById('saveDraftBtn')
+                : document.getElementById('submitBtn');
+            const originalHtml = btn.innerHTML;
+            const statusMsg = document.getElementById('statusMsg');
+
             btn.disabled = true;
-            btn.innerText = 'Uploading...';
-            statusMsg.innerText = 'Processing your deploy...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inatuma…';
+            statusMsg.style.color = '#00f2ff';
+            statusMsg.textContent = 'Inaandaa deploy…';
 
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
-            
-            // Collect dynamic links
+
+            // Collect dynamic download links
             const linkRows = document.querySelectorAll('#linksContainer .link-row');
             data.links = Array.from(linkRows).map(row => ({
                 name: row.querySelector('.link-name').value,
-                url: row.querySelector('.link-url').value
+                url:  row.querySelector('.link-url').value
             })).filter(link => link.name && link.url);
 
-            try {
+            // Coerce numeric fields
+            if (data.price)         data.price         = parseFloat(data.price) || 0;
+            if (data.rating)        data.rating        = parseFloat(data.rating) || 0;
+            if (data.duration_days) data.duration_days = parseInt(data.duration_days) || 0;
+            if (data.sort_order)    data.sort_order    = parseInt(data.sort_order) || 9999;
+
+            // Schedule handling
+            let scheduledIso = null;
+            if (data.scheduled_at) {
+                try { scheduledIso = new Date(data.scheduled_at).toISOString(); } catch (_) {}
+            }
+            if (scheduledIso && new Date(scheduledIso) > new Date()) {
+                data.status = 'draft'; // publish worker flips it later
+                data.scheduled_at = scheduledIso;
+            } else {
+                data.status = (mode === 'draft') ? 'draft' : 'published';
+                delete data.scheduled_at;
+            }
+
+            // Attempt submit — retry once without scheduled_at if the column
+            // does not yet exist on the posts table.
+            const sendOnce = async (body) => {
                 const response = await fetch('/api/games', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(body)
                 });
-                const result = await response.json();
+                return { response, result: await response.json().catch(() => ({})) };
+            };
 
-                if (result.success) {
-                    statusMsg.style.color = '#00ff00';
-                    statusMsg.innerText = 'Game deployed successfully!';
+            try {
+                let { response, result } = await sendOnce(data);
+                if (!response.ok && data.scheduled_at && result && /schedul|column .+ scheduled|does not exist/i.test(String(result.error || ''))) {
+                    // Retry without schedule so the rest of the post still saves
+                    const clone = { ...data };
+                    delete clone.scheduled_at;
+                    clone.status = (mode === 'draft') ? 'draft' : 'published';
+                    ({ response, result } = await sendOnce(clone));
+                    if (response.ok) {
+                        statusMsg.style.color = '#ffab00';
+                        statusMsg.textContent = '✅ Game imehifadhiwa, lakini schedule haitajibiwa (DB inahitaji column mpya scheduled_at).';
+                    }
+                }
+                if (response.ok && result.success) {
+                    if (!/schedule/i.test(statusMsg.textContent)) {
+                        statusMsg.style.color = '#00d25b';
+                        if (scheduledIso && new Date(scheduledIso) > new Date()) {
+                            statusMsg.textContent = `🗓️ Imepangwa kuchapishwa ${new Date(scheduledIso).toLocaleString('sw-TZ')}.`;
+                        } else if (mode === 'draft') {
+                            statusMsg.textContent = '📝 Game imehifadhiwa kama Draft.';
+                        } else {
+                            statusMsg.textContent = '🚀 Game imechapishwa kwenye store!';
+                        }
+                    }
                     form.reset();
-                    fetchAdminData();
-                } else {
-                    throw new Error(result.error);
+                    // Rebuild the single default link row after reset
+                    document.getElementById('linksContainer').innerHTML =
+                        '<div class="form-row link-row"><input type="text" placeholder="Jina la Link (mfano: Mediafire)" class="link-name"><input type="url" placeholder="URL (https://...)" class="link-url"></div>';
+                    setTimeout(() => { fetchAdminData(); }, 400);
+                } else if (!result.success) {
+                    throw new Error(result.error || 'Server responded ' + response.status);
                 }
             } catch (err) {
                 statusMsg.style.color = '#ff3333';
-                statusMsg.innerText = 'Error: ' + err.message;
+                statusMsg.textContent = '❌ ' + err.message;
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'Deploy To Store';
+                btn.innerHTML = originalHtml;
             }
+        }
+
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            submitGameForm('publish');
         };
+
+        function submitAsDraft() {
+            submitGameForm('draft');
+        }
 
         // Animated number counter
         function animateCount(el, target, duration = 1200) {
