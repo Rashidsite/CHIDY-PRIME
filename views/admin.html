@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js pinned to a specific UMD bundle so the auto-registrar is
+         included (unpinned "npm/chart.js" URL served an ESM entry that left
+         canvases blank because controllers weren't registered). -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --sidebar-width: 220px;
@@ -3804,37 +3807,98 @@
             } catch (e) { alert("Failed to update banner"); }
         }
 
+        let salesChartInstance = null;
         async function initSalesChart() {
+            const canvas = document.getElementById('salesChart');
+            if (!canvas) return;
             try {
                 const res = await fetch('/api/admin/analytics/sales');
-                const data = await res.json();
-                const ctx = document.getElementById('salesChart').getContext('2d');
-                new Chart(ctx, {
+                const raw = await res.json().catch(() => []);
+                const data = Array.isArray(raw) ? raw : [];
+
+                if (!data.length) {
+                    if (salesChartInstance) { salesChartInstance.destroy(); salesChartInstance = null; }
+                    showChartEmptyState('salesChart', 'Bado hakuna trend ya mauzo — endelea kuweka game na kufanya promo.');
+                    return;
+                }
+                hideChartEmptyState('salesChart');
+
+                // Format dates as "23 Jul" for readability
+                const labels = data.map(d => {
+                    try {
+                        const dt = new Date(d.date);
+                        return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    } catch (_) { return d.date; }
+                });
+                const values = data.map(d => parseFloat(d.total) || 0);
+
+                const ctx = canvas.getContext('2d');
+                const grd = ctx.createLinearGradient(0, 0, 0, canvas.height || 250);
+                grd.addColorStop(0,   'rgba(220, 38, 38, 0.35)');
+                grd.addColorStop(0.55,'rgba(37, 99, 235, 0.10)');
+                grd.addColorStop(1,   'rgba(37, 99, 235, 0.00)');
+
+                if (salesChartInstance) salesChartInstance.destroy();
+
+                salesChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: data.map(d => d.date),
+                        labels,
                         datasets: [{
-                            label: 'Revenue (TSH)',
-                            data: data.map(d => d.total),
-                            borderColor: '#00f2ff',
-                            backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                            label: 'Mapato (TSh)',
+                            data: values,
+                            borderColor: CHART_COLORS.red,
+                            backgroundColor: grd,
+                            borderWidth: 3,
+                            tension: 0.42,
                             fill: true,
-                            tension: 0.4,
                             pointRadius: 4,
-                            pointBackgroundColor: '#00f2ff'
+                            pointHoverRadius: 8,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: CHART_COLORS.red,
+                            pointBorderWidth: 2.5
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                ...CHART_TOOLTIP,
+                                callbacks: {
+                                    label: (item) => ` TSh ${Number(item.raw).toLocaleString()}`
+                                }
+                            }
+                        },
                         scales: {
-                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6c7293' } },
-                            x: { grid: { display: false }, ticks: { color: '#6c7293' } }
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: CHART_COLORS.grid, drawBorder: false },
+                                ticks: {
+                                    color: CHART_COLORS.text,
+                                    font: { size: 11, family: 'JetBrains Mono, monospace' },
+                                    callback: (v) => v >= 1000 ? `${(v/1000).toFixed(v>=10000?0:1)}K` : v
+                                }
+                            },
+                            x: {
+                                grid: { display: false, drawBorder: false },
+                                ticks: {
+                                    color: CHART_COLORS.text,
+                                    font: { size: 11, family: 'Poppins' },
+                                    maxRotation: 0,
+                                    autoSkip: true,
+                                    maxTicksLimit: 8
+                                }
+                            }
                         }
                     }
                 });
-            } catch (e) { console.error("Chart error", e); }
+            } catch (e) {
+                console.error('Sales chart error:', e);
+                showChartEmptyState('salesChart', 'Imeshindwa kupakua data ya trend.');
+            }
         }
 
         // View Switching Logic
@@ -3859,7 +3923,8 @@
             if (activeLink) activeLink.classList.add('active');
 
             if (viewId === 'dashboardView') { 
-                fetchOrders(); 
+                fetchOrders();      // populates revenue + category charts from orders
+                initSalesChart();   // refresh daily-trend chart (server-side RPC)
                 fetchAnalytics(); 
                 fetchAdminData();
                 // Load current announcement text
@@ -4086,64 +4151,152 @@
 
         let categoryChartInstance = null;
         let revenueChartInstance = null;
+
+        // Brand palette used across all charts
+        const CHART_COLORS = {
+            blue:   '#2563eb',
+            blueSoft: 'rgba(37,99,235,0.15)',
+            red:    '#dc2626',
+            redSoft:  'rgba(220,38,38,0.12)',
+            green:  '#00d25b',
+            purple: '#bc13fe',
+            cyan:   '#00f2ff',
+            amber:  '#ffb400',
+            grid:   'rgba(255,255,255,0.06)',
+            text:   '#8b90a5'
+        };
+
+        // Shared tooltip styling for all charts
+        const CHART_TOOLTIP = {
+            backgroundColor: 'rgba(15, 15, 30, 0.95)',
+            titleColor: '#fff',
+            titleFont: { family: 'Orbitron', size: 12, weight: '700' },
+            bodyColor: '#d0d0e8',
+            bodyFont: { family: 'Poppins', size: 12 },
+            borderColor: 'rgba(37,99,235,0.35)',
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            usePointStyle: true
+        };
+
+        function showChartEmptyState(canvasId, message) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const parent = canvas.parentElement;
+            let empty = parent.querySelector('.chart-empty-state');
+            canvas.style.display = 'none';
+            if (!empty) {
+                empty = document.createElement('div');
+                empty.className = 'chart-empty-state';
+                empty.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#6c7293;text-align:center;padding:2rem;font-family:Poppins;';
+                empty.innerHTML = `<i class="fas fa-chart-line" style="font-size:2rem;opacity:0.25;margin-bottom:10px;color:#2563eb;"></i><div style="font-size:0.85rem;letter-spacing:0.5px;">${message}</div>`;
+                parent.appendChild(empty);
+            } else {
+                empty.style.display = 'flex';
+            }
+        }
+        function hideChartEmptyState(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            canvas.style.display = '';
+            const empty = canvas.parentElement.querySelector('.chart-empty-state');
+            if (empty) empty.style.display = 'none';
+        }
+
         function updateCategoryChart(orders) {
-            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const canvas = document.getElementById('categoryChart');
             const statsList = document.getElementById('categoryStatsList');
-            
-            // Calculate totals by category
+            if (!canvas) return;
+
             const categories = {};
             orders.forEach(o => {
-                if (o.status === 'approved' && o.posts) {
+                if ((o.status === 'approved' || o.status === 'manual_approved') && o.posts) {
                     const cat = o.posts.category || 'HOT POST';
-                    const amt = parseFloat(o.amount) || 0;
-                    categories[cat] = (categories[cat] || 0) + amt;
+                    categories[cat] = (categories[cat] || 0) + (parseFloat(o.amount) || 0);
                 }
             });
 
-            const sortedCats = Object.entries(categories).sort((a,b) => b[1] - a[1]);
+            const sortedCats = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+            const total = sortedCats.reduce((sum, c) => sum + c[1], 0);
+
+            if (!sortedCats.length) {
+                if (categoryChartInstance) { categoryChartInstance.destroy(); categoryChartInstance = null; }
+                showChartEmptyState('categoryChart', 'Hakuna mauzo yaliyoidhinishwa bado.');
+                if (statsList) statsList.innerHTML = '';
+                return;
+            }
+            hideChartEmptyState('categoryChart');
+
             const labels = sortedCats.map(c => c[0]);
             const dataValues = sortedCats.map(c => c[1]);
+            const palette = [
+                CHART_COLORS.blue, CHART_COLORS.red, CHART_COLORS.purple,
+                CHART_COLORS.cyan, CHART_COLORS.amber, CHART_COLORS.green
+            ];
+            const colors = labels.map((_, i) => palette[i % palette.length]);
 
             if (categoryChartInstance) categoryChartInstance.destroy();
 
-            // Nice gradient colors for categories
-            const colors = ['#00f2ff', '#bc13fe', '#ffb400', '#00ff88', '#ff3366', '#8e44ad'];
-
-            categoryChartInstance = new Chart(ctx, {
+            categoryChartInstance = new Chart(canvas.getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
                         data: dataValues,
-                        backgroundColor: colors.slice(0, labels.length).map(c => c + '33'),
-                        borderColor: colors.slice(0, labels.length),
-                        borderWidth: 2,
-                        hoverOffset: 15
+                        backgroundColor: colors.map(c => c + '2a'),
+                        borderColor: colors,
+                        borderWidth: 2.5,
+                        hoverOffset: 12,
+                        hoverBorderWidth: 3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: { legend: { display: false } }
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            ...CHART_TOOLTIP,
+                            callbacks: {
+                                label: (item) => {
+                                    const val = item.raw;
+                                    const share = total ? Math.round((val / total) * 100) : 0;
+                                    return ` TSh ${Number(val).toLocaleString()} (${share}%)`;
+                                }
+                            }
+                        }
+                    }
                 }
             });
 
-            // Update the text list
-            statsList.innerHTML = sortedCats.map(([name, amount], i) => `
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${colors[i % colors.length]};"></div>
-                        <span style="color: #fff;">${name}</span>
-                    </div>
-                    <span style="color: #6c7293;">TSh ${amount.toLocaleString()}</span>
-                </div>
-            `).join('');
+            if (statsList) {
+                statsList.innerHTML = sortedCats.map(([name, amount], i) => {
+                    const share = total ? Math.round((amount / total) * 100) : 0;
+                    return `
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:8px;">
+                            <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+                                <div style="width:10px;height:10px;border-radius:3px;background:${colors[i]};box-shadow:0 0 8px ${colors[i]}66;flex-shrink:0;"></div>
+                                <span style="color:#e0e0e8;font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                                <span style="color:#8b90a5;font-size:0.72rem;font-family:'JetBrains Mono',monospace;">${share}%</span>
+                                <span style="color:#e0e0e8;font-size:0.8rem;font-weight:700;font-family:'JetBrains Mono',monospace;">TSh ${amount.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
         }
 
         function updateRevenueChart(orders) {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            
+            const canvas = document.getElementById('revenueChart');
+            if (!canvas) return;
+
             // Group revenue by date (Last 7 days)
             const dailyData = {};
             const last7Days = [];
@@ -4156,50 +4309,82 @@
             }
 
             orders.forEach(o => {
-                if (o.status === 'approved') {
-                    const date = o.created_at.split('T')[0];
+                if (o.status === 'approved' || o.status === 'manual_approved') {
+                    const date = (o.created_at || '').split('T')[0];
                     if (dailyData[date] !== undefined) {
-                        const amt = parseFloat(o.amount) || 0;
-                        dailyData[date] += amt;
+                        dailyData[date] += parseFloat(o.amount) || 0;
                     }
                 }
             });
 
-            const labels = last7Days.map(d => d.split('-').slice(1).join('/'));
             const dataValues = last7Days.map(d => dailyData[d]);
+            const total = dataValues.reduce((a, b) => a + b, 0);
+            if (!total) {
+                if (revenueChartInstance) { revenueChartInstance.destroy(); revenueChartInstance = null; }
+                showChartEmptyState('revenueChart', 'Hakuna mauzo katika siku 7 zilizopita.');
+                return;
+            }
+            hideChartEmptyState('revenueChart');
+
+            // Weekday labels — clearer than "MM/DD"
+            const dayNames = ['Jumapili','Jumatatu','Jumanne','Jumatano','Alhamisi','Ijumaa','Jumamosi'];
+            const labels = last7Days.map(d => dayNames[new Date(d).getDay()]);
+
+            // Vertical gradient fill for the area under the line
+            const ctx = canvas.getContext('2d');
+            const grd = ctx.createLinearGradient(0, 0, 0, canvas.height || 300);
+            grd.addColorStop(0,   'rgba(37, 99, 235, 0.45)');
+            grd.addColorStop(0.55,'rgba(37, 99, 235, 0.12)');
+            grd.addColorStop(1,   'rgba(37, 99, 235, 0.00)');
 
             if (revenueChartInstance) revenueChartInstance.destroy();
 
             revenueChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
                         label: 'Mapato (TSh)',
                         data: dataValues,
-                        borderColor: '#00f2ff',
-                        backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                        borderColor: CHART_COLORS.blue,
+                        backgroundColor: grd,
                         borderWidth: 3,
                         tension: 0.4,
                         fill: true,
-                        pointBackgroundColor: '#00f2ff',
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: CHART_COLORS.blue,
+                        pointBorderWidth: 2.5,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointHoverBorderWidth: 3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            ...CHART_TOOLTIP,
+                            callbacks: {
+                                label: (item) => ` TSh ${Number(item.raw).toLocaleString()}`
+                            }
+                        }
                     },
                     scales: {
-                        y: { 
+                        y: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#6c7293', font: { size: 10 } }
+                            grid: { color: CHART_COLORS.grid, drawBorder: false },
+                            ticks: {
+                                color: CHART_COLORS.text,
+                                font: { size: 11, family: 'JetBrains Mono, monospace' },
+                                callback: (v) => v >= 1000 ? `${(v/1000).toFixed(v>=10000?0:1)}K` : v
+                            }
                         },
                         x: {
-                            grid: { display: false },
-                            ticks: { color: '#6c7293', font: { size: 10 } }
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: CHART_COLORS.text, font: { size: 11, family: 'Poppins' } }
                         }
                     }
                 }
@@ -6170,6 +6355,15 @@
             const ordersView = document.getElementById('ordersView');
             if (ordersView && ordersView.style.display === 'block') {
                 fetchOrders();
+            }
+        }, 30000);
+
+        // Keep the dashboard live: refresh revenue, category and trend charts
+        // every 30 seconds while the dashboard tab is on screen.
+        setInterval(() => {
+            if (currentActiveViewId === 'dashboardView') {
+                fetchOrders();     // updates revenueChart + categoryChart
+                initSalesChart();  // updates salesChart (daily trend)
             }
         }, 30000);
 
