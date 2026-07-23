@@ -623,3 +623,176 @@ body.chidy-elite #videoSection .video-section-empty {
   border: 1.5px dashed var(--pmm-blue-100) !important;
   border-radius: 16px !important;
 }
+
+/* ═════════════════════════════════════════════════════════
+   PROFILE PAGE — POLISH v2
+   Owner feedback: names on Top Winners were invisible, tiles
+   still carried old cyan/pink glows, and logout should be
+   solid red. All boundaries switched to solid black for a
+   crisp, high-contrast premium look on white.
+   ═════════════════════════════════════════════════════════ */
+
+/* Kill the banner gradient — cleaner white behind header + name */
+body.chidy-elite #profileModalOverlay > div:first-of-type,
+body.chidy-elite #profileModalOverlay [style*="linear-gradient"][style*="0,242,255"],
+body.chidy-elite #profileModalOverlay [style*="linear-gradient"][style*="bc13fe"] {
+  background: #ffffff !important;
+  background-image: none !important;
+  border-bottom: 1px solid #0f172a !important;
+}
+
+/* Top bar buttons — solid black outline, always readable */
+body.chidy-elite #profileModalOverlay button[onclick*="closeProfile"],
+body.chidy-elite #profileModalOverlay button[onclick*="Profile"],
+body.chidy-elite #profileModalOverlay [aria-label="back"],
+body.chidy-elite #profileModalOverlay [aria-label="Back"] {
+  background: #ffffff !important;
+  border: 2px solid #0b0f1a !important;
+  color: #0b0f1a !important;
+  box-shadow: 0 4px 10px rgba(11,15,26,0.10) !important;
+}
+
+/* Every card / tile inside the profile page — solid 2px black */
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div,
+body.chidy-elite #profileModalOverlay [onclick*="Library"],
+body.chidy-elite #profileModalOverlay [onclick*="Orders"],
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"],
+body.chidy-elite #profileModalOverlay [onclick*="Support"],
+body.chidy-elite #profileModalOverlay [onclick*="Help"],
+body.chidy-elite #profileModalOverlay .menu-tile {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 10px rgba(11,15,26,0.08) !important;
+  color: #0b0f1a !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Library"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Support"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Help"]:hover {
+  transform: translateY(-3px);
+  background: #0b0f1a !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 26px rgba(11,15,26,0.28) !important;
+}
+body.chidy-elite #profileModalOverlay [onclick*="Library"]:hover *,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"]:hover *,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"]:hover *,
+body.chidy-elite #profileModalOverlay [onclick*="Support"]:hover *,
+body.chidy-elite #profileModalOverlay [onclick*="Help"]:hover *,
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div:hover * {
+  color: #ffffff !important;
+}
+body.chidy-elite #profileModalOverlay [onclick*="Library"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Support"] i,
+body.chidy-elite #profileModalOverlay [onclick*="Help"] i,
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div i {
+  color: var(--pmm-blue-600) !important;
+  transition: color 0.2s ease;
+}
+body.chidy-elite #profileModalOverlay [onclick*="Library"]:hover i,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"]:hover i,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"]:hover i,
+body.chidy-elite #profileModalOverlay [onclick*="Support"]:hover i,
+body.chidy-elite #profileModalOverlay [onclick*="Help"]:hover i,
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div:hover i {
+  color: #60a5fa !important;
+  filter: drop-shadow(0 0 10px rgba(96,165,250,0.6)) !important;
+}
+/* Stat labels + tile labels — dark by default */
+body.chidy-elite #profileModalOverlay [style*="grid-template-columns"] > div > *,
+body.chidy-elite #profileModalOverlay [onclick*="Library"] > *,
+body.chidy-elite #profileModalOverlay [onclick*="Orders"] > *,
+body.chidy-elite #profileModalOverlay [onclick*="Affiliate"] > *,
+body.chidy-elite #profileModalOverlay [onclick*="Support"] > *,
+body.chidy-elite #profileModalOverlay [onclick*="Help"] > * {
+  color: #0b0f1a !important;
+}
+
+/* TOP WINNERS — force readable names + black outline on rows */
+body.chidy-elite #profileModalOverlay [style*="Top Winners"] ~ div,
+body.chidy-elite #profileModalOverlay [class*="winner"],
+body.chidy-elite #profileModalOverlay [class*="Winner"],
+body.chidy-elite #profileModalOverlay [class*="leader"] {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 12px !important;
+  color: #0b0f1a !important;
+  box-shadow: 0 4px 10px rgba(11,15,26,0.08) !important;
+  margin-bottom: 8px !important;
+}
+body.chidy-elite #profileModalOverlay [style*="Top Winners"] ~ div *,
+body.chidy-elite #profileModalOverlay [class*="winner"] *,
+body.chidy-elite #profileModalOverlay [class*="Winner"] *,
+body.chidy-elite #profileModalOverlay [class*="leader"] * {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+}
+/* Only the "N GAMES" chip keeps its own blue accent */
+body.chidy-elite #profileModalOverlay [class*="winner"] [class*="games-chip"],
+body.chidy-elite #profileModalOverlay [style*="GAMES</span>"],
+body.chidy-elite #profileModalOverlay span[style*="GAMES"] {
+  background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: none !important;
+  padding: 3px 10px !important;
+  border-radius: 999px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Section labels (MENU HARAKA, TOP WINNERS, AKAUNTI) — solid slate */
+body.chidy-elite #profileModalOverlay [style*="letter-spacing"][style*="Orbitron"],
+body.chidy-elite #profileModalOverlay [style*="letter-spacing"][style*="text-transform"] {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+}
+
+/* LOGOUT — solid red pill */
+body.chidy-elite #profileModalOverlay [onclick*="logout"],
+body.chidy-elite #profileModalOverlay [onclick*="Logout"] {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  background-image: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: #ffffff !important;
+  border: 2px solid #7f1d1d !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+  box-shadow: 0 8px 20px rgba(220,38,38,0.35) !important;
+  text-transform: uppercase !important;
+}
+body.chidy-elite #profileModalOverlay [onclick*="logout"] *,
+body.chidy-elite #profileModalOverlay [onclick*="Logout"] * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+body.chidy-elite #profileModalOverlay [onclick*="logout"]:hover,
+body.chidy-elite #profileModalOverlay [onclick*="Logout"]:hover {
+  background: #7f1d1d !important;
+  background-image: linear-gradient(135deg, #b91c1c, #7f1d1d) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(127,29,29,0.55) !important;
+  filter: brightness(1.03);
+}
+
+/* Avatar orb — keep the blue gradient but harden the boundary */
+body.chidy-elite #profileModalOverlay [style*="border-radius:50%"][style*="linear-gradient"]:first-of-type,
+body.chidy-elite #profileModalOverlay [class*="avatar"] {
+  border: 3px solid #0b0f1a !important;
+}
+
+/* "ROOKIE GAMER" chip — black outline, keep blue fill */
+body.chidy-elite #profileModalOverlay [style*="ROOKIE"],
+body.chidy-elite #profileModalOverlay [style*="GAMER"] {
+  border: 2px solid #0b0f1a !important;
+}
