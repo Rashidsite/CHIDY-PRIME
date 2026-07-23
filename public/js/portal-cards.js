@@ -65,6 +65,23 @@
             .catch(() => { /* ignore — fallback to game posters */ });
     }
 
+    // Fetch the admin-managed category order + visibility so the portal
+    // respects reordering done in the Categories admin page instead of the
+    // hard-coded window.categoryOrder list.
+    let _serverCategories = null;
+    function refreshCategoryOrderFromServer() {
+        fetch('/api/categories', { credentials: 'same-origin' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(list => {
+                if (!Array.isArray(list)) return;
+                _serverCategories = list;
+                if (!window.currentCategory && Array.isArray(window.allGames)) {
+                    try { renderPortal(window.allGames); } catch (_) {}
+                }
+            })
+            .catch(() => { /* keep hardcoded fallback */ });
+    }
+
     // Category icons — matches the app's own map
     const ICON_MAP = {
         'HOT POST':       'fa-fire',
@@ -108,16 +125,25 @@
                 `<i class="fas fa-lock"></i> Jisajili kwanza kufungua <b>${esc(catName)}</b>`;
         }
 
-        // Open the app's existing signup modal
+        // Open the app's existing signup modal. openLogin() is the correct
+        // entry — it sets display, opacity AND pointer-events inline so the
+        // modal is visible AND clickable. Manual style.display alone leaves
+        // the overlay behind CSS pointer-events:none.
+        if (typeof window.openLogin === 'function') {
+            window.openLogin();
+            return;
+        }
         if (typeof window.openSignupModal === 'function') {
             window.openSignupModal();
-        } else {
-            const modal = document.getElementById('signupOverlay') ||
-                          document.querySelector('[id*="signup"][class*="overlay"]');
-            if (modal) {
-                modal.classList.add('show');
-                modal.style.display = 'flex';
-            }
+            return;
+        }
+        // Fallback — set every property inline in case app internals moved.
+        const modal = document.getElementById('signupOverlay');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+            document.body.style.overflow = 'hidden';
         }
     }
 
@@ -188,11 +214,26 @@
             grouped[c].push(g);
         });
 
-        const orderSrc = Array.isArray(window.categoryOrder) && window.categoryOrder.length
-            ? window.categoryOrder
-            : Object.keys(ICON_MAP);
+        // 1) Prefer the admin-managed order + visibility from /api/categories.
+        //    Only categories flagged is_visible !== false are shown, and their
+        //    order follows display_order set in the admin panel.
+        // 2) Fallback: window.categoryOrder (app's hardcoded default), then
+        //    the built-in ICON_MAP order.
         const keys = [];
-        orderSrc.forEach(k => { if (grouped[k]) keys.push(k); });
+        if (Array.isArray(_serverCategories) && _serverCategories.length) {
+            _serverCategories
+                .filter(c => c && c.is_visible !== false && c.name && grouped[c.name] && grouped[c.name].length)
+                .slice()
+                .sort((a, b) => (a.display_order || 999) - (b.display_order || 999))
+                .forEach(c => { if (!keys.includes(c.name)) keys.push(c.name); });
+        }
+        if (!keys.length) {
+            const orderSrc = Array.isArray(window.categoryOrder) && window.categoryOrder.length
+                ? window.categoryOrder
+                : Object.keys(ICON_MAP);
+            orderSrc.forEach(k => { if (grouped[k]) keys.push(k); });
+        }
+        // Any grouped category that admin didn't declare (edge case) — append last.
         Object.keys(grouped).forEach(k => { if (!keys.includes(k)) keys.push(k); });
 
         if (!keys.length) {
@@ -264,6 +305,7 @@
     function boot() {
         if (patchRenderCategories()) {
             refreshThumbsFromServer();
+            refreshCategoryOrderFromServer();
             if (Array.isArray(window.allGames) && !window.currentCategory) {
                 try { window.renderCategories(window.allGames); } catch (_) {}
             }
