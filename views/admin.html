@@ -390,8 +390,37 @@
             font-size: 0.75rem;
         }
         
-        .action-btn { cursor: pointer; transition: 0.2s; }
-        .action-btn:hover { transform: scale(1.2); }
+        .action-btn {
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #d0d0e8;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            min-width: 32px;
+            min-height: 32px;
+        }
+        .action-btn i { font-size: 0.78rem; }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            border-color: currentColor;
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 4px 12px rgba(0,242,255,0.15);
+        }
+        .action-btn.act-edit    { color: #00b4ff; border-color: rgba(0,180,255,0.35); }
+        .action-btn.act-publish { color: #00d25b; border-color: rgba(0,210,91,0.35); }
+        .action-btn.act-draft   { color: #ffab00; border-color: rgba(255,171,0,0.35); }
+        .action-btn.act-trash   { color: #ff3366; border-color: rgba(255,51,102,0.35); }
+        .action-btn.act-gift    { color: #bc13fe; border-color: rgba(188,19,254,0.35); }
+        .action-btn.act-restore { color: #00d25b; border-color: rgba(0,210,91,0.35); }
 
         .btn-filter {
             background: #2a2d3a;
@@ -2346,6 +2375,20 @@
                     transition: 0.2s;
                 }
                 .btn-vid-toggle:hover { background: rgba(0,210,91,0.2); }
+                .btn-vid-edit {
+                    flex: 1;
+                    padding: 8px;
+                    background: rgba(0,180,255,0.1);
+                    border: 1px solid rgba(0,180,255,0.4);
+                    border-radius: 8px;
+                    color: #00b4ff;
+                    cursor: pointer;
+                    font-family: 'Poppins';
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    transition: 0.2s;
+                }
+                .btn-vid-edit:hover { background: rgba(0,180,255,0.22); }
                 .btn-vid-toggle.unpublished {
                     background: rgba(255,171,0,0.1);
                     border-color: rgba(255,171,0,0.3);
@@ -2453,6 +2496,59 @@
                 <div id="adminVideosGrid" class="video-admin-grid">
                     <div style="color:#6c7293; font-size:0.85rem; text-align:center; padding:3rem; grid-column:1/-1;">
                         <i class="fas fa-spinner fa-spin"></i> Inapakia videos...
+                    </div>
+                </div>
+            </div>
+
+            <!-- EDIT VIDEO MODAL -->
+            <div id="editVideoOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:12000; align-items:center; justify-content:center; padding:1.5rem;">
+                <div style="width:100%; max-width:640px; background:#0f0f1a; border:1px solid rgba(0,180,255,0.35); border-radius:20px; padding:2rem; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.4rem;">
+                        <h3 style="margin:0; font-family:'Orbitron'; font-size:1rem; color:#00b4ff;"><i class="fas fa-edit"></i> Hariri Video</h3>
+                        <button onclick="closeEditVideo()" style="background:rgba(255,51,51,0.1); border:1px solid rgba(255,51,51,0.3); color:#ff3366; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:0.9rem;"><i class="fas fa-times"></i></button>
+                    </div>
+                    <input type="hidden" id="editVideoId">
+                    <div class="form-group">
+                        <label>Kichwa cha Video *</label>
+                        <input type="text" id="editVideoTitle" placeholder="Mfano: FIFA 25 Gameplay Tanzania...">
+                    </div>
+                    <div class="form-group">
+                        <label>YouTube Link *</label>
+                        <input type="url" id="editVideoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                    <div class="form-group">
+                        <label>Maelezo</label>
+                        <textarea id="editVideoDesc" rows="3" style="width:100%; background:#2a2d3a; border:1px solid #2a2d3a; padding:0.8rem; border-radius:8px; color:#fff; outline:none; resize:vertical;"></textarea>
+                    </div>
+                    <div class="form-row" style="margin-bottom:0;">
+                        <div class="form-group">
+                            <label><i class="fas fa-lock" style="color:#ff3333;"></i> Bei (TSh)</label>
+                            <input type="number" id="editVideoPrice" placeholder="0 = Bure" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar" style="color:#ff9800;"></i> Muda (siku)</label>
+                            <input type="number" id="editVideoDuration" placeholder="0 = Kudumu" min="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                            <input type="checkbox" id="editVideoPublished" style="width:18px; height:18px; accent-color:#00d25b;">
+                            <span>Chapisha (LIVE) — bila hii itakuwa DRAFT</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-clock" style="color:#00b4ff;"></i> Schedule (Optional) — chapisha wakati maalum</label>
+                        <input type="datetime-local" id="editVideoSchedule">
+                        <small style="color:#6c7293; font-size:0.72rem;">Weka tarehe ya baadaye kama unataka video ijichapishe yenyewe. Acha wazi kama unachapisha sasa.</small>
+                    </div>
+                    <div id="editVideoMsg" style="font-size:0.85rem; margin-bottom:1rem;"></div>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="saveVideoEdit()" id="saveVideoBtn" style="flex:1; padding:12px; background:linear-gradient(135deg,#00b4ff,#0090e7); border:none; border-radius:10px; color:#fff; font-family:'Orbitron'; font-size:0.85rem; font-weight:700; cursor:pointer;">
+                            <i class="fas fa-save"></i> HIFADHI
+                        </button>
+                        <button onclick="closeEditVideo()" style="padding:12px 20px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#d0d0e8; cursor:pointer; font-family:'Poppins'; font-weight:600;">
+                            Ghairi
+                        </button>
                     </div>
                 </div>
             </div>
@@ -3261,20 +3357,43 @@
                 </div>
                 <div style="font-size: 1.8rem; font-weight: 700; color: #00d25b; font-family: 'Orbitron'; margin-bottom: 20px;" id="breakdownTodayTotal">Tzs 0</div>
                 
+                <!-- PressoPay (primary) -->
+                <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; border: 1px solid rgba(37,99,235,0.35); margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <div style="width: 35px; height: 35px; background: rgba(37,99,235,0.12); color: #2563eb; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold;">P</div>
+                        <div style="flex: 1;">
+                            <div style="color: #fff; font-weight: 600;">PressoPay <span style="font-size:0.6rem;background:#2563eb;color:#fff;padding:1px 6px;border-radius:6px;margin-left:4px;letter-spacing:0.5px;">PRIMARY</span></div>
+                            <div style="color: #6c7293; font-size: 0.75rem;" id="todayPressoCount">0 malipo</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #2563eb; margin-bottom: 10px; font-family: 'Orbitron';" id="todayPressoAmount">Tzs 0</div>
+                    <div style="width: 100%; height: 4px; background: #2a2d3a; border-radius: 2px; overflow: hidden; margin-bottom: 10px;">
+                        <div id="todayPressoBar" style="width: 0%; height: 100%; background: linear-gradient(90deg,#2563eb,#3b82f6); transition: width 0.4s;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+                        <span id="todayPressoShare" style="color: #6c7293;">0% ya yote</span>
+                        <div style="text-align: right;">
+                            <div style="color: #00d25b;"><span id="todayPressoCountSuccess">0</span> (Tzs <span id="todayPressoAmountSuccess">0</span>) <i class="fas fa-check-circle"></i></div>
+                            <div style="color: #ffab00;"><span id="todayPressoCountPending">0</span> (Tzs <span id="todayPressoAmountPending">0</span>) <i class="fas fa-exclamation-circle"></i></div>
+                            <div style="color: #ff3333;"><span id="todayPressoCountFailed">0</span> (Tzs <span id="todayPressoAmountFailed">0</span>) <i class="fas fa-times-circle"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- HarakaPay (fallback) -->
                 <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; border: 1px solid rgba(0, 210, 91, 0.3);">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
                         <div style="width: 35px; height: 35px; background: rgba(0,210,91,0.1); color: #00d25b; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold;">H</div>
                         <div style="flex: 1;">
-                            <div style="color: #fff; font-weight: 600;">HarakaPay</div>
+                            <div style="color: #fff; font-weight: 600;">HarakaPay <span style="font-size:0.6rem;background:#6c7293;color:#fff;padding:1px 6px;border-radius:6px;margin-left:4px;letter-spacing:0.5px;">FALLBACK</span></div>
                             <div style="color: #6c7293; font-size: 0.75rem;" id="todayHarakaCount">0 malipo</div>
                         </div>
                     </div>
                     <div style="font-size: 1.2rem; font-weight: 700; color: #00d25b; margin-bottom: 10px; font-family: 'Orbitron';" id="todayHarakaAmount">Tzs 0</div>
                     <div style="width: 100%; height: 4px; background: #2a2d3a; border-radius: 2px; overflow: hidden; margin-bottom: 10px;">
-                        <div style="width: 100%; height: 100%; background: #00d25b;"></div>
+                        <div id="todayHarakaBar" style="width: 0%; height: 100%; background: #00d25b; transition: width 0.4s;"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
-                        <span style="color: #6c7293;">100% ya yote</span>
+                        <span id="todayHarakaShare" style="color: #6c7293;">0% ya yote</span>
                         <div style="text-align: right;">
                             <div style="color: #00d25b;"><span id="todayHarakaCountSuccess">0</span> (Tzs <span id="todayHarakaAmountSuccess">0</span>) <i class="fas fa-check-circle"></i></div>
                             <div style="color: #ffab00;"><span id="todayHarakaCountPending">0</span> (Tzs <span id="todayHarakaAmountPending">0</span>) <i class="fas fa-exclamation-circle"></i></div>
@@ -3294,21 +3413,44 @@
                     <div style="color: #6c7293; font-size: 0.8rem;" id="yesterdayCount">0 txns</div>
                 </div>
                 <div style="font-size: 1.8rem; font-weight: 700; color: #ffab00; font-family: 'Orbitron'; margin-bottom: 20px;" id="breakdownYesterdayTotal">Tzs 0</div>
-                
+
+                <!-- PressoPay (primary) -->
+                <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; border: 1px solid rgba(37,99,235,0.35); margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <div style="width: 35px; height: 35px; background: rgba(37,99,235,0.12); color: #2563eb; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold;">P</div>
+                        <div style="flex: 1;">
+                            <div style="color: #fff; font-weight: 600;">PressoPay <span style="font-size:0.6rem;background:#2563eb;color:#fff;padding:1px 6px;border-radius:6px;margin-left:4px;letter-spacing:0.5px;">PRIMARY</span></div>
+                            <div style="color: #6c7293; font-size: 0.75rem;" id="yesterdayPressoCount">0 malipo</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #2563eb; margin-bottom: 10px; font-family: 'Orbitron';" id="yesterdayPressoAmount">Tzs 0</div>
+                    <div style="width: 100%; height: 4px; background: #2a2d3a; border-radius: 2px; overflow: hidden; margin-bottom: 10px;">
+                        <div id="yesterdayPressoBar" style="width: 0%; height: 100%; background: linear-gradient(90deg,#2563eb,#3b82f6); transition: width 0.4s;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+                        <span id="yesterdayPressoShare" style="color: #6c7293;">0% ya yote</span>
+                        <div style="text-align: right;">
+                            <div style="color: #00d25b;"><span id="yesterdayPressoCountSuccess">0</span> (Tzs <span id="yesterdayPressoAmountSuccess">0</span>) <i class="fas fa-check-circle"></i></div>
+                            <div style="color: #ffab00;"><span id="yesterdayPressoCountPending">0</span> (Tzs <span id="yesterdayPressoAmountPending">0</span>) <i class="fas fa-exclamation-circle"></i></div>
+                            <div style="color: #ff3333;"><span id="yesterdayPressoCountFailed">0</span> (Tzs <span id="yesterdayPressoAmountFailed">0</span>) <i class="fas fa-times-circle"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- HarakaPay (fallback) -->
                 <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; border: 1px solid rgba(255, 171, 0, 0.3);">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
                         <div style="width: 35px; height: 35px; background: rgba(0,210,91,0.1); color: #00d25b; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold;">H</div>
                         <div style="flex: 1;">
-                            <div style="color: #fff; font-weight: 600;">HarakaPay</div>
+                            <div style="color: #fff; font-weight: 600;">HarakaPay <span style="font-size:0.6rem;background:#6c7293;color:#fff;padding:1px 6px;border-radius:6px;margin-left:4px;letter-spacing:0.5px;">FALLBACK</span></div>
                             <div style="color: #6c7293; font-size: 0.75rem;" id="yesterdayHarakaCount">0 malipo</div>
                         </div>
                     </div>
                     <div style="font-size: 1.2rem; font-weight: 700; color: #00d25b; margin-bottom: 10px; font-family: 'Orbitron';" id="yesterdayHarakaAmount">Tzs 0</div>
                     <div style="width: 100%; height: 4px; background: #2a2d3a; border-radius: 2px; overflow: hidden; margin-bottom: 10px;">
-                        <div style="width: 100%; height: 100%; background: #00d25b;"></div>
+                        <div id="yesterdayHarakaBar" style="width: 0%; height: 100%; background: #00d25b; transition: width 0.4s;"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
-                        <span style="color: #6c7293;">100% ya yote</span>
+                        <span id="yesterdayHarakaShare" style="color: #6c7293;">0% ya yote</span>
                         <div style="text-align: right;">
                             <div style="color: #00d25b;"><span id="yesterdayHarakaCountSuccess">0</span> (Tzs <span id="yesterdayHarakaAmountSuccess">0</span>) <i class="fas fa-check-circle"></i></div>
                             <div style="color: #ffab00;"><span id="yesterdayHarakaCountPending">0</span> (Tzs <span id="yesterdayHarakaAmountPending">0</span>) <i class="fas fa-exclamation-circle"></i></div>
@@ -4580,19 +4722,19 @@
                             </span>
                         </td>
                         <td>
-                            <div style="display: flex; gap: 10px; font-size: 0.8rem;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                 ${status === 'trash' ? `
-                                    <i class="fas fa-undo action-btn" onclick="updateStatus('${game.id}', 'published')" title="Restore to Store" style="color: #00d25b;"></i>
-                                    <i class="fas fa-trash action-btn" onclick="deletePermanently('${game.id}')" title="Delete Permanently" style="color: #ff3333;"></i>
+                                    <button class="action-btn act-restore" onclick="updateStatus('${game.id}', 'published')" title="Restore to Store"><i class="fas fa-undo"></i> Restore</button>
+                                    <button class="action-btn act-trash" onclick="deletePermanently('${game.id}')" title="Delete Permanently"><i class="fas fa-trash"></i> Delete</button>
                                 ` : status === 'draft' ? `
-                                    <i class="fas fa-edit action-btn" onclick="editGame('${game.id}')" title="Edit Game" style="color: #0090e7;"></i>
-                                    <i class="fas fa-rocket action-btn" onclick="updateStatus('${game.id}', 'published')" title="Publish Now" style="color: #00d25b;"></i>
-                                    <i class="fas fa-trash action-btn" onclick="updateStatus('${game.id}', 'trash')" title="Move to Trash" style="color: #ff3333;"></i>
+                                    <button class="action-btn act-edit" onclick="editGame('${game.id}')" title="Edit Game"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="action-btn act-publish" onclick="updateStatus('${game.id}', 'published')" title="Publish Now"><i class="fas fa-rocket"></i> Publish</button>
+                                    <button class="action-btn act-trash" onclick="updateStatus('${game.id}', 'trash')" title="Move to Trash"><i class="fas fa-trash"></i> Trash</button>
                                 ` : `
-                                    <i class="fas fa-edit action-btn" onclick="editGame('${game.id}')" title="Edit Game" style="color: #0090e7;"></i>
-                                    <i class="fas fa-gift action-btn" onclick="handleManualGift('${game.id}', '${game.title.replace(/'/g, "\\'")}')" title="Grant Manual Gift" style="color: var(--secondary-color);"></i>
-                                    <i class="fas fa-file-alt action-btn" onclick="updateStatus('${game.id}', 'draft')" title="Move to Draft" style="color: #ffab00;"></i>
-                                    <i class="fas fa-trash action-btn" onclick="updateStatus('${game.id}', 'trash')" title="Move to Trash" style="color: #ff3333;"></i>
+                                    <button class="action-btn act-edit" onclick="editGame('${game.id}')" title="Edit Game"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="action-btn act-draft" onclick="updateStatus('${game.id}', 'draft')" title="Move to Draft"><i class="fas fa-file-alt"></i> Draft</button>
+                                    <button class="action-btn act-gift" onclick="handleManualGift('${game.id}', '${game.title.replace(/'/g, "\\'")}')" title="Grant Manual Gift"><i class="fas fa-gift"></i> Gift</button>
+                                    <button class="action-btn act-trash" onclick="updateStatus('${game.id}', 'trash')" title="Move to Trash"><i class="fas fa-trash"></i> Trash</button>
                                 `}
                             </div>
                         </td>
@@ -5460,37 +5602,57 @@
             }
         }
 
+        // Detect gateway from stored order id.
+        //   "PP:PAY-..." or "PP..." → pressopay
+        //   "HP..."               → harakapay
+        //   "ZP..."               → zenopay (rare)
+        //   anything else / null  → harakapay (manual/legacy)
+        function detectGateway(orderId) {
+            if (!orderId) return 'harakapay';
+            const id = String(orderId);
+            if (id.startsWith('PP')) return 'pressopay';
+            if (id.startsWith('HP')) return 'harakapay';
+            if (id.startsWith('ZP')) return 'zenopay';
+            return 'harakapay';
+        }
+
         function calculatePaymentStats(orders) {
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
             const yesterday = new Date(now);
             yesterday.setDate(now.getDate() - 1);
             const yesterdayStr = yesterday.toISOString().split('T')[0];
-            
+
             const sevenDaysAgo = new Date(now);
             sevenDaysAgo.setDate(now.getDate() - 7);
-            
+
             const thisMonth = now.getMonth();
             const thisYear = now.getFullYear();
 
+            // Global (approved) totals across time buckets
             let tToday = 0, tYesterday = 0, t7Days = 0, tMonth = 0, tYear = 0, tAll = 0;
             let countToday = 0, countYesterday = 0;
-            
-            let hTodaySuccess = 0, hTodaySuccessAmt = 0;
-            let hTodayPending = 0, hTodayPendingAmt = 0;
-            let hTodayFailed = 0, hTodayFailedAmt = 0;
 
-            let hYestSuccess = 0, hYestSuccessAmt = 0;
-            let hYestPending = 0, hYestPendingAmt = 0;
-            let hYestFailed = 0, hYestFailedAmt = 0;
+            // Per-gateway per-day breakdown
+            const dayZero = () => ({
+                success: 0, successAmt: 0,
+                pending: 0, pendingAmt: 0,
+                failed:  0, failedAmt:  0,
+                total:   0, totalAmt:   0
+            });
+            const buckets = {
+                today:     { pressopay: dayZero(), harakapay: dayZero(), zenopay: dayZero() },
+                yesterday: { pressopay: dayZero(), harakapay: dayZero(), zenopay: dayZero() }
+            };
 
             orders.forEach(o => {
                 const amt = parseFloat(o.amount) || 0;
                 const d = new Date(o.created_at);
                 const dStr = d.toISOString().split('T')[0];
                 const isApproved = (o.status === 'approved' || o.status === 'manual_approved');
-                const isPending = (o.status === 'pending');
-                const isFailed = (o.status === 'rejected');
+                const isPending  = (o.status === 'pending');
+                const isFailed   = (o.status === 'rejected');
+                const gw = detectGateway(o.promo_used);
 
                 if (isApproved) {
                     tAll += amt;
@@ -5501,50 +5663,58 @@
                     if (dStr === yesterdayStr) tYesterday += amt;
                 }
 
-                if (dStr === todayStr) {
-                    countToday++;
-                    if (isApproved) { hTodaySuccess++; hTodaySuccessAmt += amt; }
-                    if (isPending) { hTodayPending++; hTodayPendingAmt += amt; }
-                    if (isFailed) { hTodayFailed++; hTodayFailedAmt += amt; }
-                }
-                if (dStr === yesterdayStr) {
-                    countYesterday++;
-                    if (isApproved) { hYestSuccess++; hYestSuccessAmt += amt; }
-                    if (isPending) { hYestPending++; hYestPendingAmt += amt; }
-                    if (isFailed) { hYestFailed++; hYestFailedAmt += amt; }
-                }
+                const applyTo = (bucket) => {
+                    if (!bucket[gw]) bucket[gw] = dayZero();
+                    const b = bucket[gw];
+                    b.total++;
+                    b.totalAmt += amt;
+                    if (isApproved) { b.success++; b.successAmt += amt; }
+                    if (isPending)  { b.pending++; b.pendingAmt += amt; }
+                    if (isFailed)   { b.failed++;  b.failedAmt  += amt; }
+                };
+
+                if (dStr === todayStr)     { countToday++;     applyTo(buckets.today); }
+                if (dStr === yesterdayStr) { countYesterday++; applyTo(buckets.yesterday); }
             });
 
             const fmt = (num) => num.toLocaleString('en-US');
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setWidth = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = pct + '%'; };
 
-            document.getElementById('payToday').innerText = `Tzs ${fmt(tToday)}`;
-            document.getElementById('payYesterday').innerText = `Tzs ${fmt(tYesterday)}`;
-            document.getElementById('pay7Days').innerText = `Tzs ${fmt(t7Days)}`;
-            document.getElementById('payMonth').innerText = `Tzs ${fmt(tMonth)}`;
-            document.getElementById('payYear').innerText = `Tzs ${fmt(tYear)}`;
-            document.getElementById('payAllTime').innerText = `Tzs ${fmt(tAll)}`;
+            setText('payToday',    `Tzs ${fmt(tToday)}`);
+            setText('payYesterday',`Tzs ${fmt(tYesterday)}`);
+            setText('pay7Days',    `Tzs ${fmt(t7Days)}`);
+            setText('payMonth',    `Tzs ${fmt(tMonth)}`);
+            setText('payYear',     `Tzs ${fmt(tYear)}`);
+            setText('payAllTime',  `Tzs ${fmt(tAll)}`);
 
-            document.getElementById('todayCount').innerText = `${countToday} txns`;
-            document.getElementById('breakdownTodayTotal').innerText = `Tzs ${fmt(tToday)}`;
-            document.getElementById('todayHarakaCount').innerText = `${countToday} malipo`;
-            document.getElementById('todayHarakaAmount').innerText = `Tzs ${fmt(tToday)}`;
-            document.getElementById('todayHarakaCountSuccess').innerText = hTodaySuccess;
-            document.getElementById('todayHarakaAmountSuccess').innerText = fmt(hTodaySuccessAmt);
-            document.getElementById('todayHarakaCountPending').innerText = hTodayPending;
-            document.getElementById('todayHarakaAmountPending').innerText = fmt(hTodayPendingAmt);
-            document.getElementById('todayHarakaCountFailed').innerText = hTodayFailed;
-            document.getElementById('todayHarakaAmountFailed').innerText = fmt(hTodayFailedAmt);
+            setText('todayCount',            `${countToday} txns`);
+            setText('breakdownTodayTotal',   `Tzs ${fmt(tToday)}`);
+            setText('yesterdayCount',        `${countYesterday} txns`);
+            setText('breakdownYesterdayTotal', `Tzs ${fmt(tYesterday)}`);
 
-            document.getElementById('yesterdayCount').innerText = `${countYesterday} txns`;
-            document.getElementById('breakdownYesterdayTotal').innerText = `Tzs ${fmt(tYesterday)}`;
-            document.getElementById('yesterdayHarakaCount').innerText = `${countYesterday} malipo`;
-            document.getElementById('yesterdayHarakaAmount').innerText = `Tzs ${fmt(tYesterday)}`;
-            document.getElementById('yesterdayHarakaCountSuccess').innerText = hYestSuccess;
-            document.getElementById('yesterdayHarakaAmountSuccess').innerText = fmt(hYestSuccessAmt);
-            document.getElementById('yesterdayHarakaCountPending').innerText = hYestPending;
-            document.getElementById('yesterdayHarakaAmountPending').innerText = fmt(hYestPendingAmt);
-            document.getElementById('yesterdayHarakaCountFailed').innerText = hYestFailed;
-            document.getElementById('yesterdayHarakaAmountFailed').innerText = fmt(hYestFailedAmt);
+            // Renders one gateway row for either today/yesterday
+            const paintGatewayRow = (prefix, gwKey, gwBucket, dayApprovedTotal) => {
+                const b = gwBucket;
+                setText(`${prefix}${gwKey}Count`,          `${b.total} malipo`);
+                setText(`${prefix}${gwKey}Amount`,         `Tzs ${fmt(b.successAmt)}`);
+                setText(`${prefix}${gwKey}CountSuccess`,   b.success);
+                setText(`${prefix}${gwKey}AmountSuccess`,  fmt(b.successAmt));
+                setText(`${prefix}${gwKey}CountPending`,   b.pending);
+                setText(`${prefix}${gwKey}AmountPending`,  fmt(b.pendingAmt));
+                setText(`${prefix}${gwKey}CountFailed`,    b.failed);
+                setText(`${prefix}${gwKey}AmountFailed`,   fmt(b.failedAmt));
+                const share = dayApprovedTotal > 0 ? Math.round((b.successAmt / dayApprovedTotal) * 100) : 0;
+                setWidth(`${prefix}${gwKey}Bar`, share);
+                setText(`${prefix}${gwKey}Share`, `${share}% ya yote`);
+            };
+
+            // Today
+            paintGatewayRow('today', 'Presso', buckets.today.pressopay, tToday);
+            paintGatewayRow('today', 'Haraka', buckets.today.harakapay, tToday);
+            // Yesterday
+            paintGatewayRow('yesterday', 'Presso', buckets.yesterday.pressopay, tYesterday);
+            paintGatewayRow('yesterday', 'Haraka', buckets.yesterday.harakapay, tYesterday);
         }
 
         function filterPaymentsTable() {
@@ -5591,13 +5761,22 @@
                 const userPhone = o.visitors?.phone || o.phone_number || 'N/A';
                 const orderId = o.promo_used || `HP${o.id}`;
                 const contentName = o.posts?.title || 'Unknown Item';
-                
+
+                // Gateway chip — auto-detect from stored order id prefix
+                const gw = detectGateway(orderId);
+                const gwMeta = ({
+                    pressopay: { label: 'PressoPay', bg: 'rgba(37,99,235,0.15)',  border: 'rgba(37,99,235,0.35)',  fg: '#3b82f6' },
+                    harakapay: { label: 'HarakaPay', bg: 'rgba(0,210,91,0.12)',   border: 'rgba(0,210,91,0.35)',   fg: '#00d25b' },
+                    zenopay:   { label: 'ZenoPay',   bg: 'rgba(255,171,0,0.15)',  border: 'rgba(255,171,0,0.35)',  fg: '#ffab00' }
+                })[gw] || { label: gw, bg: 'rgba(255,255,255,0.1)', border: 'rgba(255,255,255,0.2)', fg: '#ccc' };
+                const gatewayBadge = `<span style="background:${gwMeta.bg};border:1px solid ${gwMeta.border};padding:3px 10px;border-radius:999px;font-size:0.72rem;color:${gwMeta.fg};font-weight:700;letter-spacing:0.03em;">${gwMeta.label}</span>`;
+
                 return `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <td style="padding: 15px; color: #6c7293; font-size: 0.85rem;">${orderId}</td>
                     <td style="padding: 15px; font-weight: 500;">${userName}</td>
                     <td style="padding: 15px; color: #ccc; font-size: 0.9rem;">${userPhone}</td>
-                    <td style="padding: 15px;"><span style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; color: #ccc;">HarakaPay</span></td>
+                    <td style="padding: 15px;">${gatewayBadge}</td>
                     <td style="padding: 15px; color: #ccc; font-size: 0.85rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${contentName}</td>
                     <td style="padding: 15px; font-weight: 600;">${parseFloat(o.amount).toLocaleString('en-US')}</td>
                     <td style="padding: 15px;">${statusBadge}</td>
@@ -6033,6 +6212,9 @@
                             ${v.description ? `<div style="font-size:0.75rem;color:#6c7293;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.description}</div>` : ''}
                             <div style="font-size:0.7rem;color:#4a4a6a;">${new Date(v.created_at).toLocaleDateString('sw-TZ', {day:'2-digit',month:'short',year:'numeric'})}</div>
                             <div class="video-admin-actions">
+                                <button class="btn-vid-edit" onclick='openEditVideo(${JSON.stringify(v).replace(/'/g,"&#39;")})'>
+                                    <i class="fas fa-edit"></i> Hariri
+                                </button>
                                 <button class="btn-vid-toggle ${v.is_published ? '' : 'unpublished'}" onclick="toggleVideoPublish('${v.id}', ${v.is_published})">
                                     <i class="fas fa-${v.is_published ? 'eye-slash' : 'eye'}"></i> ${v.is_published ? 'Ficha' : 'Chapisha'}
                                 </button>
@@ -6109,6 +6291,120 @@
                     showToast('❌ ' + result.error);
                 }
             } catch(e) { showToast('❌ ' + e.message); }
+        }
+
+        // ─── VIDEO EDIT ─────────────────────────────────────
+        function openEditVideo(v) {
+            document.getElementById('editVideoId').value = v.id;
+            document.getElementById('editVideoTitle').value = v.title || '';
+            document.getElementById('editVideoUrl').value = v.youtube_url || (v.video_id ? `https://www.youtube.com/watch?v=${v.video_id}` : '');
+            document.getElementById('editVideoDesc').value = v.description || '';
+            document.getElementById('editVideoPrice').value = v.price || 0;
+            document.getElementById('editVideoDuration').value = v.duration_days || 0;
+            document.getElementById('editVideoPublished').checked = !!v.is_published;
+            // Convert stored ISO to local input format if present
+            if (v.scheduled_at) {
+                try {
+                    const d = new Date(v.scheduled_at);
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const val = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                    document.getElementById('editVideoSchedule').value = val;
+                } catch (_) { document.getElementById('editVideoSchedule').value = ''; }
+            } else {
+                document.getElementById('editVideoSchedule').value = '';
+            }
+            document.getElementById('editVideoMsg').textContent = '';
+            const overlay = document.getElementById('editVideoOverlay');
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditVideo() {
+            document.getElementById('editVideoOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        async function saveVideoEdit() {
+            const id = document.getElementById('editVideoId').value;
+            const title = document.getElementById('editVideoTitle').value.trim();
+            const url = document.getElementById('editVideoUrl').value.trim();
+            const description = document.getElementById('editVideoDesc').value.trim();
+            const price = parseInt(document.getElementById('editVideoPrice').value) || 0;
+            const duration_days = parseInt(document.getElementById('editVideoDuration').value) || 0;
+            const is_published = document.getElementById('editVideoPublished').checked;
+            const scheduleRaw = document.getElementById('editVideoSchedule').value;
+            const msg = document.getElementById('editVideoMsg');
+            const btn = document.getElementById('saveVideoBtn');
+
+            if (!title || !url) {
+                msg.innerHTML = '<span style="color:#ff3366;">⚠️ Title na URL zinahitajika</span>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHIFADHI...';
+            msg.textContent = '';
+
+            const basePayload = {
+                title,
+                youtube_url: url,
+                description,
+                price,
+                duration_days,
+                is_published
+            };
+
+            // Scheduling: if user picked a future date, keep is_published=false so
+            // the video stays DRAFT until the scheduled moment. Server can add a
+            // background publisher later that flips is_published when the time
+            // arrives. We only send scheduled_at when the user actually set one
+            // so an older DB without that column still saves cleanly.
+            let scheduledIso = null;
+            if (scheduleRaw) {
+                try { scheduledIso = new Date(scheduleRaw).toISOString(); } catch (_) {}
+                if (scheduledIso && new Date(scheduledIso) > new Date()) {
+                    basePayload.is_published = false;
+                }
+            }
+
+            const payloadWith    = scheduledIso ? { ...basePayload, scheduled_at: scheduledIso } : basePayload;
+            const payloadWithout = basePayload;
+
+            const send = async (body) => {
+                const res = await fetch(`/api/admin/videos/${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                return { res, data: await res.json().catch(() => ({})) };
+            };
+
+            try {
+                let { res, data } = await send(payloadWith);
+                // If scheduled_at column doesn't exist yet in Supabase, retry
+                // without it so the rest of the edit still saves.
+                if (!res.ok && scheduledIso && data && /schedul(ed|ing)|column .+ scheduled|does not exist/i.test(String(data.error || ''))) {
+                    console.warn('[VideoEdit] scheduled_at column missing — saving without it.');
+                    ({ res, data } = await send(payloadWithout));
+                    if (res.ok) {
+                        msg.innerHTML = '<span style="color:#ffab00;">✅ Video imesasishwa, lakini schedule haitajibiwa (DB inahitaji column mpya <code>scheduled_at</code>).</span>';
+                    }
+                }
+                if (res.ok && data.success) {
+                    if (!msg.innerHTML) msg.innerHTML = '<span style="color:#00d25b;">✅ Video imesasishwa!</span>';
+                    setTimeout(() => { closeEditVideo(); loadAdminVideos(); }, 700);
+                } else if (!msg.innerHTML) {
+                    msg.innerHTML = `<span style="color:#ff3366;">❌ ${data.error || 'Imeshindwa kuhifadhi'}</span>`;
+                }
+            } catch (e) {
+                msg.innerHTML = `<span style="color:#ff3366;">❌ ${e.message}</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> HIFADHI';
+            }
         }
 
         async function deleteVideo(id, title) {

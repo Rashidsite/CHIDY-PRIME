@@ -248,6 +248,61 @@ setInterval(async () => {
 }, 30000); // Check every 30 seconds
  
  
+// --- SCHEDULED PUBLISH WORKER (Runs every minute) ---
+// If admins schedule a game/video for future publish (scheduled_at column),
+// this worker flips is_published/status when the time arrives. Safe to run
+// even if the schema does not yet have scheduled_at — it simply logs and
+// skips instead of crashing.
+setInterval(async () => {
+    if (!supabase) return;
+    const nowIso = new Date().toISOString();
+
+    // Videos
+    try {
+        const { data: dueVideos, error } = await supabase
+            .from('videos')
+            .select('id, title, scheduled_at, is_published')
+            .lte('scheduled_at', nowIso)
+            .eq('is_published', false)
+            .not('scheduled_at', 'is', null)
+            .limit(20);
+        if (error) {
+            // Missing column is expected until admin runs the ALTER TABLE.
+            if (!/schedul|does not exist/i.test(error.message || '')) {
+                console.warn('[SCHEDULER] video probe error:', error.message);
+            }
+        } else if (dueVideos && dueVideos.length) {
+            for (const v of dueVideos) {
+                await supabase.from('videos').update({ is_published: true, scheduled_at: null }).eq('id', v.id);
+                console.log(`[SCHEDULER] Published scheduled video: ${v.title}`);
+            }
+        }
+    } catch (_) { /* ignore */ }
+
+    // Posts (games)
+    try {
+        const { data: duePosts, error } = await supabase
+            .from('posts')
+            .select('id, title, scheduled_at, status')
+            .lte('scheduled_at', nowIso)
+            .eq('status', 'draft')
+            .not('scheduled_at', 'is', null)
+            .limit(20);
+        if (error) {
+            if (!/schedul|does not exist/i.test(error.message || '')) {
+                console.warn('[SCHEDULER] post probe error:', error.message);
+            }
+        } else if (duePosts && duePosts.length) {
+            for (const p of duePosts) {
+                await supabase.from('posts').update({ status: 'published', scheduled_at: null }).eq('id', p.id);
+                console.log(`[SCHEDULER] Published scheduled game: ${p.title}`);
+            }
+            // Bust caches so the newly-published games appear on the frontend right away.
+            try { invalidateGamesCache(); } catch (_) {}
+        }
+    } catch (_) { /* ignore */ }
+}, 60 * 1000);
+
 // --- AUTOMATED ORDER CLEANUP WORKER (Runs every 24 hours) ---
 // This deletes Approved and Rejected orders older than 30 days to keep the DB clean.
 setInterval(async () => {
