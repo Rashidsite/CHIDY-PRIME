@@ -378,3 +378,129 @@ body.chidy-elite .bottom-bar .bottom-item.affiliate:hover i,
 body.chidy-elite .bottom-bar .bottom-item.affiliate.active i {
   color: #2563eb !important;
 }
+
+/* ═════════════════════════════════════════════════════════
+   CATEGORY VIEW POLISH — inside a category (after clicking
+   FUNGUA GAMES). Owner asked for:
+     • Category title in solid black (was faded gradient)
+     • Back button in solid black
+     • Cards a bit taller so posters are more prominent
+   ═════════════════════════════════════════════════════════ */
+
+/* Category title — solid dark slate, no gradient */
+body.chidy-elite .view-title {
+  background: none !important;
+  background-image: none !important;
+  -webkit-background-clip: initial !important;
+          background-clip: initial !important;
+  -webkit-text-fill-color: #0f172a !important;
+  color: #0f172a !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: clamp(1.1rem, 4.5vw, 1.5rem) !important;
+  letter-spacing: 0.06em !important;
+  text-shadow: none !important;
+  line-height: 1.2 !important;
+}
+body.chidy-elite .view-title i {
+  color: #0f172a !important;
+  opacity: 0.65 !important;
+}
+
+/* Back button — solid black on white with subtle border */
+body.chidy-elite .back-btn {
+  background: #ffffff !important;
+  border: 1.5px solid #0f172a !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+  width: 42px !important;
+  height: 42px !important;
+  transition: transform 0.2s ease, background 0.25s ease, color 0.25s ease !important;
+}
+body.chidy-elite .back-btn:hover {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.22) !important;
+  transform: translateX(-2px);
+}
+body.chidy-elite .back-btn i {
+  color: inherit !important;
+  font-size: 1rem !important;
+}
+
+/* View header spacing tightening */
+body.chidy-elite .view-header {
+  padding: 1rem clamp(12px, 4vw, 2rem) 0.5rem !important;
+  gap: 14px !important;
+}
+
+/* ─── GAMES GRID (category detail) — bigger, taller cards ─── */
+body.chidy-elite .games-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 14px !important;
+  padding: 6px clamp(12px, 4vw, 2rem) 100px !important;
+}
+@media (min-width: 600px) {
+  body.chidy-elite .games-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 18px !important;
+  }
+}
+@media (min-width: 900px) {
+  body.chidy-elite .games-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+@media (min-width: 1200px) {
+  body.chidy-elite .games-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+  }
+}
+
+/* Card sits nicely in grid — width auto, not fixed flex basis */
+body.chidy-elite .games-grid .game-card {
+  flex: initial !important;
+  width: 100% !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+
+/* Poster image — tall portrait framing */
+body.chidy-elite .games-grid .game-card .card-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4 !important;
+  height: auto !important;
+  background: #f1f5f9 !important;
+  overflow: hidden;
+}
+body.chidy-elite .games-grid .game-card .card-image-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block;
+  transition: transform 0.4s ease;
+}
+body.chidy-elite .games-grid .game-card:hover .card-image-wrap img {
+  transform: scale(1.05);
+}
+
+/* Card title beneath poster */
+body.chidy-elite .games-grid .game-card .card-info {
+  padding: 10px 12px 12px !important;
+}
+body.chidy-elite .games-grid .game-card .card-title {
+  color: #0f172a !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+  text-shadow: none !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
