@@ -1154,3 +1154,343 @@ body.chidy-elite .hero-search i.fa-search {
   font-size: 1rem !important;
   left: 20px !important;
 }
+
+/* ═════════════════════════════════════════════════════════
+   ROUND 4 — WhatsApp full page: proper topbar, close X, and
+   bold entrance animations. Previous pass targeted the wrong
+   first-child, so the icon medallion pushed to the top of the
+   viewport and the modal had no visible close button.
+   ═════════════════════════════════════════════════════════ */
+
+/* Full-viewport takeover (retained from v3, refined here) */
+body.chidy-elite .wa-modal-overlay {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  animation: pmmFadeIn 0.25s ease both;
+}
+body.chidy-elite .wa-modal-card {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  min-height: 100dvh !important;
+  height: auto !important;
+  max-height: none !important;
+  max-width: none !important;
+  padding: 0 22px 40px !important;
+  overflow-y: auto !important;
+  color: #0b0f1a !important;
+  position: relative !important;
+  animation: pmmSlideUpBig 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+/* Kill the previous ::before back-arrow overlay that was purely
+   decorative and unclickable — we now render a real topbar. */
+body.chidy-elite .wa-modal-card::before { content: none !important; }
+
+/* Wallpaper glow inside the page (subtle, light) */
+body.chidy-elite .wa-modal-bg-glow {
+  display: block !important;
+  position: absolute;
+  top: -80px; left: 50%;
+  transform: translateX(-50%);
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, rgba(37,211,102,0.20), transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Top bar: sticky, white glass with dark buttons ──── */
+body.chidy-elite .wa-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px;
+  margin: 0 -22px 4px;
+  padding-left: 22px;
+  padding-right: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e2e8f0;
+}
+body.chidy-elite .wa-back,
+body.chidy-elite .wa-close {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 2px solid #0b0f1a;
+  color: #0b0f1a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(11,15,26,0.10);
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+body.chidy-elite .wa-back:hover   { transform: translateX(-3px); background: #0b0f1a; color: #ffffff; }
+body.chidy-elite .wa-close:hover  { transform: rotate(90deg); background: #dc2626; color: #ffffff; border-color: #dc2626; }
+body.chidy-elite .wa-topbar-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: #0b0f1a;
+  text-transform: uppercase;
+}
+
+/* ── Hero: WhatsApp icon medallion, correctly centered ── */
+body.chidy-elite .wa-float-icon {
+  position: relative !important;
+  width: 88px !important;
+  height: 88px !important;
+  margin: 40px auto 18px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #25D366, #128C7E) !important;
+  border: 4px solid #ffffff !important;
+  box-shadow:
+    0 12px 30px rgba(37,211,102,0.45),
+    0 0 0 6px rgba(37,211,102,0.15),
+    0 0 0 12px rgba(37,211,102,0.06) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  animation: pmmIconPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
+             pmmGlowPulseGreen 3.2s 0.9s infinite;
+  z-index: 2;
+}
+body.chidy-elite .wa-float-icon i {
+  color: #ffffff !important;
+  font-size: 2.4rem !important;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+/* Concentric expanding rings */
+body.chidy-elite .wa-float-icon .wa-icon-ring {
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(37,211,102,0.4);
+  animation: pmmRingExpand 2.6s ease-out infinite;
+}
+body.chidy-elite .wa-float-icon .wa-ring-2 {
+  animation-delay: 1.3s;
+}
+
+/* Stars row above title */
+body.chidy-elite .wa-modal-stars {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  margin: 4px auto 12px !important;
+  animation: pmmFadeUp 0.5s 0.2s ease both;
+}
+body.chidy-elite .wa-modal-stars span {
+  color: #f59e0b !important;
+  -webkit-text-fill-color: #f59e0b !important;
+  font-size: 1rem;
+  filter: drop-shadow(0 0 8px rgba(245,158,11,0.5));
+  animation: pmmStarTwinkle 1.6s infinite alternate;
+}
+body.chidy-elite .wa-modal-stars span:nth-child(1) { animation-delay: 0s; }
+body.chidy-elite .wa-modal-stars span:nth-child(2) { animation-delay: 0.2s; color: #fbbf24 !important; -webkit-text-fill-color: #fbbf24 !important; }
+body.chidy-elite .wa-modal-stars span:nth-child(3) { animation-delay: 0.4s; }
+body.chidy-elite .wa-modal-stars span:nth-child(4) { animation-delay: 0.6s; color: #fbbf24 !important; -webkit-text-fill-color: #fbbf24 !important; }
+body.chidy-elite .wa-modal-stars span:nth-child(5) { animation-delay: 0.8s; }
+
+/* Title */
+body.chidy-elite .wa-modal-title {
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  background: none !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: clamp(1.15rem, 5vw, 1.5rem) !important;
+  letter-spacing: 0.04em !important;
+  text-shadow: none !important;
+  text-align: center !important;
+  animation: pmmFadeUp 0.5s 0.3s ease both;
+  margin: 0 auto 8px !important;
+}
+
+/* Subtitle */
+body.chidy-elite .wa-modal-subtitle {
+  color: var(--pmm-ink-500) !important;
+  -webkit-text-fill-color: var(--pmm-ink-500) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 0.92rem !important;
+  line-height: 1.55 !important;
+  text-align: center !important;
+  margin: 0 auto 20px !important;
+  max-width: 380px !important;
+  animation: pmmFadeUp 0.5s 0.4s ease both;
+}
+
+/* Benefits list — cards with staggered entrance */
+body.chidy-elite .wa-benefits {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 auto 22px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  max-width: 460px !important;
+}
+body.chidy-elite .wa-benefits li {
+  background: #ffffff !important;
+  color: #0b0f1a !important;
+  -webkit-text-fill-color: #0b0f1a !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  box-shadow: 0 4px 10px rgba(11,15,26,0.06) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  animation: pmmFadeUp 0.5s ease both;
+}
+body.chidy-elite .wa-benefits li:nth-child(1) { animation-delay: 0.45s; }
+body.chidy-elite .wa-benefits li:nth-child(2) { animation-delay: 0.55s; }
+body.chidy-elite .wa-benefits li:nth-child(3) { animation-delay: 0.65s; }
+body.chidy-elite .wa-benefits li:nth-child(4) { animation-delay: 0.75s; }
+body.chidy-elite .wa-benefits li:hover {
+  transform: translateX(4px);
+  box-shadow: 0 8px 22px rgba(37,99,235,0.15) !important;
+  border-color: var(--pmm-blue-600) !important;
+}
+body.chidy-elite .wa-benefits li i {
+  color: var(--pmm-blue-600) !important;
+  font-size: 1.15rem !important;
+  min-width: 26px !important;
+  text-align: center;
+}
+
+/* Member count chip */
+body.chidy-elite .wa-member-count {
+  background: linear-gradient(135deg, var(--pmm-blue-50), #ffffff) !important;
+  background-image: linear-gradient(135deg, var(--pmm-blue-50), #ffffff) !important;
+  border: 2px solid var(--pmm-blue-600) !important;
+  color: var(--pmm-blue-900) !important;
+  -webkit-text-fill-color: var(--pmm-blue-900) !important;
+  border-radius: 999px !important;
+  padding: 10px 18px !important;
+  text-align: center !important;
+  margin: 0 auto 20px !important;
+  max-width: 340px !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  animation: pmmFadeUp 0.5s 0.85s ease both, pmmGlowPulseBlue 3s infinite !important;
+}
+body.chidy-elite .wa-member-count i {
+  color: var(--pmm-blue-600) !important;
+}
+
+/* CTA button — solid green with animated shine */
+body.chidy-elite .wa-join-btn {
+  background: linear-gradient(135deg, #25D366, #128C7E) !important;
+  background-image: linear-gradient(135deg, #25D366, #128C7E) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 14px !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: 0.98rem !important;
+  letter-spacing: 0.06em !important;
+  padding: 16px 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 460px !important;
+  margin: 0 auto 10px !important;
+  text-decoration: none !important;
+  box-shadow: 0 14px 34px rgba(37,211,102,0.45) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  animation: pmmFadeUp 0.5s 0.95s ease both, pmmGlowPulseGreen 3s 1.5s infinite !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+body.chidy-elite .wa-join-btn * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+body.chidy-elite .wa-join-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(37,211,102,0.55) !important;
+  filter: brightness(1.05);
+}
+body.chidy-elite .wa-join-btn i.fa-whatsapp {
+  font-size: 1.2rem !important;
+}
+body.chidy-elite .wa-btn-shine {
+  position: absolute !important;
+  top: 0; left: -80%;
+  width: 60%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: pmmBtnShine 2.6s infinite;
+  pointer-events: none;
+}
+
+/* Foot note */
+body.chidy-elite .wa-modal-note {
+  color: var(--pmm-ink-300) !important;
+  -webkit-text-fill-color: var(--pmm-ink-300) !important;
+  text-align: center !important;
+  font-size: 0.75rem !important;
+  margin: 6px auto 0 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  animation: pmmFadeUp 0.5s 1.05s ease both;
+}
+
+/* Animations for round 4 */
+@keyframes pmmSlideUpBig {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+@keyframes pmmIconPop {
+  0%   { transform: scale(0.2) rotate(-12deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(6deg);  opacity: 1; }
+  100% { transform: scale(1) rotate(0);        opacity: 1; }
+}
+@keyframes pmmGlowPulseGreen {
+  0%,100% { box-shadow: 0 12px 30px rgba(37,211,102,0.35), 0 0 0 6px rgba(37,211,102,0.15), 0 0 0 12px rgba(37,211,102,0.06); }
+  50%     { box-shadow: 0 16px 40px rgba(37,211,102,0.60), 0 0 0 10px rgba(37,211,102,0.20), 0 0 0 20px rgba(37,211,102,0.06); }
+}
+@keyframes pmmGlowPulseBlue {
+  0%,100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.35); }
+  50%     { box-shadow: 0 0 22px rgba(37,99,235,0.45); }
+}
+@keyframes pmmRingExpand {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  100% { transform: scale(1.7); opacity: 0;   }
+}
+@keyframes pmmStarTwinkle {
+  0%   { opacity: 0.55; transform: scale(1);    }
+  100% { opacity: 1;    transform: scale(1.25); }
+}
+@keyframes pmmBtnShine {
+  0%   { left: -80%; }
+  100% { left: 180%; }
+}
