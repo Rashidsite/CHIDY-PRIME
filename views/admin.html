@@ -1107,6 +1107,42 @@
             margin-bottom: 25px;
         }
 
+        /* Brand hero image on the vault login screen */
+        .vault-brand-hero {
+            position: relative;
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 18px;
+        }
+        .vault-brand-hero img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center 25%;
+            border: 2px solid rgba(0, 242, 255, 0.55);
+            box-shadow:
+                0 0 0 4px rgba(4, 13, 20, 0.9),
+                0 0 26px rgba(0, 242, 255, 0.45),
+                0 0 55px rgba(188, 19, 254, 0.3);
+            pointer-events: none;
+            -webkit-user-drag: none;
+            position: relative;
+            z-index: 2;
+        }
+        .vault-brand-ring {
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 242, 255, 0.4);
+            animation: vaultRingSpin 12s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes vaultRingSpin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .glitch-text {
             font-family: 'Orbitron';
             font-size: 1.6rem;
@@ -1940,6 +1976,10 @@
                 
                 <!-- Header -->
                 <div class="cyber-header">
+                    <div class="vault-brand-hero">
+                        <img src="/brand-hero.png" alt="Chidy Prime" onerror="this.style.display='none';">
+                        <div class="vault-brand-ring"></div>
+                    </div>
                     <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;">
                         <i class="fas fa-atom fa-spin" style="color: var(--primary-color); font-size: 1.5rem;"></i>
                         <span style="color: rgba(255,255,255,0.4); font-size: 0.7rem; letter-spacing: 3px; font-weight: 800;">VAULT V3.0</span>

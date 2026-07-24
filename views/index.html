@@ -17,7 +17,8 @@
       "name": "Chidy Prime",
       "alternateName": "Chidy Prime Gaming",
       "url": "https://www.chidyprime.com",
-      "logo": "https://www.chidyprime.com/icon.png",
+      "logo": "https://www.chidyprime.com/brand-hero.png",
+      "image": "https://www.chidyprime.com/brand-hero.png",
       "description": "Chidy Prime ni platform ya kwanza Tanzania ya premium games — PPSSPP, Android, PC, na Tanzania Games. Pata games bora, za bei nafuu, na za haraka.",
       "foundingLocation": {
         "@type": "Place",
@@ -102,6 +103,20 @@
         }
       });
     </script>
+
+    <!-- Open Graph / Social share preview -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Chidy Prime">
+    <meta property="og:title" content="Chidy Prime | Premium Gaming Hub">
+    <meta property="og:description" content="Discover and download the hottest games — PPSSPP, Android, PC, Tanzania Games. Curated for true gamers.">
+    <meta property="og:url" content="https://www.chidyprime.com">
+    <meta property="og:image" content="https://www.chidyprime.com/brand-hero.png">
+    <meta property="og:image:width" content="1024">
+    <meta property="og:image:height" content="1024">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Chidy Prime | Premium Gaming Hub">
+    <meta name="twitter:description" content="Discover and download the hottest games — PPSSPP, Android, PC, Tanzania Games.">
+    <meta name="twitter:image" content="https://www.chidyprime.com/brand-hero.png">
 
     <!-- manifest for PWA -->
     <link rel="manifest" href="/manifest.json">
@@ -2627,6 +2642,45 @@
             line-height: 1.5;
         }
 
+        /* Brand hero image (Tech-Game Hacker) — used in signup & welcome */
+        .signup-hero {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.1rem;
+        }
+        .signup-hero img {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center 25%;
+            border: 2px solid rgba(0, 242, 255, 0.35);
+            box-shadow:
+                0 0 0 4px rgba(4, 13, 20, 0.9),
+                0 0 22px rgba(0, 242, 255, 0.4),
+                0 0 44px rgba(188, 19, 254, 0.25),
+                inset 0 0 30px rgba(0, 0, 0, 0.4);
+            animation: heroPulse 3.2s ease-in-out infinite;
+            pointer-events: none;
+            -webkit-user-drag: none;
+        }
+        @keyframes heroPulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 4px rgba(4, 13, 20, 0.9),
+                    0 0 22px rgba(0, 242, 255, 0.4),
+                    0 0 44px rgba(188, 19, 254, 0.25),
+                    inset 0 0 30px rgba(0, 0, 0, 0.4);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 4px rgba(4, 13, 20, 0.9),
+                    0 0 30px rgba(0, 242, 255, 0.6),
+                    0 0 60px rgba(188, 19, 254, 0.4),
+                    inset 0 0 30px rgba(0, 0, 0, 0.3);
+            }
+        }
+
         .signup-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
@@ -2778,6 +2832,31 @@
             0% { opacity: 0; transform: scale(0.5) rotateX(30deg); filter: blur(10px); }
             60% { opacity: 1; transform: scale(1.05) rotateX(0deg); filter: blur(0); }
             100% { opacity: 1; transform: scale(1) rotateX(0deg); filter: blur(0); }
+        }
+
+        .welcome-hero {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.3rem;
+        }
+        .welcome-hero img {
+            width: clamp(120px, 22vw, 170px);
+            height: clamp(120px, 22vw, 170px);
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center 25%;
+            border: 3px solid rgba(0, 242, 255, 0.5);
+            box-shadow:
+                0 0 0 6px rgba(4, 13, 20, 0.9),
+                0 0 40px rgba(0, 242, 255, 0.55),
+                0 0 80px rgba(188, 19, 254, 0.35);
+            animation: welcomeHeroSpin 5s ease-in-out infinite;
+            pointer-events: none;
+            -webkit-user-drag: none;
+        }
+        @keyframes welcomeHeroSpin {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50%      { transform: scale(1.05) rotate(2deg); }
         }
 
         .welcome-crown {
@@ -3599,7 +3678,10 @@
     <!-- SIGNUP OVERLAY (First-time visitors) -->
     <div class="signup-overlay" id="signupOverlay">
         <div class="signup-card">
-            <div class="signup-icon"><i class="fas fa-rocket"></i></div>
+            <div class="signup-hero">
+                <img src="/brand-hero.png" alt="Chidy Prime — Tech Game Hacker" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="signup-icon" style="display:none;"><i class="fas fa-rocket"></i></div>
+            </div>
             <div class="signup-logo">
                 <span class="s-chidy">CHIDY</span>
                 <span class="s-prime">PRIME</span>
@@ -3624,7 +3706,10 @@
         <div class="welcome-scan"></div>
         <div class="welcome-particles" id="welcomeParticles"></div>
         <div class="welcome-content" id="welcomeContent">
-            <div class="welcome-crown">👑</div>
+            <div class="welcome-hero">
+                <img src="/brand-hero.png" alt="Chidy Prime" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="welcome-crown" style="display:none;">👑</div>
+            </div>
             <div class="welcome-hello">KARIBU!</div>
             <div class="welcome-name" id="welcomeUserName"></div>
             <div class="welcome-msg">You are now part of the Chidy Prime family. Enjoy the best games!</div>
@@ -4729,9 +4814,9 @@
             color: #fff;
         }
         .sub-prompt-icon {
-            width: 54px;
-            height: 54px;
-            border-radius: 14px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #00f2ff, #bc13fe);
             display: flex;
             align-items: center;
@@ -4739,9 +4824,21 @@
             color: #000;
             font-size: 1.4rem;
             margin-bottom: 12px;
-            box-shadow: 0 8px 22px rgba(0, 242, 255, 0.3);
+            border: 2px solid rgba(0, 242, 255, 0.4);
+            box-shadow:
+                0 8px 22px rgba(0, 242, 255, 0.3),
+                0 0 24px rgba(188, 19, 254, 0.25);
             animation: subBellRing 2.6s ease-in-out infinite;
             transform-origin: top center;
+            overflow: hidden;
+        }
+        .sub-prompt-icon img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: center 25%;
+            display: block;
+            pointer-events: none;
+            -webkit-user-drag: none;
         }
         @keyframes subBellRing {
             0%, 40%, 100% { transform: rotate(0deg); }
@@ -4858,7 +4955,9 @@
         <button class="sub-prompt-close" onclick="dismissSubPrompt()" aria-label="Funga">
             <i class="fas fa-times"></i>
         </button>
-        <div class="sub-prompt-icon"><i class="fas fa-bell"></i></div>
+        <div class="sub-prompt-icon">
+            <img src="/brand-hero.png" alt="Chidy Prime" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'fas fa-bell'}));">
+        </div>
         <h3 id="subPromptTitle">Pata Push za Chidy Prime 🎮</h3>
         <p>Kuwa wa kwanza kupata taarifa mpya kabla ya wengine:</p>
         <ul>
