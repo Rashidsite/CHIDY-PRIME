@@ -2220,6 +2220,9 @@
                 <a href="#" class="nav-link" data-view="messagesView"><i class="fas fa-bullhorn"></i> <span>Broadcast</span></a>
             </li>
             <li class="nav-item">
+                <a href="#" class="nav-link" data-view="pushView"><i class="fas fa-paper-plane"></i> <span>Push (OneSignal)</span></a>
+            </li>
+            <li class="nav-item">
                 <a href="#" class="nav-link" data-view="analyticsView"><i class="fas fa-chart-pie"></i> <span>Analytics</span></a>
             </li>
             <li class="nav-item">
@@ -3198,7 +3201,779 @@
                 </div>
             </div>
         </section>
-        
+
+        <!-- PUSH NOTIFICATIONS (OneSignal) VIEW -->
+        <section id="pushView" class="content view-section" style="display: none;">
+            <style>
+                .push-grid {
+                    display: grid;
+                    grid-template-columns: 1.2fr 0.9fr;
+                    gap: 24px;
+                    align-items: start;
+                }
+                @media (max-width: 900px) { .push-grid { grid-template-columns: 1fr; } }
+                .push-stat-card {
+                    background: linear-gradient(135deg, rgba(0,242,255,0.06), rgba(188,19,254,0.04));
+                    border: 1px solid rgba(0,242,255,0.20);
+                    border-radius: 14px;
+                    padding: 18px;
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    transition: 0.25s;
+                }
+                .push-stat-card:hover {
+                    transform: translateY(-2px);
+                    border-color: rgba(0,242,255,0.55);
+                }
+                .push-stat-icon {
+                    width: 44px; height: 44px;
+                    border-radius: 12px;
+                    background: linear-gradient(135deg, #00f2ff, #bc13fe);
+                    display: flex; align-items: center; justify-content: center;
+                    color: #000; font-size: 1.1rem;
+                    box-shadow: 0 6px 16px rgba(0,242,255,0.35);
+                }
+                .push-stat-val {
+                    font-family: 'Orbitron', sans-serif;
+                    font-size: 1.4rem; font-weight: 800; color: #fff;
+                    line-height: 1;
+                }
+                .push-stat-lbl {
+                    font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase;
+                    color: #6c7293; margin-top: 4px;
+                }
+                .push-status-dot {
+                    width: 10px; height: 10px; border-radius: 50%;
+                    box-shadow: 0 0 0 4px rgba(0,210,91,0.15);
+                    display: inline-block; margin-right: 8px;
+                }
+                .push-status-dot.ok    { background: #00d25b; box-shadow: 0 0 0 4px rgba(0,210,91,0.15); animation: pushPulse 2s infinite; }
+                .push-status-dot.down  { background: #ff3366; box-shadow: 0 0 0 4px rgba(255,51,102,0.15); }
+                @keyframes pushPulse {
+                    0%,100% { box-shadow: 0 0 0 4px rgba(0,210,91,0.15); }
+                    50%     { box-shadow: 0 0 0 8px rgba(0,210,91,0.05); }
+                }
+                .push-preview {
+                    background: linear-gradient(180deg, #0a0a12, #14141c);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 18px;
+                    padding: 18px;
+                    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .push-preview::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    background: radial-gradient(circle at 20% 20%, rgba(0,242,255,0.12), transparent 60%);
+                    pointer-events: none;
+                }
+                .push-preview-toast {
+                    background: rgba(30,30,42,0.95);
+                    border: 1px solid rgba(255,255,255,0.10);
+                    border-radius: 14px;
+                    padding: 14px 14px 12px;
+                    display: flex; gap: 12px;
+                    align-items: flex-start;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+                    position: relative;
+                    z-index: 1;
+                    animation: pushSlide 0.4s ease;
+                }
+                @keyframes pushSlide {
+                    from { transform: translateY(-8px); opacity: 0; }
+                    to   { transform: none; opacity: 1; }
+                }
+                .push-preview-icon {
+                    width: 40px; height: 40px; border-radius: 10px;
+                    background: linear-gradient(135deg, #00f2ff, #bc13fe);
+                    display: flex; align-items: center; justify-content: center;
+                    color: #000; font-size: 1rem; flex-shrink: 0;
+                }
+            </style>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px;">
+                <h2 class="view-title" style="margin:0;"><i class="fas fa-paper-plane" style="color:#00f2ff;"></i> Push Notifications</h2>
+                <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; color:#6c7293; font-size:0.8rem;">
+                        <span id="pushStatusDot" class="push-status-dot down"></span>
+                        <span id="pushStatusText">Inaunganisha…</span>
+                    </div>
+                    <button onclick="refreshPushHealth()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:0.8rem;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:2rem;">
+                <div class="push-stat-card">
+                    <div class="push-stat-icon"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="push-stat-val" id="pushPlayers">—</div>
+                        <div class="push-stat-lbl">Wanachama wote</div>
+                    </div>
+                </div>
+                <div class="push-stat-card">
+                    <div class="push-stat-icon" style="background: linear-gradient(135deg, #00d25b, #00a34a);"><i class="fas fa-signal"></i></div>
+                    <div>
+                        <div class="push-stat-val" id="pushMessageable">—</div>
+                        <div class="push-stat-lbl">Wanaopokea Push</div>
+                    </div>
+                </div>
+                <div class="push-stat-card">
+                    <div class="push-stat-icon" style="background: linear-gradient(135deg, #ffab00, #ff6a00);"><i class="fas fa-paper-plane"></i></div>
+                    <div>
+                        <div class="push-stat-val" id="pushSentTotal">—</div>
+                        <div class="push-stat-lbl">Zilizotumwa (Session)</div>
+                    </div>
+                </div>
+                <div class="push-stat-card">
+                    <div class="push-stat-icon" style="background: linear-gradient(135deg, #bc13fe, #6a00ba);"><i class="fas fa-broadcast-tower"></i></div>
+                    <div>
+                        <div class="push-stat-val" id="pushLastRecipients">—</div>
+                        <div class="push-stat-lbl">Push ya Mwisho</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="push-grid">
+                <!-- FORM -->
+                <div class="admin-card" style="margin:0;">
+                    <h3 class="card-title"><i class="fas fa-bolt" style="color:#ffab00;"></i> Tuma Push Notification</h3>
+                    <p style="color:#6c7293; font-size:0.85rem; margin:0 0 1.2rem;">Push itafika kwenye simu na browser za wateja walio-subscribe.</p>
+
+                    <form id="pushForm" style="display:flex; flex-direction:column; gap:14px;" onsubmit="return sendPushNotification(event)">
+                        <div>
+                            <label style="color:#fff; font-size:0.8rem; margin-bottom:5px; display:flex; justify-content:space-between;">
+                                <span>Kichwa (Title)<span style="color:#ff3366;">*</span></span>
+                                <span id="pushTitleCounter" style="color:#6c7293; font-size:0.7rem;">0/60</span>
+                            </label>
+                            <input type="text" id="pushTitle" maxlength="60" required placeholder="Mfano: Game Mpya Imefika! 🎮"
+                                style="width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; outline:none; transition:0.3s;">
+                        </div>
+                        <div>
+                            <label style="color:#fff; font-size:0.8rem; margin-bottom:5px; display:flex; justify-content:space-between;">
+                                <span>Ujumbe (Message)<span style="color:#ff3366;">*</span></span>
+                                <span id="pushMsgCounter" style="color:#6c7293; font-size:0.7rem;">0/180</span>
+                            </label>
+                            <textarea id="pushMessage" rows="3" maxlength="180" required placeholder="Andika ujumbe wa push hapa..."
+                                style="width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; outline:none; resize:vertical; transition:0.3s;"></textarea>
+                        </div>
+                        <div class="form-row" style="gap:12px;">
+                            <div class="form-group">
+                                <label>URL ya Kuelekezea (Optional)</label>
+                                <input type="url" id="pushUrl" placeholder="https://chidyprime.com/?game=123"
+                                    style="width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; outline:none;">
+                            </div>
+                            <div class="form-group">
+                                <label>Icon URL (Optional)</label>
+                                <input type="url" id="pushIcon" placeholder="https://…/icon.png"
+                                    style="width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; outline:none;">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="color:#fff; font-size:0.8rem; margin-bottom:5px; display:block;">Segment</label>
+                            <select id="pushSegment" style="width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; outline:none;">
+                                <option value="Subscribed Users">Wote walio-subscribe</option>
+                                <option value="Active Users">Wanaotumia site sasa</option>
+                                <option value="Engaged Users">Wanaotumia sana</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="pushSubmitBtn" style="padding:14px; border-radius:10px; font-weight:800; background:linear-gradient(45deg, #00f2ff, #bc13fe); border:none; color:#000; cursor:pointer; transition:0.3s; display:flex; justify-content:center; align-items:center; gap:10px; font-family:'Orbitron'; letter-spacing:1px;">
+                            <i class="fas fa-paper-plane"></i> <span>TUMA PUSH SASA</span>
+                        </button>
+                        <p id="pushStatus" style="font-size:0.85rem; margin:0; min-height:1.2rem;"></p>
+                    </form>
+                </div>
+
+                <!-- LIVE PREVIEW -->
+                <div class="push-preview">
+                    <h4 style="color:#6c7293; margin:0 0 12px; font-size:0.75rem; text-transform:uppercase; letter-spacing:2px; position:relative; z-index:1;">
+                        <i class="fas fa-mobile-alt"></i> Live Preview
+                    </h4>
+                    <div class="push-preview-toast" id="pushPreviewToast">
+                        <div class="push-preview-icon"><i class="fas fa-bell"></i></div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                                <div id="pushPreviewTitle" style="color:#fff; font-weight:700; font-size:0.85rem;">Game Mpya Imefika! 🎮</div>
+                                <div style="color:#6c7293; font-size:0.65rem;">sasa</div>
+                            </div>
+                            <div id="pushPreviewMsg" style="color:#a0a0b0; font-size:0.75rem; line-height:1.4;">Andika ujumbe wa push hapa...</div>
+                            <div style="margin-top:4px; color:#6c7293; font-size:0.62rem;">chidyprime.com</div>
+                        </div>
+                    </div>
+                    <p style="color:#6c7293; font-size:0.72rem; margin:14px 0 0; position:relative; z-index:1; line-height:1.55;">
+                        <i class="fas fa-info-circle" style="color:#00f2ff;"></i>
+                        Hivi ndivyo push notification itakavyoonekana kwenye simu/desktop ya mtumiaji.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Setup helper -->
+            <div id="pushSetupHelper" class="admin-card" style="border:1px solid rgba(255,51,102,0.4); background:linear-gradient(135deg, rgba(255,51,102,0.05), rgba(0,0,0,0.2)); display:none; margin-top:20px;">
+                <h3 class="card-title" style="color:#ff3366;"><i class="fas fa-triangle-exclamation"></i> OneSignal haijawekwa</h3>
+                <p style="color:#a0a0b0; font-size:0.88rem; line-height:1.6;">Ili push notifications ziweze kufanya kazi, weka <b>ONESIGNAL_REST_API_KEY</b> kwenye Vercel Dashboard → Settings → Environment Variables → Production. Kisha redeploy.</p>
+                <ol style="color:#a0a0b0; font-size:0.85rem; padding-left:20px; line-height:1.8;">
+                    <li>Ingia kwenye <b>OneSignal Dashboard</b> → App yako (Chidy Prime)</li>
+                    <li>Nenda kwenye <b>Settings → Keys &amp; IDs</b></li>
+                    <li>Copy <b>REST API Key</b> (sio App ID)</li>
+                    <li>Vercel → chidy-prime project → Settings → Environment Variables</li>
+                    <li>Ongeza <code style="background:rgba(0,242,255,0.1); padding:2px 8px; border-radius:4px; color:#00f2ff;">ONESIGNAL_REST_API_KEY</code> na paste value</li>
+                    <li>Redeploy</li>
+                </ol>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 SCHEDULED PUSH — panga push kwa muda maalum + repeat
+                 ═══════════════════════════════════════════════════════ -->
+            <style>
+                .sched-card {
+                    background: linear-gradient(180deg, rgba(20,15,32,0.85), rgba(10,10,20,0.9));
+                    border: 1px solid rgba(188,19,254,0.28);
+                    border-radius: 16px;
+                    padding: 22px;
+                    margin-top: 28px;
+                    box-shadow: 0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(188,19,254,0.15);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .sched-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0; left: 10%; right: 10%; height: 2px;
+                    background: linear-gradient(90deg, transparent, #bc13fe, #00f2ff, transparent);
+                    box-shadow: 0 0 20px rgba(188,19,254,0.6);
+                }
+                .sched-title {
+                    font-family: 'Orbitron', sans-serif;
+                    color: #fff;
+                    margin: 0 0 4px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 1.1rem;
+                }
+                .sched-subtitle {
+                    color: #7c9aaa;
+                    font-size: 0.8rem;
+                    margin: 0 0 22px;
+                    line-height: 1.5;
+                }
+                .sched-grid {
+                    display: grid;
+                    grid-template-columns: 1.2fr 0.9fr;
+                    gap: 22px;
+                    align-items: start;
+                }
+                @media (max-width: 900px) { .sched-grid { grid-template-columns: 1fr; } }
+                .sched-field-label {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    color: #e0e0e6;
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    margin-bottom: 6px;
+                    letter-spacing: 0.3px;
+                }
+                .sched-field-label i {
+                    color: #bc13fe;
+                    margin-right: 6px;
+                }
+                .sched-input, .sched-select, .sched-textarea {
+                    width: 100%;
+                    padding: 11px 13px;
+                    background: rgba(255,255,255,0.04);
+                    border: 1px solid rgba(255,255,255,0.09);
+                    border-radius: 9px;
+                    color: #fff;
+                    outline: none;
+                    font-family: inherit;
+                    font-size: 0.85rem;
+                    transition: 0.2s;
+                }
+                .sched-input:focus, .sched-select:focus, .sched-textarea:focus {
+                    border-color: rgba(188,19,254,0.55);
+                    background: rgba(255,255,255,0.06);
+                    box-shadow: 0 0 0 3px rgba(188,19,254,0.1);
+                }
+                .sched-textarea { resize: vertical; min-height: 68px; }
+                .sched-row {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 10px;
+                }
+                .sched-row-2 {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                }
+                .sched-field { margin-bottom: 14px; }
+                .sched-upload-row {
+                    display: flex; gap: 8px;
+                }
+                .sched-upload-row .sched-input { flex: 1; }
+                .sched-upload-btn {
+                    padding: 11px 16px;
+                    background: linear-gradient(135deg, rgba(188,19,254,0.18), rgba(0,242,255,0.1));
+                    border: 1px solid rgba(188,19,254,0.4);
+                    border-radius: 9px;
+                    color: #bc13fe;
+                    font-weight: 700;
+                    font-size: 0.78rem;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    white-space: nowrap;
+                    transition: 0.2s;
+                }
+                .sched-upload-btn:hover {
+                    background: linear-gradient(135deg, rgba(188,19,254,0.32), rgba(0,242,255,0.15));
+                    color: #fff;
+                }
+                .sched-repeat-chip {
+                    padding: 8px 14px;
+                    border-radius: 20px;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(255,255,255,0.03);
+                    color: #a0a0b0;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    user-select: none;
+                    transition: 0.2s;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .sched-repeat-chip.active {
+                    background: linear-gradient(135deg, rgba(188,19,254,0.25), rgba(0,242,255,0.15));
+                    border-color: rgba(188,19,254,0.6);
+                    color: #fff;
+                    box-shadow: 0 0 12px rgba(188,19,254,0.2);
+                }
+                .sched-chips-wrap {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                .sched-submit-btn {
+                    width: 100%;
+                    padding: 15px;
+                    border-radius: 12px;
+                    font-weight: 800;
+                    background: linear-gradient(45deg, #bc13fe, #00f2ff);
+                    border: none;
+                    color: #000;
+                    cursor: pointer;
+                    transition: 0.3s;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 10px;
+                    font-family: 'Orbitron';
+                    letter-spacing: 1.5px;
+                    font-size: 0.85rem;
+                    box-shadow: 0 8px 22px rgba(188,19,254,0.3);
+                }
+                .sched-submit-btn:hover:not(:disabled) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 12px 28px rgba(188,19,254,0.5);
+                }
+                .sched-submit-btn:disabled {
+                    opacity: 0.6;
+                    cursor: wait;
+                }
+
+                /* Big image preview panel */
+                .sched-preview-shell {
+                    background: linear-gradient(180deg, #08080f, #14141c);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 16px;
+                    padding: 16px;
+                    position: sticky;
+                    top: 20px;
+                }
+                .sched-preview-shell h4 {
+                    color: #6c7293;
+                    margin: 0 0 12px;
+                    font-size: 0.72rem;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                }
+                .sched-preview-toast {
+                    background: rgba(30,30,42,0.95);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 14px;
+                    overflow: hidden;
+                }
+                .sched-preview-img {
+                    width: 100%;
+                    aspect-ratio: 16/9;
+                    background: linear-gradient(135deg, rgba(188,19,254,0.15), rgba(0,242,255,0.1));
+                    background-size: cover;
+                    background-position: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: rgba(255,255,255,0.25);
+                    font-size: 1.6rem;
+                }
+                .sched-preview-body {
+                    padding: 12px 14px 14px;
+                    display: flex;
+                    gap: 10px;
+                    align-items: flex-start;
+                }
+                .sched-preview-icon {
+                    width: 34px; height: 34px;
+                    border-radius: 8px;
+                    background: linear-gradient(135deg, #bc13fe, #00f2ff);
+                    display: flex; align-items: center; justify-content: center;
+                    color: #000; font-size: 0.85rem;
+                    flex-shrink: 0;
+                    background-size: cover;
+                }
+                .sched-preview-title {
+                    color: #fff;
+                    font-weight: 700;
+                    font-size: 0.85rem;
+                    margin-bottom: 2px;
+                }
+                .sched-preview-msg {
+                    color: #a0a0b0;
+                    font-size: 0.75rem;
+                    line-height: 1.4;
+                }
+                .sched-preview-meta {
+                    color: #6c7293;
+                    font-size: 0.62rem;
+                    margin-top: 4px;
+                    display: flex;
+                    justify-content: space-between;
+                }
+
+                /* Queue list */
+                .sched-queue-head {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 14px;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                }
+                .sched-queue-title {
+                    font-family: 'Orbitron', sans-serif;
+                    color: #fff;
+                    font-size: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin: 0;
+                }
+                .sched-queue-badge {
+                    background: rgba(188,19,254,0.15);
+                    border: 1px solid rgba(188,19,254,0.4);
+                    color: #bc13fe;
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    padding: 3px 10px;
+                    border-radius: 20px;
+                    letter-spacing: 1px;
+                }
+                .sched-queue-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    gap: 14px;
+                }
+                .sched-item {
+                    background: linear-gradient(180deg, rgba(20,20,32,0.7), rgba(10,10,20,0.9));
+                    border: 1px solid rgba(255,255,255,0.06);
+                    border-radius: 14px;
+                    padding: 14px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    transition: 0.2s;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .sched-item:hover {
+                    border-color: rgba(188,19,254,0.35);
+                    transform: translateY(-2px);
+                }
+                .sched-item-thumb {
+                    width: 100%;
+                    aspect-ratio: 16/9;
+                    border-radius: 8px;
+                    background-size: cover;
+                    background-position: center;
+                    background-color: rgba(255,255,255,0.02);
+                    border: 1px solid rgba(255,255,255,0.05);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: rgba(255,255,255,0.15);
+                    font-size: 1.4rem;
+                }
+                .sched-item-title {
+                    color: #fff;
+                    font-weight: 700;
+                    font-size: 0.9rem;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .sched-item-msg {
+                    color: #a0a0b0;
+                    font-size: 0.75rem;
+                    line-height: 1.4;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
+                .sched-item-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px 12px;
+                    font-size: 0.7rem;
+                    color: #7c9aaa;
+                }
+                .sched-item-meta i {
+                    color: #bc13fe;
+                    margin-right: 4px;
+                }
+                .sched-item-status {
+                    font-family: 'Orbitron';
+                    font-size: 0.6rem;
+                    font-weight: 800;
+                    padding: 3px 9px;
+                    border-radius: 6px;
+                    letter-spacing: 1px;
+                    display: inline-block;
+                }
+                .sched-item-status.active    { background: rgba(0,210,91,0.12); color: #00d25b; border: 1px solid rgba(0,210,91,0.35); }
+                .sched-item-status.paused    { background: rgba(255,180,0,0.12); color: #ffb400; border: 1px solid rgba(255,180,0,0.35); }
+                .sched-item-status.completed { background: rgba(108,114,147,0.15); color: #a0a0b0; border: 1px solid rgba(108,114,147,0.35); }
+                .sched-item-status.expired   { background: rgba(255,51,102,0.10); color: #ff6688; border: 1px solid rgba(255,51,102,0.28); }
+                .sched-item-status.cancelled { background: rgba(255,51,102,0.15); color: #ff3366; border: 1px solid rgba(255,51,102,0.4); }
+                .sched-item-actions {
+                    display: flex;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                }
+                .sched-btn-mini {
+                    flex: 1;
+                    min-width: 70px;
+                    padding: 7px;
+                    border-radius: 7px;
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    color: #a0a0b0;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 5px;
+                }
+                .sched-btn-mini:hover { background: rgba(255,255,255,0.1); color: #fff; }
+                .sched-btn-mini.danger:hover { background: rgba(255,51,102,0.15); color: #ff3366; border-color: rgba(255,51,102,0.4); }
+                .sched-btn-mini.success:hover { background: rgba(0,242,255,0.12); color: #00f2ff; border-color: rgba(0,242,255,0.4); }
+                .sched-empty {
+                    text-align: center;
+                    padding: 40px 20px;
+                    color: #6c7293;
+                    grid-column: 1/-1;
+                }
+                .sched-empty i {
+                    font-size: 2.5rem;
+                    opacity: 0.35;
+                    display: block;
+                    margin-bottom: 10px;
+                }
+            </style>
+
+            <div class="sched-card">
+                <h3 class="sched-title">
+                    <i class="fas fa-calendar-plus" style="color:#bc13fe;"></i> Panga Push (Scheduled)
+                    <span style="background:rgba(0,242,255,0.1); border:1px solid rgba(0,242,255,0.3); color:#00f2ff; font-size:0.6rem; padding:3px 8px; border-radius:12px; letter-spacing:1px; font-family:'Orbitron';">PRO</span>
+                </h3>
+                <p class="sched-subtitle">Panga push notification kwa tarehe na muda maalum. Weka repeat kama unataka izidi kurudia (kila saa, siku, wiki, mwezi, au custom).</p>
+
+                <div class="sched-grid">
+                    <!-- LEFT: FORM -->
+                    <form id="schedForm" onsubmit="return schedulePush(event)">
+                        <!-- Title (jina) -->
+                        <div class="sched-field">
+                            <label class="sched-field-label">
+                                <span><i class="fas fa-tag"></i>Jina la Push <span style="color:#ff3366;">*</span></span>
+                                <span id="schedTitleCounter" style="color:#6c7293; font-size:0.7rem;">0/60</span>
+                            </label>
+                            <input type="text" id="schedTitle" class="sched-input" maxlength="60" required placeholder="Mfano: Weekend Sale Umeanza! 🔥">
+                        </div>
+
+                        <!-- Message (maelezo) -->
+                        <div class="sched-field">
+                            <label class="sched-field-label">
+                                <span><i class="fas fa-align-left"></i>Maelezo <span style="color:#ff3366;">*</span></span>
+                                <span id="schedMsgCounter" style="color:#6c7293; font-size:0.7rem;">0/180</span>
+                            </label>
+                            <textarea id="schedMessage" class="sched-textarea" rows="3" maxlength="180" required placeholder="Andika ujumbe utakaowafikia wateja..."></textarea>
+                        </div>
+
+                        <!-- Day / Month / Year -->
+                        <div class="sched-field">
+                            <label class="sched-field-label"><span><i class="fas fa-calendar-day"></i>Tarehe ya Kutuma (Day / Month / Year)</span></label>
+                            <div class="sched-row">
+                                <select id="schedDay" class="sched-select" required></select>
+                                <select id="schedMonth" class="sched-select" required></select>
+                                <select id="schedYear" class="sched-select" required></select>
+                            </div>
+                        </div>
+
+                        <!-- Start time & End time -->
+                        <div class="sched-field">
+                            <label class="sched-field-label"><span><i class="fas fa-clock"></i>Start Time &amp; End Time</span></label>
+                            <div class="sched-row-2">
+                                <div>
+                                    <div style="font-size:0.7rem; color:#7c9aaa; margin-bottom:4px;">Anza (tuma saa hii)</div>
+                                    <input type="time" id="schedStartTime" class="sched-input" required>
+                                </div>
+                                <div>
+                                    <div style="font-size:0.7rem; color:#7c9aaa; margin-bottom:4px;">Mwisho (expiration — optional)</div>
+                                    <input type="time" id="schedEndTime" class="sched-input" placeholder="Optional">
+                                </div>
+                            </div>
+                            <p style="font-size:0.7rem; color:#6c7293; margin:6px 0 0; line-height:1.4;">
+                                <i class="fas fa-info-circle" style="color:#00f2ff;"></i>
+                                Ikiwa umeweka <b>End Time</b>, push haitatumika baada ya muda huo (kwa recurrence, itakoma kabisa).
+                            </p>
+                        </div>
+
+                        <!-- Thumbnail + Upload -->
+                        <div class="sched-field">
+                            <label class="sched-field-label"><span><i class="fas fa-image"></i>Thumbnail (Kubwa) — Link au Upload</span></label>
+                            <div class="sched-upload-row">
+                                <input type="url" id="schedBigImage" class="sched-input" placeholder="https://.../thumb.jpg">
+                                <label class="sched-upload-btn">
+                                    <i class="fas fa-upload"></i> PAKIA
+                                    <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'schedBigImage', 'schedUploadStatus')">
+                                </label>
+                            </div>
+                            <p id="schedUploadStatus" style="font-size:0.72rem; margin:6px 0 0; min-height:1rem; color:#6c7293;"></p>
+                        </div>
+
+                        <!-- Small icon -->
+                        <div class="sched-field">
+                            <label class="sched-field-label"><span><i class="fas fa-icons"></i>Icon Ndogo (Optional)</span></label>
+                            <div class="sched-upload-row">
+                                <input type="url" id="schedIcon" class="sched-input" placeholder="https://.../icon.png">
+                                <label class="sched-upload-btn">
+                                    <i class="fas fa-upload"></i> PAKIA
+                                    <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'schedIcon', 'schedIconStatus')">
+                                </label>
+                            </div>
+                            <p id="schedIconStatus" style="font-size:0.72rem; margin:6px 0 0; min-height:1rem; color:#6c7293;"></p>
+                        </div>
+
+                        <!-- Deep link -->
+                        <div class="sched-field">
+                            <label class="sched-field-label"><span><i class="fas fa-link"></i>URL ya Kuelekezea (Optional)</span></label>
+                            <input type="url" id="schedUrl" class="sched-input" placeholder="https://chidyprime.com/?game=123">
+                        </div>
+
+                        <!-- Segment -->
+                        <div class="sched-field">
+                            <label class="sched-field-label"><span><i class="fas fa-users"></i>Segment (Watumiaji)</span></label>
+                            <select id="schedSegment" class="sched-select">
+                                <option value="Subscribed Users">Wote walio-subscribe</option>
+                                <option value="Active Users">Wanaotumia site sasa</option>
+                                <option value="Engaged Users">Wanaotumia sana</option>
+                            </select>
+                        </div>
+
+                        <!-- Repeat -->
+                        <div class="sched-field">
+                            <label class="sched-field-label"><span><i class="fas fa-redo"></i>Repost (Rudia Push)</span></label>
+                            <div class="sched-chips-wrap" id="schedRepeatChips">
+                                <div class="sched-repeat-chip active" data-repeat="none"><i class="fas fa-play"></i> Mara moja</div>
+                                <div class="sched-repeat-chip" data-repeat="hourly"><i class="fas fa-clock"></i> Kila saa</div>
+                                <div class="sched-repeat-chip" data-repeat="daily"><i class="fas fa-calendar-day"></i> Kila siku</div>
+                                <div class="sched-repeat-chip" data-repeat="weekly"><i class="fas fa-calendar-week"></i> Kila wiki</div>
+                                <div class="sched-repeat-chip" data-repeat="monthly"><i class="fas fa-calendar"></i> Kila mwezi</div>
+                                <div class="sched-repeat-chip" data-repeat="custom"><i class="fas fa-sync"></i> Repost Always</div>
+                            </div>
+                            <input type="hidden" id="schedRepeat" value="none">
+                            <div id="schedCustomHoursWrap" style="display:none; margin-top:10px;">
+                                <label class="sched-field-label" style="margin-bottom:4px;"><span><i class="fas fa-hourglass-half"></i>Rudia baada ya kila… (masaa)</span></label>
+                                <input type="number" id="schedRepeatHours" class="sched-input" min="1" max="720" value="6" placeholder="Mfano: 6 masaa">
+                                <p style="font-size:0.7rem; color:#7c9aaa; margin:4px 0 0;">Push itatumika kila baada ya masaa haya bila kikomo (mpaka ufute au ifike End Time).</p>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="schedSubmitBtn" class="sched-submit-btn">
+                            <i class="fas fa-calendar-check"></i> <span>PANGA PUSH</span>
+                        </button>
+                        <p id="schedStatus" style="font-size:0.82rem; margin:12px 0 0; min-height:1.2rem; text-align:center;"></p>
+                    </form>
+
+                    <!-- RIGHT: LIVE PREVIEW -->
+                    <div class="sched-preview-shell">
+                        <h4><i class="fas fa-mobile-alt"></i> Live Preview</h4>
+                        <div class="sched-preview-toast">
+                            <div class="sched-preview-img" id="schedPreviewImg">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div class="sched-preview-body">
+                                <div class="sched-preview-icon" id="schedPreviewIcon"><i class="fas fa-bell"></i></div>
+                                <div style="flex:1; min-width:0;">
+                                    <div class="sched-preview-title" id="schedPreviewTitle">Jina la push...</div>
+                                    <div class="sched-preview-msg" id="schedPreviewMsg">Maelezo yatatokea hapa...</div>
+                                    <div class="sched-preview-meta">
+                                        <span id="schedPreviewWhen">Muda: —</span>
+                                        <span id="schedPreviewRepeat">Mara moja</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="color:#6c7293; font-size:0.72rem; margin:14px 0 0; line-height:1.55;">
+                            <i class="fas fa-info-circle" style="color:#bc13fe;"></i>
+                            Preview inaonyesha jinsi push itakavyoonekana kwenye Android/desktop. Thumbnail kubwa inaonekana kwenye Android & Chrome kwenye desktop.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCHEDULED QUEUE LIST -->
+            <div class="sched-card" style="margin-top: 24px;">
+                <div class="sched-queue-head">
+                    <h3 class="sched-queue-title">
+                        <i class="fas fa-stream" style="color:#00f2ff;"></i> Scheduled Queue
+                        <span class="sched-queue-badge" id="schedQueueBadge">0</span>
+                    </h3>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="loadScheduledPushes()" class="sched-btn-mini" style="flex:0 0 auto; padding:8px 14px;">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="sched-queue-grid" id="schedQueueGrid">
+                    <div class="sched-empty">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <div style="font-size:0.85rem;">Inapakia…</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- EDIT MODAL moved inside for status checks or outside? I'll keep it outside but fix wrapper -->
 
     <!-- EDIT MODAL -->
@@ -3995,6 +4770,7 @@
             if (viewId === 'usersView') loadUsers();
             if (viewId === 'ordersView') fetchOrders();
             if (viewId === 'healthView') loadSystemHealth();
+            if (viewId === 'pushView')   initPushView();
             if (viewId === 'promoView') loadPromoCodesWithStats();
             if (viewId === 'affiliatesView') refreshAffiliateData();
         }
@@ -6505,6 +7281,540 @@
 
         // Debug: Log when script is fully loaded
         console.log("Admin Dashboard Script: FULLY INITIALIZED ✅");
+
+        // ============================================
+        // PUSH NOTIFICATIONS (OneSignal)
+        // ============================================
+        let pushSessionCount = 0;
+        let pushLastRecipients = 0;
+
+        function initPushView() {
+            // Wire the live preview + counters once, then refresh health.
+            const titleEl = document.getElementById('pushTitle');
+            const msgEl   = document.getElementById('pushMessage');
+            const iconEl  = document.getElementById('pushIcon');
+            const previewTitle = document.getElementById('pushPreviewTitle');
+            const previewMsg   = document.getElementById('pushPreviewMsg');
+            const previewIcon  = document.querySelector('.push-preview-icon');
+
+            const paint = () => {
+                const t = (titleEl.value || 'Game Mpya Imefika! 🎮');
+                const m = (msgEl.value || 'Andika ujumbe wa push hapa...');
+                if (previewTitle) previewTitle.textContent = t;
+                if (previewMsg)   previewMsg.textContent   = m;
+                const tc = document.getElementById('pushTitleCounter');
+                if (tc) tc.textContent = `${titleEl.value.length}/60`;
+                const mc = document.getElementById('pushMsgCounter');
+                if (mc) mc.textContent = `${msgEl.value.length}/180`;
+            };
+            titleEl.addEventListener('input', paint);
+            msgEl.addEventListener('input', paint);
+            iconEl.addEventListener('input', () => {
+                if (previewIcon) {
+                    const url = iconEl.value.trim();
+                    if (url) previewIcon.style.background = `#000 center/cover url("${url}")`;
+                    else     previewIcon.style.background = 'linear-gradient(135deg, #00f2ff, #bc13fe)';
+                }
+            });
+            paint();
+            refreshPushHealth();
+            // Also boot the scheduled push section (populates day/month/year
+            // selects, wires live preview, and loads the queue). Safe to call
+            // multiple times — it self-guards with _schedInited.
+            try { initSchedView(); } catch(_) {}
+        }
+
+        async function refreshPushHealth() {
+            const dot = document.getElementById('pushStatusDot');
+            const txt = document.getElementById('pushStatusText');
+            const helper = document.getElementById('pushSetupHelper');
+            const playersEl = document.getElementById('pushPlayers');
+            const messageableEl = document.getElementById('pushMessageable');
+
+            const adminAuth = { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') };
+
+            try {
+                const statusRes = await fetch('/api/admin/onesignal/status', { headers: adminAuth });
+                const statusData = await statusRes.json();
+
+                if (!statusData.configured) {
+                    dot.className = 'push-status-dot down';
+                    txt.textContent = statusData.message || 'OneSignal haijawekwa';
+                    if (helper) helper.style.display = 'block';
+                    if (playersEl) playersEl.textContent = 'N/A';
+                    if (messageableEl) messageableEl.textContent = 'N/A';
+                    return;
+                }
+
+                if (helper) helper.style.display = 'none';
+
+                const appRes = await fetch('/api/admin/onesignal/app', { headers: adminAuth });
+                const appData = await appRes.json();
+                if (appData.success) {
+                    dot.className = 'push-status-dot ok';
+                    txt.textContent = `${appData.name || 'OneSignal'} — CONNECTED`;
+                    if (playersEl) playersEl.textContent = (appData.players || 0).toLocaleString();
+                    if (messageableEl) messageableEl.textContent = (appData.messageable_players || 0).toLocaleString();
+                } else {
+                    dot.className = 'push-status-dot down';
+                    txt.textContent = 'API key haifanyi kazi';
+                }
+            } catch (e) {
+                dot.className = 'push-status-dot down';
+                txt.textContent = 'Imeshindwa kuunganisha';
+                console.error('OneSignal health check failed:', e);
+            }
+        }
+
+        async function sendPushNotification(evt) {
+            if (evt) evt.preventDefault();
+            const btn = document.getElementById('pushSubmitBtn');
+            const status = document.getElementById('pushStatus');
+
+            const title   = document.getElementById('pushTitle').value.trim();
+            const message = document.getElementById('pushMessage').value.trim();
+            const url     = document.getElementById('pushUrl').value.trim();
+            const icon    = document.getElementById('pushIcon').value.trim();
+            const segment = document.getElementById('pushSegment').value;
+
+            if (!title || !message) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Title na Message zinahitajika';
+                return false;
+            }
+
+            const confirmed = await showConfirmModal('TUMA PUSH', `Uko tayari kutuma push kwa segment "${segment}"? Push hii itafika kwa watumiaji wote wa segment hii.`);
+            if (!confirmed) return false;
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.style.cursor = 'wait';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
+            status.style.color = '#00f2ff';
+            status.textContent = 'Inatuma push kupitia OneSignal…';
+
+            try {
+                const res = await fetch('/api/admin/onesignal/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ title, message, url: url || undefined, icon: icon || undefined, segment })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || `Server responded ${res.status}`);
+                }
+
+                pushSessionCount++;
+                pushLastRecipients = data.recipients || 0;
+                const sentEl = document.getElementById('pushSentTotal');
+                if (sentEl) sentEl.textContent = pushSessionCount;
+                const lastEl = document.getElementById('pushLastRecipients');
+                if (lastEl) lastEl.textContent = pushLastRecipients.toLocaleString();
+
+                status.style.color = '#00d25b';
+                status.textContent = `✅ Push imetumwa! Wamefikiwa: ${pushLastRecipients.toLocaleString()} devices — ID: ${data.id || 'n/a'}`;
+
+                // Reset form after 1s
+                setTimeout(() => {
+                    document.getElementById('pushTitle').value = '';
+                    document.getElementById('pushMessage').value = '';
+                    document.getElementById('pushUrl').value = '';
+                    document.getElementById('pushIcon').value = '';
+                    const evt = new Event('input');
+                    document.getElementById('pushTitle').dispatchEvent(evt);
+                }, 1200);
+            } catch (err) {
+                status.style.color = '#ff3366';
+                status.textContent = `❌ ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.style.cursor = 'pointer';
+                btn.innerHTML = originalHtml;
+            }
+            return false;
+        }
+
+        // ============================================
+        // SCHEDULED PUSH — panga push kwa muda maalum
+        // ============================================
+        const SCHED_MONTHS_SW = ['Januari','Februari','Machi','Aprili','Mei','Juni','Julai','Agosti','Septemba','Oktoba','Novemba','Desemba'];
+        let _schedInited = false;
+
+        function initSchedView() {
+            if (_schedInited) { loadScheduledPushes(); return; }
+            _schedInited = true;
+
+            const daySel   = document.getElementById('schedDay');
+            const monthSel = document.getElementById('schedMonth');
+            const yearSel  = document.getElementById('schedYear');
+            const startEl  = document.getElementById('schedStartTime');
+            const endEl    = document.getElementById('schedEndTime');
+            const titleEl  = document.getElementById('schedTitle');
+            const msgEl    = document.getElementById('schedMessage');
+            const bigEl    = document.getElementById('schedBigImage');
+            const iconEl   = document.getElementById('schedIcon');
+            const repeatIn = document.getElementById('schedRepeat');
+            const custWrap = document.getElementById('schedCustomHoursWrap');
+
+            // Populate day (1-31), month (Jan-Dec), year (current +5)
+            for (let d = 1; d <= 31; d++) {
+                const o = document.createElement('option');
+                o.value = d; o.textContent = String(d).padStart(2, '0');
+                daySel.appendChild(o);
+            }
+            SCHED_MONTHS_SW.forEach((name, i) => {
+                const o = document.createElement('option');
+                o.value = i + 1; o.textContent = name;
+                monthSel.appendChild(o);
+            });
+            const curYear = new Date().getFullYear();
+            for (let y = curYear; y <= curYear + 5; y++) {
+                const o = document.createElement('option');
+                o.value = y; o.textContent = y;
+                yearSel.appendChild(o);
+            }
+            // Default to "now + 10 min"
+            const soon = new Date(Date.now() + 10 * 60 * 1000);
+            daySel.value = soon.getDate();
+            monthSel.value = soon.getMonth() + 1;
+            yearSel.value = soon.getFullYear();
+            startEl.value = String(soon.getHours()).padStart(2, '0') + ':' + String(soon.getMinutes()).padStart(2, '0');
+
+            // Repeat chip switcher
+            const chips = document.querySelectorAll('#schedRepeatChips .sched-repeat-chip');
+            chips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    chips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    const val = chip.getAttribute('data-repeat');
+                    repeatIn.value = val;
+                    custWrap.style.display = (val === 'custom') ? 'block' : 'none';
+                    paintSchedPreview();
+                });
+            });
+
+            // Live preview + counters
+            const paint = () => paintSchedPreview();
+            [titleEl, msgEl, bigEl, iconEl, daySel, monthSel, yearSel, startEl, endEl].forEach(el => {
+                el.addEventListener('input', paint);
+                el.addEventListener('change', paint);
+            });
+            titleEl.addEventListener('input', () => {
+                document.getElementById('schedTitleCounter').textContent = `${titleEl.value.length}/60`;
+            });
+            msgEl.addEventListener('input', () => {
+                document.getElementById('schedMsgCounter').textContent = `${msgEl.value.length}/180`;
+            });
+
+            paint();
+            loadScheduledPushes();
+        }
+
+        function paintSchedPreview() {
+            const title = document.getElementById('schedTitle').value.trim() || 'Jina la push...';
+            const msg   = document.getElementById('schedMessage').value.trim() || 'Maelezo yatatokea hapa...';
+            const big   = document.getElementById('schedBigImage').value.trim();
+            const icon  = document.getElementById('schedIcon').value.trim();
+            const repeat = document.getElementById('schedRepeat').value;
+
+            document.getElementById('schedPreviewTitle').textContent = title;
+            document.getElementById('schedPreviewMsg').textContent = msg;
+
+            const imgEl = document.getElementById('schedPreviewImg');
+            if (big) {
+                imgEl.style.backgroundImage = `url("${big}")`;
+                imgEl.innerHTML = '';
+            } else {
+                imgEl.style.backgroundImage = '';
+                imgEl.innerHTML = '<i class="fas fa-image"></i>';
+            }
+
+            const iconWrap = document.getElementById('schedPreviewIcon');
+            if (icon) {
+                iconWrap.style.backgroundImage = `url("${icon}")`;
+                iconWrap.innerHTML = '';
+            } else {
+                iconWrap.style.backgroundImage = '';
+                iconWrap.innerHTML = '<i class="fas fa-bell"></i>';
+            }
+
+            // When + repeat text
+            const schedIso = buildScheduledIso();
+            const whenTxt = schedIso
+                ? new Date(schedIso).toLocaleString('sw-TZ', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+                : '—';
+            document.getElementById('schedPreviewWhen').textContent = 'Muda: ' + whenTxt;
+
+            const repeatLabels = {
+                none: 'Mara moja',
+                hourly: 'Kila saa',
+                daily: 'Kila siku',
+                weekly: 'Kila wiki',
+                monthly: 'Kila mwezi',
+                custom: 'Repost Always'
+            };
+            document.getElementById('schedPreviewRepeat').textContent = repeatLabels[repeat] || 'Mara moja';
+        }
+
+        function buildScheduledIso() {
+            const day   = parseInt(document.getElementById('schedDay').value, 10);
+            const month = parseInt(document.getElementById('schedMonth').value, 10);
+            const year  = parseInt(document.getElementById('schedYear').value, 10);
+            const start = document.getElementById('schedStartTime').value;
+            if (!day || !month || !year || !start) return null;
+            const [h, m] = start.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            const dt = new Date(year, month - 1, day, h, m, 0);
+            if (Number.isNaN(dt.getTime())) return null;
+            return dt.toISOString();
+        }
+        function buildExpiresIso() {
+            const day   = parseInt(document.getElementById('schedDay').value, 10);
+            const month = parseInt(document.getElementById('schedMonth').value, 10);
+            const year  = parseInt(document.getElementById('schedYear').value, 10);
+            const end   = document.getElementById('schedEndTime').value;
+            if (!end || !day || !month || !year) return null;
+            const [h, m] = end.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            const dt = new Date(year, month - 1, day, h, m, 0);
+            if (Number.isNaN(dt.getTime())) return null;
+            return dt.toISOString();
+        }
+
+        async function schedulePush(evt) {
+            if (evt) evt.preventDefault();
+            const status = document.getElementById('schedStatus');
+            const btn    = document.getElementById('schedSubmitBtn');
+
+            const title   = document.getElementById('schedTitle').value.trim();
+            const message = document.getElementById('schedMessage').value.trim();
+            const url     = document.getElementById('schedUrl').value.trim();
+            const icon    = document.getElementById('schedIcon').value.trim();
+            const bigImg  = document.getElementById('schedBigImage').value.trim();
+            const segment = document.getElementById('schedSegment').value;
+            const repeat  = document.getElementById('schedRepeat').value;
+            const repeatHours = parseInt(document.getElementById('schedRepeatHours').value, 10) || 0;
+
+            if (!title || !message) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Jina na maelezo yanahitajika';
+                return false;
+            }
+
+            const scheduled_at = buildScheduledIso();
+            const expires_at   = buildExpiresIso();
+            if (!scheduled_at) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Tarehe/muda si sahihi';
+                return false;
+            }
+            if (new Date(scheduled_at).getTime() < Date.now() - 60_000) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Tarehe iliyowekwa imepita';
+                return false;
+            }
+            if (expires_at && new Date(expires_at) <= new Date(scheduled_at)) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ End Time lazima iwe baada ya Start Time';
+                return false;
+            }
+            if (repeat === 'custom' && (!repeatHours || repeatHours < 1)) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Weka masaa ya kurudia (Repost Always)';
+                return false;
+            }
+
+            const confirmed = await showConfirmModal('PANGA PUSH', `Panga push "${title}" itume "${new Date(scheduled_at).toLocaleString('sw-TZ')}"?`);
+            if (!confirmed) return false;
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAPANGA...';
+            status.style.color = '#00f2ff';
+            status.textContent = 'Inatuma…';
+
+            try {
+                const res = await fetch('/api/admin/onesignal/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({
+                        title, message,
+                        url: url || undefined,
+                        icon: icon || undefined,
+                        big_image: bigImg || undefined,
+                        segment,
+                        scheduled_at,
+                        expires_at,
+                        repeat,
+                        repeat_interval_hours: repeatHours
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+
+                status.style.color = '#00d25b';
+                status.textContent = '✅ Push imepangwa! Itakuwa live "' + new Date(scheduled_at).toLocaleString('sw-TZ') + '"';
+
+                // Reset form (keep segment + repeat)
+                document.getElementById('schedTitle').value = '';
+                document.getElementById('schedMessage').value = '';
+                document.getElementById('schedUrl').value = '';
+                document.getElementById('schedIcon').value = '';
+                document.getElementById('schedBigImage').value = '';
+                document.getElementById('schedTitleCounter').textContent = '0/60';
+                document.getElementById('schedMsgCounter').textContent = '0/180';
+                paintSchedPreview();
+                loadScheduledPushes();
+            } catch (err) {
+                status.style.color = '#ff3366';
+                status.textContent = `❌ ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            return false;
+        }
+
+        async function loadScheduledPushes() {
+            const grid  = document.getElementById('schedQueueGrid');
+            const badge = document.getElementById('schedQueueBadge');
+            if (!grid) return;
+            grid.innerHTML = '<div class="sched-empty"><i class="fas fa-spinner fa-spin"></i><div style="font-size:0.85rem;">Inapakia…</div></div>';
+
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+
+                const items = data.items || [];
+                if (badge) badge.textContent = items.length;
+
+                if (items.length === 0) {
+                    grid.innerHTML = `
+                        <div class="sched-empty">
+                            <i class="fas fa-calendar-plus"></i>
+                            <div style="font-size:0.9rem; font-weight:600;">Bado hakuna push iliyopangwa.</div>
+                            <div style="font-size:0.75rem; margin-top:6px; opacity:0.75;">Tumia fomu juu kuunda push ya kwanza.</div>
+                        </div>`;
+                    return;
+                }
+
+                const repeatLabels = { none:'Mara moja', hourly:'Kila saa', daily:'Kila siku', weekly:'Kila wiki', monthly:'Kila mwezi', custom:'Repost Always' };
+
+                grid.innerHTML = items.map(item => {
+                    const nextTxt = item.next_fire_at
+                        ? new Date(item.next_fire_at).toLocaleString('sw-TZ', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                        : '—';
+                    const repeatTxt = repeatLabels[item.repeat] || 'Mara moja';
+                    const customExtra = (item.repeat === 'custom' && item.repeat_interval_hours)
+                        ? ` (${item.repeat_interval_hours}h)` : '';
+                    const bigStyle = item.big_image
+                        ? `background-image:url("${item.big_image}"); color:transparent;`
+                        : '';
+                    const isActive = item.status === 'active';
+                    const isPaused = item.status === 'paused';
+                    const canControl = isActive || isPaused;
+
+                    return `
+                        <div class="sched-item">
+                            <div class="sched-item-thumb" style="${bigStyle}">
+                                ${item.big_image ? '' : '<i class="fas fa-image"></i>'}
+                            </div>
+                            <div>
+                                <div class="sched-item-title" title="${_schEsc(item.title)}">${_schEsc(item.title)}</div>
+                                <div class="sched-item-msg">${_schEsc(item.message)}</div>
+                            </div>
+                            <div class="sched-item-meta">
+                                <span><i class="fas fa-clock"></i>${nextTxt}</span>
+                                <span><i class="fas fa-redo"></i>${repeatTxt}${customExtra}</span>
+                                <span><i class="fas fa-paper-plane"></i>Fires: ${item.fires_count || 0}</span>
+                                ${item.last_recipients ? `<span><i class="fas fa-users"></i>${item.last_recipients}</span>` : ''}
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                                <span class="sched-item-status ${item.status}">${item.status.toUpperCase()}</span>
+                                ${item.last_result && item.last_result !== 'ok' ? `<span style="font-size:0.65rem; color:#ff6688;" title="${_schEsc(item.last_result)}"><i class="fas fa-exclamation-triangle"></i> Error ya mwisho</span>` : ''}
+                            </div>
+                            <div class="sched-item-actions">
+                                ${canControl ? `
+                                    <button class="sched-btn-mini success" onclick="fireScheduledNow('${item.id}')" title="Tuma sasa">
+                                        <i class="fas fa-bolt"></i> Tuma
+                                    </button>
+                                    <button class="sched-btn-mini" onclick="togglePauseScheduled('${item.id}', '${isActive ? 'paused' : 'active'}')">
+                                        <i class="fas fa-${isActive ? 'pause' : 'play'}"></i> ${isActive ? 'Pause' : 'Anza'}
+                                    </button>
+                                ` : ''}
+                                <button class="sched-btn-mini danger" onclick="cancelScheduledPush('${item.id}', '${_schEsc(item.title).replace(/'/g, "\\'")}')">
+                                    <i class="fas fa-trash"></i> Futa
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (err) {
+                grid.innerHTML = `<div class="sched-empty" style="color:#ff3366;"><i class="fas fa-exclamation-triangle"></i><div>${err.message}</div></div>`;
+            }
+        }
+
+        function _schEsc(s) {
+            return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        async function togglePauseScheduled(id, newStatus) {
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled/' + id, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed');
+                loadScheduledPushes();
+            } catch (err) {
+                alert('Tatizo: ' + err.message);
+            }
+        }
+
+        async function cancelScheduledPush(id, title) {
+            const confirmed = await showConfirmModal('FUTA PUSH ILIYOPANGWA', `Uko tayari kufuta push "${title}"? Kitendo hiki hakiwezi kurudishwa.`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed');
+                loadScheduledPushes();
+            } catch (err) {
+                alert('Tatizo: ' + err.message);
+            }
+        }
+
+        async function fireScheduledNow(id) {
+            const confirmed = await showConfirmModal('TUMA SASA', 'Uko tayari kutuma push hii sasa hivi kwa segment iliyowekwa? (Recurrence itaendelea kama kawaida.)');
+            if (!confirmed) return;
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled/' + id + '/fire-now', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.result?.error || 'Failed');
+                loadScheduledPushes();
+            } catch (err) {
+                alert('Tatizo: ' + err.message);
+            }
+        }
 
         // ============================================
         // VIDEOS MANAGEMENT

@@ -4974,6 +4974,98 @@
             document.getElementById('myGamesOverlay').classList.remove('show');
         }
 
+        // ===== ORDER HISTORY =====
+        async function openOrderHistory() {
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            if (!visitorStr) return alert('Tafadhali jisajili kwanza!');
+            const visitor = JSON.parse(visitorStr);
+
+            const overlay = document.getElementById('orderHistoryOverlay');
+            const list = document.getElementById('orderHistoryList');
+            overlay.classList.add('show');
+            list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color:#7c9aaa; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Inatafuta orders zako...</div>';
+
+            try {
+                const res = await fetch(`/api/user/orders/${visitor.id}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const orders = await res.json();
+
+                if (!Array.isArray(orders) || orders.length === 0) {
+                    list.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; color:#6c7293; padding:30px;">
+                            <i class="fas fa-receipt" style="font-size:2.5rem; margin-bottom:12px; opacity:0.5;"></i>
+                            <div style="font-size:0.9rem;">Hujafanya order yoyote bado.</div>
+                            <div style="font-size:0.75rem; margin-top:6px; opacity:0.7;">Nunua game kuanza rekodi yako.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Status colors and labels
+                const statusStyles = {
+                    approved: { color: '#00d25b', bg: 'rgba(0,210,91,0.12)', border: 'rgba(0,210,91,0.35)', label: '✓ APPROVED', icon: 'check-circle' },
+                    pending:  { color: '#ffb400', bg: 'rgba(255,180,0,0.12)', border: 'rgba(255,180,0,0.35)', label: '⏳ PENDING', icon: 'hourglass-half' },
+                    rejected: { color: '#ff3366', bg: 'rgba(255,51,102,0.12)', border: 'rgba(255,51,102,0.35)', label: '✕ REJECTED', icon: 'times-circle' }
+                };
+
+                list.innerHTML = orders.map(o => {
+                    const st = statusStyles[o.status] || statusStyles.pending;
+                    const date = o.created_at
+                        ? new Date(o.created_at).toLocaleString('sw-TZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : '—';
+                    const amountStr = 'TSh ' + Number(o.amount || 0).toLocaleString();
+                    const title = (o.post && o.post.title) ? o.post.title : 'Game imeondolewa';
+                    const img = (o.post && o.post.image_url)
+                        ? o.post.image_url
+                        : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23151827"/><text x="50%" y="55%" text-anchor="middle" fill="%236c7293" font-size="10" font-family="sans-serif">N/A</text></svg>';
+
+                    // Only show download button if order approved AND user_access is still active
+                    const canDownload = o.status === 'approved' && o.access_expires_at && o.post;
+                    const downloadUrl = canDownload
+                        ? ((o.post.download_url) || (Array.isArray(o.post.links) && o.post.links[0] && o.post.links[0].url) || null)
+                        : null;
+
+                    return `
+                        <div class="purchased-item" style="border:1px solid ${st.border}; background:linear-gradient(180deg, ${st.bg}, rgba(15,20,31,0.6));">
+                            <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:8px;">
+                                <img loading="lazy" src="${img}" alt="" style="width:48px; height:48px; border-radius:8px; object-fit:cover; flex-shrink:0; pointer-events:none;">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:0.8rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</div>
+                                    <div style="font-size:0.7rem; color:#7c9aaa; margin-top:2px;">${date}</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+                                <span style="font-family:'Orbitron'; font-size:0.75rem; font-weight:700; color:#00f2ff;">${amountStr}</span>
+                                <span style="font-family:'Orbitron'; font-size:0.62rem; font-weight:700; letter-spacing:1px; color:${st.color}; padding:3px 8px; border-radius:6px; background:${st.bg}; border:1px solid ${st.border};">
+                                    <i class="fas fa-${st.icon}"></i> ${st.label}
+                                </span>
+                            </div>
+                            <div style="font-size:0.68rem; color:#6c7293; margin-bottom:${downloadUrl ? '8px' : '0'};">
+                                <i class="fas fa-mobile-alt"></i> ${o.phone_number || '—'}
+                            </div>
+                            ${downloadUrl ? `
+                                <a href="${downloadUrl}" class="purchased-btn" target="_blank" rel="noopener" style="width:100%; text-align:center;">
+                                    <i class="fas fa-download"></i> DOWNLOAD
+                                </a>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error('Order history load failed:', e);
+                list.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; color:#ff3366; padding:20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size:1.4rem; margin-bottom:8px;"></i>
+                        <div style="font-size:0.85rem;">Hitilafu imetokea. Jaribu tena.</div>
+                    </div>
+                `;
+            }
+        }
+
+        function closeOrderHistory() {
+            document.getElementById('orderHistoryOverlay').classList.remove('show');
+        }
+
         async function fetchGames() {
             try {
                 // PERFORMANCE: Fetch categories + games in PARALLEL (saves ~400ms)

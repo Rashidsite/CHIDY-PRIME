@@ -1881,6 +1881,74 @@ app.get('/api/user/purchases/:visitor_id', async (req, res) => {
 // PAYMENT ORDER ENDPOINTS
 // ============================================
 
+// GET full order history for a visitor (all statuses)
+// Feeds the "Orders" panel in the storefront profile menu.
+app.get('/api/user/orders/:visitor_id', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+
+    const { visitor_id } = req.params;
+    const vid = parseInt(visitor_id, 10);
+    if (Number.isNaN(vid)) return res.status(400).json({ error: 'Invalid visitor_id' });
+
+    try {
+        const { data, error } = await supabase
+            .from('payment_orders')
+            .select(`
+                id,
+                amount,
+                phone_number,
+                status,
+                promo_used,
+                created_at,
+                post_id,
+                posts (id, title, image_url, links, download_url)
+            `)
+            .eq('visitor_id', vid)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) throw error;
+
+        // Also pull user_access to know which orders correspond to still-active
+        // library entries (so the frontend can render a "download" affordance
+        // that only appears while access is valid).
+        const { data: access } = await supabase
+            .from('user_access')
+            .select('post_id, expires_at')
+            .eq('visitor_id', vid);
+
+        const now = new Date();
+        const activeMap = {};
+        (access || []).forEach(a => {
+            if (a.expires_at && new Date(a.expires_at) > now) {
+                activeMap[a.post_id] = a.expires_at;
+            }
+        });
+
+        const orders = (data || []).map(o => ({
+            id: o.id,
+            amount: o.amount,
+            phone_number: o.phone_number,
+            status: o.status,
+            promo_used: o.promo_used,
+            created_at: o.created_at,
+            post: o.posts ? {
+                id: o.posts.id,
+                title: o.posts.title,
+                image_url: o.posts.image_url,
+                links: o.posts.links,
+                download_url: o.posts.download_url
+            } : null,
+            access_expires_at: activeMap[o.post_id] || null
+        }));
+
+        res.json(orders);
+    } catch (err) {
+        console.error('GET /api/user/orders error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET User Stats (XP/Level)
 app.get('/api/user/stats/:visitor_id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -2958,6 +3026,427 @@ app.post('/api/admin/notifications/broadcast', verifyAdmin, async (req, res) => 
         res.status(500).json({ error: err.message });
     }
 });
+
+// ============================================
+// ONESIGNAL PUSH — native browser/mobile notifications
+// ============================================
+const ONESIGNAL_APP_ID   = process.env.ONESIGNAL_APP_ID   || '33092d7c-9dfb-4f8d-8927-a0192e678827';
+const ONESIGNAL_API_KEY  = process.env.ONESIGNAL_REST_API_KEY || '';
+
+// Health check / config status
+app.get('/api/admin/onesignal/status', verifyAdmin, async (req, res) => {
+    const configured = !!ONESIGNAL_API_KEY;
+    res.json({
+        configured,
+        app_id: ONESIGNAL_APP_ID,
+        message: configured ? 'OneSignal REST API iko sawa' : 'Weka ONESIGNAL_REST_API_KEY kwenye Vercel env vars'
+    });
+});
+
+// ─── OneSignal send helper (used by immediate endpoint + scheduled worker)
+// opts: { title, message, url?, icon?, big_image?, segment?, ttl? }
+async function sendOneSignalPushInternal(opts) {
+    if (!ONESIGNAL_API_KEY) {
+        return { success: false, error: 'OneSignal haijawekwa (missing ONESIGNAL_REST_API_KEY)' };
+    }
+    const { title, message, url, icon, big_image, segment, ttl } = opts || {};
+    if (!title || !message) {
+        return { success: false, error: 'Title na message zinahitajika' };
+    }
+
+    const payload = {
+        app_id: ONESIGNAL_APP_ID,
+        headings: { en: title, sw: title },
+        contents: { en: message, sw: message },
+        included_segments: [segment || 'Subscribed Users']
+    };
+    if (url)       payload.url = url;
+    if (icon)      { payload.chrome_web_icon = icon; payload.large_icon = icon; }
+    if (big_image) {
+        // Full-width image (Android big picture + web Chrome image)
+        payload.big_picture       = big_image;
+        payload.chrome_web_image  = big_image;
+        payload.huawei_big_picture = big_image;
+    }
+    if (ttl && Number.isFinite(ttl) && ttl > 0) payload.ttl = Math.floor(ttl);
+
+    try {
+        const startTime = Date.now();
+        const osRes = await fetch('https://onesignal.com/api/v1/notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Authorization': `Basic ${ONESIGNAL_API_KEY}`
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(15000)
+        });
+        const data = await osRes.json().catch(() => ({}));
+        const responseTime = Date.now() - startTime;
+
+        if (!osRes.ok || data.errors) {
+            const errMsg = data.errors
+                ? (Array.isArray(data.errors) ? data.errors.join(', ') : JSON.stringify(data.errors))
+                : `HTTP ${osRes.status}`;
+            console.error('[OneSignal] send failed:', errMsg);
+            return { success: false, error: errMsg, response: data, responseTime };
+        }
+
+        console.log(`[OneSignal] sent to ${data.recipients || 0} devices in ${responseTime}ms — ${title}`);
+
+        // Mirror to internal notifications table so it appears in-app
+        if (supabase) {
+            try {
+                await supabase.from('notifications').insert({ title, message, type: 'info' });
+            } catch (_) { /* non-fatal */ }
+        }
+
+        // Telegram alert (best-effort)
+        try {
+            sendTelegramAlert(`📣 <b>PUSH SENT</b>\n<b>Title:</b> ${title}\n<b>Msg:</b> ${message}\n<b>Recipients:</b> ${data.recipients || 0}`);
+        } catch (_) {}
+
+        return {
+            success: true,
+            id: data.id,
+            recipients: data.recipients || 0,
+            responseTime,
+            external_id: data.external_id || null
+        };
+    } catch (err) {
+        console.error('[OneSignal] request error:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+// Send a push notification NOW (all subscribers or a filtered segment).
+// Body: { title, message, url? (deep link), icon?, big_image?, segment? }
+app.post('/api/admin/onesignal/send', verifyAdmin, async (req, res) => {
+    const result = await sendOneSignalPushInternal(req.body || {});
+    if (!result.success) {
+        const code = /haijawekwa|missing/i.test(result.error) ? 503
+                    : /zinahitajika/i.test(result.error) ? 400
+                    : 502;
+        return res.status(code).json(result);
+    }
+    res.json(result);
+});
+
+// Fetch app details / subscriber count from OneSignal so admin can see health
+app.get('/api/admin/onesignal/app', verifyAdmin, async (req, res) => {
+    if (!ONESIGNAL_API_KEY) {
+        return res.status(503).json({ success: false, error: 'OneSignal haijawekwa' });
+    }
+    try {
+        const osRes = await fetch(`https://onesignal.com/api/v1/apps/${ONESIGNAL_APP_ID}`, {
+            headers: { 'Authorization': `Basic ${ONESIGNAL_API_KEY}` },
+            signal: AbortSignal.timeout(10000)
+        });
+        const data = await osRes.json().catch(() => ({}));
+        if (!osRes.ok) return res.status(osRes.status).json({ success: false, error: data.errors || 'Failed' });
+        res.json({
+            success: true,
+            name: data.name,
+            players: data.players,
+            messageable_players: data.messageable_players,
+            updated_at: data.updated_at
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ─── SCHEDULED PUSH NOTIFICATIONS ─────────────────────────────
+// Stored in site_settings under key 'scheduled_pushes' (JSON array) so no
+// schema migration is required. A background worker below dispatches
+// pushes when their next_fire_at is due and handles recurrence.
+const SCHEDULED_PUSH_KEY = 'scheduled_pushes';
+
+const REPEAT_OPTIONS = new Set(['none', 'hourly', 'daily', 'weekly', 'monthly', 'custom']);
+
+async function readScheduledPushes() {
+    if (!supabase) return [];
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', SCHEDULED_PUSH_KEY)
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+        if (!data || !data.value) return [];
+        // value can be a JSON array or a string (depending on how it was stored)
+        if (Array.isArray(data.value)) return data.value;
+        try { return JSON.parse(data.value) || []; } catch { return []; }
+    } catch (err) {
+        console.error('[SchedPush] read failed:', err.message);
+        return [];
+    }
+}
+
+async function writeScheduledPushes(list) {
+    if (!supabase) return false;
+    try {
+        const { error } = await supabase
+            .from('site_settings')
+            .upsert({ key: SCHEDULED_PUSH_KEY, value: list, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        if (error) throw error;
+        invalidateSettingsCache(SCHEDULED_PUSH_KEY);
+        return true;
+    } catch (err) {
+        console.error('[SchedPush] write failed:', err.message);
+        return false;
+    }
+}
+
+// Compute the next fire time based on the current fire time and repeat rule.
+// Returns an ISO string, or null if no more fires (one-off).
+function computeNextFireAt(currentIso, repeat, intervalHours) {
+    if (!repeat || repeat === 'none') return null;
+    const base = new Date(currentIso || Date.now());
+    switch (repeat) {
+        case 'hourly':  base.setHours(base.getHours() + 1); break;
+        case 'daily':   base.setDate(base.getDate() + 1); break;
+        case 'weekly':  base.setDate(base.getDate() + 7); break;
+        case 'monthly': base.setMonth(base.getMonth() + 1); break;
+        case 'custom': {
+            const h = Math.max(1, parseInt(intervalHours || 0, 10) || 1);
+            base.setHours(base.getHours() + h);
+            break;
+        }
+        default: return null;
+    }
+    return base.toISOString();
+}
+
+function normalizeSchedulePayload(body, existing = null) {
+    const now = new Date();
+    const title    = (body.title || existing?.title || '').toString().trim();
+    const message  = (body.message || existing?.message || '').toString().trim();
+    const url      = (body.url || existing?.url || '').toString().trim() || null;
+    const icon     = (body.icon || existing?.icon || '').toString().trim() || null;
+    const big_image = (body.big_image || existing?.big_image || '').toString().trim() || null;
+    const segment  = (body.segment || existing?.segment || 'Subscribed Users').toString();
+    let repeat     = (body.repeat || existing?.repeat || 'none').toString().toLowerCase();
+    if (!REPEAT_OPTIONS.has(repeat)) repeat = 'none';
+    const repeat_interval_hours = Math.max(0, parseInt(body.repeat_interval_hours ?? existing?.repeat_interval_hours ?? 0, 10) || 0);
+
+    // scheduled_at can be provided as ISO OR as {year,month,day,hour,minute}
+    let scheduled_at;
+    if (body.scheduled_at) {
+        const t = new Date(body.scheduled_at);
+        if (Number.isNaN(t.getTime())) throw new Error('scheduled_at si sahihi');
+        scheduled_at = t.toISOString();
+    } else if (existing?.scheduled_at) {
+        scheduled_at = existing.scheduled_at;
+    } else {
+        throw new Error('scheduled_at inahitajika');
+    }
+
+    // expires_at is optional
+    let expires_at = null;
+    if (body.expires_at) {
+        const e = new Date(body.expires_at);
+        if (Number.isNaN(e.getTime())) throw new Error('expires_at si sahihi');
+        expires_at = e.toISOString();
+    } else if (existing?.expires_at) {
+        expires_at = existing.expires_at;
+    }
+
+    if (!title || !message) throw new Error('Title na message zinahitajika');
+    if (new Date(scheduled_at) < new Date(now.getTime() - 60_000)) {
+        // Allow small clock skew (60s) but block anything in the real past
+        throw new Error('scheduled_at haiwezi kuwa nyuma');
+    }
+    if (expires_at && new Date(expires_at) <= new Date(scheduled_at)) {
+        throw new Error('expires_at lazima iwe baada ya scheduled_at');
+    }
+
+    return {
+        title, message, url, icon, big_image, segment,
+        scheduled_at, expires_at,
+        repeat, repeat_interval_hours
+    };
+}
+
+// LIST scheduled pushes
+app.get('/api/admin/onesignal/scheduled', verifyAdmin, async (req, res) => {
+    const list = await readScheduledPushes();
+    // Newest first (by scheduled_at)
+    list.sort((a, b) => new Date(b.scheduled_at || 0) - new Date(a.scheduled_at || 0));
+    res.json({ success: true, items: list });
+});
+
+// CREATE a scheduled push
+app.post('/api/admin/onesignal/schedule', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ success: false, error: 'Supabase not configured' });
+    if (!ONESIGNAL_API_KEY) {
+        return res.status(503).json({ success: false, error: 'OneSignal haijawekwa (missing ONESIGNAL_REST_API_KEY)' });
+    }
+
+    let norm;
+    try {
+        norm = normalizeSchedulePayload(req.body || {});
+    } catch (err) {
+        return res.status(400).json({ success: false, error: err.message });
+    }
+
+    const crypto = require('crypto');
+    const item = {
+        id: (crypto.randomUUID ? crypto.randomUUID() : `sp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
+        ...norm,
+        next_fire_at: norm.scheduled_at,
+        last_fire_at: null,
+        last_recipients: 0,
+        last_result: null,
+        fires_count: 0,
+        status: 'active',
+        created_at: new Date().toISOString()
+    };
+
+    const list = await readScheduledPushes();
+    list.push(item);
+    const ok = await writeScheduledPushes(list);
+    if (!ok) return res.status(500).json({ success: false, error: 'Imeshindwa kuhifadhi' });
+
+    res.json({ success: true, item });
+});
+
+// UPDATE a scheduled push (edit fields, pause, resume)
+app.patch('/api/admin/onesignal/scheduled/:id', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    const list = await readScheduledPushes();
+    const idx = list.findIndex(x => x.id === id);
+    if (idx === -1) return res.status(404).json({ success: false, error: 'Haikupatikana' });
+
+    const existing = list[idx];
+    const body = req.body || {};
+
+    // Handle explicit status changes (pause/resume/cancel)
+    if (body.status) {
+        const allowed = ['active', 'paused', 'cancelled'];
+        if (!allowed.includes(body.status)) {
+            return res.status(400).json({ success: false, error: 'Status si sahihi' });
+        }
+        existing.status = body.status;
+    }
+
+    // Handle field edits (only if any editable field is present)
+    const hasEdits = ['title','message','url','icon','big_image','segment','scheduled_at','expires_at','repeat','repeat_interval_hours']
+        .some(k => body[k] !== undefined);
+    if (hasEdits) {
+        let norm;
+        try {
+            norm = normalizeSchedulePayload(body, existing);
+        } catch (err) {
+            return res.status(400).json({ success: false, error: err.message });
+        }
+        Object.assign(existing, norm);
+        // If schedule shifted forward and worker hadn't fired yet, sync next_fire_at
+        if (!existing.last_fire_at) existing.next_fire_at = existing.scheduled_at;
+    }
+
+    list[idx] = existing;
+    const ok = await writeScheduledPushes(list);
+    if (!ok) return res.status(500).json({ success: false, error: 'Imeshindwa kuhifadhi' });
+    res.json({ success: true, item: existing });
+});
+
+// DELETE a scheduled push
+app.delete('/api/admin/onesignal/scheduled/:id', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    const list = await readScheduledPushes();
+    const next = list.filter(x => x.id !== id);
+    if (next.length === list.length) return res.status(404).json({ success: false, error: 'Haikupatikana' });
+    const ok = await writeScheduledPushes(next);
+    if (!ok) return res.status(500).json({ success: false, error: 'Imeshindwa kuhifadhi' });
+    res.json({ success: true });
+});
+
+// Manually trigger a scheduled push right now (useful for "Test now")
+app.post('/api/admin/onesignal/scheduled/:id/fire-now', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    const list = await readScheduledPushes();
+    const item = list.find(x => x.id === id);
+    if (!item) return res.status(404).json({ success: false, error: 'Haikupatikana' });
+
+    const result = await sendOneSignalPushInternal(item);
+    item.last_fire_at    = new Date().toISOString();
+    item.last_result     = result.success ? 'ok' : (result.error || 'failed');
+    item.last_recipients = result.recipients || 0;
+    item.fires_count     = (item.fires_count || 0) + 1;
+    await writeScheduledPushes(list);
+
+    res.json({ success: result.success, result });
+});
+
+// ─── Background worker: dispatches due pushes every 60s ────────
+async function scheduledPushWorker() {
+    if (!supabase || !ONESIGNAL_API_KEY) return;
+    try {
+        const list = await readScheduledPushes();
+        if (!list.length) return;
+
+        const now = new Date();
+        let mutated = false;
+
+        for (const item of list) {
+            if (item.status !== 'active') continue;
+
+            // Handle expiry
+            if (item.expires_at && new Date(item.expires_at) <= now) {
+                item.status = 'expired';
+                mutated = true;
+                continue;
+            }
+
+            const nextFire = item.next_fire_at ? new Date(item.next_fire_at) : null;
+            if (!nextFire || nextFire > now) continue;
+
+            // Fire!
+            const result = await sendOneSignalPushInternal(item);
+            item.last_fire_at    = now.toISOString();
+            item.last_result     = result.success ? 'ok' : (result.error || 'failed');
+            item.last_recipients = result.recipients || 0;
+            item.fires_count     = (item.fires_count || 0) + 1;
+
+            // Compute the next fire (or mark completed for one-off)
+            const upcoming = computeNextFireAt(item.next_fire_at, item.repeat, item.repeat_interval_hours);
+            if (!upcoming) {
+                item.status = 'completed';
+                item.next_fire_at = null;
+            } else {
+                // Skip past times if the worker missed a beat (fast-forward)
+                let n = new Date(upcoming);
+                while (n <= now) {
+                    const nx = computeNextFireAt(n.toISOString(), item.repeat, item.repeat_interval_hours);
+                    if (!nx) { n = null; break; }
+                    n = new Date(nx);
+                }
+                if (!n) {
+                    item.status = 'completed';
+                    item.next_fire_at = null;
+                } else if (item.expires_at && n > new Date(item.expires_at)) {
+                    item.status = 'expired';
+                    item.next_fire_at = null;
+                } else {
+                    item.next_fire_at = n.toISOString();
+                }
+            }
+            mutated = true;
+        }
+
+        if (mutated) await writeScheduledPushes(list);
+    } catch (err) {
+        console.error('[SchedPushWorker] error:', err.message);
+    }
+}
+
+// Run every 60s. Kick off first pass after 30s so DB has time to connect.
+setTimeout(() => {
+    scheduledPushWorker();
+    setInterval(scheduledPushWorker, 60_000);
+}, 30_000);
+console.log('Scheduled Push Worker: READY ✅ (checks every 60s)');
 
 // Manual Access Extension
 app.post('/api/admin/access/extend', verifyAdmin, async (req, res) => {
