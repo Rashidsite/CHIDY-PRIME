@@ -1494,3 +1494,201 @@ body.chidy-elite .wa-modal-note {
   0%   { left: -80%; }
   100% { left: 180%; }
 }
+
+/* ═════════════════════════════════════════════════════════
+   ROUND 5 — POST DETAIL MODAL: BLUE THEME
+   Owner asked: blue background, white + red text, and the
+   LIPA SASA button in orange with red text. Overrides win
+   over earlier white detail-card styling.
+   ═════════════════════════════════════════════════════════ */
+
+/* Card body — deep blue gradient with red edge glow */
+body.chidy-elite .detail-card {
+  background: linear-gradient(160deg, #0f172a 0%, #1d4ed8 55%, #0b1a3a 100%) !important;
+  background-image: linear-gradient(160deg, #0f172a 0%, #1d4ed8 55%, #0b1a3a 100%) !important;
+  border: 2px solid #0b0f1a !important;
+  border-radius: 20px !important;
+  box-shadow:
+    0 24px 60px rgba(11,15,26,0.45),
+    0 0 0 3px rgba(220,38,38,0.18) !important;
+  color: #ffffff !important;
+}
+
+/* Poster border matches theme */
+body.chidy-elite .detail-card .detail-image {
+  border-bottom: 2px solid rgba(255,255,255,0.15) !important;
+  border-radius: 18px 18px 0 0 !important;
+}
+
+/* Body padding retained; force white text everywhere except CTA */
+body.chidy-elite .detail-body {
+  color: #ffffff !important;
+}
+
+/* Title — bright white with red glow accent */
+body.chidy-elite .detail-body h2,
+body.chidy-elite .detail-card .detail-body h2 {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: none !important;
+  text-shadow: 0 0 20px rgba(220,38,38,0.35) !important;
+  font-weight: 900 !important;
+}
+
+/* Meta chip row — dark glass with red text */
+body.chidy-elite .detail-meta span {
+  background: rgba(255,255,255,0.10) !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 700 !important;
+  backdrop-filter: blur(6px);
+}
+/* Rating chip — keep gold */
+body.chidy-elite .detail-meta span:has(> .fa-star),
+body.chidy-elite .detail-meta span[style*="star"] {
+  background: rgba(251,191,36,0.22) !important;
+  border: 1px solid rgba(251,191,36,0.55) !important;
+  color: #fbbf24 !important;
+  -webkit-text-fill-color: #fbbf24 !important;
+}
+/* Category chip — solid white pill with blue text */
+body.chidy-elite .detail-meta span:nth-child(2) {
+  background: #ffffff !important;
+  border: 1px solid #ffffff !important;
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+}
+/* Price chip — red badge with white text */
+body.chidy-elite .detail-meta span[style*="TSh"],
+body.chidy-elite .detail-meta span[style*="Tsh"],
+body.chidy-elite .detail-meta span[style*="TSH"] {
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+  border: 1px solid #7f1d1d !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 800 !important;
+}
+/* Duration chip — clock */
+body.chidy-elite .detail-meta span:has(> .fa-clock),
+body.chidy-elite .detail-meta span[style*="fa-clock"] {
+  background: rgba(255,255,255,0.10) !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+body.chidy-elite .detail-meta span i {
+  color: inherit !important;
+}
+
+/* Description panel — dark translucent card with white text */
+body.chidy-elite .detail-body p {
+  background: rgba(0,0,0,0.28) !important;
+  background-image: none !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+/* "Soma Zaidi" toggle stays in a friendly red */
+body.chidy-elite .detail-body p a,
+body.chidy-elite .detail-body p span[onclick] {
+  color: #fca5a5 !important;
+  -webkit-text-fill-color: #fca5a5 !important;
+}
+
+/* Notice card ("Game hii ni ya kulipia...") — red-tinted glass */
+body.chidy-elite .detail-body div[style*="background: rgba"]:not(.detail-meta),
+body.chidy-elite .detail-body [style*="background: linear-gradient(135deg, rgba(255,180,0"],
+body.chidy-elite .detail-body [style*="background: linear-gradient(135deg, rgba(255,171,0"] {
+  background: linear-gradient(135deg, rgba(220,38,38,0.18), rgba(0,0,0,0.28)) !important;
+  background-image: linear-gradient(135deg, rgba(220,38,38,0.18), rgba(0,0,0,0.28)) !important;
+  border: 1px solid rgba(252,165,165,0.4) !important;
+  color: #fecaca !important;
+}
+body.chidy-elite .detail-body div[style*="background: rgba"]:not(.detail-meta) *,
+body.chidy-elite .detail-body [style*="background: linear-gradient(135deg, rgba(255,180,0"] * {
+  color: #fecaca !important;
+  -webkit-text-fill-color: #fecaca !important;
+}
+body.chidy-elite .detail-body div[style*="background: rgba"]:not(.detail-meta) strong {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+/* LIPA SASA — ORANGE background, RED text (per owner) */
+body.chidy-elite .dl-btn {
+  background: linear-gradient(135deg, #ffb400, #ff8c00) !important;
+  background-image: linear-gradient(135deg, #ffb400, #ff8c00) !important;
+  color: #b91c1c !important;
+  -webkit-text-fill-color: #b91c1c !important;
+  border: 2px solid #7f1d1d !important;
+  border-radius: 14px !important;
+  font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.08em !important;
+  padding: 15px 22px !important;
+  box-shadow:
+    0 12px 28px rgba(255,140,0,0.45),
+    inset 0 0 0 1px rgba(255,255,255,0.35) !important;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, filter 0.2s ease !important;
+  animation: pmmGlowPulseOrange 2.4s infinite !important;
+}
+body.chidy-elite .dl-btn * {
+  color: #b91c1c !important;
+  -webkit-text-fill-color: #b91c1c !important;
+}
+body.chidy-elite .dl-btn i,
+body.chidy-elite .dl-btn .fas,
+body.chidy-elite .dl-btn .fa-bolt {
+  color: #b91c1c !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+}
+body.chidy-elite .dl-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow:
+    0 18px 36px rgba(255,140,0,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.45) !important;
+  filter: brightness(1.04) !important;
+}
+/* Keep YouTube variant its own red */
+body.chidy-elite .dl-btn.youtube {
+  background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+  background-image: linear-gradient(135deg, #dc2626, #ef4444) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid #7f1d1d !important;
+  animation: none !important;
+}
+body.chidy-elite .dl-btn.youtube * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Close (X) on detail card — white with red hover */
+body.chidy-elite .close-detail {
+  background: #ffffff !important;
+  border: 2px solid #0b0f1a !important;
+  color: #0b0f1a !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+}
+body.chidy-elite .close-detail:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #7f1d1d !important;
+  transform: rotate(90deg) !important;
+}
+
+/* Overlay behind card — deeper wash for the blue card to pop */
+body.chidy-elite .detail-overlay {
+  background: rgba(11, 15, 26, 0.65) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+@keyframes pmmGlowPulseOrange {
+  0%,100% { box-shadow: 0 12px 28px rgba(255,140,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.35); }
+  50%     { box-shadow: 0 16px 36px rgba(255,140,0,0.65), inset 0 0 0 1px rgba(255,255,255,0.55); }
+}
