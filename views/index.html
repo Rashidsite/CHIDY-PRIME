@@ -74,7 +74,7 @@
     <link rel="stylesheet" href="/css/chidy-elite.css?v=2.1">
 
     <!-- Portal Cards overlay (home page category tiles) -->
-    <link rel="stylesheet" href="/css/portal-cards.css?v=2.0">
+    <link rel="stylesheet" href="/css/portal-cards.css?v=2.4">
     <script src="/js/portal-cards.js?v=1.9" defer></script>
 
     <!-- Premium overlay: notifications, profile, pata pesa, videos -->
@@ -3648,6 +3648,261 @@
             to { transform: scale(1); opacity: 1; }
         }
     </style>
+
+    <!-- CHIDY ELITE SIGNUP OVERLAY STYLES -->
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           SIGNUP GATE MODAL — Chidy Elite White Popup
+           ═══════════════════════════════════════════════════════════ */
+        body.chidy-elite #signupOverlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.55) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 20px !important;
+            z-index: 9000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+        }
+
+        /* The card itself — smaller, solid white, soft elevation */
+        body.chidy-elite #signupOverlay .signup-card {
+            background: #ffffff !important;
+            background-image: none !important;
+            color: #0f172a !important;
+            border-radius: 18px !important;
+            border: 2px solid #0f172a !important;
+            box-shadow:
+                0 20px 50px rgba(15, 23, 42, 0.22),
+                0 4px 14px rgba(15, 23, 42, 0.08) !important;
+            padding: 24px 22px 22px !important;
+            max-width: 340px !important;
+            width: 100% !important;
+            animation: signupSlideIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+            position: relative;
+        }
+
+        @keyframes signupSlideIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Kill the animated neon gradient border wrapper */
+        body.chidy-elite #signupOverlay .signup-card::before {
+            display: none !important;
+            content: none !important;
+        }
+
+        /* Kill any winners-ticker leakage inside the compact card */
+        body.chidy-elite #signupOverlay .winners-ticker-wrap {
+            display: none !important;
+        }
+
+        /* Brand hero circle — smaller and framed in red to match icon accent */
+        body.chidy-elite #signupOverlay .signup-hero {
+            margin-bottom: 12px !important;
+        }
+        body.chidy-elite #signupOverlay .signup-hero img {
+            width: 76px !important;
+            height: 76px !important;
+            border: 2px solid #dc2626 !important;
+            box-shadow:
+                0 0 0 3px #ffffff,
+                0 6px 18px rgba(220, 38, 38, 0.25) !important;
+            animation: none !important;
+        }
+
+        /* Fallback rocket icon — red, small, animated flight */
+        body.chidy-elite #signupOverlay .signup-icon {
+            font-size: 2.2rem !important;
+            margin-bottom: 10px !important;
+            background: none !important;
+            -webkit-background-clip: initial !important;
+            -webkit-text-fill-color: initial !important;
+            color: #dc2626 !important;
+            filter: drop-shadow(0 4px 8px rgba(220, 38, 38, 0.4)) !important;
+            animation: rocketFly 2.2s ease-in-out infinite !important;
+            display: inline-block !important;
+            transform-origin: center bottom !important;
+        }
+
+        @keyframes rocketFly {
+            0%   { transform: translateY(0) rotate(-12deg) scale(1); filter: drop-shadow(0 4px 8px rgba(220, 38, 38, 0.4)); }
+            25%  { transform: translateY(-8px) rotate(-6deg) scale(1.05); filter: drop-shadow(0 8px 12px rgba(220, 38, 38, 0.6)); }
+            50%  { transform: translateY(-12px) rotate(0deg) scale(1.1); filter: drop-shadow(0 12px 16px rgba(220, 38, 38, 0.8)); }
+            75%  { transform: translateY(-8px) rotate(6deg) scale(1.05); filter: drop-shadow(0 8px 12px rgba(220, 38, 38, 0.6)); }
+            100% { transform: translateY(0) rotate(-12deg) scale(1); filter: drop-shadow(0 4px 8px rgba(220, 38, 38, 0.4)); }
+        }
+
+        /* Close button (X) — top-right of card, black outline, subtle */
+        body.chidy-elite #signupOverlay .signup-close {
+            position: absolute !important;
+            top: 12px !important;
+            right: 12px !important;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50% !important;
+            background: #ffffff !important;
+            border: 2px solid #0f172a !important;
+            color: #0f172a !important;
+            font-size: 0.9rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            padding: 0 !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15) !important;
+            z-index: 5 !important;
+        }
+        body.chidy-elite #signupOverlay .signup-close:hover {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            transform: rotate(90deg) scale(1.1) !important;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25) !important;
+        }
+        body.chidy-elite #signupOverlay .signup-close:active {
+            transform: rotate(90deg) scale(0.95) !important;
+        }
+
+        /* CHIDY PRIME — both words black, bold, compact */
+        body.chidy-elite #signupOverlay .signup-logo {
+            font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
+            font-size: 1.35rem !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.08em !important;
+            color: #0f172a !important;
+            margin-bottom: 8px !important;
+        }
+        body.chidy-elite #signupOverlay .signup-logo .s-chidy,
+        body.chidy-elite #signupOverlay .signup-logo .s-prime {
+            color: #0f172a !important;
+            text-shadow: none !important;
+            background: none !important;
+            -webkit-background-clip: initial !important;
+            -webkit-text-fill-color: #0f172a !important;
+        }
+
+        /* Subtitle — small, black, NOT bold */
+        body.chidy-elite #signupOverlay .signup-subtitle {
+            color: #334155 !important;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+            font-size: 0.78rem !important;
+            font-weight: 400 !important;
+            line-height: 1.5 !important;
+            margin: 0 0 14px !important;
+            letter-spacing: 0 !important;
+        }
+
+        /* Signup gate hint (dynamic strip: "Jisajili kwanza kufungua...") */
+        body.chidy-elite #signupOverlay .signup-gate-hint {
+            background: #fef2f2 !important;
+            border: 1px solid #fecaca !important;
+            color: #0f172a !important;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+            font-weight: 500 !important;
+            font-size: 0.72rem !important;
+            padding: 8px 10px !important;
+            border-radius: 8px !important;
+            margin: 0 0 12px !important;
+            letter-spacing: 0 !important;
+        }
+        body.chidy-elite #signupOverlay .signup-gate-hint b { color: #0f172a !important; font-weight: 700 !important; }
+        body.chidy-elite #signupOverlay .signup-gate-hint i { color: #dc2626 !important; }
+
+        /* Input rows */
+        body.chidy-elite #signupOverlay .input-group {
+            margin-bottom: 12px !important;
+            position: relative !important;
+        }
+        body.chidy-elite #signupOverlay .signup-input {
+            background: #ffffff !important;
+            border: 2px solid #0f172a !important;
+            color: #0f172a !important;
+            border-radius: 10px !important;
+            padding: 14px 16px 14px 50px !important;
+            font-size: 0.85rem !important;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+            font-weight: 500 !important;
+            outline: none !important;
+            margin-bottom: 0 !important;
+            transition: 0.2s !important;
+            box-shadow: none !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        body.chidy-elite #signupOverlay .signup-input::placeholder {
+            color: #94a3b8 !important;
+            font-weight: 400 !important;
+        }
+        body.chidy-elite #signupOverlay .signup-input:focus {
+            border-color: #0f172a !important;
+            background: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+        }
+        
+        /* Input icons — red, positioned so they never overlap the placeholder */
+        body.chidy-elite #signupOverlay .input-group i {
+            color: #dc2626 !important;
+            font-size: 0.9rem !important;
+            position: absolute !important;
+            left: 18px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 20px !important;
+            text-align: center !important;
+            pointer-events: none !important;
+            z-index: 2 !important;
+            line-height: 1 !important;
+        }
+
+        /* JOIN NOW button — solid blue with black outline, white text */
+        body.chidy-elite #signupOverlay .btn-signup {
+            background: #2563eb !important;
+            background-image: none !important;
+            color: #ffffff !important;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+            font-size: 0.85rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.12em !important;
+            text-transform: uppercase !important;
+            padding: 15px !important;
+            border-radius: 10px !important;
+            border: 2px solid #0f172a !important;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.32) !important;
+            margin-top: 8px !important;
+            transition: 0.2s !important;
+            width: 100%;
+            cursor: pointer;
+        }
+        body.chidy-elite #signupOverlay .btn-signup::after {
+            display: none !important;
+            content: none !important;
+        }
+        body.chidy-elite #signupOverlay .btn-signup:hover:not(:disabled) {
+            background: #1d4ed8 !important;
+            box-shadow: 0 10px 22px rgba(29, 78, 216, 0.4) !important;
+            transform: translateY(-1px) !important;
+        }
+        body.chidy-elite #signupOverlay .btn-signup:active:not(:disabled) {
+            transform: translateY(0) !important;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3) !important;
+        }
+        body.chidy-elite #signupOverlay .btn-signup:disabled {
+            background: #93c5fd !important;
+            border-color: #cbd5e1 !important;
+            color: #ffffff !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+    </style>
 </head>
 
 
@@ -3678,6 +3933,9 @@
     <!-- SIGNUP OVERLAY (First-time visitors) -->
     <div class="signup-overlay" id="signupOverlay">
         <div class="signup-card">
+            <button type="button" class="signup-close" onclick="closeSignupOverlay()" aria-label="Funga">
+                <i class="fas fa-times"></i>
+            </button>
             <div class="signup-hero">
                 <img src="/brand-hero.png" alt="Chidy Prime — Tech Game Hacker" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <div class="signup-icon" style="display:none;"><i class="fas fa-rocket"></i></div>
@@ -6518,6 +6776,21 @@
             }, 4500);
         }
 
+        // Close signup overlay (X button) — dismisses without registering.
+        // A gentle warning is shown if the user was routed here by a locked
+        // category so they understand why they can't browse yet.
+        window.closeSignupOverlay = function () {
+            const overlay = document.getElementById('signupOverlay');
+            if (!overlay) return;
+            overlay.style.transition = 'opacity 0.25s ease-out';
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                overlay.style.pointerEvents = 'none';
+                document.body.style.overflow = '';
+            }, 250);
+        };
+
         // Signup form handler
         window.handleSignupClick = async () => {
             const name = document.getElementById('signupName').value.trim();
@@ -7992,3 +8265,87 @@ async function clearAllNotifications() {
 
 
 </html>
+
+<script>
+// SIGNUP OVERLAY FUNCTIONS
+window.closeSignupOverlay = function () {
+    const overlay = document.getElementById('signupOverlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 300);
+    }
+};
+
+window.handleSignupClick = async function () {
+    const name = document.getElementById('signupName')?.value?.trim();
+    const phone = document.getElementById('signupPhone')?.value?.trim();
+    const errorEl = document.getElementById('signupError');
+    const btn = document.getElementById('signupBtn');
+    
+    if (!name || name.length < 2) {
+        if (errorEl) errorEl.textContent = 'Tafadhali ingiza jina lako.';
+        return;
+    }
+    
+    if (!phone || phone.length < 10) {
+        if (errorEl) errorEl.textContent = 'Tafadhali ingiza namba sahihi ya simu.';
+        return;
+    }
+    
+    if (errorEl) errorEl.textContent = '';
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INASAJILI...';
+    }
+    
+    try {
+        const response = await fetch('/api/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, phone })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Store visitor data
+            localStorage.setItem('chidy_visitor', JSON.stringify(data.visitor));
+            
+            // Show welcome screen
+            closeSignupOverlay();
+            if (window.showWelcomeSequence) {
+                window.showWelcomeSequence(name);
+            }
+        } else {
+            throw new Error(data.error || 'Signup failed');
+        }
+    } catch (error) {
+        if (errorEl) errorEl.textContent = '❌ ' + error.message;
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'JOIN NOW';
+        }
+    }
+};
+
+// Show signup overlay when needed
+window.showSignupOverlay = function () {
+    const overlay = document.getElementById('signupOverlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '0';
+        overlay.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            overlay.style.transform = 'scale(1)';
+        }, 10);
+    }
+};
+</script>
