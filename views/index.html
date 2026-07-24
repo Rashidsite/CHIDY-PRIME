@@ -74,7 +74,7 @@
     <link rel="stylesheet" href="/css/chidy-elite.css?v=2.1">
 
     <!-- Portal Cards overlay (home page category tiles) -->
-    <link rel="stylesheet" href="/css/portal-cards.css?v=2.4">
+    <link rel="stylesheet" href="/css/portal-cards.css?v=2.5">
     <script src="/js/portal-cards.js?v=1.9" defer></script>
 
     <!-- Premium overlay: notifications, profile, pata pesa, videos -->
@@ -3690,6 +3690,39 @@
             from { opacity: 0; transform: translateY(30px) scale(0.96); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+        
+        /* FAST CLOSING ANIMATIONS - No lag! */
+        body.chidy-elite #signupOverlay.closing {
+            animation: overlayFadeOut 0.12s ease-out forwards !important;
+        }
+        
+        body.chidy-elite #signupOverlay.closing .signup-card {
+            animation: cardSlideOut 0.1s ease-in forwards !important;
+        }
+        
+        @keyframes overlayFadeOut {
+            from { 
+                opacity: 1; 
+                backdrop-filter: blur(6px);
+                transform: scale(1);
+            }
+            to { 
+                opacity: 0; 
+                backdrop-filter: blur(0px);
+                transform: scale(1.02);
+            }
+        }
+        
+        @keyframes cardSlideOut {
+            from { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+            to { 
+                opacity: 0; 
+                transform: translateY(-20px) scale(0.95); 
+            }
+        }
 
         /* Kill the animated neon gradient border wrapper */
         body.chidy-elite #signupOverlay .signup-card::before {
@@ -3738,7 +3771,7 @@
             100% { transform: translateY(0) rotate(-12deg) scale(1); filter: drop-shadow(0 4px 8px rgba(220, 38, 38, 0.4)); }
         }
 
-        /* Close button (X) — top-right of card, black outline, subtle */
+        /* Close button (X) — top-right of card, INSTANT response, no lag */
         body.chidy-elite #signupOverlay .signup-close {
             position: absolute !important;
             top: 12px !important;
@@ -3755,18 +3788,21 @@
             justify-content: center !important;
             cursor: pointer !important;
             padding: 0 !important;
-            transition: all 0.3s ease !important;
+            transition: all 0.1s ease !important;
             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15) !important;
-            z-index: 5 !important;
+            z-index: 10 !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent !important;
         }
         body.chidy-elite #signupOverlay .signup-close:hover {
             background: #0f172a !important;
             color: #ffffff !important;
-            transform: rotate(90deg) scale(1.1) !important;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25) !important;
+            transform: rotate(90deg) scale(1.05) !important;
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2) !important;
         }
         body.chidy-elite #signupOverlay .signup-close:active {
-            transform: rotate(90deg) scale(0.95) !important;
+            transform: rotate(90deg) scale(0.98) !important;
+            transition: all 0.05s ease !important;
         }
 
         /* CHIDY PRIME — both words black, bold, compact */
@@ -8271,6 +8307,16 @@ async function clearAllNotifications() {
 window.closeSignupOverlay = function () {
     const overlay = document.getElementById('signupOverlay');
     if (overlay) {
+        // Add closing class for smooth animation
+        overlay.classList.add('closing');
+        
+        // Quick fade out - no lag!
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            overlay.classList.remove('closing');
+        }, 120); // Super fast 0.12 seconds
+    }
+};
         overlay.style.opacity = '0';
         overlay.style.transform = 'scale(0.95)';
         setTimeout(() => {
