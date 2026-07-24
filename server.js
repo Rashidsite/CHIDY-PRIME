@@ -671,11 +671,15 @@ app.post('/api/games', verifyAdmin, async (req, res) => {
         }
         
         // --- INSERT GLOBAL NOTIFICATION ---
+        // Include post_id so the frontend can navigate directly to the
+        // newly published game when a user taps this notification.
         try {
+            const newPostId = Array.isArray(data) && data[0] ? data[0].id : null;
             await supabase.from('notifications').insert({
                 title: 'Mzigo Mpya! 🚀',
                 message: `Game ya ${title} imeshaachiwa! Ingia sasa kudownload.`,
-                type: 'success'
+                type: 'success',
+                post_id: newPostId
             });
         } catch (notifErr) { console.error("Global notif error:", notifErr); }
 

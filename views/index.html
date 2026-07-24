@@ -77,7 +77,7 @@
     <script src="/js/portal-cards.js?v=1.9" defer></script>
 
     <!-- Premium overlay: notifications, profile, pata pesa, videos -->
-    <link rel="stylesheet" href="/css/premium.css?v=1.4">
+    <link rel="stylesheet" href="/css/premium.css?v=1.5">
 
     <!-- Confetti: load after page renders (non-blocking) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
@@ -6544,16 +6544,20 @@
             try {
                 const res = await fetch(`/api/notifications/${visitor.id}`);
                 const data = await res.json();
-                
+
+                // Filter out notifications the user has dismissed on this device
+                const dismissed = new Set(getDismissedNotifs());
+                const filtered = (Array.isArray(data) ? data : []).filter(n => !dismissed.has(String(n.id)));
+
                 // Compare with old to see if we have new ones
                 const lastCount = notifications.length;
-                notifications = data;
-                
+                notifications = filtered;
+
                 renderNotifications();
-                
+
                 // Show toast for newest notification if it's new and unread
-                if (data.length > lastCount && data[0].visitor_id) {
-                    showBigNotification(data[0]);
+                if (filtered.length > lastCount && filtered[0] && filtered[0].visitor_id) {
+                    showBigNotification(filtered[0]);
                 }
             } catch (err) {
                 console.error("Notif sync error:", err);
@@ -6582,9 +6586,12 @@
 
             body.innerHTML = notifications.map(n => {
                 const time = new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                // Some notifications carry post_id → clicking should open
+                // the game detail modal. We JSON-encode to survive quotes.
+                const postId = n.post_id != null ? String(n.post_id) : '';
                 return `
-                    <div class="notif-item ${n.is_read ? '' : 'unread'}" style="position:relative;">
-                        <div onclick="handleNotifClick('${n.id}')">
+                    <div class="notif-item ${n.is_read ? '' : 'unread'}" style="position:relative; cursor:${postId ? 'pointer' : 'default'};">
+                        <div onclick="handleNotifClick('${n.id}', '${postId}')">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding-right:20px;">
                                 <h5 style="margin:0; font-weight:700;">${n.title}</h5>
                                 ${!n.is_read ? '<span style="background:var(--primary); color:#000; font-size:0.5rem; font-weight:900; padding:2px 6px; border-radius:4px; font-family:\'Orbitron\'">NEW</span>' : ''}
@@ -6615,9 +6622,10 @@
             showPulseNotification(`Language changed to ${isSwahili ? 'English' : 'Swahili'}`);
         }
 
-// Handle clicking on a notification: mark as read and optionally navigate
-function handleNotifClick(id) {
-    // Mark notification as read via API
+// Handle clicking on a notification: mark as read and, if it carries
+// a post_id, open the corresponding game detail modal.
+function handleNotifClick(id, postId) {
+    // Mark as read (fire-and-forget)
     fetch(`/api/notifications/${id}/read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -6627,9 +6635,24 @@ function handleNotifClick(id) {
         renderNotifications();
     })
     .catch(err => console.error('Error marking notification read:', err));
-    
+
+    // Close the dropdown
     const dropdown = document.getElementById('notifDropdown');
     if (dropdown) dropdown.style.display = 'none';
+
+    // Navigate to the game if we have a post_id
+    if (postId && postId !== 'null' && postId !== '' && typeof openDetail === 'function') {
+        // Ensure home view is visible so the modal has a canvas
+        try {
+            document.body.classList.remove('mode-videos');
+            document.body.classList.add('mode-home');
+            const cats = document.getElementById('categoriesContainer');
+            if (cats) cats.style.display = 'block';
+            const vids = document.getElementById('videoSection');
+            if (vids) vids.style.display = 'none';
+        } catch (_) {}
+        setTimeout(() => openDetail(postId), 100);
+    }
 }
 
 async function deleteNotification(id, event) {
@@ -6641,18 +6664,36 @@ async function deleteNotification(id, event) {
     } catch (e) { console.error("Failed to delete notification", e); }
 }
 
+// Dismissed notification IDs live in localStorage so that global
+// broadcast notifications (visitor_id NULL) can be hidden per device
+// without deleting them for other users on the server.
+function getDismissedNotifs() {
+    try { return JSON.parse(localStorage.getItem('chidy_dismissed_notifs') || '[]'); }
+    catch { return []; }
+}
+function addDismissedNotifs(ids) {
+    const set = new Set(getDismissedNotifs());
+    (ids || []).forEach(id => set.add(String(id)));
+    try { localStorage.setItem('chidy_dismissed_notifs', JSON.stringify([...set])); }
+    catch (_) {}
+}
+
 async function clearAllNotifications() {
+    // Hide all currently visible notifications on THIS device first —
+    // this handles both personal and global broadcasts and gives instant
+    // feedback so the button always feels responsive.
+    addDismissedNotifs(notifications.map(n => n.id));
+    notifications = [];
+    renderNotifications();
+
+    // Then try the server-side delete for personal notifications so the
+    // unread badge stays accurate on other devices this user signs in on.
     const visitorStr = localStorage.getItem('chidy_visitor');
     if (!visitorStr) return;
-    const visitor = JSON.parse(visitorStr);
-    
-    if (!confirm("Je, unataka kufuta taarifa zako zote?")) return;
-    
     try {
+        const visitor = JSON.parse(visitorStr);
         await fetch(`/api/notifications/visitor/${visitor.id}/clear`, { method: 'POST' });
-        // After clearing personal ones, re-fetch to see remaining global ones (if any)
-        fetchNotifications();
-    } catch (e) { console.error("Failed to clear notifications", e); }
+    } catch (e) { console.warn('Server clear failed (device dismissal still in effect):', e); }
 }
 
         function showBigNotification(notif) {
