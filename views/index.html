@@ -4667,6 +4667,316 @@
         </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════════════
+         PUSH NOTIFICATION SUBSCRIPTION PROMPT (Custom, on-brand)
+         ═══════════════════════════════════════════════════════════════ -->
+    <style>
+        .sub-prompt {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 340px;
+            max-width: calc(100vw - 40px);
+            background: linear-gradient(170deg, #061420 0%, #030a10 55%, #0a0f1a 100%);
+            border: 1px solid rgba(0, 242, 255, 0.35);
+            border-radius: 18px;
+            padding: 20px 20px 18px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.7),
+                0 0 0 1px rgba(0, 242, 255, 0.08),
+                0 0 40px rgba(0, 180, 180, 0.15);
+            z-index: 9998;
+            display: none;
+            opacity: 0;
+            transform: translateY(20px) scale(0.96);
+            transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+        }
+        .sub-prompt::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10%; right: 10%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f2ff, #bc13fe, transparent);
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 0 20px rgba(0,242,255,0.6);
+        }
+        .sub-prompt.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .sub-prompt-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #7c9aaa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            transition: 0.2s;
+        }
+        .sub-prompt-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .sub-prompt-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #00f2ff, #bc13fe);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 22px rgba(0, 242, 255, 0.3);
+            animation: subBellRing 2.6s ease-in-out infinite;
+            transform-origin: top center;
+        }
+        @keyframes subBellRing {
+            0%, 40%, 100% { transform: rotate(0deg); }
+            5%  { transform: rotate(12deg); }
+            10% { transform: rotate(-10deg); }
+            15% { transform: rotate(8deg); }
+            20% { transform: rotate(-6deg); }
+            25% { transform: rotate(3deg); }
+            30% { transform: rotate(0deg); }
+        }
+        .sub-prompt h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            font-size: 1rem;
+            margin: 0 0 6px;
+            letter-spacing: 0.3px;
+            padding-right: 20px;
+        }
+        .sub-prompt p {
+            color: #a0a0b0;
+            font-size: 0.8rem;
+            margin: 0 0 10px;
+            line-height: 1.5;
+        }
+        .sub-prompt ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 14px;
+        }
+        .sub-prompt ul li {
+            color: #c8d4dc;
+            font-size: 0.78rem;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub-prompt ul li i {
+            color: #00f2ff;
+            font-size: 0.75rem;
+            filter: drop-shadow(0 0 4px rgba(0, 242, 255, 0.6));
+        }
+        .sub-prompt-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .sub-prompt-btn {
+            flex: 1;
+            padding: 11px 12px;
+            border-radius: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.25s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .sub-prompt-later {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a0a0b0;
+        }
+        .sub-prompt-later:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .sub-prompt-accept {
+            background: linear-gradient(45deg, #00f2ff, #bc13fe);
+            color: #000;
+            box-shadow: 0 6px 18px rgba(0, 242, 255, 0.35);
+        }
+        .sub-prompt-accept:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(188, 19, 254, 0.45);
+        }
+        .sub-prompt-accept:disabled {
+            opacity: 0.7;
+            cursor: wait;
+            transform: none;
+        }
+        .sub-prompt-note {
+            color: #6c7293;
+            font-size: 0.65rem;
+            text-align: center;
+            margin: 10px 0 0;
+            line-height: 1.4;
+        }
+        .sub-prompt-note i {
+            color: #00f2ff;
+            margin-right: 3px;
+        }
+
+        /* Mobile: slide up from bottom, full-width feel */
+        @media (max-width: 520px) {
+            .sub-prompt {
+                left: 12px;
+                right: 12px;
+                bottom: 78px; /* above bottom-bar */
+                width: auto;
+                padding: 16px;
+            }
+            .sub-prompt h3 { font-size: 0.95rem; }
+            .sub-prompt ul li { font-size: 0.75rem; }
+        }
+    </style>
+
+    <div class="sub-prompt" id="subPrompt" role="dialog" aria-labelledby="subPromptTitle" aria-modal="false">
+        <button class="sub-prompt-close" onclick="dismissSubPrompt()" aria-label="Funga">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="sub-prompt-icon"><i class="fas fa-bell"></i></div>
+        <h3 id="subPromptTitle">Pata Push za Chidy Prime 🎮</h3>
+        <p>Kuwa wa kwanza kupata taarifa mpya kabla ya wengine:</p>
+        <ul>
+            <li><i class="fas fa-check-circle"></i> Games mpya zinazoachiwa</li>
+            <li><i class="fas fa-check-circle"></i> Discounts na ofa maalum</li>
+            <li><i class="fas fa-check-circle"></i> Update za maintenance na habari</li>
+        </ul>
+        <div class="sub-prompt-actions">
+            <button type="button" class="sub-prompt-btn sub-prompt-later" onclick="dismissSubPrompt()">
+                BAADAYE
+            </button>
+            <button type="button" class="sub-prompt-btn sub-prompt-accept" id="subPromptAcceptBtn" onclick="acceptSubPrompt()">
+                <i class="fas fa-bell"></i> NDIO, NAKUBALI
+            </button>
+        </div>
+        <p class="sub-prompt-note">
+            <i class="fas fa-shield-halved"></i>
+            Hatutumii taarifa yako. Unaweza kuzima wakati wowote.
+        </p>
+    </div>
+
+    <script>
+        (function () {
+            const STORAGE_KEY = 'chidy_sub_prompt';
+            const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+            const SHOW_DELAY_MS = 15_000;                // 15s after load
+            const FOREVER_MS = 365 * 24 * 60 * 60 * 1000;
+
+            function nowState() {
+                try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+            }
+            function saveState(s) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+            }
+            function pushSupported() {
+                return ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window);
+            }
+
+            function showPrompt() {
+                const el = document.getElementById('subPrompt');
+                if (!el) return;
+                el.style.display = 'block';
+                // Force reflow so the transition kicks in
+                void el.offsetWidth;
+                el.classList.add('show');
+            }
+
+            window.dismissSubPrompt = function (permanent) {
+                const el = document.getElementById('subPrompt');
+                if (el) {
+                    el.classList.remove('show');
+                    setTimeout(() => { el.style.display = 'none'; }, 400);
+                }
+                const s = nowState();
+                s.dismissed_at = Date.now();
+                s.snooze_until = permanent ? (Date.now() + FOREVER_MS) : (Date.now() + COOLDOWN_MS);
+                saveState(s);
+            };
+
+            window.acceptSubPrompt = async function () {
+                const btn = document.getElementById('subPromptAcceptBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAFANYA…';
+                }
+                try {
+                    if (window.OneSignalDeferred) {
+                        window.OneSignalDeferred.push(async function (OneSignal) {
+                            try {
+                                // OneSignal v16 API — prefer slidedown, fallback to native
+                                if (OneSignal?.Slidedown?.promptPush) {
+                                    await OneSignal.Slidedown.promptPush({ force: true });
+                                } else if (OneSignal?.Notifications?.requestPermission) {
+                                    await OneSignal.Notifications.requestPermission();
+                                } else if (typeof Notification?.requestPermission === 'function') {
+                                    await Notification.requestPermission();
+                                }
+                            } catch (e) {
+                                console.warn('[SubPrompt] OneSignal prompt failed:', e);
+                            }
+                        });
+                    } else if (typeof Notification?.requestPermission === 'function') {
+                        await Notification.requestPermission();
+                    }
+                } catch (e) {
+                    console.warn('[SubPrompt] request failed:', e);
+                }
+
+                const s = nowState();
+                s.accepted_at = Date.now();
+                s.snooze_until = Date.now() + FOREVER_MS; // never nag again once they clicked yes
+                saveState(s);
+
+                // Hide the prompt
+                dismissSubPrompt(true);
+            };
+
+            function maybeShowSubPrompt() {
+                if (!pushSupported()) return;
+                if (Notification.permission === 'granted') return; // already subscribed
+                if (Notification.permission === 'denied')  return; // blocked at browser level
+
+                const s = nowState();
+                if (s.accepted_at) return;
+                if (s.snooze_until && Date.now() < s.snooze_until) return;
+
+                // Wait for the page to be idle-ish, then show
+                setTimeout(showPrompt, SHOW_DELAY_MS);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', maybeShowSubPrompt);
+            } else {
+                maybeShowSubPrompt();
+            }
+        })();
+    </script>
+
     <!-- LOGOUT VERIFICATION MODAL -->
     <div class="logout-verify-overlay" id="logoutVerifyOverlay">
         <div class="logout-verify-card">
