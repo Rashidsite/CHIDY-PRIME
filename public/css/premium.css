@@ -1697,20 +1697,20 @@ body.chidy-elite .detail-overlay {
    ROUND 6 — INSTALL button + notif bell fix + click-through
    ═════════════════════════════════════════════════════════ */
 
-/* ─── 1. INSTALL button — clean blue with white text, no red ─ */
+/* ─── 1. INSTALL button — blue fill, red ring, white text ─ */
 body.chidy-elite #headerInstallBtn,
 #headerInstallBtn {
   background: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
   background-image: linear-gradient(135deg, var(--pmm-blue-600), var(--pmm-blue-900)) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  border: 2px solid var(--pmm-blue-900) !important;
+  border: 2px solid #dc2626 !important;
   box-shadow:
-    0 0 0 3px rgba(37,99,235,0.20),
+    0 0 0 2px rgba(220,38,38,0.35),
     0 6px 16px rgba(37,99,235,0.35) !important;
   font-family: 'Plus Jakarta Sans', 'Orbitron', sans-serif !important;
   font-weight: 900 !important;
-  animation: pmmInstallPulse 2.4s infinite !important;
+  animation: pmmInstallPulse 2s infinite !important;
 }
 body.chidy-elite #headerInstallBtn i,
 #headerInstallBtn i {
@@ -1722,12 +1722,12 @@ body.chidy-elite #headerInstallBtn:hover,
   filter: brightness(1.05);
   transform: translateY(-1px);
   box-shadow:
-    0 0 0 5px rgba(37,99,235,0.30),
-    0 10px 22px rgba(37,99,235,0.50) !important;
+    0 0 0 3px rgba(220,38,38,0.5),
+    0 10px 22px rgba(37,99,235,0.5) !important;
 }
 @keyframes pmmInstallPulse {
-  0%,100% { box-shadow: 0 0 0 3px rgba(37,99,235,0.20), 0 6px 16px rgba(37,99,235,0.35); }
-  50%     { box-shadow: 0 0 0 6px rgba(37,99,235,0.35), 0 10px 22px rgba(37,99,235,0.55); }
+  0%,100% { box-shadow: 0 0 0 2px rgba(220,38,38,0.35), 0 6px 16px rgba(37,99,235,0.35); }
+  50%     { box-shadow: 0 0 0 4px rgba(220,38,38,0.55), 0 10px 22px rgba(37,99,235,0.55); }
 }
 
 /* ─── 2. NOTIFICATION HEADER — restore bell icon font ──── */
