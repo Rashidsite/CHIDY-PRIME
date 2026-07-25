@@ -74,7 +74,7 @@
     <link rel="stylesheet" href="/css/chidy-elite.css?v=2.1">
 
     <!-- Portal Cards overlay (home page category tiles) -->
-    <link rel="stylesheet" href="/css/portal-cards.css?v=2.5">
+    <link rel="stylesheet" href="/css/portal-cards.css?v=2.6">
     <script src="/js/portal-cards.js?v=1.9" defer></script>
 
     <!-- Premium overlay: notifications, profile, pata pesa, videos -->
@@ -148,7 +148,8 @@
             border-bottom: 1px solid rgba(0,180,180,0.15) !important;
         }
         .announcement-bar {
-            background: linear-gradient(90deg, #041520, #061a22) !important;
+            background: linear-gradient(90deg, #1e3a8a, #0f172a) !important;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2) !important;
         }
         .game-card {
             background: rgba(5,18,28,0.92) !important;
@@ -358,18 +359,20 @@
             --secondary-glow: #bc13fe;
         }
 
-        /* ANNOUNCEMENT BAR */
+        /* ANNOUNCEMENT BAR - Blue/Black gradient with white text */
         .announcement-bar {
-            background: linear-gradient(90deg, #1a1a2e, #0f0f1a);
+            background: linear-gradient(90deg, #1e3a8a, #0f172a) !important;
             height: 35px; overflow: hidden; position: relative;
-            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2) !important;
             display: flex; align-items: center; z-index: 1001;
         }
         .announcement-content {
             white-space: nowrap; position: absolute;
-            color: var(--primary); font-size: 0.75rem; font-weight: 700;
+            color: #ffffff !important; 
+            font-size: 0.75rem; font-weight: 700;
             letter-spacing: 1px; font-family: 'Orbitron';
             animation: scrollText 25s linear infinite;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
         }
         @keyframes scrollText {
             0% { transform: translateX(100vw); }
@@ -3937,6 +3940,124 @@
             cursor: not-allowed !important;
             transform: none !important;
             box-shadow: none !important;
+        }
+        
+        /* ===========================================
+           ONESIGNAL NOTIFICATION POPUP CUSTOMIZATION
+           =========================================== */
+        
+        /* OneSignal slidedown popup override */
+        #onesignal-slidedown-container,
+        .os-slidedown-container,
+        .onesignal-slidedown-container,
+        .slidedown-container {
+            background: white !important;
+            border: 3px solid #0f172a !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+            padding: 24px !important;
+            max-width: 400px !important;
+            margin: 20px auto !important;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+        }
+        
+        /* Bell icon styling - BLUE background */
+        #onesignal-slidedown-container .os-icon,
+        .os-slidedown-container .os-icon,
+        .slidedown-container .slidedown-icon,
+        .slidedown-bell-icon {
+            background: #3b82f6 !important;
+            border: 2px solid #0f172a !important;
+            border-radius: 50% !important;
+            color: white !important;
+            width: 64px !important;
+            height: 64px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 28px !important;
+            margin: 0 auto 16px auto !important;
+        }
+        
+        /* Main notification text "Pata push za chidyprime" - RED + BOLD */
+        #onesignal-slidedown-container .os-text,
+        .os-slidedown-container .slidedown-title,
+        .slidedown-container .slidedown-title,
+        .slidedown-container h1 {
+            color: #dc2626 !important;
+            font-weight: bold !important;
+            font-size: 18px !important;
+            margin: 16px 0 8px 0 !important;
+            text-align: center !important;
+        }
+        
+        /* Description text - BLUE color */
+        #onesignal-slidedown-container .os-description,
+        .os-slidedown-container .slidedown-body,
+        .slidedown-container .slidedown-body,
+        .slidedown-container p {
+            color: #3b82f6 !important;
+            font-size: 14px !important;
+            margin-bottom: 20px !important;
+            line-height: 1.4 !important;
+            text-align: center !important;
+        }
+        
+        /* Button container */
+        #onesignal-slidedown-container .os-actions,
+        .os-slidedown-container .slidedown-button-container,
+        .slidedown-container .slidedown-button-container {
+            display: flex !important;
+            gap: 12px !important;
+            margin-top: 20px !important;
+            justify-content: center !important;
+        }
+        
+        /* Later/Cancel button (BAADAYE) - RED background, white text */
+        #onesignal-slidedown-container .os-cancel-button,
+        .os-slidedown-container .slidedown-cancel-button,
+        .slidedown-container .slidedown-cancel-button,
+        .slidedown-container button[data-action="cancel"] {
+            background: #dc2626 !important;
+            color: white !important;
+            border: 2px solid #0f172a !important;
+            border-radius: 8px !important;
+            padding: 12px 20px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            flex: 1 !important;
+            max-width: 120px !important;
+        }
+        
+        /* Allow/Accept button (NDIO, NAKUBALI) - BLUE background, white text */
+        #onesignal-slidedown-container .os-allow-button,
+        .os-slidedown-container .slidedown-allow-button,
+        .slidedown-container .slidedown-allow-button,
+        .slidedown-container button[data-action="allow"] {
+            background: #3b82f6 !important;
+            color: white !important;
+            border: 2px solid #0f172a !important;
+            border-radius: 8px !important;
+            padding: 12px 20px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            flex: 1 !important;
+            max-width: 120px !important;
+        }
+        
+        /* Button hover effects */
+        #onesignal-slidedown-container .os-allow-button:hover,
+        .slidedown-allow-button:hover,
+        .slidedown-container button[data-action="allow"]:hover {
+            background: #2563eb !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        #onesignal-slidedown-container .os-cancel-button:hover,
+        .slidedown-cancel-button:hover,
+        .slidedown-container button[data-action="cancel"]:hover {
+            background: #b91c1c !important;
+            transform: translateY(-1px) !important;
         }
     </style>
 </head>
