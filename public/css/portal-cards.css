@@ -1,9 +1,16 @@
 /* ============================================================
-   CHIDY PRIME — PORTAL CARDS (home page category tiles)
+   CHIDY PRIME — PORTAL CARDS v2.1 (Updated: Jan 2026)
    Each category becomes a big stacked card. Click a card and
    the existing renderCategories() shows the games grid + back
    button (that logic is untouched).
    Scoped to body.chidy-elite so it can't leak.
+   
+   v2.1 UPDATES:
+   - Black borders on signup input fields (1.5px solid #0f172a)
+   - Black border on JOIN NOW button
+   - Rocket icon animation (rocketFly keyframes)
+   - Close button (X) with black circular border
+   - Fixed icon/text overlap in input fields
    ============================================================ */
 
 body.chidy-elite .categories-container.chidy-portal {
@@ -316,7 +323,7 @@ body.chidy-elite #signupOverlay .signup-hero img {
     0 6px 18px rgba(220, 38, 38, 0.25) !important;
   animation: none !important;
 }
-/* Fallback rocket icon — red, small, no glow */
+/* Fallback rocket icon — red, small, animated flight */
 body.chidy-elite #signupOverlay .signup-icon {
   font-size: 2rem !important;
   margin-bottom: 10px !important;
@@ -324,8 +331,47 @@ body.chidy-elite #signupOverlay .signup-icon {
   -webkit-background-clip: initial !important;
   -webkit-text-fill-color: initial !important;
   color: #dc2626 !important;
-  filter: none !important;
-  animation: none !important;
+  filter: drop-shadow(0 4px 6px rgba(220, 38, 38, 0.25)) !important;
+  animation: rocketFly 2.6s ease-in-out infinite !important;
+  display: inline-block !important;
+  transform-origin: center bottom !important;
+}
+@keyframes rocketFly {
+  0%   { transform: translateY(0)   rotate(-8deg); }
+  25%  { transform: translateY(-6px) rotate(-4deg); }
+  50%  { transform: translateY(-10px) rotate(0deg); }
+  75%  { transform: translateY(-6px) rotate(4deg); }
+  100% { transform: translateY(0)   rotate(-8deg); }
+}
+
+/* Close button (X) — top-right of card, black outline, subtle */
+body.chidy-elite #signupOverlay .signup-close {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 1.5px solid #0f172a !important;
+  color: #0f172a !important;
+  font-size: 0.78rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  transition: 0.2s !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+  z-index: 5 !important;
+}
+body.chidy-elite #signupOverlay .signup-close:hover {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  transform: rotate(90deg) !important;
+}
+body.chidy-elite #signupOverlay .signup-close:active {
+  transform: rotate(90deg) scale(0.94) !important;
 }
 
 /* CHIDY PRIME — both words black, bold, compact */
@@ -376,40 +422,49 @@ body.chidy-elite #signupOverlay .signup-gate-hint i { color: #dc2626 !important;
 /* Input rows */
 body.chidy-elite #signupOverlay .input-group {
   margin-bottom: 10px !important;
+  position: relative !important;
 }
 body.chidy-elite #signupOverlay .signup-input {
-  background: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  border: 1.5px solid #0f172a !important;
   color: #0f172a !important;
   border-radius: 10px !important;
-  padding: 12px 14px 12px 40px !important;
+  padding: 12px 14px 12px 44px !important;
   font-size: 0.85rem !important;
   font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
   font-weight: 500 !important;
   outline: none !important;
   margin-bottom: 0 !important;
   transition: 0.2s !important;
+  box-shadow: none !important;
 }
 body.chidy-elite #signupOverlay .signup-input::placeholder {
   color: #94a3b8 !important;
   font-weight: 400 !important;
 }
 body.chidy-elite #signupOverlay .signup-input:focus {
-  border-color: #2563eb !important;
+  border-color: #0f172a !important;
   background: #ffffff !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
 }
-/* Input icons — red */
+/* Input icons — red, positioned so they never overlap the placeholder */
 body.chidy-elite #signupOverlay .input-group i {
   color: #dc2626 !important;
   font-size: 0.85rem !important;
-  left: 14px !important;
-  margin-top: 0 !important;
+  position: absolute !important;
+  left: 15px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 16px !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  line-height: 1 !important;
 }
 
-/* JOIN NOW button — solid blue, white text, no gradient/shine */
+/* JOIN NOW button — solid blue with black outline, white text */
 body.chidy-elite #signupOverlay .btn-signup {
   background: #2563eb !important;
   background-image: none !important;
@@ -421,7 +476,7 @@ body.chidy-elite #signupOverlay .btn-signup {
   text-transform: uppercase !important;
   padding: 13px !important;
   border-radius: 10px !important;
-  border: none !important;
+  border: 1.5px solid #0f172a !important;
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.32) !important;
   margin-top: 6px !important;
   transition: 0.2s !important;

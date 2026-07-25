@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chidy Prime | Elevate Your Gaming Realm</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#494456",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#22005d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "outline": "#7b7488",
+                        "tertiary-container": "#535253",
+                        "surface-container-highest": "#e1e3e4",
+                        "inverse-primary": "#cfbcff",
+                        "on-tertiary-fixed": "#1b1b1c",
+                        "secondary": "#006875",
+                        "primary-fixed-dim": "#cfbcff",
+                        "surface-container-high": "#e7e8e9",
+                        "on-background": "#191c1d",
+                        "background": "#f8f9fa",
+                        "primary": "#4700af",
+                        "inverse-surface": "#2e3132",
+                        "surface-dim": "#d9dadb",
+                        "tertiary-fixed": "#e5e2e3",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#e1e3e4",
+                        "surface-tint": "#6e25f6",
+                        "on-secondary-fixed-variant": "#004f58",
+                        "secondary-fixed-dim": "#00daf3",
+                        "surface-container": "#edeeef",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#cfbcff",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#5400cc",
+                        "on-surface": "#191c1d",
+                        "secondary-container": "#00e3fd",
+                        "primary-fixed": "#e9ddff",
+                        "primary-container": "#6200ea",
+                        "on-tertiary-container": "#c8c5c6",
+                        "outline-variant": "#cbc3d9",
+                        "tertiary": "#3c3b3c",
+                        "surface-container-low": "#f3f4f5",
+                        "on-secondary-container": "#00616d",
+                        "secondary-fixed": "#9cf0ff",
+                        "on-secondary-fixed": "#001f24",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-fixed-dim": "#c8c6c7",
+                        "on-tertiary-fixed-variant": "#474647",
+                        "surface": "#f8f9fa",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1440px",
+                        "margin-desktop": "64px",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "title-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-nav { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .hero-gradient { background: radial-gradient(circle at top right, rgba(98, 0, 234, 0.05), transparent 50%); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="docked full-width top-0 sticky z-50 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/20 transition-all duration-300">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-2xl cursor-pointer hover:bg-surface-container-high transition-colors p-2 rounded-full">menu</span>
+<span class="font-display-lg text-headline-lg-mobile md:text-headline-lg tracking-tighter text-primary font-extrabold">CHIDY PRIME</span>
+</div>
+<nav class="hidden md:flex items-center gap-gutter">
+<a class="text-primary font-bold font-label-sm text-label-sm uppercase tracking-widest" href="#">Home</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm uppercase tracking-widest" href="#">Library</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm uppercase tracking-widest" href="#">Store</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm text-label-sm uppercase tracking-widest" href="#">Premium</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container-high rounded-full transition-colors">search</button>
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+<img class="w-full h-full object-cover" data-alt="A clean professional studio portrait of a modern gamer with high-end tech accessories, softly lit with purple ambient glow, professional corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUSqMGvfAqDeh8yAkIAMluS4KM0820-grXrYlxAbJEdM4iugUpgbXy-mHQKcWGIyEZwnZvaburENNataJpibPNdOFErY9lhN9LNVetZfRQ_pfmKhQBdb1Q--wCGLKh2i-CoDYB62pUy1Su5Z45Gzj_KFoyMfBANx0Nu9VY26UOgqXAtmbj7VIdjj_RheHjySqlz49JJwTAwvR80uBEQ-XActpzb2PD5yWzt3R22iKj2HnfJGf0C1Qj"/>
+</div>
+</div>
+</div>
+</header>
+<main class="relative">
+<!-- Hero Section -->
+<section class="relative min-h-[70vh] flex flex-col items-center justify-center text-center px-margin-mobile py-24 hero-gradient overflow-hidden">
+<div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/5 rounded-full blur-[100px]"></div>
+<div class="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary-container/10 rounded-full blur-[100px]"></div>
+<div class="max-w-4xl mx-auto z-10">
+<span class="inline-block bg-primary-fixed text-on-primary-fixed-variant px-4 py-1.5 rounded-full font-label-sm text-label-sm tracking-[0.15em] mb-8 uppercase">Ultimate Experience</span>
+<h1 class="font-display-lg text-display-lg leading-[1.1] mb-6 tracking-tight">Elevate Your <span class="text-primary-container">Gaming Realm</span></h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10">Experience lightning-fast performance, elite mods, and a professional gaming environment designed for those who demand the best.</p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center">
+<button class="bg-primary-container text-on-secondary px-8 py-4 rounded-xl font-title-md text-title-md hover:bg-primary transition-all hover:shadow-[0_8px_24px_rgba(98,0,234,0.3)] active:scale-95">Start Playing Now</button>
+<button class="border-2 border-primary-container text-primary-container px-8 py-4 rounded-xl font-title-md text-title-md hover:bg-primary-fixed/30 transition-all active:scale-95">Explore Catalog</button>
+</div>
+<div class="mt-16 grid grid-cols-2 md:grid-cols-3 gap-gutter max-w-2xl mx-auto">
+<div class="text-center">
+<div class="font-display-lg text-headline-lg text-primary">500+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Premium Games</div>
+</div>
+<div class="text-center border-x border-outline-variant/30 px-gutter">
+<div class="font-display-lg text-headline-lg text-primary">10K+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Active Players</div>
+</div>
+<div class="hidden md:block text-center">
+<div class="font-display-lg text-headline-lg text-primary">24/7</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Pro Support</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Category Bento Grid -->
+<section class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto py-24">
+<div class="flex justify-between items-end mb-12">
+<div>
+<h2 class="font-headline-lg text-headline-lg mb-2">Explore Categories</h2>
+<p class="text-on-surface-variant font-body-md">Curated collections for every playstyle.</p>
+</div>
+<button class="text-primary-container font-label-sm text-label-sm flex items-center gap-2 group">
+                    VIEW ALL <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
+<!-- Tanzania Games (Large) -->
+<div class="md:col-span-2 md:row-span-2 relative group overflow-hidden rounded-3xl bg-surface-container-high shadow-sm hover:shadow-xl transition-all duration-500">
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/90 via-on-surface/20 to-transparent z-10"></div>
+<img class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A hyper-realistic 3D render of a high-end luxury bus driving through a beautifully lit Tanzanian landscape at dusk, showcasing the local environment with cinematic lighting and deep purple sunset hues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAujkX4-b2c-BGmnGipvi9pSGjqG13H0rA0-ZpBylN16KCdA4jehY4WYXnz-T25fNFABm3v1SX_qXUzKN8njgTsyapDmMynLhCt6YHmEZJ2RlYjJLe4TzM3uBcXY06tWCEP1qf_9UPwQUCo9EsfIG5O4DKW6qSm2snwkQiH8yfNLN7V5lQUXXnAo-4zEl3xe-TtI99zmemtOV3-C5r8N7KHSy5xI1wCwzdPjVsfsKIkWjd3ZdClD10"/>
+<div class="absolute bottom-0 left-0 p-8 z-20 w-full">
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-sm text-label-sm mb-4 inline-block">Local Legend</span>
+<h3 class="font-headline-lg text-headline-lg text-white mb-2">Tanzania Games</h3>
+<p class="text-white/80 font-body-md mb-6">Localized mods and unique Tanzanian simulations.</p>
+<button class="bg-white/20 backdrop-blur-md text-white border border-white/30 px-6 py-2 rounded-xl font-label-sm text-label-sm hover:bg-white hover:text-on-surface transition-colors">Explore Collection</button>
+</div>
+</div>
+<!-- Mobile Mods (Tall) -->
+<div class="md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-3xl bg-surface-container-high shadow-sm hover:shadow-xl transition-all duration-500">
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent z-10"></div>
+<img class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A close-up shot of a modern smartphone displaying a high-definition mobile game with colorful graphics, held in a high-tech gaming environment with vibrant neon purple lighting and clean professional aesthetics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZpOikdZGKYVUsUTdD-kqdggoHMbGiXHN1ZxfV3k_QICE7vGcGMMv4lBilC8IoO68uy8pATH7XoM0_Z1siJNZjvxNvfw5KEVP24oS9VwgyMpLQ4cmBnma_LhUecaKlK06oJC5tAvo0bhBOQAFUH9YMoEuARGaDF6nkgoVWmmu-S9IX38okcguSYS7pvqGckpyUZUlwax4xlfsXgtX6J-87HJnHiOx0tu-WQC5CKZ8xJgg-99zjUQH2"/>
+<div class="absolute bottom-0 left-0 p-8 z-20">
+<h3 class="font-title-md text-title-md text-white mb-2">Mobile Mods</h3>
+<p class="text-white/80 font-body-md text-sm">optimized for performance.</p>
+</div>
+</div>
+<!-- PC Elite -->
+<div class="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-3xl bg-surface-container-high shadow-sm hover:shadow-xl transition-all duration-500">
+<div class="absolute inset-0 bg-gradient-to-r from-on-surface/80 to-transparent z-10"></div>
+<img class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A high-end PC gaming setup with multiple monitors and a transparent case glowing with rich purple LED lights, reflecting on a white minimalist desk in a bright clean room." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCXsK_06hrjkq4kmT9hWnDdwM7FP_eGTfVoBF4Egs7E7C-tAGHLqnKhsA_szStGjDvrLkc-iX0Yqlb3E9JoKHbmHjsRmLqViX1VCbsbYF4RPRsLXbXsRiiTesic2oTqLVDM6ZFLIcasIO7Yy1aWEnEe03cGnV5Ly2EZgLDlxs4zeLw1qaBvUw8ZkOSda8SAXl2lcytWcnci04rKk46xeWzSiDBhnSbLfuhzG-2i9cwzAuY_WNDfsDn"/>
+<div class="absolute inset-0 flex flex-col justify-center p-6 z-20">
+<h3 class="font-title-md text-title-md text-white">PC Elite</h3>
+</div>
+</div>
+<!-- New Arrivals -->
+<div class="md:col-span-1 md:row-span-1 relative group overflow-hidden rounded-3xl bg-surface-container-high shadow-sm hover:shadow-xl transition-all duration-500">
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/80 to-transparent z-10"></div>
+<img class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A collage of various modern game covers with dynamic action poses, bright vibrant colors, and a polished high-fidelity digital art style against a clean white background with purple accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCa1a03lFZDHlXyGEzDtCJHxO1l8qcwW9Tgct_meJCr3V1H0oTO-9FUapdHnjnfZ4Nc9OLF0LJlDbUO92YkH_YKy0RqLFv8szzGAFCAAbjPV23PgTqe7riySTCZp9KfQpDdJi1YZauYUBYzJ-aQH_KekbDsJtHLnqJun-1vSUICGlfUoVizAb_b-Hrjsyn5F6zZNIwPbeTc_e43C69JYzgQSGYGUuafaunGexZclwPLwYJjZQRyUsaH"/>
+<div class="absolute inset-0 flex flex-col justify-center p-6 z-20">
+<h3 class="font-title-md text-title-md text-white">New Arrivals</h3>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Trending Section -->
+<section class="bg-surface-container-low py-24">
+<div class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="flex items-center gap-4 mb-12">
+<span class="material-symbols-outlined text-primary-container text-3xl">trending_up</span>
+<h2 class="font-headline-lg text-headline-lg">Trending Global Mods</h2>
+</div>
+<div class="flex overflow-x-auto gap-gutter hide-scrollbar pb-8 snap-x snap-mandatory">
+<!-- Game Card 1 -->
+<div class="min-w-[280px] md:min-w-[340px] snap-start bg-surface rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all group">
+<div class="h-48 rounded-xl overflow-hidden mb-4 relative">
+<img class="w-full h-full object-cover" data-alt="A cinematic action shot of a stylized futuristic sports car racing through a glowing synthwave city at night, with heavy emphasis on purple and blue lighting and high-speed motion blur." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqRtBs85wKF5IAq7HLNC3xMaoLOahaPLAu0b8bIR3nL3HcO56ZRFIo32FE38tuOatOQTB88L0WUfC2TLWkfh9ShSq0rTSSrevLYimiGBH_JvzMewnAHlxHA9Q95D-Q__s-fSGg82P8uswHTfyr9niD_TelXQTcKbsNp9pcAFtI6hlUOTKST6ISZqilH_TPIT0d0TKrcJgi8Q-HKx3SEaeDO5y6lBIIPTPkoZwmlghPnj9BccCPRSOR"/>
+<div class="absolute top-2 right-2 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg text-white font-label-sm text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span> 4.9
+                            </div>
+</div>
+<h4 class="font-title-md text-title-md mb-1 group-hover:text-primary transition-colors">ETS 2 Mobile Pro</h4>
+<p class="text-on-surface-variant text-sm mb-4">Ultimate Tanzania Bus Pack</p>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm">groups</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2.4k Active</span>
+</div>
+<button class="bg-surface-container-high p-2 rounded-full text-primary-container group-hover:bg-primary-container group-hover:text-white transition-all">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+<!-- Game Card 2 -->
+<div class="min-w-[280px] md:min-w-[340px] snap-start bg-surface rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all group">
+<div class="h-48 rounded-xl overflow-hidden mb-4 relative">
+<img class="w-full h-full object-cover" data-alt="A detailed digital painting of an elite soccer player in a vibrant purple jersey celebrating a goal in a massive stadium under bright floodlights, professional sports game art style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5xhwZQhsDQP80Ybrsb3Bo94X6x1AtFx3bppMNdOcgZ5AL4Mu_jsdZ5LQhiI_6lJ8CQiu177Pot1ECiKqGay9S7ecaFByBlZE_jwkVYkfMjwSANXUPsy8L5CiLzoDdiqZWCCMudbPxW3cqeeD0EEC-_aDHomxUvHY3CM-1PEcxCJ1Qe7Rl8JNuFHgeUDXOnmJx9YMUrjER5jbeqP5fNUhCl3bce8cH5fPWfZ9AfrWyDBS3svlYJ5jh"/>
+<div class="absolute top-2 right-2 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg text-white font-label-sm text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span> 4.8
+                            </div>
+</div>
+<h4 class="font-title-md text-title-md mb-1 group-hover:text-primary transition-colors">NBC Premier 2026</h4>
+<p class="text-on-surface-variant text-sm mb-4">Official Season Update</p>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm">groups</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">5.1k Active</span>
+</div>
+<button class="bg-surface-container-high p-2 rounded-full text-primary-container group-hover:bg-primary-container group-hover:text-white transition-all">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+<!-- Game Card 3 -->
+<div class="min-w-[280px] md:min-w-[340px] snap-start bg-surface rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all group">
+<div class="h-48 rounded-xl overflow-hidden mb-4 relative">
+<img class="w-full h-full object-cover" data-alt="A realistic 3D interior of a modern heavy-duty truck cabin, showing advanced digital dashboard controls and a view of a sprawling highway during sunset with rich saturated colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuChfNhoJXCoM3hBwxNhrkbcdF9kXaaPTmjrtpGlBkWXk6k4nKpgX8KYRFsEmrRZYjxlRb2jFIHU0loYRB7DYVHS3JQV1xVd5ANzck4j99Lxk446MwdQq1e88yyxT1IHPGj_f5ZqI6v9rgvkLTp8uB8lQCMCqNPNdcXtIDZXIwUGt9I4ZwSC-RwRyraxqqfk1Rkvhkh3G_AkCOPaP-TVU8gtCI4dQVsWAL2qfB8gBf5t1_l2NkdCvx_O"/>
+<div class="absolute top-2 right-2 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg text-white font-label-sm text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span> 4.7
+                            </div>
+</div>
+<h4 class="font-title-md text-title-md mb-1 group-hover:text-primary transition-colors">World Truck Sim TZ</h4>
+<p class="text-on-surface-variant text-sm mb-4">New Fleet Expansion</p>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm">groups</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1.8k Active</span>
+</div>
+<button class="bg-surface-container-high p-2 rounded-full text-primary-container group-hover:bg-primary-container group-hover:text-white transition-all">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+<!-- Game Card 4 -->
+<div class="min-w-[280px] md:min-w-[340px] snap-start bg-surface rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all group">
+<div class="h-48 rounded-xl overflow-hidden mb-4 relative">
+<img class="w-full h-full object-cover" data-alt="A sleek high-fantasy RPG environment featuring a floating crystal fortress surrounded by magical purple energy clouds, high-fidelity gaming world design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0bSewfOS4knqQQ2-GmDLSqxQoHSKmY_fBPogcXNkLxVdykt6MjEGc59RfJl9jKrOvUkMuHwBeyf-S2UfJDXulmwgqF6DvKVmPHmA9YM7Ii5kJgQZGCwHzZlskNxcayCF1j2MvSojLfoT3QV7Y_rnqIOwN_YTBOChgbUlzmcrZ4ENW72_zuiYoLEsplifWotxVyZcPr8hFsbkiqkprZyY6DY_ote9tB1QKsJmf40AxGRM9QJTW4Vvy"/>
+<div class="absolute top-2 right-2 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg text-white font-label-sm text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span> 5.0
+                            </div>
+</div>
+<h4 class="font-title-md text-title-md mb-1 group-hover:text-primary transition-colors">Aetheria Legends</h4>
+<p class="text-on-surface-variant text-sm mb-4">MMO Fantasy Conquest</p>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm">groups</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">12k Active</span>
+</div>
+<button class="bg-surface-container-high p-2 rounded-full text-primary-container group-hover:bg-primary-container group-hover:text-white transition-all">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Membership Benefits -->
+<section class="py-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<div class="text-center mb-16">
+<h2 class="font-display-lg text-headline-lg md:text-display-lg mb-4">The Prime Edge</h2>
+<p class="text-on-surface-variant font-body-lg max-w-2xl mx-auto">Elevate your performance with exclusive features designed for professional gaming.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="bg-white p-10 rounded-[32px] shadow-[0_4px_24px_rgba(98,0,234,0.04)] border border-outline-variant/10 hover:border-primary-container/30 transition-all text-center group">
+<div class="w-20 h-20 bg-primary-fixed rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-4xl">bolt</span>
+</div>
+<h3 class="font-headline-lg text-title-md mb-4">Ultra-Low Latency</h3>
+<p class="text-on-surface-variant font-body-md">Optimized network routing ensures your commands reach the server before your opponents' do.</p>
+</div>
+<div class="bg-white p-10 rounded-[32px] shadow-[0_4px_24px_rgba(98,0,234,0.04)] border border-outline-variant/10 hover:border-primary-container/30 transition-all text-center group">
+<div class="w-20 h-20 bg-secondary-container/20 rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-secondary text-4xl">trophy</span>
+</div>
+<h3 class="font-headline-lg text-title-md mb-4">Pro Tournaments</h3>
+<p class="text-on-surface-variant font-body-md">Exclusive access to high-stakes competitions with major prizes and regional recognition.</p>
+</div>
+<div class="bg-white p-10 rounded-[32px] shadow-[0_4px_24px_rgba(98,0,234,0.04)] border border-outline-variant/10 hover:border-primary-container/30 transition-all text-center group">
+<div class="w-20 h-20 bg-error-container/20 rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-error text-4xl">verified_user</span>
+</div>
+<h3 class="font-headline-lg text-title-md mb-4">Fair-Play Shield</h3>
+<p class="text-on-surface-variant font-body-md">Advanced anti-cheat measures ensure every victory on Chidy Prime is earned with skill.</p>
+</div>
+</div>
+</section>
+<!-- Newsletter / CTA -->
+<section class="px-margin-mobile md:px-margin-desktop py-24">
+<div class="max-w-container-max mx-auto bg-primary-container rounded-[48px] p-8 md:p-20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12">
+<div class="absolute top-0 right-0 w-1/2 h-full opacity-10">
+
+</div>
+<div class="relative z-10 max-w-xl">
+<h2 class="font-display-lg text-headline-lg md:text-display-lg text-white mb-6">Ready to Join the Elite?</h2>
+<p class="text-white/80 font-body-lg mb-10">Subscribe for early access to new mods, community tournaments, and exclusive membership offers.</p>
+<form class="flex flex-col sm:flex-row gap-4">
+<input class="flex-1 bg-white/10 border border-white/20 rounded-xl px-6 py-4 text-white placeholder:text-white/50 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all" placeholder="Your email address" type="email"/>
+<button class="bg-white text-primary-container px-8 py-4 rounded-xl font-title-md text-title-md hover:bg-opacity-90 transition-all shadow-lg active:scale-95">Subscribe</button>
+</form>
+</div>
+<div class="relative z-10 hidden lg:block w-96 h-96">
+<img class="w-full h-full object-contain" data-alt="A clean high-definition futuristic 3D rendering of a premium gaming headset floating in mid-air, surrounded by glowing particles on a white background with purple accents, professional studio product shot." src="https://lh3.googleusercontent.com/aida-public/AB6AXuADJ4x5QMOt0MbrxaxzOt4w5JGjLbt1Se3VS3WBTYQYgrWIZi0v7Z06TLbBS4p9muLBf_I97R7UucFkcMPRimAo76NlwWjdnGivr1ncqYEeQyf78Ox0rO5WQxnG9uY6V2qqILBRf6xDbMIiXgO_Sa63PzmTFL2Bayeu8sU6-AAu64Llaan2RwIj-4i1LwdRP8JOjRzcP5f9GjE2RHJ8-I3ElyfrYhMwoqAhPWa_snOzn_RJiYBZTzGB"/>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-white py-16 px-margin-mobile md:px-margin-desktop border-t border-outline-variant/10">
+<div class="max-w-container-max mx-auto">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+<div class="col-span-1 md:col-span-1">
+<span class="font-display-lg text-headline-lg-mobile tracking-tighter text-primary font-extrabold block mb-6">CHIDY PRIME</span>
+<p class="text-on-surface-variant font-body-md mb-8">The premier destination for high-fidelity gaming in Tanzania and beyond.</p>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary hover:bg-primary-container hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-xl">share</span></a>
+<a class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary hover:bg-primary-container hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-xl">rss_feed</span></a>
+<a class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary hover:bg-primary-container hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-xl">mail</span></a>
+</div>
+</div>
+<div>
+<h4 class="font-label-sm text-label-sm text-primary uppercase tracking-[0.2em] mb-8">Platform</h4>
+<ul class="space-y-4">
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Games Library</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Mobile Hub</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">PC Store</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Server Status</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-sm text-label-sm text-primary uppercase tracking-[0.2em] mb-8">Membership</h4>
+<ul class="space-y-4">
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Pro Tiers</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Elite Rewards</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Referral Program</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Gift Cards</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-sm text-label-sm text-primary uppercase tracking-[0.2em] mb-8">Support</h4>
+<ul class="space-y-4">
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Community Forum</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Report Issue</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Contact Pro Team</a></li>
+</ul>
+</div>
+</div>
+<div class="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-outline-variant/10 gap-6">
+<p class="text-on-surface-variant font-label-sm text-label-sm">© 2024 CHIDY PRIME. ALL RIGHTS RESERVED.</p>
+<div class="flex gap-8">
+<a class="text-on-surface-variant font-label-sm text-label-sm hover:text-primary" href="#">PRIVACY POLICY</a>
+<a class="text-on-surface-variant font-label-sm text-label-sm hover:text-primary" href="#">TERMS OF SERVICE</a>
+<a class="text-on-surface-variant font-label-sm text-label-sm hover:text-primary" href="#">COOKIE SETTINGS</a>
+</div>
+</div>
+</div>
+</footer>
+<!-- Bottom Navigation Bar (Mobile only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-2 pb-safe bg-surface/95 backdrop-blur-md border-t border-outline-variant/10 shadow-[0_-4px_12px_rgba(98,0,234,0.04)] z-50">
+<div class="flex flex-col items-center justify-center text-primary bg-primary-fixed/30 rounded-xl px-4 py-1.5 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-0.5">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">video_library</span>
+<span class="font-label-sm text-label-sm mt-0.5">Library</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm mt-0.5">Profile</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-sm text-label-sm mt-0.5">Admin</span>
+</div>
+</nav>
+<script>
+        // Simple scroll interaction for the header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-md', 'h-14');
+                header.classList.remove('h-16');
+            } else {
+                header.classList.remove('shadow-md', 'h-14');
+                header.classList.add('h-16');
+            }
+        });
+
+        // Hover scale effect for cards via JS for smoothness
+        const cards = document.querySelectorAll('.snap-start');
+        cards.forEach(card => {
+            card.addEventListener('mousedown', () => card.style.transform = 'scale(0.98)');
+            card.addEventListener('mouseup', () => card.style.transform = 'scale(1)');
+        });
+    </script>
+</body></html>
