@@ -1367,10 +1367,52 @@ app.get('/api/check-video-access/:visitor_id/:video_id', async (req, res) => {
 });
 
 // ============================================
-// HARAKAPAY / ZENOPAY VIDEO CHECKOUT & VERIFY
+// ============================================
+// VIDEO CHECKOUT — PressoPay (primary) → HarakaPay (auto-fallback)
 // ============================================
 
-// VIDEO HARAKAPAY CHECKOUT
+// Internal helper: attempt HarakaPay STK push for a video order
+async function _harakaVideoCheckout({ req, formattedPhone, amount, videoTitle, visitorId, videoId }) {
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers.host;
+    const webhookUrl = `${protocol}://${host}/api/payments/harakapay-callback`;
+
+    const payload = {
+        phone: formattedPhone,
+        amount: parseFloat(amount),
+        description: `Video: ${videoTitle || 'Premium Video'}`,
+        webhook_url: webhookUrl
+    };
+    console.log('[HarakaPay Video] initiating STK push:', payload);
+
+    const hRes = await fetch('https://harakapay.net/api/v1/collect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': HARAKAPAY_API_KEY },
+        body: JSON.stringify(payload)
+    });
+    const data = await hRes.json();
+    console.log('[HarakaPay Video] response:', data);
+
+    if (data.success === true && data.order_id) {
+        const { data: video } = await supabase.from('videos').select('duration_days').eq('id', videoId).single();
+        const dDays = video ? (video.duration_days || 0) : 0;
+        let expiresAt = new Date('2099-12-31T23:59:59Z');
+        if (dDays > 0) { expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + dDays); }
+
+        await supabase.from('payment_orders').insert([{
+            visitor_id: parseInt(visitorId),
+            post_id: videoId,
+            amount,
+            phone_number: formattedPhone,
+            status: 'pending',
+            expires_at: expiresAt.toISOString(),
+            promo_used: data.order_id
+        }]);
+    }
+    return { status: data.success ? 'success' : 'failed', message: data.message || (data.success ? 'success' : 'failed'), order_id: data.order_id || null, provider: 'harakapay' };
+}
+
+// PressoPay-first video checkout with automatic HarakaPay fallback
 const initiateVideoCheckout = async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { amount, phone, videoTitle, visitorId, videoId, email, name } = req.body;
@@ -1382,69 +1424,61 @@ const initiateVideoCheckout = async (req, res) => {
     if (formattedPhone.startsWith('0')) formattedPhone = '255' + formattedPhone.substring(1);
     else if (!formattedPhone.startsWith('255')) formattedPhone = '255' + formattedPhone;
 
-    try {
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        const host = req.headers.host;
-        const webhookUrl = `${protocol}://${host}/api/payments/harakapay-callback`;
+    // ── 1. Try PressoPay first ──
+    if (pressopay.isConfigured()) {
+        try {
+            let normalizedPhone;
+            try { normalizedPhone = pressopay.normalizePhoneNumber(phone); } catch (_) { normalizedPhone = formattedPhone; }
 
-        const payload = {
-            phone: formattedPhone,
-            amount: parseFloat(amount),
-            description: `Video: ${videoTitle || 'Premium Video'}`,
-            webhook_url: webhookUrl
-        };
+            const merchantReference = `CHIDY-VID-${videoId}-${visitorId}-${Date.now()}`;
+            const result = await pressopay.createCheckout({
+                merchantReference,
+                amountMinor: parseInt(amount, 10),
+                buyerName:  name  || 'Chidy Customer',
+                buyerEmail: email || `${normalizedPhone}@chidyprime.com`,
+                buyerPhone: normalizedPhone,
+                description: `Video: ${videoTitle || 'Premium Video'}`
+            });
 
-        console.log('Initiating HarakaPay Video Checkout:', payload);
-
-        const hRes = await fetch('https://harakapay.net/api/v1/collect', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': HARAKAPAY_API_KEY
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await hRes.json();
-        console.log('HarakaPay Video checkout response:', data);
-
-        // Map HarakaPay response format to match frontend expectation
-        const result = {
-            status: data.success ? 'success' : 'failed',
-            message: data.message || (data.success ? 'success' : 'failed'),
-            order_id: data.order_id || null
-        };
-
-        if (data.success === true && data.order_id) {
-            const extOrderId = data.order_id;
-            
-            // Get video for duration info
+            const extOrderId = `PP:${result.reference}`;
             const { data: video } = await supabase.from('videos').select('duration_days').eq('id', videoId).single();
             const dDays = video ? (video.duration_days || 0) : 0;
             let expiresAt = new Date('2099-12-31T23:59:59Z');
             if (dDays > 0) { expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + dDays); }
 
-            // Store pending order — reuse post_id for video_id
             await supabase.from('payment_orders').insert([{
-                visitor_id: parseInt(visitorId),
+                visitor_id: parseInt(visitorId, 10),
                 post_id: videoId,
-                amount: amount,
-                phone_number: formattedPhone,
+                amount,
+                phone_number: normalizedPhone,
                 status: 'pending',
                 expires_at: expiresAt.toISOString(),
-                promo_used: extOrderId   // track haraka order id
+                promo_used: extOrderId
             }]);
-        }
 
-        res.json(result);
+            console.log('[PressoPay Video] SUCCESS — order:', extOrderId);
+            return res.json({ status: 'success', message: 'Angalia simu yako kukamilisha malipo', order_id: extOrderId, checkout_url: result.checkoutUrl || null, provider: 'pressopay' });
+        } catch (ppErr) {
+            console.warn('[PressoPay Video] FAILED, switching to HarakaPay automatically:', ppErr.message);
+            // fall through to HarakaPay
+        }
+    } else {
+        console.log('[Video Checkout] PressoPay not configured — using HarakaPay directly');
+    }
+
+    // ── 2. Fallback: HarakaPay ──
+    try {
+        const result = await _harakaVideoCheckout({ req, formattedPhone, amount, videoTitle, visitorId, videoId });
+        return res.json(result);
     } catch (err) {
-        console.error('HarakaPay Video Checkout Error:', err);
-        res.status(500).json({ error: 'HarakaPay service error' });
+        console.error('[HarakaPay Video] fallback also failed:', err);
+        return res.status(500).json({ status: 'failed', message: 'Huduma za malipo hazifanyi kazi sasa hivi. Jaribu tena baadaye.' });
     }
 };
 
 app.post('/api/payments/harakapay-video-checkout', initiateVideoCheckout);
 app.post('/api/payments/zenopay-video-checkout', initiateVideoCheckout);
+app.post('/api/payments/pressopay-video-checkout', initiateVideoCheckout);
 
 // VIDEO HARAKAPAY VERIFY (polling from frontend)
 const verifyVideoPayment = async (req, res) => {
@@ -2014,201 +2048,124 @@ app.get('/api/admin/analytics/sales', verifyAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// === HARAKAPAY / ZENOPAY INTEGRATION LOGIC ===
+// ============================================================
+// GAME CHECKOUT — PressoPay (primary) → HarakaPay (auto-fallback)
+// ============================================================
+
+// Internal helper: attempt HarakaPay STK push for a game order
+async function _harakaGameCheckout({ req, formattedPhone, amount, gameTitle, visitorId, postId, promo_used, name }) {
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers.host;
+    const webhookUrl = `${protocol}://${host}/api/payments/harakapay-callback`;
+
+    const payload = {
+        phone: formattedPhone,
+        amount: parseFloat(amount),
+        description: `Game: ${gameTitle || 'Premium Game'}`,
+        webhook_url: webhookUrl
+    };
+    console.log('[HarakaPay Game] initiating STK push:', payload);
+
+    const hRes = await fetch('https://harakapay.net/api/v1/collect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': HARAKAPAY_API_KEY },
+        body: JSON.stringify(payload)
+    });
+    const data = await hRes.json();
+    console.log('[HarakaPay Game] response:', data);
+
+    if (data.success === true && data.order_id) {
+        await supabase.from('payment_orders').insert([{
+            visitor_id: visitorId,
+            post_id: postId,
+            amount,
+            phone_number: formattedPhone,
+            status: 'pending',
+            promo_used: data.order_id
+        }]);
+    }
+    return { status: data.success ? 'success' : 'failed', message: data.message || (data.success ? 'success' : 'failed'), order_id: data.order_id || null, provider: 'harakapay' };
+}
+
+// Master game checkout — PressoPay first, HarakaPay as automatic fallback
 const initiateGameCheckout = async (req, res) => {
-    const { amount, phone, gameTitle, visitorId, postId, email, name, promo_used } = req.body;
-    
-    // Normalize phone
-    let formattedPhone = phone.replace(/[^0-9]/g, '');
-    if (formattedPhone.startsWith('0')) formattedPhone = '255' + formattedPhone.substring(1);
-    else if (!formattedPhone.startsWith('255')) formattedPhone = '255' + formattedPhone;
-
-    try {
-        // Dynamic Webhook URL to avoid redirects (Vercel/Cloudflare)
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        const host = req.headers.host;
-        const webhookUrl = `${protocol}://${host}/api/payments/harakapay-callback`;
-
-        const payload = {
-            phone: formattedPhone,
-            amount: parseFloat(amount),
-            description: `Game: ${gameTitle || 'Premium Game'}`,
-            webhook_url: webhookUrl
-        };
-
-        console.log('Initiating HarakaPay Checkout:', payload, 'Promo Used:', promo_used);
-        if (promo_used) {
-            sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED</b>\n<b>User:</b> ${name} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted Amount:</b> TSh ${parseFloat(amount).toLocaleString()}`);
-        }
-
-        const hRes = await fetch('https://harakapay.net/api/v1/collect', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': HARAKAPAY_API_KEY
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await hRes.json();
-        console.log('HarakaPay response:', data);
-
-        // Map HarakaPay response format to match frontend expectation
-        const result = {
-            status: data.success ? 'success' : 'failed',
-            message: data.message || (data.success ? 'success' : 'failed'),
-            order_id: data.order_id || null
-        };
-
-        if (data.success === true && data.order_id) {
-            const extOrderId = data.order_id;
-            await supabase.from('payment_orders').insert([{
-                visitor_id: visitorId,
-                post_id: postId,
-                amount: amount,
-                phone_number: formattedPhone,
-                status: 'pending',
-                promo_used: extOrderId // We use this field to track the Haraka order ID for polling/callbacks
-            }]);
-        }
-
-        res.json(result);
-    } catch (err) {
-        console.error('HarakaPay Checkout Error:', err);
-        res.status(500).json({ error: 'HarakaPay service error' });
-    }
-};
-
-app.post('/api/payments/harakapay-checkout', initiateGameCheckout);
-app.post('/api/payments/zenopay-checkout', initiateGameCheckout);
-
-// ─── PRESSOPAY CHECKOUT (game) ────────────────────────────
-// Same request shape as HarakaPay/ZenoPay so the frontend can switch
-// providers without any payload changes. Orders are stored with a
-// "PP:" prefix so the auto-worker knows which gateway to poll.
-const initiatePressopayGameCheckout = async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    if (!pressopay.isConfigured()) {
-        return res.status(503).json({ status: 'failed', message: 'PressoPay haijawekwa (missing API keys)' });
-    }
-
     const { amount, phone, gameTitle, visitorId, postId, email, name, promo_used } = req.body;
     if (!amount || !phone || !visitorId || !postId) {
         return res.status(400).json({ status: 'failed', message: 'Taarifa zote zinahitajika' });
     }
 
-    let normalizedPhone;
-    try {
-        normalizedPhone = pressopay.normalizePhoneNumber(phone);
-    } catch (err) {
-        return res.status(400).json({ status: 'failed', message: err.message });
-    }
+    // Normalize phone (HarakaPay format)
+    let formattedPhone = phone.replace(/[^0-9]/g, '');
+    if (formattedPhone.startsWith('0')) formattedPhone = '255' + formattedPhone.substring(1);
+    else if (!formattedPhone.startsWith('255')) formattedPhone = '255' + formattedPhone;
 
-    // Use own merchant reference so we can trace on both sides.
-    const merchantReference = `CHIDY-${postId}-${visitorId}-${Date.now()}`;
+    // ── 1. Try PressoPay first ──
+    if (pressopay.isConfigured()) {
+        try {
+            let normalizedPhone;
+            try { normalizedPhone = pressopay.normalizePhoneNumber(phone); } catch (_) { normalizedPhone = formattedPhone; }
 
-    try {
-        if (promo_used) {
-            sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED (PressoPay)</b>\n<b>User:</b> ${name || 'Anon'} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted:</b> TSh ${parseFloat(amount).toLocaleString()}`);
+            const merchantReference = `CHIDY-${postId}-${visitorId}-${Date.now()}`;
+
+            if (promo_used) {
+                sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED (PressoPay)</b>\n<b>User:</b> ${name || 'Anon'} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted:</b> TSh ${parseFloat(amount).toLocaleString()}`);
+            }
+
+            const result = await pressopay.createCheckout({
+                merchantReference,
+                amountMinor: parseInt(amount, 10),
+                buyerName:  name  || 'Chidy Customer',
+                buyerEmail: email || `${normalizedPhone}@chidyprime.com`,
+                buyerPhone: normalizedPhone,
+                description: `Game: ${gameTitle || 'Premium Game'}`
+            });
+
+            const extOrderId = `PP:${result.reference}`;
+            await supabase.from('payment_orders').insert([{
+                visitor_id: parseInt(visitorId, 10),
+                post_id: postId,
+                amount,
+                phone_number: normalizedPhone,
+                status: 'pending',
+                promo_used: extOrderId
+            }]);
+
+            console.log('[PressoPay Game] SUCCESS — order:', extOrderId);
+            return res.json({ status: 'success', message: 'Angalia simu yako kukamilisha malipo', order_id: extOrderId, checkout_url: result.checkoutUrl || null, provider: 'pressopay' });
+        } catch (ppErr) {
+            console.warn('[PressoPay Game] FAILED, switching to HarakaPay automatically:', ppErr.message);
+
+            // Notify promo via HarakaPay path if not already sent
+            if (promo_used) {
+                sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED (HarakaPay fallback)</b>\n<b>User:</b> ${name || 'Anon'} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted:</b> TSh ${parseFloat(amount).toLocaleString()}`);
+            }
+            // fall through to HarakaPay
         }
+    } else {
+        console.log('[Game Checkout] PressoPay not configured — using HarakaPay directly');
+        if (promo_used) {
+            sendTelegramAlert(`🎟️ <b>PROMO CODE APPLIED</b>\n<b>User:</b> ${name} (${phone})\n<b>Code:</b> ${promo_used}\n<b>Discounted Amount:</b> TSh ${parseFloat(amount).toLocaleString()}`);
+        }
+    }
 
-        const result = await pressopay.createCheckout({
-            merchantReference,
-            amountMinor: parseInt(amount, 10),
-            buyerName: name || 'Chidy Customer',
-            buyerEmail: email || `${normalizedPhone}@chidyprime.com`,
-            buyerPhone: normalizedPhone,
-            description: `Game: ${gameTitle || 'Premium Game'}`
-        });
-
-        const extOrderId = `PP:${result.reference}`;
-
-        await supabase.from('payment_orders').insert([{
-            visitor_id: parseInt(visitorId, 10),
-            post_id: postId,
-            amount: amount,
-            phone_number: normalizedPhone,
-            status: 'pending',
-            promo_used: extOrderId
-        }]);
-
-        return res.json({
-            status: 'success',
-            message: 'Angalia simu yako kukamilisha malipo',
-            order_id: extOrderId,
-            checkout_url: result.checkoutUrl || null,
-            provider: 'pressopay'
-        });
+    // ── 2. Fallback: HarakaPay ──
+    try {
+        const result = await _harakaGameCheckout({ req, formattedPhone, amount, gameTitle, visitorId, postId, promo_used, name });
+        return res.json(result);
     } catch (err) {
-        console.error('PressoPay Game Checkout Error:', err);
-        return res.status(500).json({ status: 'failed', message: err.message || 'PressoPay service error' });
+        console.error('[HarakaPay Game] fallback also failed:', err);
+        return res.status(500).json({ status: 'failed', message: 'Huduma za malipo hazifanyi kazi sasa hivi. Jaribu tena baadaye.' });
     }
 };
-app.post('/api/payments/pressopay-checkout', initiatePressopayGameCheckout);
 
-// PressoPay video checkout — mirrors the game endpoint but stores against
-// the videos table via the shared post_id column.
-const initiatePressopayVideoCheckout = async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    if (!pressopay.isConfigured()) {
-        return res.status(503).json({ status: 'failed', message: 'PressoPay haijawekwa' });
-    }
+// All game checkout routes now go through the same smart function
+app.post('/api/payments/pressopay-checkout',  initiateGameCheckout);
+app.post('/api/payments/harakapay-checkout',  initiateGameCheckout);
+app.post('/api/payments/zenopay-checkout',    initiateGameCheckout);
 
-    const { amount, phone, videoTitle, visitorId, videoId, email, name } = req.body;
-    if (!amount || !phone || !visitorId || !videoId) {
-        return res.status(400).json({ status: 'failed', message: 'Taarifa zote zinahitajika' });
-    }
-
-    let normalizedPhone;
-    try {
-        normalizedPhone = pressopay.normalizePhoneNumber(phone);
-    } catch (err) {
-        return res.status(400).json({ status: 'failed', message: err.message });
-    }
-
-    const merchantReference = `CHIDY-VID-${videoId}-${visitorId}-${Date.now()}`;
-
-    try {
-        const result = await pressopay.createCheckout({
-            merchantReference,
-            amountMinor: parseInt(amount, 10),
-            buyerName: name || 'Chidy Customer',
-            buyerEmail: email || `${normalizedPhone}@chidyprime.com`,
-            buyerPhone: normalizedPhone,
-            description: `Video: ${videoTitle || 'Premium Video'}`
-        });
-
-        const extOrderId = `PP:${result.reference}`;
-
-        // Duration → expires_at
-        const { data: video } = await supabase.from('videos').select('duration_days').eq('id', videoId).single();
-        const dDays = video ? (video.duration_days || 0) : 0;
-        let expiresAt = new Date('2099-12-31T23:59:59Z');
-        if (dDays > 0) { expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + dDays); }
-
-        await supabase.from('payment_orders').insert([{
-            visitor_id: parseInt(visitorId, 10),
-            post_id: videoId,
-            amount: amount,
-            phone_number: normalizedPhone,
-            status: 'pending',
-            expires_at: expiresAt.toISOString(),
-            promo_used: extOrderId
-        }]);
-
-        return res.json({
-            status: 'success',
-            message: 'Angalia simu yako kukamilisha malipo',
-            order_id: extOrderId,
-            checkout_url: result.checkoutUrl || null,
-            provider: 'pressopay'
-        });
-    } catch (err) {
-        console.error('PressoPay Video Checkout Error:', err);
-        return res.status(500).json({ status: 'failed', message: err.message || 'PressoPay service error' });
-    }
-};
-app.post('/api/payments/pressopay-video-checkout', initiatePressopayVideoCheckout);
+// NOTE: pressopay-video-checkout is now handled by initiateVideoCheckout above (with automatic failover).
+// The route is already registered there. This comment replaces the old standalone function.
 
 // ─── PRESSOPAY CALLBACK ───────────────────────────────────
 // PressoPay POSTs the payment result here. Payload shape:
@@ -2418,7 +2375,12 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
         });
 
         // 4. Telegram Alert
-        const paymentMethod = (zenoOrderId && zenoOrderId.startsWith('HP')) ? 'HarakaPay' : 'ZenoPay';
+        let paymentMethod = 'Manual';
+        if (zenoOrderId) {
+            if (zenoOrderId.startsWith('PP')) paymentMethod = 'PressoPay';
+            else if (zenoOrderId.startsWith('HP')) paymentMethod = 'HarakaPay';
+            else paymentMethod = 'ZenoPay';
+        }
         sendTelegramAlert(`💰 <b>SUCCESSFUL ${isVideo ? 'VIDEO' : 'GAME'} PAYMENT</b> 💰\n<b>Item:</b> ${item.title}\n<b>Amount:</b> TSh ${parseFloat(amount).toLocaleString()}\n<b>Phone:</b> ${phone}\n<b>Method:</b> ${paymentMethod}`);
     } catch (e) {
         console.error('handleSuccessfulPayment Error:', e);
