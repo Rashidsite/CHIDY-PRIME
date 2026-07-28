@@ -74,7 +74,7 @@
     <link rel="stylesheet" href="/css/chidy-elite.css?v=2.1">
 
     <!-- Portal Cards overlay (home page category tiles) -->
-    <link rel="stylesheet" href="/css/portal-cards.css?v=2.8">
+    <link rel="stylesheet" href="/css/portal-cards.css?v=2.9">
     <script src="/js/portal-cards.js?v=1.9" defer></script>
 
     <!-- Premium overlay: notifications, profile, pata pesa, videos -->
@@ -98,6 +98,37 @@
             serviceWorkerParam: { scope: "/" },
             serviceWorkerPath: "OneSignalSDKWorker.js"
           });
+
+          // ✨ PWA Users: Auto-request notifications if in standalone mode
+          setTimeout(async () => {
+            try {
+              // Detect if user is in PWA mode (standalone)
+              const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                           window.navigator.standalone === true ||
+                           document.referrer.includes('android-app://');
+              
+              if (isPWA) {
+                console.log('🎮 PWA mode detected - checking notification permission...');
+                
+                const permission = await OneSignal.Notifications.permission;
+                if (permission !== 'granted') {
+                  console.log('🔔 Requesting notifications for PWA user...');
+                  
+                  // Show custom notification request for PWA users
+                  if (OneSignal?.Slidedown?.promptPush) {
+                    await OneSignal.Slidedown.promptPush({ force: false });
+                  } else if (OneSignal?.Notifications?.requestPermission) {
+                    await OneSignal.Notifications.requestPermission();
+                  }
+                } else {
+                  console.log('✅ PWA user already has notification permission');
+                }
+              }
+            } catch (e) {
+              console.warn('[PWA] Auto notification request failed:', e);
+            }
+          }, 3000); // Wait 3 seconds after OneSignal init
+
         } catch (err) {
           console.warn('[OneSignal] init failed:', err);
         }
@@ -642,9 +673,6 @@
         @keyframes badgePulse {
             0% { transform: scale(1); box-shadow: 0 0 5px rgba(255,51,51,0.4); }
             100% { transform: scale(1.2); box-shadow: 0 0 15px rgba(255,0,229,0.8); }
-        }
-
-            transition: all 0.3s ease;
         }
         .user-profile:hover .user-avatar {
             box-shadow: 0 0 18px rgba(0,242,255,0.7), 0 0 8px rgba(188,19,254,0.5);
@@ -4591,28 +4619,30 @@
     </div>
 
     <!-- BOTTOM NAVIGATION BAR -->
+    <!-- MODERN BOTTOM NAVIGATION (4 BUTTONS) -->
     <nav class="bottom-bar">
         <div class="bottom-item active" onclick="showHome()">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </div>
-        <!-- WhatsApp Channel Button -->
-        <div class="bottom-item wa-channel-btn" id="waChannelBtn" onclick="openWaChannelModal()">
+        
+        <!-- WhatsApp Channel with Integrated Pata Pesa -->
+        <div class="bottom-item wa-channel-btn" id="waChannelBtn" onclick="openWhatsAppMenu()">
             <div class="wa-icon-wrap">
                 <i class="fab fa-whatsapp"></i>
                 <span class="wa-pulse-ring"></span>
                 <span class="wa-pulse-ring wa-pulse-ring-2"></span>
+                <div class="wa-pesa-badge">💰</div>
             </div>
-            <span class="wa-label">Channel</span>
+            <span class="wa-label">WhatsApp</span>
         </div>
+        
         <div class="bottom-item" onclick="openVideoStore()">
             <i class="fas fa-play-circle" style="color:var(--primary);"></i>
             <span style="color:var(--primary); font-weight:bold;">Video</span>
         </div>
-        <div class="bottom-item affiliate" onclick="openAffiliateModal()">
-            <i class="fas fa-money-bill-wave" style="color: #00ff00;"></i>
-            <span style="color: #00ff00; font-weight: bold;">Pata Pesa</span>
-        </div>
+        
+        <!-- Profile with Settings Integration -->
         <div class="bottom-item" onclick="openProfileModal()" id="bottomProfileBtn">
             <i class="fas fa-user-circle" style="color:#bc13fe;"></i>
             <span style="color:#bc13fe; font-weight:bold;">Profile</span>
@@ -4781,6 +4811,68 @@
             </div>
         </div>
     </div>
+
+    <!-- WHATSAPP INTEGRATED MENU ONCLICK="openWhatsAppMenu()" -->
+    <div class="wa-modal-overlay" id="whatsappMenuOverlay" onclick="closeWhatsAppMenu(event)" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+        <div class="wa-modal-card" style="position:relative; background:#0e1116; border:1px solid rgba(0, 242, 255, 0.2); border-radius:20px; padding:25px; max-width:400px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,0.6);" onclick="event.stopPropagation()">
+            <!-- Top bar -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
+                <h3 style="margin:0; font-family:'Orbitron'; font-size:1.1rem; color:#fff; display:flex; align-items:center; gap:8px;">
+                    <i class="fab fa-whatsapp" style="color:#25D366; font-size:1.4rem;"></i> WHATSAPP &amp; PESA
+                </h3>
+                <button onclick="closeWhatsAppMenu()" style="background:none; border:none; color:#a0a0b0; cursor:pointer; font-size:1.2rem; transition:0.2s;" onmouseover="this.style.color='#ff4444'" onmouseout="this.style.color='#a0a0b0'"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- Menu Options -->
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <!-- Option 1: WhatsApp Channel -->
+                <div onclick="selectWhatsAppMenuOption('channel')" style="display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:15px; border-radius:12px; cursor:pointer; border-left: 3px solid #25D366;" class="wa-menu-option">
+                    <div style="background:rgba(37,211,102,0.15); width:45px; height:45px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#25D366; font-size:1.3rem;">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <h4 style="margin:0; color:#fff; font-size:0.95rem; font-weight:700;">Jiunge na Channel</h4>
+                        <p style="margin:4px 0 0; color:#8e92a2; font-size:0.75rem; line-height:1.3;">Pata taarifa na updates za games mpya haraka zaidi chidy prime!</p>
+                    </div>
+                </div>
+
+                <!-- Option 2: Affiliate / Pata Pesa -->
+                <div onclick="selectWhatsAppMenuOption('pesa')" style="display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:15px; border-radius:12px; cursor:pointer; border-left: 3px solid #bc13fe;" class="wa-menu-option">
+                    <div style="background:rgba(188,19,254,0.15); width:45px; height:45px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#bc13fe; font-size:1.3rem;">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <h4 style="margin:0; color:#fff; font-size:0.95rem; font-weight:700; display:flex; align-items:center; gap:8px;">
+                            Pata Pesa (Affiliate)
+                        </h4>
+                        <p style="margin:4px 0 0; color:#8e92a2; font-size:0.75rem; line-height:1.3;">Alika marafiki wajiunge ujipatie TSh 500 kwa kila malipo yawili yao.</p>
+                    </div>
+                </div>
+
+                <!-- Option 3: Contact Support -->
+                <div onclick="selectWhatsAppMenuOption('support')" style="display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:15px; border-radius:12px; cursor:pointer; border-left: 3px solid #00f2ff;" class="wa-menu-option">
+                    <div style="background:rgba(0,242,255,0.15); width:45px; height:45px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#00f2ff; font-size:1.2rem;">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <h4 style="margin:0; color:#fff; font-size:0.95rem; font-weight:700;">WhatsApp Support</h4>
+                        <p style="margin:4px 0 0; color:#8e92a2; font-size:0.75rem; line-height:1.3;">Wasiliana nasi moja kwa moja kwa changamoto au ushauri wowote.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .wa-menu-option {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .wa-menu-option:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            transform: translateX(4px);
+        }
+    </style>
 
     <!-- WHATSAPP CHANNEL MODAL -->
     <div class="wa-modal-overlay" id="waModalOverlay" onclick="closeWaModal(event)">
@@ -7350,7 +7442,7 @@
             // Ficha main content, onyesha profile page
             overlay.style.display = 'block';
             document.body.style.overflow = 'hidden';
-            setActiveBottom(4);
+            setActiveBottom(3);
 
             // Scroll profile page juu
             overlay.scrollTop = 0;
@@ -7787,6 +7879,36 @@ async function clearAllNotifications() {
             sidebarMenu.innerHTML = html;
         }
 
+        // ===== INTEGRATED WHATSAPP MENU =====
+        function openWhatsAppMenu() {
+            const overlay = document.getElementById('whatsappMenuOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeWhatsAppMenu(e) {
+            const overlay = document.getElementById('whatsappMenuOverlay');
+            if (overlay && (!e || e.target === overlay)) {
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        function selectWhatsAppMenuOption(option) {
+            closeWhatsAppMenu();
+            setTimeout(() => {
+                if (option === 'channel') {
+                    openWaChannelModal();
+                } else if (option === 'pesa') {
+                    openAffiliateModal();
+                } else if (option === 'support') {
+                    openWhatsAppSupport();
+                }
+            }, 150);
+        }
+
         // ===== WHATSAPP CHANNEL MODAL =====
         function openWaChannelModal() {
             document.getElementById('waModalOverlay').classList.add('show');
@@ -8041,7 +8163,7 @@ async function clearAllNotifications() {
             }
 
             // --- PWA INSTALLATION TRACKING ---
-            window.addEventListener('appinstalled', (event) => {
+            window.addEventListener('appinstalled', async (event) => {
                 console.log('👍', 'appinstalled', event);
                 // Clear the deferredPrompt so it can be garbage collected
                 window.deferredPrompt = null;
@@ -8054,6 +8176,39 @@ async function clearAllNotifications() {
                 .then(res => res.json())
                 .then(data => console.log('Install tracked:', data))
                 .catch(err => console.error('Failed to track install:', err));
+
+                // ✨ IMPORTANT: Request notification permission after PWA install
+                setTimeout(async () => {
+                    try {
+                        console.log('🔔 Requesting notification permission for PWA user...');
+                        
+                        // Wait for OneSignal to be ready
+                        if (window.OneSignalDeferred) {
+                            window.OneSignalDeferred.push(async function (OneSignal) {
+                                try {
+                                    // Check if already subscribed
+                                    const isSubscribed = await OneSignal.Notifications.permission;
+                                    if (isSubscribed !== 'granted') {
+                                        // Show OneSignal slidedown prompt
+                                        if (OneSignal?.Slidedown?.promptPush) {
+                                            await OneSignal.Slidedown.promptPush({ force: true });
+                                            console.log('🎯 OneSignal prompt shown to PWA user');
+                                        } else if (OneSignal?.Notifications?.requestPermission) {
+                                            await OneSignal.Notifications.requestPermission();
+                                            console.log('🎯 OneSignal permission requested for PWA user');
+                                        }
+                                    } else {
+                                        console.log('✅ PWA user already has notifications enabled');
+                                    }
+                                } catch (e) {
+                                    console.warn('[PWA] OneSignal notification setup failed:', e);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error('[PWA] Notification permission request failed:', e);
+                    }
+                }, 2000); // Wait 2 seconds after PWA install
             });
         });
 
@@ -8436,13 +8591,6 @@ window.closeSignupOverlay = function () {
             overlay.style.display = 'none';
             overlay.classList.remove('closing');
         }, 120); // Super fast 0.12 seconds
-    }
-};
-        overlay.style.opacity = '0';
-        overlay.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            overlay.style.display = 'none';
-        }, 300);
     }
 };
 

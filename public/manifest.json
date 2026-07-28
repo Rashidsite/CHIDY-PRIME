@@ -7,6 +7,11 @@
   "orientation": "portrait",
   "background_color": "#040d12",
   "theme_color": "#00f2ff",
+  "scope": "/",
+  "gcm_sender_id": "482941778795",
+  "permissions": [
+    "notifications"
+  ],
   "icons": [
     {
       "src": "/icon.png",

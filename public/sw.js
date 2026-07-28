@@ -10,8 +10,8 @@ importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 //   Fallback       → Return cached page if offline
 // ============================================================
 
-const CACHE_NAME    = 'chidy-prime-v7';
-const API_CACHE     = 'chidy-api-v7';
+const CACHE_NAME    = 'chidy-prime-v8';
+const API_CACHE     = 'chidy-api-v8';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon.png',
@@ -145,33 +145,89 @@ async function staleWhileRevalidate(request, cacheName, maxAgeSeconds) {
 
 // ── PUSH NOTIFICATIONS ────────────────────────────────────────
 self.addEventListener('push', function(event) {
+  console.log('[SW] Push event received:', event);
+  
   if (event.data) {
     try {
       const data = event.data.json();
+      console.log('[SW] Push data:', data);
+      
       const options = {
-        body: data.body,
-        icon: '/icon.png',
+        body: data.body || data.message,
+        icon: data.icon || '/icon.png',
         badge: '/icon.png',
-        vibrate: [100, 50, 100],
-        data: { url: data.url || '/' }
+        image: data.image || data.big_image,
+        vibrate: [200, 100, 200],
+        requireInteraction: false,
+        tag: 'chidy-prime-notification',
+        data: { 
+          url: data.url || data.click_action || '/',
+          timestamp: Date.now()
+        },
+        actions: [
+          {
+            action: 'view',
+            title: '👀 View',
+            icon: '/icon.png'
+          }
+        ]
       };
-      event.waitUntil(self.registration.showNotification(data.title, options));
+      
+      const title = data.title || data.heading || 'Chidy Prime';
+      
+      event.waitUntil(
+        self.registration.showNotification(title, options)
+          .then(() => console.log('[SW] Notification shown successfully'))
+          .catch(err => console.error('[SW] Notification show failed:', err))
+      );
     } catch (e) {
-      console.error('Push parse error', e);
+      console.error('[SW] Push parse error:', e);
+      // Fallback notification
+      event.waitUntil(
+        self.registration.showNotification('Chidy Prime', {
+          body: 'You have a new notification',
+          icon: '/icon.png',
+          badge: '/icon.png',
+          data: { url: '/' }
+        })
+      );
     }
+  } else {
+    console.warn('[SW] Push event with no data');
   }
 });
 
 self.addEventListener('notificationclick', function(event) {
+  console.log('[SW] Notification clicked:', event);
   event.notification.close();
+  
+  const urlToOpen = event.notification.data?.url || '/';
+  
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((windowClients) => {
+    clients.matchAll({ 
+      type: 'window',
+      includeUncontrolled: true 
+    }).then((windowClients) => {
+      console.log('[SW] Found clients:', windowClients.length);
+      
+      // Look for existing window with the target URL
       for (const client of windowClients) {
-        if (client.url === event.notification.data.url && 'focus' in client) {
-          return client.focus();
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          console.log('[SW] Focusing existing client:', client.url);
+          return client.focus().then(() => {
+            if (client.navigate && urlToOpen !== '/') {
+              return client.navigate(urlToOpen);
+            }
+          });
         }
       }
-      if (clients.openWindow) return clients.openWindow(event.notification.data.url);
-    })
+      
+      // No existing window found, open new one
+      if (clients.openWindow) {
+        console.log('[SW] Opening new window:', urlToOpen);
+        const fullUrl = urlToOpen.startsWith('http') ? urlToOpen : `${self.location.origin}${urlToOpen}`;
+        return clients.openWindow(fullUrl);
+      }
+    }).catch(err => console.error('[SW] Notification click handling failed:', err))
   );
 });
