@@ -540,6 +540,31 @@ app.post('/api/push/subscribe', express.json(), async (req, res) => {
 });
 
 // API Endpoints
+// Storefront - show only published (alias for posts)
+app.get('/api/posts', async (req, res) => {
+    if (!supabase) {
+        return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('status', 'published')
+            .order('sort_order', { ascending: true });
+
+        if (error) {
+            console.error('Supabase error:', error.message);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Server error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Storefront - show only published
 app.get('/api/games', async (req, res) => {
     if (!supabase) {
