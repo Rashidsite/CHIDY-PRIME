@@ -158,6 +158,10 @@ if (supabaseUrl && supabaseKey) {
 // Start health checks after everything is initialized
 runHealthCheck();
 
+// --- WHATSAPP BUSINESS AI ASSISTANT ---
+const { initWhatsAppAI } = require('./whatsapp-ai');
+initWhatsAppAI(app, supabase);
+
 // --- AUTOMATED PENDING ORDER WORKER ---
 // This worker automatically checks Haraka Pay and ZenoPay for pending orders and approves them if paid.
 // This removes the need for manual admin approval.
