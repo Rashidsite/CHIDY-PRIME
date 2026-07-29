@@ -4878,80 +4878,77 @@
     </div>
 
     <!-- WHATSAPP INTEGRATED MENU ONCLICK="openWhatsAppMenu()" -->
-    <div class="wa-modal-overlay" id="whatsappMenuOverlay" onclick="closeWhatsAppMenu(event)" style="display:none; position:fixed; inset:0; background:rgba(0,5,10,0.88); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); z-index:99999; align-items:center; justify-content:center; padding:16px;">
-        <div class="wa-modal-card" style="position:relative; background:linear-gradient(165deg, #0b151c 0%, #060c12 60%, #0d1a24 100%) !important; border:1px solid rgba(37, 211, 102, 0.35) !important; border-radius:24px !important; padding:24px 20px 20px !important; max-width:420px; width:100%; box-shadow:0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(37,211,102,0.15) !important; overflow:hidden;" onclick="event.stopPropagation()">
+    <div class="wa-modal-overlay" id="whatsappMenuOverlay" onclick="closeWhatsAppMenu(event)" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.65); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:99999; align-items:center; justify-content:center; padding:16px;">
+        <div class="wa-modal-card" style="position:relative; background:#ffffff !important; border:1px solid #e2e8f0 !important; border-radius:24px !important; padding:22px 18px 18px !important; max-width:400px; width:100%; height:auto !important; max-height:90vh; box-shadow:0 20px 50px rgba(15, 23, 42, 0.22) !important; overflow-y:auto; margin:auto !important;" onclick="event.stopPropagation()">
             
-            <!-- Top Neon Glow Line -->
-            <div style="position:absolute; top:0; left:10%; right:10%; height:3px; background:linear-gradient(90deg, transparent, #25D366, #00f2ff, #25D366, transparent); border-radius:0 0 4px 4px; box-shadow:0 0 15px rgba(37,211,102,0.6);"></div>
-
             <!-- Top bar -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="width:42px; height:42px; border-radius:12px; background:rgba(37,211,102,0.15); border:1px solid rgba(37,211,102,0.3); display:flex; align-items:center; justify-content:center; color:#25D366; font-size:1.4rem; box-shadow:0 0 15px rgba(37,211,102,0.25);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:38px; height:38px; border-radius:12px; background:rgba(37,211,102,0.12); border:1px solid rgba(37,211,102,0.3); display:flex; align-items:center; justify-content:center; color:#25D366; font-size:1.3rem;">
                         <i class="fab fa-whatsapp"></i>
                     </div>
                     <div>
-                        <h3 style="margin:0; font-family:'Orbitron', sans-serif; font-size:1.05rem; font-weight:800; color:#ffffff !important; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+                        <h3 style="margin:0; font-family:'Orbitron', 'Plus Jakarta Sans', sans-serif; font-size:1rem; font-weight:800; color:#0f172a !important; letter-spacing:0.3px; display:flex; align-items:center; gap:6px;">
                             WHATSAPP &amp; PESA
                         </h3>
-                        <span style="font-size:0.65rem; color:#00f2ff; font-family:'Orbitron', sans-serif; letter-spacing:1px; font-weight:700; text-transform:uppercase;">OFFICIAL CHIDY PRIME HUB</span>
+                        <span style="font-size:0.62rem; color:#2563eb; font-family:'Orbitron', sans-serif; letter-spacing:0.8px; font-weight:700; text-transform:uppercase;">OFFICIAL CHIDY PRIME HUB</span>
                     </div>
                 </div>
-                <button onclick="closeWhatsAppMenu()" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#a0a0b0; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,68,68,0.2)'; this.style.borderColor='rgba(255,68,68,0.4)'; this.style.color='#ff4444'" onmouseout="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.12)'; this.style.color='#a0a0b0'">
+                <button onclick="closeWhatsAppMenu()" style="background:#f1f5f9; border:1px solid #e2e8f0; color:#64748b; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='#fee2e2'; this.style.borderColor='#fca5a5'; this.style.color='#ef4444'" onmouseout="this.style.background='#f1f5f9'; this.style.borderColor='#e2e8f0'; this.style.color='#64748b'">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
             <!-- Menu Options -->
-            <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
                 <!-- Option 1: WhatsApp Channel -->
-                <div onclick="selectWhatsAppMenuOption('channel')" style="display:flex; align-items:center; gap:14px; background:linear-gradient(135deg, rgba(37,211,102,0.12), rgba(5,15,20,0.85)) !important; border:1px solid rgba(37,211,102,0.3) !important; padding:14px 16px; border-radius:16px; cursor:pointer; border-left:4px solid #25D366 !important; position:relative; overflow:hidden;" class="wa-menu-option">
-                    <div style="background:rgba(37,211,102,0.2); width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#25D366; font-size:1.35rem; flex-shrink:0; box-shadow:0 0 12px rgba(37,211,102,0.3);">
+                <div onclick="selectWhatsAppMenuOption('channel')" style="display:flex; align-items:center; gap:12px; background:#f8fafc !important; border:1px solid #e2e8f0 !important; padding:12px 14px; border-radius:14px; cursor:pointer; border-left:4px solid #25D366 !important; position:relative; transition:all 0.2s ease;" class="wa-menu-option">
+                    <div style="background:rgba(37,211,102,0.12); width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#25D366; font-size:1.25rem; flex-shrink:0;">
                         <i class="fab fa-whatsapp"></i>
                     </div>
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; justify-content:space-between;">
-                            <h4 style="margin:0; color:#ffffff !important; font-size:0.92rem; font-weight:800; font-family:'Plus Jakarta Sans', sans-serif;">Jiunge na Channel</h4>
-                            <span style="background:rgba(37,211,102,0.2); border:1px solid rgba(37,211,102,0.4); color:#25D366; font-size:0.55rem; font-family:'Orbitron', sans-serif; font-weight:800; padding:2px 8px; border-radius:10px; letter-spacing:0.5px;">🔥 UPDATES</span>
+                            <h4 style="margin:0; color:#0f172a !important; font-size:0.88rem; font-weight:800; font-family:'Plus Jakarta Sans', sans-serif;">Jiunge na Channel</h4>
+                            <span style="background:rgba(37,211,102,0.12); border:1px solid rgba(37,211,102,0.3); color:#059669; font-size:0.55rem; font-family:'Orbitron', sans-serif; font-weight:800; padding:2px 7px; border-radius:8px; letter-spacing:0.5px;">🔥 UPDATES</span>
                         </div>
-                        <p style="margin:4px 0 0; color:#b0c4de !important; font-size:0.75rem; line-height:1.35;">Pata taarifa na updates za games mpya haraka zaidi Chidy Prime!</p>
+                        <p style="margin:3px 0 0; color:#475569 !important; font-size:0.73rem; line-height:1.3;">Pata taarifa na updates za games mpya haraka zaidi Chidy Prime!</p>
                     </div>
                 </div>
 
                 <!-- Option 2: Affiliate / Pata Pesa -->
-                <div onclick="selectWhatsAppMenuOption('pesa')" style="display:flex; align-items:center; gap:14px; background:linear-gradient(135deg, rgba(188,19,254,0.12), rgba(5,15,20,0.85)) !important; border:1px solid rgba(188,19,254,0.3) !important; padding:14px 16px; border-radius:16px; cursor:pointer; border-left:4px solid #bc13fe !important; position:relative; overflow:hidden;" class="wa-menu-option">
-                    <div style="background:rgba(188,19,254,0.2); width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#bc13fe; font-size:1.35rem; flex-shrink:0; box-shadow:0 0 12px rgba(188,19,254,0.3);">
+                <div onclick="selectWhatsAppMenuOption('pesa')" style="display:flex; align-items:center; gap:12px; background:#f8fafc !important; border:1px solid #e2e8f0 !important; padding:12px 14px; border-radius:14px; cursor:pointer; border-left:4px solid #a855f7 !important; position:relative; transition:all 0.2s ease;" class="wa-menu-option">
+                    <div style="background:rgba(168,85,247,0.12); width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#a855f7; font-size:1.25rem; flex-shrink:0;">
                         <i class="fas fa-money-bill-wave"></i>
                     </div>
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; justify-content:space-between;">
-                            <h4 style="margin:0; color:#ffffff !important; font-size:0.92rem; font-weight:800; font-family:'Plus Jakarta Sans', sans-serif;">Pata Pesa (Affiliate)</h4>
-                            <span style="background:rgba(188,19,254,0.2); border:1px solid rgba(188,19,254,0.4); color:#bc13fe; font-size:0.55rem; font-family:'Orbitron', sans-serif; font-weight:800; padding:2px 8px; border-radius:10px; letter-spacing:0.5px;">💰 TSH 500</span>
+                            <h4 style="margin:0; color:#0f172a !important; font-size:0.88rem; font-weight:800; font-family:'Plus Jakarta Sans', sans-serif;">Pata Pesa (Affiliate)</h4>
+                            <span style="background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); color:#9333ea; font-size:0.55rem; font-family:'Orbitron', sans-serif; font-weight:800; padding:2px 7px; border-radius:8px; letter-spacing:0.5px;">💰 TSH 500</span>
                         </div>
-                        <p style="margin:4px 0 0; color:#b0c4de !important; font-size:0.75rem; line-height:1.35;">Alika marafiki wajiunge ujipatie TSh 500 kwa kila malipo ya mchezo.</p>
+                        <p style="margin:3px 0 0; color:#475569 !important; font-size:0.73rem; line-height:1.3;">Alika marafiki wajiunge ujipatie TSh 500 kwa kila malipo ya mchezo.</p>
                     </div>
                 </div>
 
-                <!-- Option 3: Contact Support -->
-                <div onclick="selectWhatsAppMenuOption('support')" style="display:flex; align-items:center; gap:14px; background:linear-gradient(135deg, rgba(0,242,255,0.12), rgba(5,15,20,0.85)) !important; border:1px solid rgba(0,242,255,0.3) !important; padding:14px 16px; border-radius:16px; cursor:pointer; border-left:4px solid #00f2ff !important; position:relative; overflow:hidden;" class="wa-menu-option">
-                    <div style="background:rgba(0,242,255,0.2); width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#00f2ff; font-size:1.3rem; flex-shrink:0; box-shadow:0 0 12px rgba(0,242,255,0.3);">
+                <!-- Option 3: Contact Support & AI -->
+                <div onclick="selectWhatsAppMenuOption('support')" style="display:flex; align-items:center; gap:12px; background:#f8fafc !important; border:1px solid #e2e8f0 !important; padding:12px 14px; border-radius:14px; cursor:pointer; border-left:4px solid #2563eb !important; position:relative; transition:all 0.2s ease;" class="wa-menu-option">
+                    <div style="background:rgba(37,99,235,0.12); width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#2563eb; font-size:1.2rem; flex-shrink:0;">
                         <i class="fas fa-headset"></i>
                     </div>
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; justify-content:space-between;">
-                            <h4 style="margin:0; color:#ffffff !important; font-size:0.92rem; font-weight:800; font-family:'Plus Jakarta Sans', sans-serif;">WhatsApp Support &amp; AI</h4>
-                            <span style="background:rgba(0,242,255,0.2); border:1px solid rgba(0,242,255,0.4); color:#00f2ff; font-size:0.55rem; font-family:'Orbitron', sans-serif; font-weight:800; padding:2px 8px; border-radius:10px; letter-spacing:0.5px;">⚡ 24/7 LIVE</span>
+                            <h4 style="margin:0; color:#0f172a !important; font-size:0.88rem; font-weight:800; font-family:'Plus Jakarta Sans', sans-serif;">WhatsApp Support &amp; AI</h4>
+                            <span style="background:rgba(37,99,235,0.12); border:1px solid rgba(37,99,235,0.3); color:#2563eb; font-size:0.55rem; font-family:'Orbitron', sans-serif; font-weight:800; padding:2px 7px; border-radius:8px; letter-spacing:0.5px;">⚡ 24/7 LIVE</span>
                         </div>
-                        <p style="margin:4px 0 0; color:#b0c4de !important; font-size:0.75rem; line-height:1.35;">Wasiliana nasi moja kwa moja kwa msaada na majibu ya papo hapo.</p>
+                        <p style="margin:3px 0 0; color:#475569 !important; font-size:0.73rem; line-height:1.3;">Wasiliana nasi moja kwa moja kwa msaada na majibu ya papo hapo.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Professional Return to Home Button -->
-            <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); text-align:center;">
-                <button onclick="closeWhatsAppMenu(); showHome();" style="width:100%; padding:13px 20px; border-radius:14px; background:linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #00f2ff 100%); color:#ffffff !important; border:none; font-family:'Orbitron', sans-serif; font-size:0.76rem; font-weight:800; letter-spacing:1.2px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 6px 20px rgba(37,99,235,0.4), 0 0 15px rgba(0,242,255,0.2); transition:all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 28px rgba(37,99,235,0.6), 0 0 25px rgba(0,242,255,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(37,99,235,0.4), 0 0 15px rgba(0,242,255,0.2)';">
-                    <i class="fas fa-arrow-left" style="font-size:0.85rem;"></i>
-                    <i class="fas fa-home" style="font-size:0.95rem;"></i>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid #f1f5f9; text-align:center;">
+                <button onclick="closeWhatsAppMenu(); showHome();" style="width:100%; padding:12px 18px; border-radius:12px; background:linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%); color:#ffffff !important; border:none; font-family:'Orbitron', 'Plus Jakarta Sans', sans-serif; font-size:0.75rem; font-weight:800; letter-spacing:1px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 14px rgba(37,99,235,0.3); transition:all 0.25s ease;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 20px rgba(37,99,235,0.45)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 14px rgba(37,99,235,0.3)';">
+                    <i class="fas fa-arrow-left" style="font-size:0.8rem;"></i>
+                    <i class="fas fa-home" style="font-size:0.9rem;"></i>
                     <span>RUDI NYUMBANI (HOME)</span>
                 </button>
             </div>
