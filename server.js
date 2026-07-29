@@ -1710,7 +1710,7 @@ app.post('/api/promo/validate', async (req, res) => {
 // ============================================
 
 
-// Helper to check and approve pending orders via HarakaPay or ZenoPay
+// Helper to check and approve pending orders via HarakaPay, ZenoPay, or PressoPay
 const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
     try {
         const { data: pending } = await supabase
@@ -1728,7 +1728,18 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
             
             if (extOrderId) {
                 let isPaid = false;
-                if (extOrderId.startsWith('HP')) {
+                if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+                    console.log('Fail-safe: Checking PressoPay status for:', extOrderId);
+                    try {
+                        const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+                        const pStatus = await pressopay.checkPaymentStatus(ref);
+                        if ((pStatus.status || '').toUpperCase() === 'COMPLETED') {
+                            isPaid = true;
+                        }
+                    } catch (ppErr) {
+                        console.warn('Fail-safe PressoPay check failed:', ppErr.message);
+                    }
+                } else if (extOrderId.startsWith('HP')) {
                     console.log('Fail-safe: Checking HarakaPay status for:', extOrderId);
                     const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
                         method: 'GET',
