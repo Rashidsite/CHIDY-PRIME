@@ -4,5 +4,9 @@ uploads/
 .DS_Store
 *.log
 scratch/
-extract-admin.js
+extract-*.js
+admin-fix.js
+admin-backup.html
+temp_matches.txt
+temp_script.js
 
