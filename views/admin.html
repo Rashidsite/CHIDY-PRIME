@@ -193,6 +193,11 @@
             cursor: pointer;
         }
 
+        /* Mobile bottom nav — hidden on desktop, shown by media query */
+        .mobile-bottom-nav {
+            display: none;
+        }
+
         /* Orders View Styles */
         .order-card {
             background: #1a1a24;
@@ -2242,7 +2247,7 @@
         <div class="sidebar-brand">CHIDY<span>ADMIN</span></div>
         <ul class="nav-menu">
             <li class="nav-item">
-                <a href="#" class="nav-link active" data-view="dashboardView"><i class="fas fa-th-large"></i> Dashboard</a>
+                <a href="#" class="nav-link active" data-view="dashboardView"><i class="fas fa-th-large"></i> <span>Dashboard</span></a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" data-view="allGamesView"><i class="fas fa-gamepad"></i> All Games</a>
@@ -2284,7 +2289,7 @@
                 <a href="#" class="nav-link" data-view="videosView"><i class="fab fa-youtube" style="color:#ff0000;"></i> <span>Videos</span></a>
             </li>
             <li class="nav-item" style="margin-top: 2rem;">
-                <a href="/" class="nav-link"><i class="fas fa-external-link-alt"></i> View Store</a>
+                <a href="/" class="nav-link"><i class="fas fa-external-link-alt"></i> <span>View Store</span></a>
             </li>
         </ul>
     </aside>
@@ -4495,6 +4500,24 @@
                     </div>
                 </div>
 
+                <!-- WhatsApp Business AI Status -->
+                <div style="background: rgba(37,211,102,0.05); border: 1px solid rgba(37,211,102,0.25); border-radius: 12px; padding: 1.5rem;">
+                    <h4 style="color: #25D366; font-family: 'Orbitron'; margin: 0 0 5px; letter-spacing: 1px; font-size: 0.9rem;"><i class="fab fa-whatsapp"></i> WHATSAPP AI ASSISTANT</h4>
+                    <p style="color: #6c7293; font-size: 0.8rem; margin: 0 0 1rem;">24/7 Intelligent WhatsApp Store Auto-Responder.</p>
+                    
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; font-size: 0.8rem; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                            <span style="color: #6c7293;">Webhook URL:</span>
+                            <span style="color: #25D366; font-family: monospace; font-size:0.75rem;">/api/whatsapp/webhook</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #6c7293;">AI Engine:</span>
+                            <span style="color: #00f2ff; font-weight: bold;" id="waAiEngineLabel">Neural Store AI</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="testWhatsAppAI()" style="width: 100%; background: #25D366; color: #000; font-weight: bold;"><i class="fab fa-whatsapp"></i> TEST WHATSAPP BOT</button>
+                </div>
+
                 <!-- Administrative Pulse -->
                 <div style="background: rgba(255,0,128,0.05); border: 1px solid rgba(255,0,128,0.2); border-radius: 12px; padding: 1.5rem; grid-column: span 2;">
                     <h4 style="color: #ff0080; font-family: 'Orbitron'; margin: 0 0 5px; letter-spacing: 1px; font-size: 0.9rem;"><i class="fas fa-bolt"></i> ADMINISTRATIVE PULSE</h4>
@@ -4615,66 +4638,167 @@
             }
         });
 
-        // Maintenance Toggle State
-        async function fetchMaintenanceState() {
+        async function loadStoreSettings() {
             try {
-                const res = await fetch('/api/settings/maintenance');
-                const data = await res.json();
-                document.getElementById('maintenanceToggle').checked = data.value === 'true';
+                // Flash sale global discount
+                const resDisc = await fetch('/api/settings/global_discount');
+                const dataDisc = await resDisc.json();
+                const discVal = parseInt(dataDisc.value, 10) || 0;
+                const discInput = document.getElementById('globalDiscountInput');
+                if (discInput) discInput.value = discVal;
+                const discBadge = document.getElementById('activeDiscountBadge');
+                if (discBadge) discBadge.style.display = discVal > 0 ? 'block' : 'none';
 
-                // Fetch App Installs
-                const resInstall = await fetch('/api/settings/total_installs');
-                const installData = await resInstall.json();
-                const count = installData.value || 0;
-                
-                // Update both UI elements if they exist
+                // Maintenance Mode
+                const resMaint = await fetch('/api/settings/maintenance');
+                const dataMaint = await resMaint.json();
+                const isMaint = dataMaint.value === 'true';
+                const maintToggle = document.getElementById('maintenanceToggle');
+                if (maintToggle) maintToggle.checked = isMaint;
+                const maintStatus = document.getElementById('maintenanceStatus');
+                if (maintStatus) maintStatus.style.display = isMaint ? 'block' : 'none';
+
+                // Announcement Banner
+                const resAnn = await fetch('/api/settings/announcement');
+                const dataAnn = await resAnn.json();
+                const annInput = document.getElementById('announcementInput');
+                if (annInput) annInput.value = dataAnn.value || '';
+
+                // PWA App Installations
+                const resInst = await fetch('/api/settings/total_installs');
+                const dataInst = await resInst.json();
+                const count = dataInst.value || 0;
                 const el1 = document.getElementById('appInstallsCount');
                 const el2 = document.getElementById('settingsTotalInstalls');
                 if (el1) el1.innerText = count;
                 if (el2) el2.innerText = count;
+
+                // WhatsApp AI Status
+                fetch('/api/admin/whatsapp/status')
+                    .then(r => r.json())
+                    .then(st => {
+                        const lbl = document.getElementById('waAiEngineLabel');
+                        if (lbl) lbl.innerText = st.aiEngine || 'Chidy Prime Neural AI';
+                    }).catch(() => {});
             } catch (err) {
-                console.error('Error fetching admin stats:', err);
+                console.error('Error loading store settings:', err);
             }
+        }
+
+        async function testWhatsAppAI() {
+            const phone = prompt("Weka namba ya simu ya kujaribu (mfano 0712345678):");
+            if (!phone) return;
+            const msg = prompt("Weka ujumbe wa jaribio:", "Habari, naomba kujua bei ya GTA V");
+            if (!msg) return;
+            try {
+                const res = await fetch('/api/whatsapp/webhook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        object: 'whatsapp_business_account',
+                        entry: [{
+                            changes: [{
+                                value: {
+                                    messages: [{ type: 'text', from: phone, text: { body: msg } }],
+                                    contacts: [{ profile: { name: 'Admin Test' } }]
+                                }
+                            }]
+                        }]
+                    })
+                });
+                if (res.ok) {
+                    showToast("✅ Ujumbe wa jaribio umetumwa kwenye WhatsApp AI Engine!");
+                } else {
+                    alert("Error sending test message");
+                }
+            } catch(e) {
+                alert("Error: " + e.message);
+            }
+        }
+
+        async function saveGlobalDiscount() {
+            const val = document.getElementById('globalDiscountInput').value;
+            const num = parseInt(val, 10) || 0;
+            try {
+                const res = await fetch('/api/admin/settings/global_discount', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: String(num) })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(num > 0 ? `✅ Flash Sale Discount (${num}%) Activated!` : "✅ Discount Cleared!");
+                    loadStoreSettings();
+                } else {
+                    alert("Failed to update discount: " + (result.error || 'Server error'));
+                }
+            } catch (e) {
+                alert("Failed to update discount: " + e.message);
+            }
+        }
+
+        async function clearGlobalDiscount() {
+            document.getElementById('globalDiscountInput').value = 0;
+            await saveGlobalDiscount();
         }
 
         async function toggleMaintenance() {
             const toggle = document.getElementById('maintenanceToggle');
             const enabled = toggle.checked;
             try {
-                const res = await fetch('/api/settings/maintenance', {
+                const res = await fetch('/api/admin/settings/maintenance', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ enabled })
+                    body: JSON.stringify({ value: String(enabled) })
                 });
-                if (!res.ok) throw new Error('Failed to update maintenance state');
-                
-                const maintStatus = document.getElementById('maintenanceStatus');
-                if (maintStatus) maintStatus.style.display = enabled ? 'block' : 'none';
-                
-                if (!enabled) {
-                    alert('Maintenance disabled. SMS/Messages queued for users!');
+                const result = await res.json();
+                if (result.success) {
+                    const maintStatus = document.getElementById('maintenanceStatus');
+                    if (maintStatus) maintStatus.style.display = enabled ? 'block' : 'none';
+                    showToast(enabled ? '⚠️ System Maintenance Mode ACTIVATED' : '✅ Maintenance Mode DEACTIVATED');
                 } else {
-                    alert('Maintenance mode enabled!');
+                    throw new Error(result.error || 'Server error');
                 }
             } catch (err) {
                 console.error(err);
                 toggle.checked = !enabled;
-                alert('Error updating maintenance state.');
+                alert('Error updating maintenance state: ' + err.message);
             }
         }
 
         async function updateAnnouncement() {
             const text = document.getElementById('announcementInput').value.trim();
-            if (!text) return alert("Please enter some text");
             try {
-                const res = await fetch('/api/settings/announcement', {
+                const res = await fetch('/api/admin/settings/announcement', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text })
+                    body: JSON.stringify({ value: text })
                 });
                 const result = await res.json();
-                if (result.success) alert("Announcement Banner Updated!");
-            } catch (e) { alert("Failed to update banner"); }
+                if (result.success) {
+                    showToast(text ? "✅ Announcement Banner Updated!" : "✅ Banner Cleared!");
+                    loadStoreSettings();
+                } else {
+                    alert("Failed to update banner: " + (result.error || 'Server error'));
+                }
+            } catch (e) {
+                alert("Failed to update banner: " + e.message);
+            }
+        }
+
+        async function clearAnnouncement() {
+            document.getElementById('announcementInput').value = '';
+            await updateAnnouncement();
+        }
+
+        function refreshAllData() {
+            fetchOrders();
+            initSalesChart();
+            fetchAnalytics();
+            fetchAdminData();
+            loadStoreSettings();
+            if (typeof loadSystemHealth === 'function') loadSystemHealth();
+            showToast("✅ Core Data Refreshed!");
         }
 
         let salesChartInstance = null;
@@ -4813,6 +4937,7 @@
             if (viewId === 'pushView')   initPushView();
             if (viewId === 'promoView') loadPromoCodesWithStats();
             if (viewId === 'affiliatesView') refreshAffiliateData();
+            if (viewId === 'settingsView') loadStoreSettings();
         }
 
         // ============================================
@@ -8136,7 +8261,7 @@
     </script>
 
     <!-- Sticky Mobile Bottom Navigation -->
-    <div class="mobile-bottom-nav" style="display: none;">
+    <div class="mobile-bottom-nav" id="mobileBottomNav">
         <a href="#" class="nav-link active" data-view="dashboardView">
             <i class="fas fa-th-large"></i>
             <span>Dash</span>
@@ -8160,30 +8285,63 @@
     </div>
 
     <script>
-        // Safely intercept showView to keep bottom nav active states in sync
+        // ============================================
+        // MOBILE SIDEBAR TOGGLE
+        // ============================================
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return;
+            sidebar.classList.toggle('active');
+
+            // Create/toggle dim overlay behind sidebar
+            let dim = document.getElementById('sidebarDimOverlay');
+            if (!dim) {
+                dim = document.createElement('div');
+                dim.id = 'sidebarDimOverlay';
+                dim.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:999;display:none;';
+                dim.onclick = () => {
+                    sidebar.classList.remove('active');
+                    dim.style.display = 'none';
+                };
+                document.body.appendChild(dim);
+            }
+            dim.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+        }
+
+        // Close sidebar when a nav link inside it is clicked on mobile
+        document.querySelector('.sidebar').addEventListener('click', function(e) {
+            const link = e.target.closest('.nav-link[data-view]');
+            if (link && window.innerWidth <= 768) {
+                this.classList.remove('active');
+                const dim = document.getElementById('sidebarDimOverlay');
+                if (dim) dim.style.display = 'none';
+            }
+        });
+
+        // ============================================
+        // BOTTOM NAV — register click handlers & sync active state
+        // ============================================
         (function() {
-            function syncBottomNav() {
-                if (typeof window.showView === 'function' && !window.showView.isIntercepted) {
-                    const originalShowView = window.showView;
-                    window.showView = function(viewId) {
-                        originalShowView(viewId);
-                        document.querySelectorAll('.mobile-bottom-nav .nav-link').forEach(link => {
-                            if (link.getAttribute('data-view') === viewId) {
-                                link.classList.add('active');
-                            } else {
-                                link.classList.remove('active');
-                            }
-                        });
-                    };
-                    window.showView.isIntercepted = true;
-                }
+            const bottomNavLinks = document.querySelectorAll('#mobileBottomNav .nav-link[data-view]');
+            bottomNavLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const viewId = this.getAttribute('data-view');
+                    if (typeof showView === 'function') showView(viewId);
+                });
+            });
+
+            // Intercept showView to sync bottom nav active states
+            if (typeof window.showView === 'function' && !window.showView._mobilePatched) {
+                const _orig = window.showView;
+                window.showView = function(viewId) {
+                    _orig(viewId);
+                    bottomNavLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('data-view') === viewId);
+                    });
+                };
+                window.showView._mobilePatched = true;
             }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', syncBottomNav);
-            } else {
-                syncBottomNav();
-            }
-            setTimeout(syncBottomNav, 1000);
         })();
     </script>
 </body>
