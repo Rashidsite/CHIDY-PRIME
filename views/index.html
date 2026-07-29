@@ -5967,13 +5967,23 @@
                     return;
                 }
 
-                list.innerHTML = purchases.map(p => `
-                    <div class="purchased-item">
-                        <img loading="lazy" src="${p.posts.image_url}" alt="">
-                        <div style="font-size: 0.8rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.posts.title}</div>
-                        <a href="${p.posts.download_url}" class="purchased-btn" target="_blank"><i class="fas fa-download"></i> DOWNLOAD</a>
-                    </div>
-                `).join('');
+                list.innerHTML = purchases.map(p => {
+                    // Get download URL from links array or download_url field
+                    const downloadUrl = p.posts.download_url || 
+                                       (Array.isArray(p.posts.links) && p.posts.links[0] && p.posts.links[0].url) || 
+                                       null;
+                    
+                    return `
+                        <div class="purchased-item">
+                            <img loading="lazy" src="${p.posts.image_url}" alt="">
+                            <div style="font-size: 0.8rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.posts.title}</div>
+                            ${downloadUrl ? 
+                                `<a href="${downloadUrl}" class="purchased-btn" target="_blank"><i class="fas fa-download"></i> DOWNLOAD</a>` : 
+                                `<div class="purchased-btn" style="background:#666;cursor:not-allowed;"><i class="fas fa-exclamation-triangle"></i> NO LINK</div>`
+                            }
+                        </div>
+                    `;
+                }).join('');
             } catch (e) {
                 list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: red;">Hitilafu imetokea.</div>';
             }
@@ -6030,9 +6040,9 @@
 
                     // Only show download button if order approved AND user_access is still active
                     const canDownload = o.status === 'approved' && o.access_expires_at && o.post;
-                    const downloadUrl = canDownload
-                        ? ((o.post.download_url) || (Array.isArray(o.post.links) && o.post.links[0] && o.post.links[0].url) || null)
-                        : null;
+                    const downloadUrl = canDownload && o.post ? 
+                                       (o.post.download_url || (Array.isArray(o.post.links) && o.post.links[0] && o.post.links[0].url)) : 
+                                       null;
 
                     return `
                         <div class="purchased-item" style="border:1px solid ${st.border}; background:linear-gradient(180deg, ${st.bg}, rgba(15,20,31,0.6));">
