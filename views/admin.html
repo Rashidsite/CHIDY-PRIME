@@ -6840,3 +6840,49 @@
     </script>
 </body>
 </html>
+
+<script>
+// EMERGENCY ADMIN PANEL FIX - Missing switchAdminTab function
+function switchAdminTab(tabName) {
+    console.log('Switching to admin tab:', tabName);
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Add active class to clicked button
+    const activeBtn = document.getElementById('btn-tab-' + tabName);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+    
+    // Hide all admin sections
+    document.querySelectorAll('.admin-section, .tab-content').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Show target section
+    const targetSection = document.getElementById(tabName + '-section') || 
+                         document.getElementById(tabName + '-tab') ||
+                         document.querySelector(`[data-tab="${tabName}"]`) ||
+                         document.querySelector(`.admin-section.${tabName}`);
+    
+    if (targetSection) {
+        targetSection.style.display = 'block';
+    }
+}
+
+// Fix pointer-events issues
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure all clickable elements work
+    document.querySelectorAll('[onclick]').forEach(element => {
+        element.style.pointerEvents = 'auto';
+        element.style.cursor = 'pointer';
+    });
+    
+    console.log('✅ Admin panel fixed - buttons should work now');
+});
+
+console.log('🔧 Admin fix script loaded');
+</script>
