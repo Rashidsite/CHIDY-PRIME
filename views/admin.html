@@ -10,7 +10,268 @@
     <!-- Chart.js pinned to a specific UMD bundle so the auto-registrar is
          included (unpinned "npm/chart.js" URL served an ESM entry that left
          canvases blank because controllers weren't registered). -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+        // ============================================
+        // FULL CATEGORIES MANAGEMENT SYSTEM
+        // ============================================
+        async function loadCategories() {
+            try {
+                const listEl = document.getElementById('categoriesList');
+                if (listEl) {
+                    listEl.innerHTML = '<div style="color: #6c7293; font-size: 0.9rem;"><i class="fas fa-spinner fa-spin"></i> Loading categories...</div>';
+                }
+                const res = await fetch('/api/categories');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                allCategories = await res.json();
+
+                renderCategoriesList();
+            } catch (err) {
+                console.error("Failed to load categories:", err);
+                const listEl = document.getElementById('categoriesList');
+                if (listEl) {
+                    listEl.innerHTML = `<div style="color: #ff3366; font-size: 0.9rem;">Hitilafu ya kupakia categories: ${err.message}</div>`;
+                }
+            }
+        }
+
+        function renderCategoriesList() {
+            const listEl = document.getElementById('categoriesList');
+            const countEl = document.getElementById('catCount');
+            const dataList1 = document.getElementById('categoryDatalist');
+            const dataList2 = document.getElementById('categoryOptions');
+            const dataList3 = document.getElementById('categoryOptionsEdit');
+
+            if (countEl) countEl.innerText = Array.isArray(allCategories) ? allCategories.length : 0;
+
+            const optionsHtml = (allCategories || []).map(c => `<option value="${c.name}">`).join('');
+            if (dataList1) dataList1.innerHTML = optionsHtml;
+            if (dataList2) dataList2.innerHTML = optionsHtml;
+            if (dataList3) dataList3.innerHTML = optionsHtml;
+
+            if (!listEl) return;
+
+            if (!allCategories || allCategories.length === 0) {
+                listEl.innerHTML = '<div style="color: #6c7293; font-size: 0.9rem;">Hakuna category yoyote iliyopatikana. Ongeza category mpya hapo juu.</div>';
+                return;
+            }
+
+            listEl.innerHTML = allCategories.map(cat => `
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(188, 19, 254, 0.25); border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 220px; flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-folder" style="color: #00f2ff; font-size: 1.1rem;"></i>
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95rem; font-family: 'Orbitron', sans-serif;">${cat.name}</div>
+                            <div style="font-size: 0.75rem; color: #6c7293;">Order: #${cat.display_order || cat.id}</div>
+                        </div>
+                    </div>
+                    <button onclick="deleteCategory('${cat.id}', '${cat.name.replace(/'/g, "\\'")}')" class="neon-btn" style="padding: 6px 12px; font-size: 0.75rem; border-color: #ff3366; color: #ff3366; background: rgba(255,51,102,0.1);">
+                        <i class="fas fa-trash"></i> Futa
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function addCategory() {
+            const input = document.getElementById('newCategoryInput');
+            const msg = document.getElementById('catMsg');
+            if (!input) return;
+
+            const name = input.value.trim();
+            if (!name) {
+                if (msg) {
+                    msg.style.display = 'block';
+                    msg.style.color = '#ff3366';
+                    msg.innerText = '⚠️ Tafadhali andika jina la category!';
+                }
+                return;
+            }
+
+            try {
+                if (msg) {
+                    msg.style.display = 'block';
+                    msg.style.color = '#00f2ff';
+                    msg.innerText = '⏳ Inahifadhi category mpya...';
+                }
+
+                const res = await fetch('/api/categories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+
+                const result = await res.json();
+                if (res.ok && result.success) {
+                    input.value = '';
+                    if (msg) {
+                        msg.style.color = '#00d25b';
+                        msg.innerText = `✅ Category "${result.category.name}" imeongezwa kikamilifu!`;
+                        setTimeout(() => { msg.style.display = 'none'; }, 3000);
+                    }
+                    showToast(`✅ Category "${result.category.name}" imeongezwa!`);
+                    await loadCategories();
+                } else {
+                    if (msg) {
+                        msg.style.color = '#ff3366';
+                        msg.innerText = `❌ Error: ${result.error || 'Imeshindwa kuongeza category'}`;
+                    }
+                }
+            } catch (err) {
+                if (msg) {
+                    msg.style.color = '#ff3366';
+                    msg.innerText = `❌ Hitilafu ya mtandao: ${err.message}`;
+                }
+            }
+        }
+
+        async function deleteCategory(id, name) {
+            if (!confirm(`Je, una uhakika unataka kufuta category "${name}"?\n\nFuta tu kama huna michezo iliyounganishwa na category hii.`)) return;
+
+            try {
+                showToast(`⏳ Inafuta category "${name}"...`);
+                const res = await fetch(`/api/categories/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (res.ok && result.success) {
+                    showToast(`🗑️ Category "${name}" imefutwa!`);
+                    await loadCategories();
+                } else {
+                    showToast(`❌ Error: ${result.error || 'Imeshindwa kufuta category'}`);
+                }
+            } catch (err) {
+                showToast(`❌ Hitilafu ya mtandao: ${err.message}`);
+            }
+        }
+
+        async function loadPortalThumbs() {
+            const container = document.getElementById('portalThumbsList');
+            if (!container) return;
+
+            try {
+                container.innerHTML = '<div style="color: #6c7293; font-size: 0.9rem; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin"></i> Loading portal thumbnails...</div>';
+                const res = await fetch('/api/settings/portal_thumbnails');
+                let thumbs = {};
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.value) {
+                        thumbs = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+                    }
+                }
+
+                const platforms = [
+                    { key: 'android', label: 'Android Games Portal', icon: 'fab fa-android', color: '#00d25b' },
+                    { key: 'ios', label: 'iOS / iPhone Games Portal', icon: 'fab fa-apple', color: '#00f2ff' },
+                    { key: 'pc', label: 'PC / Computer Games Portal', icon: 'fas fa-desktop', color: '#bc13fe' }
+                ];
+
+                container.innerHTML = platforms.map(p => `
+                    <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
+                        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: ${p.color}; margin-bottom: 10px;">
+                            <i class="${p.icon}"></i> ${p.label}
+                        </div>
+                        <input type="text" id="thumb_input_${p.key}" value="${thumbs[p.key] || ''}" placeholder="Picha URL (https://...)" style="width: 100%; margin-bottom: 10px;" />
+                        <button onclick="savePortalThumb('${p.key}')" class="neon-btn" style="padding: 6px 14px; font-size: 0.8rem;">
+                            <i class="fas fa-save"></i> Hifadhi Image
+                        </button>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error("Portal thumbs error:", err);
+            }
+        }
+
+        async function savePortalThumb(key) {
+            const input = document.getElementById(`thumb_input_${key}`);
+            if (!input) return;
+
+            try {
+                showToast(`⏳ Inahifadhi picha...`);
+                const getRes = await fetch('/api/settings/portal_thumbnails');
+                let existing = {};
+                if (getRes.ok) {
+                    const data = await getRes.json();
+                    if (data && data.value) {
+                        existing = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+                    }
+                }
+
+                existing[key] = input.value.trim();
+
+                const res = await fetch('/api/admin/settings/portal_thumbnails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: JSON.stringify(existing) })
+                });
+
+                if (res.ok) {
+                    showToast(`✅ Picha imehifadhiwa kwa ${key.toUpperCase()}!`);
+                } else {
+                    showToast(`❌ Failure saving thumbnail`);
+                }
+            } catch (err) {
+                showToast(`❌ Error: ${err.message}`);
+            }
+        }
+
+
+        // ============================================
+        // ADDITIONAL UTILITY CONTROLLERS
+        // ============================================
+        async function loadSystemHealth() {
+            try {
+                const res = await fetch('/api/system/health');
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                const cpuEl = document.getElementById('cpuUsageText');
+                const memEl = document.getElementById('memUsageText');
+                const dbEl = document.getElementById('dbStatusText');
+                
+                if (cpuEl) cpuEl.innerText = (data.cpuUsage || 0) + '%';
+                if (memEl) memEl.innerText = (data.memoryUsage || 0) + '%';
+                if (dbEl) dbEl.innerText = data.supabaseStatus || 'OK';
+            } catch(e) {
+                console.error("Health check error:", e);
+            }
+        }
+
+        function submitAsDraft() {
+            const form = document.getElementById('gameForm') || document.querySelector('form');
+            if (!form) return;
+            const statusInput = document.getElementById('gameStatusInput') || document.querySelector('input[name="status"]');
+            if (statusInput) statusInput.value = 'draft';
+            if (typeof form.requestSubmit === 'function') form.requestSubmit();
+            else form.submit();
+        }
+
+        function filterByStatus(status) {
+            currentGamesFilter = status;
+            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            if (event && event.currentTarget) event.currentTarget.classList.add('active');
+            if (typeof renderFilteredGames === 'function') renderFilteredGames(status);
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editGameModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function addEditLinkRow() {
+            const container = document.getElementById('editLinksContainer');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = 'link-input-group';
+            div.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
+            div.innerHTML = `
+                <input type="text" class="edit-link-name" placeholder="Link Title (e.g. Mediafire)" style="flex:1;" />
+                <input type="url" class="edit-link-url" placeholder="URL (https://...)" style="flex:2;" />
+                <button type="button" onclick="this.parentElement.remove()" style="background:#ff3366; color:#fff; border:none; border-radius:6px; padding:0 10px; cursor:pointer;">&times;</button>
+            `;
+            container.appendChild(div);
+        }
+
+</script>
     <style>
         :root {
             --sidebar-width: 220px;
@@ -248,78 +509,6 @@
             opacity: 0;
             min-height: 125px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Additional Order Item Styles */
-        .order-item {
-            background: #1a1a24;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 0.8rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-        }
-        .order-item:hover {
-            border-color: rgba(0, 242, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 242, 255, 0.1);
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .order-id {
-            font-family: 'Orbitron';
-            color: var(--primary-color);
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        .order-amount {
-            color: #00d25b;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        .order-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            font-size: 0.8rem;
-            color: #6c7293;
-        }
-        .order-user {
-            color: #fff;
-            font-weight: 500;
-        }
-        .order-item-name {
-            color: #8892b0;
-        }
-        .order-date {
-            text-align: right;
-            color: #6c7293;
-        }
-        .order-extra-info {
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.75rem;
-            color: #6c7293;
-        }
-        @media (max-width: 768px) {
-            .order-details {
-                grid-template-columns: 1fr;
-                gap: 5px;
-            }
-            .order-date {
-                text-align: left;
-            }
-            .order-extra-info {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
         }
 
         @keyframes slideUp {
@@ -4649,542 +4838,246 @@
     </div>
 
 
-    
-    
     <script>
-        // ==========================================================================
-        // ULTRA-PREMIUM CHIDY PRIME ADMIN DASHBOARD CORE CONTROLLER
-        // ==========================================================================
-
-        // --- FETCH INTERCEPTOR (Attaches Admin Token to all API Requests) ---
+        // Intercept all fetch requests to add the Admin Token automatically
         const originalFetch = window.fetch.bind(window);
-        window.fetch = async function (resource, options = {}) {
-            const url = typeof resource === 'string' ? resource : (resource && resource.url ? resource.url : '');
-            
-            if (typeof url === 'string' && url.startsWith('/api/') && !url.includes('/api/admin/login')) {
-                options = options || {};
-                options.headers = options.headers || {};
+        window.fetch = async function (...args) {
+            let resource = args[0];
+            let config = args[1];
+            const isAdminApi = typeof resource === 'string' && resource.startsWith('/api/admin/');
+            if (typeof resource === 'string' && resource.startsWith('/api/') && resource !== '/api/admin/login') {
+                config = config || {};
+                config.headers = config.headers || {};
                 const token = localStorage.getItem('adminToken');
                 if (token) {
-                    if (options.headers instanceof Headers) {
-                        options.headers.set('Authorization', 'Bearer ' + token);
-                    } else {
-                        options.headers['Authorization'] = 'Bearer ' + token;
-                    }
+                    config.headers['Authorization'] = 'Bearer ' + token;
                 }
+                args[1] = config;
             }
-
-            const response = await originalFetch(resource, options);
-            if (typeof url === 'string' && url.startsWith('/api/admin/') && (response.status === 401 || response.status === 403)) {
-                console.warn("Unauthorized admin request (HTTP " + response.status + "). Relocking vault.");
+            const response = await originalFetch(...args);
+            // Only lock vault if an ADMIN endpoint returned 401/403
+            if (isAdminApi && (response.status === 401 || response.status === 403)) {
                 localStorage.removeItem('adminToken');
-                lockVault();
+                document.getElementById('vaultOverlay').style.display = 'flex';
+                document.getElementById('vaultOverlay').classList.remove('vault-unlocked');
+                document.body.classList.add('scanning');
             }
             return response;
         };
 
-        // --- VAULT OVERLAY CONTROL ---
-        function unlockVault() {
-            const overlay = document.getElementById('vaultOverlay');
-            if (overlay) {
-                overlay.classList.add('vault-unlocked');
-                overlay.style.transition = '0.5s ease-out';
-                overlay.style.opacity = '0';
-                overlay.style.pointerEvents = 'none';
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                }, 500);
+        const form = document.getElementById('uploadForm');
+        const statusMsg = document.getElementById('statusMsg');
+        function toggleUploadForm() {
+            const section = document.getElementById('uploadGameSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                section.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                section.style.display = 'none';
             }
-            document.body.classList.remove('scanning');
         }
 
-        function lockVault() {
-            const overlay = document.getElementById('vaultOverlay');
-            if (overlay) {
-                overlay.classList.remove('vault-unlocked');
-                overlay.style.display = 'flex';
-                overlay.style.opacity = '1';
-                overlay.style.pointerEvents = 'auto';
-            }
-            document.body.classList.add('scanning');
-        }
+        const fullGameTableBody = document.getElementById('fullGameTableBody');
+        const totalGamesLabels = document.querySelectorAll('.totalGamesCount');
+        const addLinkBtn = document.getElementById('addLinkBtn');
+        const linksContainer = document.getElementById('linksContainer');
 
-        // --- GLOBAL STATE ---
         let currentActiveViewId = 'dashboardView';
         let allGamesData = [];
         let allOrdersData = [];
         let allUsersData = [];
-        let allCategories = [];
         let allPromoCodes = [];
-        let currentGamesFilter = 'all';
+        let allCategories = [];
+        let currentGamesFilter = 'published';
         let lastSeenOrderId = null;
         const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        // --- NAVIGATION SYSTEM ---
-        function showView(viewId) {
-            if (!viewId) return;
-            currentActiveViewId = viewId;
-
-            // Hide all views/sections
-            document.querySelectorAll('.admin-section, .tab-content, .view-section').forEach(sec => {
-                sec.style.display = 'none';
-                sec.classList.remove('active');
-            });
-
-            // Show active view
-            const targetView = document.getElementById(viewId);
-            if (targetView) {
-                targetView.style.display = 'block';
-                targetView.classList.add('active');
-            }
-
-            // Sync Nav Links (Sidebar and Mobile Bottom Nav)
-            document.querySelectorAll('.nav-link[data-view]').forEach(link => {
-                if (link.getAttribute('data-view') === viewId) {
-                    link.classList.add('active');
-                } else {
-                    link.classList.remove('active');
-                }
-            });
-
-            // Lazy data loading per view
-            if (viewId === 'ordersView') fetchOrders();
-            else if (viewId === 'allGamesView') loadAllGames();
-            else if (viewId === 'usersView') fetchUserStats();
-            else if (viewId === 'videosView') loadAdminVideos();
-            else if (viewId === 'healthView') loadSystemHealth();
-            else if (viewId === 'categoriesView') loadCategories();
-            else if (viewId === 'promoView') loadPromoCodes();
-        }
-
-        // --- NAVIGATION SYSTEM ---
-        function showView(viewId) {
-            // Hide all views
-            document.querySelectorAll('.main-view').forEach(view => {
-                view.style.display = 'none';
-            });
-            
-            // Show target view
-            const targetView = document.getElementById(viewId);
-            if (targetView) {
-                targetView.style.display = 'block';
-            }
-            
-            // Update active nav link
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Set active nav link
-            const activeLink = document.querySelector(`[data-view="${viewId}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
-            }
-        }
-
-        function initNavigation() {
-            document.querySelectorAll('[data-view]').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const viewId = link.getAttribute('data-view');
-                    showView(viewId);
-                });
-            });
-        }
-
-        // --- DATA SYNC & REFRESH ---
-        async function refreshAllData() {
-            try {
-                await Promise.allSettled([
-                    loadAllGames(),
-                    fetchOrders(),
-                    fetchUserStats(),
-                    fetchActivity(),
-                    fetchSiteSettings(),
-                    loadCategories(),
-                    loadPortalThumbs()
-                ]);
-                console.log("✅ All admin dashboard data refreshed.");
-            } catch (err) {
-                console.error("Refresh error:", err);
-            }
-        }
-
-        // --- LOAD ALL GAMES ---
-        async function loadAllGames() {
-            try {
-                const res = await fetch('/api/admin/games');
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                allGamesData = Array.isArray(data) ? data : (data.games || []);
-                
-                // Update total games counters across dashboard
-                const totalCount = allGamesData.length;
-                document.querySelectorAll('.totalGamesCount').forEach(el => el.innerText = totalCount);
-                const totalEl = document.getElementById('totalGames');
-                if (totalEl) totalEl.innerText = totalCount;
-
+        // GLOBAL SEARCH HANDLER
+        document.getElementById('adminSearchInput').addEventListener('input', () => {
+            if (currentActiveViewId === 'allGamesView') {
                 renderFilteredGames(currentGamesFilter);
-            } catch (err) {
-                console.error("Failed to load games:", err);
-            }
-        }
-
-        function filterByStatus(status, btnElement) {
-            currentGamesFilter = status;
-            if (btnElement) {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                btnElement.classList.add('active');
-            }
-            renderFilteredGames(status);
-        }
-
-        function renderFilteredGames(filter = 'all') {
-            const tbody = document.getElementById('fullGameTableBody');
-            if (!tbody) return;
-
-            const searchVal = (document.getElementById('adminSearchInput')?.value || '').toLowerCase().trim();
-
-            let filtered = allGamesData.filter(game => {
-                const matchesFilter = filter === 'all' || 
-                                     (filter === 'published' && (!game.status || game.status === 'published')) ||
-                                     (filter === 'draft' && game.status === 'draft');
-                const matchesSearch = !searchVal || 
-                                     (game.title && game.title.toLowerCase().includes(searchVal)) ||
-                                     (game.category && game.category.toLowerCase().includes(searchVal));
-                return matchesFilter && matchesSearch;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#6c7293; padding:2rem;">Hakuna michezo iliyopatikana.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(game => {
-                const statusBadge = game.status === 'draft' 
-                    ? '<span class="badge" style="background:rgba(255,171,0,0.15); color:#ffab00;">Draft</span>' 
-                    : '<span class="badge" style="background:rgba(0,210,91,0.15); color:#00d25b;">Published</span>';
-                
-                const linksCount = Array.isArray(game.links) ? game.links.length : 0;
-
-                return `
-                    <tr>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <img src="${game.image_url || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" />
-                                <div>
-                                    <div style="font-weight:700; color:#fff;">${game.title || 'Untitled'}</div>
-                                    <div style="font-size:0.75rem; color:#6c7293;">ID: ${game.id.slice(0, 8)}...</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td><span class="badge" style="background:rgba(0,242,255,0.1); color:#00f2ff;">${game.category || 'General'}</span></td>
-                        <td style="font-weight:700; color:#00d25b;">TSh ${(game.price || 0).toLocaleString()}</td>
-                        <td>${statusBadge}</td>
-                        <td><span style="color:#bc13fe; font-weight:600;">${linksCount} Link(s)</span></td>
-                        <td>
-                            <div style="display:flex; gap:8px;">
-                                <button onclick="openEditModal('${game.id}')" class="neon-btn" style="padding:6px 12px; font-size:0.75rem;">
-                                    <i class="fas fa-edit"></i> Hariri
-                                </button>
-                                <button onclick="deleteGame('${game.id}')" class="neon-btn" style="padding:6px 12px; font-size:0.75rem; border-color:#ff3366; color:#ff3366;">
-                                    <i class="fas fa-trash"></i> Futa
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // --- FETCH ORDERS & DASHBOARD REVENUE STATS ---
-        async function fetchOrders() {
-            try {
-                const res = await fetch('/api/admin/orders');
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const orders = await res.json();
-                allOrdersData = Array.isArray(orders) ? orders : [];
-
-                // Audio notification for new pending order
-                if (allOrdersData.length > 0) {
-                    const firstOrder = allOrdersData[0];
-                    if (lastSeenOrderId !== null && firstOrder.id !== lastSeenOrderId && firstOrder.status === 'pending') {
-                        notificationSound.play().catch(() => {});
-                    }
-                    lastSeenOrderId = firstOrder.id;
-                }
-
-                // Update Stats
-                const approvedOrders = allOrdersData.filter(o => o.status === 'approved' || o.status === 'manual_approved');
-                const pendingOrders = allOrdersData.filter(o => o.status === 'pending');
-                const rejectedOrders = allOrdersData.filter(o => o.status === 'rejected');
-
-                const totalRev = approvedOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
-                const pendingRev = pendingOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
-
-                // Update Total Revenue element
-                const revEl = document.getElementById('totalRevenue');
-                if (revEl) revEl.innerText = `TSH ${totalRev.toLocaleString()}`;
-                document.querySelectorAll('.totalRevenueCount').forEach(el => el.innerText = `TSH ${totalRev.toLocaleString()}`);
-
-                // Update Pending Amount element
-                const pendingAmtEl = document.getElementById('pendingAmount');
-                if (pendingAmtEl) pendingAmtEl.innerText = `TSH ${pendingRev.toLocaleString()}`;
-
-                // Update Pending Orders count
-                const pendingEl = document.getElementById('pendingOrdersCount');
-                if (pendingEl) pendingEl.innerText = pendingOrders.length;
-                document.querySelectorAll('#orderCountBadge, .orderCountBadge').forEach(el => el.innerText = pendingOrders.length);
-
-                // Update Failed / Rejected count
-                const failedEl = document.getElementById('failedTransactions');
-                if (failedEl) failedEl.innerText = rejectedOrders.length;
-
+            } else if (currentActiveViewId === 'usersView') {
+                renderUsersList();
+            } else if (currentActiveViewId === 'ordersView') {
                 renderOrdersList();
-                renderPaymentsTable();
-                
-                // Update Dashboard Analytics Charts
-                if (typeof renderAnalyticsCharts === 'function') {
-                    renderAnalyticsCharts(allOrdersData, allGamesData);
-                }
-            } catch (err) {
-                console.error("Failed to fetch orders:", err);
+            } else if (document.getElementById('adminSearchInput').value.length > 0) {
+                // If they search while on Dashboard or somewhere else, switch to Games
+                const gamesLink = document.querySelector('.nav-link[data-view="allGamesView"]');
+                if (gamesLink) gamesLink.click();
             }
-        }
+        });
 
-        function renderOrdersList() {
-            const list = document.getElementById('ordersList');
-            if (!list) return;
-
-            const searchVal = (document.getElementById('adminSearchInput')?.value || '').toLowerCase().trim();
-
-            let filtered = allOrdersData.filter(o => {
-                if (!searchVal) return true;
-                const name = o.visitors ? (o.visitors.name || '') : '';
-                const phone = o.phone_number || (o.visitors ? o.visitors.phone : '') || '';
-                const title = o.posts ? (o.posts.title || '') : '';
-                return name.toLowerCase().includes(searchVal) || 
-                       phone.toLowerCase().includes(searchVal) || 
-                       title.toLowerCase().includes(searchVal) ||
-                       (o.status && o.status.toLowerCase().includes(searchVal));
-            });
-
-            if (filtered.length === 0) {
-                list.innerHTML = '<div style="text-align:center; color:#6c7293; padding:2rem;">Hakuna oda zilizopatikana.</div>';
-                return;
-            }
-
-            list.innerHTML = filtered.map(order => {
-                const visitorName = order.visitors ? (order.visitors.name || 'Mteja') : 'Mteja';
-                const visitorPhone = order.phone_number || (order.visitors ? order.visitors.phone : 'N/A');
-                const gameTitle = order.posts ? order.posts.title : 'Game';
-                const orderDate = new Date(order.created_at).toLocaleString();
-
-                let statusBadge = '';
-                if (order.status === 'approved' || order.status === 'manual_approved') {
-                    statusBadge = '<span class="badge" style="background:rgba(0,210,91,0.15); color:#00d25b;">Imekubaliwa (Approved)</span>';
-                } else if (order.status === 'pending') {
-                    statusBadge = '<span class="badge" style="background:rgba(255,171,0,0.15); color:#ffab00;">Inasubiri (Pending)</span>';
-                } else {
-                    statusBadge = '<span class="badge" style="background:rgba(255,51,102,0.15); color:#ff3366;">Imekataliwa (Rejected)</span>';
-                }
-
-                return `
-                    <div style="background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                        <div>
-                            <div style="font-weight:700; color:#fff; font-size:1rem;">${gameTitle}</div>
-                            <div style="font-size:0.85rem; color:#00f2ff; margin-top:4px;">
-                                <i class="fas fa-user"></i> ${visitorName} (${visitorPhone})
-                            </div>
-                            <div style="font-size:0.75rem; color:#6c7293; margin-top:4px;">
-                                ${orderDate} | Gateway: ${order.gateway || order.promo_used || 'N/A'}
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:1.1rem; font-weight:800; color:#00d25b;">TSh ${(order.amount || 0).toLocaleString()}</div>
-                            <div style="margin-top:6px;">${statusBadge}</div>
-                            <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
-                                ${order.status === 'pending' ? `
-                                    <button onclick="updateOrderStatus('${order.id}', 'approved')" class="neon-btn" style="padding:6px 12px; font-size:0.75rem; background:rgba(0,210,91,0.2); border-color:#00d25b; color:#00d25b;">
-                                        <i class="fas fa-check"></i> Kubali (Approve)
-                                    </button>
-                                    <button onclick="verifyOrder('${order.id}')" class="neon-btn" style="padding:6px 12px; font-size:0.75rem; background:rgba(0,242,255,0.2); border-color:#00f2ff; color:#00f2ff;">
-                                        <i class="fas fa-sync"></i> Verify
-                                    </button>
-                                    <button onclick="updateOrderStatus('${order.id}', 'rejected')" class="neon-btn" style="padding:6px 12px; font-size:0.75rem; background:rgba(255,51,102,0.2); border-color:#ff3366; color:#ff3366;">
-                                        <i class="fas fa-times"></i> Kataa
-                                    </button>
-                                ` : `
-                                    <button onclick="updateOrderStatus('${order.id}', 'rejected')" class="neon-btn" style="padding:4px 8px; font-size:0.7rem; border-color:#ff3366; color:#ff3366;">
-                                        Revoke
-                                    </button>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderPaymentsTable() {
-            const tbody = document.getElementById('paymentsTableBody');
-            if (!tbody) return;
-
-            if (allOrdersData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#6c7293; padding:1.5rem;">Hakuna miamala iliyopatikana.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = allOrdersData.map(o => {
-                const name = o.visitors ? (o.visitors.name || 'Customer') : 'Customer';
-                const phone = o.phone_number || (o.visitors ? o.visitors.phone : '');
-                const title = o.posts ? o.posts.title : 'Game';
-                const date = new Date(o.created_at).toLocaleString();
-                const statusBadge = (o.status === 'approved' || o.status === 'manual_approved')
-                    ? '<span class="badge" style="background:rgba(0,210,91,0.15); color:#00d25b;">Approved</span>'
-                    : (o.status === 'pending' ? '<span class="badge" style="background:rgba(255,171,0,0.15); color:#ffab00;">Pending</span>' : '<span class="badge" style="background:rgba(255,51,102,0.15); color:#ff3366;">Rejected</span>');
-
-                return `
-                    <tr>
-                        <td style="color:#6c7293; font-size:0.75rem;">${o.id.slice(0, 8)}...</td>
-                        <td style="color:#fff; font-weight:600;">${name} (${phone})</td>
-                        <td style="color:#00f2ff;">${o.gateway || o.promo_used || 'N/A'}</td>
-                        <td style="color:#fff;">${title}</td>
-                        <td style="color:#00d25b; font-weight:700;">TSh ${(o.amount || 0).toLocaleString()}</td>
-                        <td>${statusBadge}</td>
-                        <td style="color:#6c7293; font-size:0.75rem;">${date}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // --- ORDER ACTIONS (Approve / Reject / Verify) ---
-        async function updateOrderStatus(orderId, status) {
+        async function loadStoreSettings() {
             try {
-                showToast(`⏳ Inasindika oda...`);
-                const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+                // Flash sale global discount
+                const resDisc = await fetch('/api/settings/global_discount');
+                const dataDisc = await resDisc.json();
+                const discVal = parseInt(dataDisc.value, 10) || 0;
+                const discInput = document.getElementById('globalDiscountInput');
+                if (discInput) discInput.value = discVal;
+                const discBadge = document.getElementById('activeDiscountBadge');
+                if (discBadge) discBadge.style.display = discVal > 0 ? 'block' : 'none';
+
+                // Maintenance Mode
+                const resMaint = await fetch('/api/settings/maintenance');
+                const dataMaint = await resMaint.json();
+                const isMaint = dataMaint.value === 'true';
+                const maintToggle = document.getElementById('maintenanceToggle');
+                if (maintToggle) maintToggle.checked = isMaint;
+                const maintStatus = document.getElementById('maintenanceStatus');
+                if (maintStatus) maintStatus.style.display = isMaint ? 'block' : 'none';
+
+                // Announcement Banner
+                const resAnn = await fetch('/api/settings/announcement');
+                const dataAnn = await resAnn.json();
+                const annInput = document.getElementById('announcementInput');
+                if (annInput) annInput.value = dataAnn.value || '';
+
+                // PWA App Installations
+                const resInst = await fetch('/api/settings/total_installs');
+                const dataInst = await resInst.json();
+                const count = dataInst.value || 0;
+                const el1 = document.getElementById('appInstallsCount');
+                const el2 = document.getElementById('settingsTotalInstalls');
+                if (el1) el1.innerText = count;
+                if (el2) el2.innerText = count;
+
+                // WhatsApp AI Status
+                fetch('/api/admin/whatsapp/status')
+                    .then(r => r.json())
+                    .then(st => {
+                        const lbl = document.getElementById('waAiEngineLabel');
+                        if (lbl) lbl.innerText = st.aiEngine || 'Chidy Prime Neural AI';
+                    }).catch(() => {});
+            } catch (err) {
+                console.error('Error loading store settings:', err);
+            }
+        }
+
+        async function testWhatsAppAI() {
+            const phone = prompt("Weka namba ya simu ya kujaribu (mfano 0712345678):");
+            if (!phone) return;
+            const msg = prompt("Weka ujumbe wa jaribio:", "Habari, naomba kujua bei ya GTA V");
+            if (!msg) return;
+            try {
+                const res = await fetch('/api/whatsapp/webhook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status })
+                    body: JSON.stringify({
+                        object: 'whatsapp_business_account',
+                        entry: [{
+                            changes: [{
+                                value: {
+                                    messages: [{ type: 'text', from: phone, text: { body: msg } }],
+                                    contacts: [{ profile: { name: 'Admin Test' } }]
+                                }
+                            }]
+                        }]
+                    })
                 });
-
-                const result = await res.json();
                 if (res.ok) {
-                    showToast(`✅ Hali ya oda imebadilishwa kuwa ${status.toUpperCase()}!`);
-                    fetchOrders();
+                    showToast("✅ Ujumbe wa jaribio umetumwa kwenye WhatsApp AI Engine!");
                 } else {
-                    showToast(`❌ Hitilafu: ${result.error || 'Failed to update status'}`);
+                    alert("Error sending test message");
                 }
-            } catch (err) {
-                showToast(`❌ Hitilafu ya mtandao: ${err.message}`);
+            } catch(e) {
+                alert("Error: " + e.message);
             }
         }
 
-        async function verifyOrder(orderId) {
+        async function saveGlobalDiscount() {
+            const val = document.getElementById('globalDiscountInput').value;
+            const num = parseInt(val, 10) || 0;
             try {
-                showToast(`⏳ Inakagua malipo kwenye mfumo wa malipo...`);
-                const res = await fetch(`/api/admin/orders/${orderId}/verify`, {
-                    method: 'POST'
+                const res = await fetch('/api/admin/settings/global_discount', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: String(num) })
                 });
                 const result = await res.json();
                 if (result.success) {
-                    showToast(`✅ Malipo yamethibitishwa na mchezo umefunguliwa!`);
-                    fetchOrders();
+                    showToast(num > 0 ? `✅ Flash Sale Discount (${num}%) Activated!` : "✅ Discount Cleared!");
+                    loadStoreSettings();
                 } else {
-                    showToast(`⚠️ ${result.message || result.error || 'Malipo hayajakamilika'}`);
+                    alert("Failed to update discount: " + (result.error || 'Server error'));
                 }
-            } catch (err) {
-                showToast(`❌ Imeshindwa kuthibitisha: ${err.message}`);
+            } catch (e) {
+                alert("Failed to update discount: " + e.message);
             }
         }
 
-        // --- USER STATS ---
-        async function fetchUserStats() {
+        async function clearGlobalDiscount() {
+            document.getElementById('globalDiscountInput').value = 0;
+            await saveGlobalDiscount();
+        }
+
+        async function toggleMaintenance() {
+            const toggle = document.getElementById('maintenanceToggle');
+            const enabled = toggle.checked;
             try {
-                const res = await fetch('/api/users');
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const users = await res.json();
-                allUsersData = Array.isArray(users) ? users : [];
-
-                const userCountEl = document.getElementById('totalUsersCount');
-                if (userCountEl) userCountEl.innerText = allUsersData.length;
-
-                const userTrendEl = document.getElementById('userTrend');
-                if (userTrendEl) {
-                    userTrendEl.innerHTML = `
-                        <span class="stat-trend-arrow"><i class="fas fa-arrow-up" style="color:#00d25b;"></i></span>
-                        <span class="stat-trend-text" style="color:#00d25b;">Active Visitors</span>
-                    `;
+                const res = await fetch('/api/admin/settings/maintenance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: String(enabled) })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    const maintStatus = document.getElementById('maintenanceStatus');
+                    if (maintStatus) maintStatus.style.display = enabled ? 'block' : 'none';
+                    showToast(enabled ? '⚠️ System Maintenance Mode ACTIVATED' : '✅ Maintenance Mode DEACTIVATED');
+                } else {
+                    throw new Error(result.error || 'Server error');
                 }
-
-                renderUsersList();
             } catch (err) {
-                console.error("Failed to fetch users:", err);
+                console.error(err);
+                toggle.checked = !enabled;
+                alert('Error updating maintenance state: ' + err.message);
             }
         }
 
-        function renderUsersList() {
-            const tbody = document.getElementById('usersTableBody');
-            if (!tbody) return;
-
-            const searchVal = (document.getElementById('adminSearchInput')?.value || '').toLowerCase().trim();
-
-            let filtered = allUsersData.filter(u => {
-                if (!searchVal) return true;
-                const name = u.name || '';
-                const phone = u.phone || '';
-                return name.toLowerCase().includes(searchVal) || phone.toLowerCase().includes(searchVal);
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#6c7293; padding:1.5rem;">Hakuna watumiaji walopatikana.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(u => `
-                <tr>
-                    <td style="color:#fff; font-weight:600;">${u.name || 'N/A'}</td>
-                    <td style="color:#00f2ff;">${u.phone || 'N/A'}</td>
-                    <td style="color:#6c7293;">${u.device || 'Mobile'}</td>
-                    <td style="color:#6c7293;">${new Date(u.created_at || Date.now()).toLocaleDateString()}</td>
-                    <td>
-                        <span class="badge" style="background:rgba(0,210,91,0.15); color:#00d25b;">Active</span>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // --- SITE SETTINGS (Lifetime Revenue & App Installs) ---
-        async function fetchSiteSettings() {
+        async function updateAnnouncement() {
+            const text = document.getElementById('announcementInput').value.trim();
             try {
-                const [revRes, installRes] = await Promise.allSettled([
-                    fetch('/api/settings/lifetime_revenue'),
-                    fetch('/api/settings/total_installs')
-                ]);
-
-                if (revRes.status === 'fulfilled' && revRes.value.ok) {
-                    const data = await revRes.value.json();
-                    const val = parseFloat(data.value || 0);
-                    const lifeEl = document.getElementById('lifetimeRevenue');
-                    if (lifeEl) lifeEl.innerText = `TSH ${val.toLocaleString()}`;
+                const res = await fetch('/api/admin/settings/announcement', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: text })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(text ? "✅ Announcement Banner Updated!" : "✅ Banner Cleared!");
+                    loadStoreSettings();
+                } else {
+                    alert("Failed to update banner: " + (result.error || 'Server error'));
                 }
-
-                if (installRes.status === 'fulfilled' && installRes.value.ok) {
-                    const data = await installRes.value.json();
-                    const val = parseInt(data.value || 0, 10);
-                    const instEl = document.getElementById('appInstallsCount');
-                    if (instEl) instEl.innerText = val;
-                }
-            } catch (err) {
-                console.error("Failed to fetch settings:", err);
+            } catch (e) {
+                alert("Failed to update banner: " + e.message);
             }
         }
 
-        // --- RECENT NETWORK ACTIVITY ---
+        async function clearAnnouncement() {
+            document.getElementById('announcementInput').value = '';
+            await updateAnnouncement();
+        }
+
+        // (refreshAllData unified above)
+
+        // Initial view setup if logged in
+        if (localStorage.getItem('adminToken')) {
+            refreshAllData();
+            showView('dashboardView');
+        }
+        // Auto-refresh user stats and activity every 30 seconds
+        setInterval(() => {
+            fetchUserStats();
+            fetchActivity();
+        }, 30000);
+
         async function fetchActivity() {
             try {
-                const res = await fetch('/api/admin/activity');
-                if (!res.ok) return;
+                const res = await fetch('/api/admin/activity', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
                 const activity = await res.json();
                 renderActivity(activity);
             } catch (err) {
@@ -5195,307 +5088,1972 @@
         function renderActivity(data) {
             const list = document.getElementById('liveActivityList');
             if (!list) return;
-
+            
             if (!data || data.length === 0) {
-                list.innerHTML = '<div style="text-align:center; color:#6c7293; padding:1.5rem;">Hakuna shughuli mpya za mtandao.</div>';
+                list.innerHTML = '<div style="text-align: center; color: #6c7293; padding: 2rem;">No recent network activity.</div>';
                 return;
             }
 
-            list.innerHTML = data.slice(0, 8).map(act => {
-                const timeStr = new Date(act.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            list.innerHTML = data.map(act => {
+                const timeStr = new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const isSignup = act.type === 'signup';
+                
                 return `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <i class="fas fa-bolt" style="color:#00f2ff; font-size:0.8rem;"></i>
-                            <span style="color:#fff; font-size:0.85rem;">${act.description || act.type || 'System Event'}</span>
+                    <div style="
+                        display: flex; 
+                        align-items: center; 
+                        gap: 15px; 
+                        padding: 12px; 
+                        background: rgba(255,255,255,0.03); 
+                        border-radius: 10px; 
+                        border: 1px solid rgba(255,255,255,0.05);
+                        animation: slideInRight 0.3s ease;
+                    ">
+                        <div style="
+                            width: 35px; height: 35px; border-radius: 8px; 
+                            background: ${isSignup ? 'rgba(0, 242, 255, 0.1)' : 'rgba(188, 19, 254, 0.1)'};
+                            display: flex; align-items: center; justify-content: center;
+                            color: ${isSignup ? '#00f2ff' : '#bc13fe'};
+                        ">
+                            <i class="fas ${isSignup ? 'fa-user-plus' : 'fa-shopping-cart'}"></i>
                         </div>
-                        <span style="color:#6c7293; font-size:0.75rem;">${timeStr}</span>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.85rem; color: #fff; font-weight: 500;">
+                                ${isSignup ? `<b>${act.name}</b> ametengeneza akaunti leo.` : `Oda mpya ya <b>${act.posts?.title || 'Game'}</b> imeingia kutoka kwa ${act.visitors?.name || 'Mteja'}.`}
+                            </div>
+                            <div style="font-size: 0.7rem; color: #6c7293; margin-top: 2px;">
+                                ${isSignup ? 'New User Identity Registered' : `TSh ${parseInt(act.amount).toLocaleString()} - ${act.status.toUpperCase()}`}
+                            </div>
+                        </div>
+                        <div style="font-size: 0.7rem; color: #6c7293; font-family: monospace;">${timeStr}</div>
                     </div>
                 `;
             }).join('');
         }
 
-        // --- DIGITAL CLOCK ---
-        function updateDigitalClock() {
-            const clockEl = document.getElementById('digitalClock');
-            if (!clockEl) return;
-            const now = new Date();
-            clockEl.innerText = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        }
+        // USER DETAIL DRILL-DOWN LOGIC
+        async function viewUserDetail(visitorId) {
+            const modal = document.getElementById('userDetailModal');
+            const content = document.getElementById('userDetailContent');
+            modal.style.display = 'flex';
+            content.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Analyzing user data...</p>';
 
-        // --- CHART.JS ANALYTICS ENGINE ---
-        let revenueChartInstance = null;
-        let salesChartInstance = null;
-        let categoryChartInstance = null;
-
-        function renderAnalyticsCharts(orders = [], games = []) {
-            if (typeof Chart === 'undefined') return;
-
-            // Generate last 7 days keys
-            const days = [];
-            const revenueMap = {};
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const dayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                days.push(dayKey);
-                revenueMap[dayKey] = 0;
-            }
-
-            (orders || []).forEach(o => {
-                if (o.status === 'approved' || o.status === 'manual_approved') {
-                    const dateKey = new Date(o.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    if (revenueMap[dateKey] !== undefined) {
-                        revenueMap[dateKey] += (parseFloat(o.amount) || 0);
-                    }
-                }
-            });
-
-            const revenueValues = days.map(d => revenueMap[d]);
-
-            // 1. Line Chart: #revenueChart
-            const revCanvas = document.getElementById('revenueChart');
-            if (revCanvas) {
-                const ctx = revCanvas.getContext('2d');
-                if (revenueChartInstance) revenueChartInstance.destroy();
-                
-                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)');
-                gradient.addColorStop(1, 'rgba(0, 242, 255, 0.0)');
-
-                revenueChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: days,
-                        datasets: [{
-                            label: 'Revenue (TSH)',
-                            data: revenueValues,
-                            borderColor: '#00f2ff',
-                            backgroundColor: gradient,
-                            borderWidth: 3,
-                            tension: 0.4,
-                            fill: true,
-                            pointBackgroundColor: '#00f2ff',
-                            pointBorderColor: '#ffffff',
-                            pointRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6c7293' } },
-                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6c7293' } }
-                        }
-                    }
-                });
-            }
-
-            // 2. Bar Chart: #salesChart
-            const salesCanvas = document.getElementById('salesChart');
-            if (salesCanvas) {
-                const ctx = salesCanvas.getContext('2d');
-                if (salesChartInstance) salesChartInstance.destroy();
-
-                salesChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: days,
-                        datasets: [{
-                            label: 'Mauzo ya Siku (TSH)',
-                            data: revenueValues,
-                            backgroundColor: 'rgba(188, 19, 254, 0.7)',
-                            borderColor: '#bc13fe',
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { color: '#6c7293' } },
-                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6c7293' } }
-                        }
-                    }
-                });
-            }
-
-            // 3. Doughnut Chart: #categoryChart
-            const catMap = {};
-            (orders || []).forEach(o => {
-                const cat = (o.posts && o.posts.category) ? o.posts.category : 'General';
-                catMap[cat] = (catMap[cat] || 0) + 1;
-            });
-
-            const catLabels = Object.keys(catMap);
-            const catValues = Object.values(catMap);
-            const catColors = ['#00f2ff', '#bc13fe', '#ffab00', '#00d25b', '#ff3366', '#7952b3'];
-
-            const catCanvas = document.getElementById('categoryChart');
-            if (catCanvas) {
-                const ctx = catCanvas.getContext('2d');
-                if (categoryChartInstance) categoryChartInstance.destroy();
-
-                categoryChartInstance = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: catLabels.length > 0 ? catLabels : ['N/A'],
-                        datasets: [{
-                            data: catValues.length > 0 ? catValues : [1],
-                            backgroundColor: catColors.slice(0, Math.max(1, catLabels.length)),
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { color: '#ffffff', boxWidth: 10, font: { size: 11 } } }
-                        }
-                    }
-                });
-            }
-
-            // Populate category breakdown list
-            const catStatsEl = document.getElementById('categoryStatsList');
-            if (catStatsEl) {
-                if (catLabels.length === 0) {
-                    catStatsEl.innerHTML = '<div style="text-align:center; color:#6c7293; font-size:0.8rem;">Hakuna miamala bado.</div>';
-                } else {
-                    const totalOrdersCount = catValues.reduce((a, b) => a + b, 0);
-                    catStatsEl.innerHTML = catLabels.map((cat, idx) => {
-                        const count = catMap[cat];
-                        const pct = totalOrdersCount > 0 ? Math.round((count / totalOrdersCount) * 100) : 0;
-                        const color = catColors[idx % catColors.length];
-                        return `
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem;">
-                                <span style="color:#fff;"><i class="fas fa-circle" style="color:${color}; font-size:0.6rem; margin-right:6px;"></i>${cat}</span>
-                                <span style="color:#00f2ff; font-weight:700;">${count} oda (${pct}%)</span>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            }
-        }
-
-        // --- CATEGORIES ---
-        async function loadCategories() {
             try {
-                const res = await fetch('/api/categories');
-                if (!res.ok) return;
-                allCategories = await res.json();
+                // Fetch user info from allUsersData
+                const userProfile = allUsersData.find(u => u.visitor_id === visitorId || u.id == visitorId);
+                const purchasesRes = await fetch(`/api/user/purchases/${visitorId}`);
+                const purchases = await purchasesRes.json();
 
-                const listEl = document.getElementById('categoryDatalist');
-                if (listEl && Array.isArray(allCategories)) {
-                    listEl.innerHTML = allCategories.map(c => `<option value="${c.name}">`).join('');
+                let purchasesHtml = purchases.length === 0 
+                    ? '<p style="color: #6c7293; font-size: 0.85rem;">Huyu mteja bado hajanunua game lolote.</p>'
+                    : purchases.map(p => `
+                        <div style="padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="color: #fff; font-size: 0.9rem; font-weight: 600;">${p.posts.title}</div>
+                                <div style="font-size: 0.75rem; color: #6c7293;">Inaisha: ${new Date(p.expires_at).toLocaleDateString()}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.7rem; background: rgba(0, 242, 255, 0.1); color: #00f2ff; padding: 2px 8px; border-radius: 4px;">ACTIVE</span>
+                                <button onclick="extendAccess('${visitorId}', '${p.post_id}')" 
+                                    style="background: rgba(188, 19, 254, 0.2); color: #bc13fe; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;"
+                                    title="Ongeza siku 7 za access">
+                                    +7 Days
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                content.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 2rem;">
+                        <div style="width: 70px; height: 70px; border-radius: 15px; background: linear-gradient(135deg, #00f2ff, #bc13fe); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff;">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h2 style="margin: 0; font-family: 'Orbitron'; color: #fff;">${userProfile?.name || 'Mteja'}</h2>
+                            <p style="margin: 5px 0 0; color: #00f2ff; font-weight: bold;">${userProfile?.phone || ''}</p>
+                            <span style="font-size: 0.75rem; color: #6c7293;">Joined: ${new Date(userProfile?.created_at).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    
+                    <h3 style="font-family: 'Orbitron'; font-size: 0.9rem; color: #6c7293; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 1px;">PURCHASE HISTORY</h3>
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        ${purchasesHtml}
+                    </div>
+                `;
+            } catch (err) {
+                content.innerHTML = `<p style="padding: 2rem; color: #ff3366;">Error: ${err.message}</p>`;
+            }
+        }
+
+        function closeUserDetailModal() {
+            document.getElementById('userDetailModal').style.display = 'none';
+        }
+
+        async function extendAccess(vId, pId) {
+            const confirmed = await showConfirmModal('ONGEZA ACCESS', 'Unataka kuongeza siku 7 za access kwa huyu mteja?');
+            if (!confirmed) return;
+            
+            try {
+                const res = await fetch('/api/admin/access/extend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visitor_id: vId, post_id: pId, days: 7 })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Access imeongezwa kwa kufanikiwa!');
+                    viewUserDetail(vId); // Refresh modal
+                } else throw new Error(data.error);
+            } catch (err) {
+                alert('Imeshindikana kuongeza: ' + err.message);
+            }
+        }
+
+        // ===== USER MANAGEMENT SYSTEM =====
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                allUsersData = await res.json();
+                renderUsersList();
+            } catch (err) {
+                console.error("Failed to load users:", err);
+            }
+        }
+
+        function renderUsersList() {
+            const users = allUsersData;
+            const tbody = document.getElementById('usersTableBody');
+            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            
+            const filteredUsers = query 
+                ? users.filter(u => u.name.toLowerCase().includes(query) || u.phone.includes(query))
+                : users;
+
+            document.getElementById('userViewTotal').innerText = filteredUsers.length + ' Total';
+            
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6c7293;padding:20px;">No registered users found.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            filteredUsers.forEach((u, i) => {
+                    const date = new Date(u.created_at).toLocaleDateString([], {year: 'numeric', month: 'short', day: 'numeric'});
+                    const time = new Date(u.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    const phoneClean = u.phone.replace(/[^0-9]/g, '');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="color:#6c7293;font-size:0.8rem;">#${i + 1}</td>
+                        <td style="font-weight:bold;color:var(--primary-color);cursor:pointer;" onclick="viewUserDetail('${u.visitor_id || u.id}')">
+                            <i class="fas fa-external-link-alt" style="font-size:0.7rem;margin-right:5px;opacity:0.5;"></i> ${u.name}
+                        </td>
+                        <td><span style="background:rgba(255,255,255,0.05);padding:4px 8px;border-radius:4px;font-family:monospace;">${u.phone}</span></td>
+                        <td>${date} <span style="color:#6c7293;font-size:0.8rem">${time}</span></td>
+                        <td style="display:flex; gap:8px;">
+                            <a href="https://wa.me/${phoneClean}" target="_blank" class="btn-filter" style="background:rgba(37,211,102,0.1);color:#25D366;border-color:rgba(37,211,102,0.3);padding:0.4rem 0.8rem;text-decoration:none;display:flex;align-items:center;gap:5px;">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </a>
+                            <a href="sms:${u.phone}" class="btn-filter" style="background:rgba(0,242,255,0.1);color:#00f2ff;border-color:rgba(0,242,255,0.3);padding:0.4rem 0.8rem;text-decoration:none;display:flex;align-items:center;gap:5px;">
+                                <i class="fas fa-sms"></i> SMS
+                            </a>
+                            <button class="btn-filter delete-user-btn" style="background:rgba(255,50,50,0.1);color:#ff4444;border-color:rgba(255,50,50,0.3);padding:0.4rem 0.8rem;display:flex;align-items:center;gap:5px;" data-id="${u.id}" data-name="${u.name}">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+        }
+
+        // Custom confirm modal helper
+        function showConfirmModal(title, text) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const okBtn = document.getElementById('confirmModalOk');
+                const cancelBtn = document.getElementById('confirmModalCancel');
+
+                document.getElementById('confirmModalTitle').textContent = title;
+                document.getElementById('confirmModalText').textContent = text;
+
+                // Reset button style to default (red) on each call
+                okBtn.style.background = 'rgba(255,50,50,0.15)';
+                okBtn.style.borderColor = 'rgba(255,50,50,0.4)';
+                okBtn.style.color = '#ff4444';
+                okBtn.innerHTML = '<i class="fas fa-check"></i> Ndio, Endelea';
+
+                modal.style.display = 'flex';
+
+                function cleanup(result) {
+                    modal.style.display = 'none';
+                    okBtn.removeEventListener('click', onOk);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    resolve(result);
+                }
+                function onOk() { cleanup(true); }
+                function onCancel() { cleanup(false); }
+
+                okBtn.addEventListener('click', onOk);
+                cancelBtn.addEventListener('click', onCancel);
+            });
+        }
+
+        async function handleDeleteUser(id, name) {
+            const confirmed = await showConfirmModal(
+                'FUTA MTEJA',
+                `Uko uhakika unataka kumfuta "${name}"? Akaunti yake na historia yake yote itafutwa kabisa!`
+            );
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(`✅ Mteja "${name}" amefutwa kabisa.`);
+                    loadUsers();
+                    fetchUserStats();
+                } else {
+                    showToast(`❌ Imeshindwa: ${result.error || 'Unknown error'}`);
+                    console.error('Delete user error:', result.error);
                 }
             } catch (err) {
-                console.error("Failed to load categories:", err);
+                console.error('Failed to delete user:', err);
+                showToast('❌ Hitilafu ya mtandao. Jaribu tena.');
             }
         }
 
-        // --- PORTAL THUMBNAILS ---
-        async function loadPortalThumbs() {
+        // Global Event Delegation for dynamic buttons
+        document.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-user-btn');
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                const name = deleteBtn.dataset.name;
+                handleDeleteUser(id, name);
+            }
+        });
+
+        // BROADCAST MESSAGE LOGIC & LIVE PREVIEW
+        const bcTitleInput = document.getElementById('bcTitle');
+        const bcMessageInput = document.getElementById('bcMessage');
+        const bcTypeSelect = document.getElementById('bcType');
+        
+        const previewBox = document.getElementById('livePreviewBox');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewText = document.getElementById('previewText');
+        const titleCounter = document.getElementById('titleCounter');
+        const msgCounter = document.getElementById('msgCounter');
+
+        const typeColorMap = {
+            'info': { bg: 'rgba(0, 242, 255, 0.1)', border: '#00f2ff' },
+            'success': { bg: 'rgba(0, 255, 136, 0.1)', border: '#00ff88' },
+            'warning': { bg: 'rgba(255, 180, 0, 0.1)', border: '#ffb400' }
+        };
+
+        function updatePreview() {
+            const tVal = bcTitleInput.value;
+            const mVal = bcMessageInput.value;
+            const tType = bcTypeSelect.value;
+            
+            previewTitle.innerText = tVal || 'Offer ya Leo!';
+            previewText.innerText = mVal || 'Andika ujumbe wako hapa...';
+            
+            const styles = typeColorMap[tType];
+            previewBox.style.background = styles.bg;
+            previewBox.style.borderLeftColor = styles.border;
+            
+            titleCounter.innerText = `${tVal.length}/40`;
+            titleCounter.style.color = tVal.length >= 40 ? '#ff3366' : '#6c7293';
+            
+            msgCounter.innerText = `${mVal.length}/150`;
+            msgCounter.style.color = mVal.length >= 150 ? '#ff3366' : '#6c7293';
+        }
+
+        bcTitleInput.addEventListener('input', updatePreview);
+        bcMessageInput.addEventListener('input', updatePreview);
+        bcTypeSelect.addEventListener('change', updatePreview);
+
+        document.getElementById('broadcastForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const title = bcTitleInput.value;
+            const message = bcMessageInput.value;
+            const type = bcTypeSelect.value;
+            
+            const submitBtn = document.getElementById('bcSubmitBtn');
+            const icon = document.getElementById('bcIcon');
+            const btnText = document.getElementById('bcBtnText');
+
+            if (!title || !message) return alert("Tafadhali jaza title na ujumbe!");
+
+            // Loading state
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.7';
+            icon.className = 'fas fa-spinner fa-spin';
+            btnText.innerText = 'Inatuma...';
+
             try {
-                const res = await fetch('/api/settings/portal_thumbnails');
-                if (!res.ok) return;
+                const res = await fetch('/api/admin/notifications/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, message, type })
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    alert('✅ Safi kabisa! Ujumbe wako umetumwa kwa wateja wote kwa mafanikio.');
+                    document.getElementById('broadcastForm').reset();
+                    updatePreview(); // Reset preview
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                alert('❌ Imeshindikana: ' + err.message);
+            } finally {
+                // Restore button
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                icon.className = 'fas fa-paper-plane';
+                btnText.innerText = 'Tuma Ujumbe Sasa';
+            }
+        };
+
+        // ===== PROMO CODES SYSTEM =====
+
+        async function loadPromoCodesWithStats() {
+            const list = document.getElementById('promoCodesList');
+            if (list) list.innerHTML = '<div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia promo codes...</div>';
+            
+            try {
+                const res = await fetch('/api/admin/promo');
+                const data = await res.json();
+                allPromoCodes = Array.isArray(data) ? data : [];
+                renderPromoStats();
+                renderPromoCodesList();
+            } catch (err) {
+                console.error("Failed to load promo codes:", err);
+                if (list) list.innerHTML = '<div style="color:#ff3366; text-align: center; padding: 2rem;">Error loading codes.</div>';
+            }
+        }
+
+        async function loadPromoCodes() {
+            await loadPromoCodesWithStats();
+        }
+
+        function renderPromoStats() {
+            const total = allPromoCodes.length;
+            const active = allPromoCodes.filter(c => c.active).length;
+            const disabled = total - active;
+
+            if(document.getElementById('promoTotalCount')) document.getElementById('promoTotalCount').innerText = total;
+            if(document.getElementById('promoActiveCount')) document.getElementById('promoActiveCount').innerText = active;
+            if(document.getElementById('promoDisabledCount')) document.getElementById('promoDisabledCount').innerText = disabled;
+        }
+
+        function renderPromoCodesList() {
+            const list = document.getElementById('promoCodesList');
+            if (!list) return;
+
+            if (allPromoCodes.length === 0) {
+                list.innerHTML = '<div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;">Hauna promo code yoyote kwa sasa. Bonyeza kitufe cha ONGEZA hapo juu.</div>';
+                return;
+            }
+
+            list.innerHTML = allPromoCodes.map(c => `
+                <div class="promo-card-item" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); position: relative; display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="promo-code-badge" style="font-family:'Orbitron';color:#bc13fe;letter-spacing:1px;font-weight:bold;font-size:1.1rem;">${c.code}</span>
+                        <span style="font-size: 0.65rem; background: ${c.active ? 'rgba(0,210,91,0.1)' : 'rgba(255,51,102,0.1)'}; color: ${c.active ? '#00d25b' : '#ff3366'}; padding: 4px 10px; border-radius: 6px; font-weight: 800; border: 1px solid ${c.active ? 'rgba(0,210,91,0.2)' : 'rgba(255,51,102,0.2)'}; text-transform:uppercase;">
+                            ${c.active ? 'Active' : 'Disabled'}
+                        </span>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.7rem; color: #6c7293; margin-bottom: 2px; text-transform:uppercase; letter-spacing:1px;">Discount Value</div>
+                        <div style="font-size: 1.4rem; color: #fff; font-weight: 800; font-family:'Orbitron';">${c.discount}% OFF</div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button onclick="togglePromoStatus('${c.code}')" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; font-size: 0.75rem; font-weight:600; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <i class="fas ${c.active ? 'fa-pause-circle' : 'fa-play-circle'}"></i> ${c.active ? 'Zima' : 'Washa'}
+                        </button>
+                        <button onclick="deletePromoCode('${c.code}')" style="width: 45px; height:40px; border-radius: 10px; border: 1px solid rgba(255,51,102,0.2); background: rgba(255,51,102,0.1); color: #ff3366; cursor: pointer; transition:0.3s; display:flex; align-items:center; justify-content:center;">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addPromoCodeUI() {
+            const code = prompt("Andika jina la promo code (Mfano: CHIDY50):");
+            if (!code) return;
+            const discountVal = prompt("Andika kiasi cha punguzo (Asilimia) - Mfano: 20 kwa ajili ya 20%:", "10");
+            if (!discountVal) return;
+            
+            const discount = parseInt(discountVal);
+            if (isNaN(discount) || discount < 1 || discount > 99) return alert("Tafadhali weka namba sahihi kati ya 1 na 99!");
+
+            const newCode = {
+                code: code.toUpperCase().trim(),
+                discount: discount,
+                active: true
+            };
+
+            if (allPromoCodes.some(c => c.code === newCode.code)) {
+                return alert("Hii promo code tayari ipo!");
+            }
+
+            allPromoCodes.push(newCode);
+            await savePromoCodesToServer();
+        }
+
+        async function togglePromoStatus(code) {
+            const promo = allPromoCodes.find(c => c.code === code);
+            if (promo) {
+                promo.active = !promo.active;
+                await savePromoCodesToServer();
+            }
+        }
+
+        async function deletePromoCode(code) {
+            const confirmed = await showConfirmModal(
+                'FUTA PROMO CODE',
+                `Uko uhakika unataka kufuta promo code "${code}"? Wateja hawataweza kuitumia tena.`
+            );
+            if (!confirmed) return;
+
+            allPromoCodes = allPromoCodes.filter(c => c.code !== code);
+            await savePromoCodesToServer();
+        }
+
+        async function savePromoCodesToServer() {
+            try {
+                const res = await fetch('/api/admin/promo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codes: allPromoCodes })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast("✅ Promo codes zimehifadhiwa!");
+                    renderPromoStats();
+                    renderPromoCodesList();
+                } else {
+                    alert("Imeshindikana kuhifadhi: " + result.error);
+                }
+            } catch (err) {
+                console.error("Save promo codes failed:", err);
+                alert("Hitilafu ya mtandao.");
+            }
+        }
+
+        // Initialize admin dashboard
+        fetchMaintenanceState();
+        initSalesChart();
+        // Pre-fill announcement
+        fetch('/api/settings/announcement').then(r=>r.json()).then(d=>{ if(d.value) document.getElementById('announcementInput').value = d.value; });
+
+        // Mobile Sidebar Toggle
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        }
+
+        // Navigation Logic
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.dataset.view) return;
+                e.preventDefault();
+                
+                // Update active link
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show view
+                const viewId = this.dataset.view;
+                document.querySelectorAll('.view-section').forEach(view => {
+                    view.style.display = 'none';
+                });
+                const activeView = document.getElementById(viewId);
+                if (activeView) {
+                    activeView.style.display = 'block';
+                    // Trigger view-specific loads
+                    if (viewId === 'usersView') loadUsers();
+                    if (viewId === 'ordersView') fetchOrders();
+                    if (viewId === 'analyticsView') updateAnalytics();
+                    if (viewId === 'categoriesView') loadCategories();
+                    if (viewId === 'paymentsView') fetchPayments();
+                    if (viewId === 'promoView') loadPromoCodesWithStats();
+                    if (viewId === 'settingsView') loadStoreSettings();
+                }
+
+                // Close sidebar on mobile after click
+                if (window.innerWidth <= 576) {
+                    document.querySelector('.sidebar').classList.remove('active');
+                }
+            });
+        });
+        let globalPaymentsData = [];
+
+        async function fetchPayments() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch(`/api/admin/orders?t=${Date.now()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to fetch payments');
+                
+                const data = await res.json();
+                globalPaymentsData = data;
+                
+                calculatePaymentStats(data);
+                renderPaymentsTable(data);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('paymentsTableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:red;">Error loading data</td></tr>';
+            }
+        }
+
+        // Detect gateway from stored order id.
+        //   "PP:PAY-..." or "PP..." → pressopay
+        //   "HP..."               → harakapay
+        //   "ZP..."               → zenopay (rare)
+        //   anything else / null  → harakapay (manual/legacy)
+        function detectGateway(orderId) {
+            if (!orderId) return 'harakapay';
+            const id = String(orderId);
+            if (id.startsWith('PP')) return 'pressopay';
+            if (id.startsWith('HP')) return 'harakapay';
+            if (id.startsWith('ZP')) return 'zenopay';
+            return 'harakapay';
+        }
+
+        function calculatePaymentStats(orders) {
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            const sevenDaysAgo = new Date(now);
+            sevenDaysAgo.setDate(now.getDate() - 7);
+
+            const thisMonth = now.getMonth();
+            const thisYear = now.getFullYear();
+
+            // Global (approved) totals across time buckets
+            let tToday = 0, tYesterday = 0, t7Days = 0, tMonth = 0, tYear = 0, tAll = 0;
+            let countToday = 0, countYesterday = 0;
+
+            // Per-gateway per-day breakdown
+            const dayZero = () => ({
+                success: 0, successAmt: 0,
+                pending: 0, pendingAmt: 0,
+                failed:  0, failedAmt:  0,
+                total:   0, totalAmt:   0
+            });
+            const buckets = {
+                today:     { pressopay: dayZero(), harakapay: dayZero(), zenopay: dayZero() },
+                yesterday: { pressopay: dayZero(), harakapay: dayZero(), zenopay: dayZero() }
+            };
+
+            orders.forEach(o => {
+                const amt = parseFloat(o.amount) || 0;
+                const d = new Date(o.created_at);
+                const dStr = d.toISOString().split('T')[0];
+                const isApproved = (o.status === 'approved' || o.status === 'manual_approved');
+                const isPending  = (o.status === 'pending');
+                const isFailed   = (o.status === 'rejected');
+                const gw = detectGateway(o.promo_used);
+
+                if (isApproved) {
+                    tAll += amt;
+                    if (d.getFullYear() === thisYear) tYear += amt;
+                    if (d.getFullYear() === thisYear && d.getMonth() === thisMonth) tMonth += amt;
+                    if (d >= sevenDaysAgo) t7Days += amt;
+                    if (dStr === todayStr) tToday += amt;
+                    if (dStr === yesterdayStr) tYesterday += amt;
+                }
+
+                const applyTo = (bucket) => {
+                    if (!bucket[gw]) bucket[gw] = dayZero();
+                    const b = bucket[gw];
+                    b.total++;
+                    b.totalAmt += amt;
+                    if (isApproved) { b.success++; b.successAmt += amt; }
+                    if (isPending)  { b.pending++; b.pendingAmt += amt; }
+                    if (isFailed)   { b.failed++;  b.failedAmt  += amt; }
+                };
+
+                if (dStr === todayStr)     { countToday++;     applyTo(buckets.today); }
+                if (dStr === yesterdayStr) { countYesterday++; applyTo(buckets.yesterday); }
+            });
+
+            const fmt = (num) => num.toLocaleString('en-US');
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setWidth = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = pct + '%'; };
+
+            setText('payToday',    `Tzs ${fmt(tToday)}`);
+            setText('payYesterday',`Tzs ${fmt(tYesterday)}`);
+            setText('pay7Days',    `Tzs ${fmt(t7Days)}`);
+            setText('payMonth',    `Tzs ${fmt(tMonth)}`);
+            setText('payYear',     `Tzs ${fmt(tYear)}`);
+            setText('payAllTime',  `Tzs ${fmt(tAll)}`);
+
+            setText('todayCount',            `${countToday} txns`);
+            setText('breakdownTodayTotal',   `Tzs ${fmt(tToday)}`);
+            setText('yesterdayCount',        `${countYesterday} txns`);
+            setText('breakdownYesterdayTotal', `Tzs ${fmt(tYesterday)}`);
+
+            // Renders one gateway row for either today/yesterday
+            const paintGatewayRow = (prefix, gwKey, gwBucket, dayApprovedTotal) => {
+                const b = gwBucket;
+                setText(`${prefix}${gwKey}Count`,          `${b.total} malipo`);
+                setText(`${prefix}${gwKey}Amount`,         `Tzs ${fmt(b.successAmt)}`);
+                setText(`${prefix}${gwKey}CountSuccess`,   b.success);
+                setText(`${prefix}${gwKey}AmountSuccess`,  fmt(b.successAmt));
+                setText(`${prefix}${gwKey}CountPending`,   b.pending);
+                setText(`${prefix}${gwKey}AmountPending`,  fmt(b.pendingAmt));
+                setText(`${prefix}${gwKey}CountFailed`,    b.failed);
+                setText(`${prefix}${gwKey}AmountFailed`,   fmt(b.failedAmt));
+                const share = dayApprovedTotal > 0 ? Math.round((b.successAmt / dayApprovedTotal) * 100) : 0;
+                setWidth(`${prefix}${gwKey}Bar`, share);
+                setText(`${prefix}${gwKey}Share`, `${share}% ya yote`);
+            };
+
+            // Today
+            paintGatewayRow('today', 'Presso', buckets.today.pressopay, tToday);
+            paintGatewayRow('today', 'Haraka', buckets.today.harakapay, tToday);
+            // Yesterday
+            paintGatewayRow('yesterday', 'Presso', buckets.yesterday.pressopay, tYesterday);
+            paintGatewayRow('yesterday', 'Haraka', buckets.yesterday.harakapay, tYesterday);
+        }
+
+        function filterPaymentsTable() {
+            const search = (document.getElementById('paymentSearch').value || '').toLowerCase();
+            const statusFilter = document.getElementById('paymentStatusFilter').value;
+            
+            const filtered = globalPaymentsData.filter(o => {
+                const name = (o.visitors?.name || '').toLowerCase();
+                const phone = (o.visitors?.phone || o.phone_number || '').toLowerCase();
+                const orderId = (o.promo_used || `ID:${o.id}`).toLowerCase();
+                
+                const matchesSearch = name.includes(search) || phone.includes(search) || orderId.includes(search);
+                const matchesStatus = statusFilter === 'all' || 
+                                     (statusFilter === 'approved' && (o.status === 'approved' || o.status === 'manual_approved')) ||
+                                     (statusFilter === o.status);
+                                     
+                return matchesSearch && matchesStatus;
+            });
+            
+            renderPaymentsTable(filtered);
+        }
+
+        function renderPaymentsTable(data) {
+            const tbody = document.getElementById('paymentsTableBody');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #6c7293;">No transactions found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(o => {
+                const d = new Date(o.created_at);
+                const dateStr = `${d.toLocaleDateString('en-US')} <br> <span style="font-size:0.75rem;color:#6c7293;">${d.toLocaleTimeString('en-US')}</span>`;
+                
+                let statusStr = o.status;
+                if (statusStr === 'approved' || statusStr === 'manual_approved') statusStr = 'completed';
+                
+                let statusColor = '#ffab00'; // pending
+                if (statusStr === 'completed') statusColor = '#00d25b';
+                if (statusStr === 'rejected') statusColor = '#ff3333';
+                
+                const statusBadge = `<span style="color: ${statusColor}; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;"><i class="fas fa-check-circle"></i> ${statusStr}</span>`;
+                
+                const userName = o.visitors?.name || 'Unknown';
+                const userPhone = o.visitors?.phone || o.phone_number || 'N/A';
+                const orderId = o.promo_used || `HP${o.id}`;
+                const contentName = o.posts?.title || 'Unknown Item';
+
+                // Gateway chip — auto-detect from stored order id prefix
+                const gw = detectGateway(orderId);
+                const gwMeta = ({
+                    pressopay: { label: 'PressoPay', bg: 'rgba(37,99,235,0.15)',  border: 'rgba(37,99,235,0.35)',  fg: '#3b82f6' },
+                    harakapay: { label: 'HarakaPay', bg: 'rgba(0,210,91,0.12)',   border: 'rgba(0,210,91,0.35)',   fg: '#00d25b' },
+                    zenopay:   { label: 'ZenoPay',   bg: 'rgba(255,171,0,0.15)',  border: 'rgba(255,171,0,0.35)',  fg: '#ffab00' }
+                })[gw] || { label: gw, bg: 'rgba(255,255,255,0.1)', border: 'rgba(255,255,255,0.2)', fg: '#ccc' };
+                const gatewayBadge = `<span style="background:${gwMeta.bg};border:1px solid ${gwMeta.border};padding:3px 10px;border-radius:999px;font-size:0.72rem;color:${gwMeta.fg};font-weight:700;letter-spacing:0.03em;">${gwMeta.label}</span>`;
+
+                return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 15px; color: #6c7293; font-size: 0.85rem;">${orderId}</td>
+                    <td style="padding: 15px; font-weight: 500;">${userName}</td>
+                    <td style="padding: 15px; color: #ccc; font-size: 0.9rem;">${userPhone}</td>
+                    <td style="padding: 15px;">${gatewayBadge}</td>
+                    <td style="padding: 15px; color: #ccc; font-size: 0.85rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${contentName}</td>
+                    <td style="padding: 15px; font-weight: 600;">${parseFloat(o.amount).toLocaleString('en-US')}</td>
+                    <td style="padding: 15px;">${statusBadge}</td>
+                    <td style="padding: 15px; font-size: 0.85rem;">${dateStr}</td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function exportPaymentsCSV() {
+            if (!globalPaymentsData || globalPaymentsData.length === 0) return alert('No data to export');
+            
+            let csv = 'Order ID,User,Phone,Gateway,Content,Amount,Status,Date\n';
+            globalPaymentsData.forEach(o => {
+                const d = new Date(o.created_at);
+                const orderId = o.promo_used || `HP${o.id}`;
+                const userName = (o.visitors?.name || 'Unknown').replace(/,/g, '');
+                const userPhone = o.visitors?.phone || o.phone_number || 'N/A';
+                const contentName = (o.posts?.title || 'Unknown Item').replace(/,/g, '');
+                const amount = o.amount;
+                const status = (o.status === 'approved' || o.status === 'manual_approved') ? 'completed' : o.status;
+                const date = d.toLocaleString('en-US').replace(/,/g, '');
+                
+                csv += `${orderId},${userName},${userPhone},HarakaPay,${contentName},${amount},${status},${date}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `payments_export_${new Date().getTime()}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        async function fetchOrders() {
+            const list = document.getElementById('ordersList');
+            if (list) list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
+            
+            try {
+                const res = await fetch(`/api/admin/orders?t=${Date.now()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const orders = await res.json();
+                
+                if (!Array.isArray(orders)) {
+                    console.error("Orders is not an array:", orders);
+                    allOrdersData = [];
+                } else {
+                    allOrdersData = orders;
+                }
+
+                // Notification sound for new orders (Check by UUID or timestamp)
+                if (allOrdersData.length > 0) {
+                    const latestId = allOrdersData[0].id;
+                    if (lastSeenOrderId !== null && latestId !== lastSeenOrderId) {
+                        notificationSound.play().catch(e => console.log('Audio blocked'));
+                    }
+                    lastSeenOrderId = latestId;
+                } else {
+                    lastSeenOrderId = 0;
+                }
+                
+                // Calculate Category specific counts for the top boxes (based on keywords or categories)
+                if (Array.isArray(allOrdersData)) {
+                    const actionCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('action')).length;
+                    const sportsCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('sports')).length;
+                    const appCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('app')).length;
+                    
+                    if (document.getElementById('actionOrders')) document.getElementById('actionOrders').innerText = `${actionCount} Orders`;
+                    if (document.getElementById('sportsOrders')) document.getElementById('sportsOrders').innerText = `${sportsCount} Orders`;
+                    if (document.getElementById('appOrders')) document.getElementById('appOrders').innerText = `${appCount} Orders`;
+                }
+
+                // Update Revenue statistic
+                const approvedTotal = Array.isArray(allOrdersData) 
+                    ? allOrdersData
+                        .filter(o => o.status === 'approved')
+                        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
+                    : 0;
+                const pendingTotal = Array.isArray(allOrdersData) 
+                    ? allOrdersData
+                        .filter(o => o.status === 'pending')
+                        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
+                    : 0;
+                const failedCount = Array.isArray(allOrdersData) 
+                    ? allOrdersData.filter(o => o.status === 'failed' || o.status === 'rejected').length
+                    : 0;
+
+                const approvedOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => o.status === 'approved' || o.status === 'manual_approved') : [];
+                document.getElementById('totalRevenue').innerText = `TSh ${approvedTotal.toLocaleString()}`;
+                
+                // Fetch and update Lifetime Revenue
+                try {
+                    fetch('/api/settings/lifetime_revenue')
+                        .then(r => r.json())
+                        .then(data => {
+                            const val = parseFloat(data.value || 0);
+                            if (document.getElementById('lifetimeRevenue')) {
+                                document.getElementById('lifetimeRevenue').innerText = `TSh ${val.toLocaleString()}`;
+                            }
+                        });
+                } catch (e) {
+                    console.error("Failed to load lifetime revenue:", e);
+                }
+
+                if (document.getElementById('totalDownloads')) document.getElementById('totalDownloads').innerText = approvedOrders.length;
+                if (document.getElementById('pendingAmount')) document.getElementById('pendingAmount').innerText = `TSh ${pendingTotal.toLocaleString()}`;
+                if (document.getElementById('failedTransactions')) document.getElementById('failedTransactions').innerText = failedCount;
+
+                renderOrdersList();
+
+                // Update Dashboard Charts
+                if (Array.isArray(allOrdersData) && allOrdersData.length > 0) {
+                    updateRevenueChart(allOrdersData);
+                    updateCategoryChart(allOrdersData);
+                }
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<p style="text-align: center; color: #ff3333; padding: 2rem;">Error sync orders.</p>';
+            }
+        }
+
+        async function loadStoreSettings() {
+            try {
+                // Fetch Global Discount
+                const resDisc = await fetch('/api/settings/global_discount');
+                const discData = await resDisc.json();
+                
+                const input = document.getElementById('globalDiscountInput');
+                const badge = document.getElementById('activeDiscountBadge');
+                
+                if (discData && discData.value) {
+                    input.value = discData.value;
+                    if (parseInt(discData.value) > 0) {
+                        badge.style.display = 'block';
+                        badge.innerText = `${discData.value}% ACTIVE`;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                } else {
+                    input.value = 0;
+                    badge.style.display = 'none';
+                }
+
+                // Fetch Maintenance Mode
+                const resMaint = await fetch('/api/settings/maintenance');
+                const maintData = await resMaint.json();
+                const maintToggle = document.getElementById('maintenanceToggle');
+                const maintStatus = document.getElementById('maintenanceStatus');
+                
+                const isMaint = maintData.value === 'true';
+                maintToggle.checked = isMaint;
+                maintStatus.style.display = isMaint ? 'block' : 'none';
+
+                // Fetch App Installs
+                const resInst = await fetch('/api/settings/total_installs');
+                const instData = await resInst.json();
+                document.getElementById('settingsTotalInstalls').innerText = instData.value || 0;
+
+            } catch (err) {
+                console.error("Failed to load settings:", err);
+            }
+        }
+
+        async function toggleMaintenanceMode(enabled) {
+            try {
+                const res = await fetch('/api/admin/settings/maintenance', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ value: String(enabled) })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    document.getElementById('maintenanceStatus').style.display = enabled ? 'block' : 'none';
+                    showToast(enabled ? 'Maintenance Mode ACTIVATED' : 'Maintenance Mode DEACTIVATED');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Failed to update maintenance mode: " + err.message);
+                document.getElementById('maintenanceToggle').checked = !enabled;
+            }
+        }
+
+        async function saveGlobalDiscount() {
+            const val = document.getElementById('globalDiscountInput').value;
+            if (val === "" || val < 0 || val > 95) return alert("Weka asilimia sahihi (0-95)");
+
+            try {
+                const res = await fetch('/api/admin/settings/global_discount', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ value: val })
+                });
+                
+                if (res.status === 401 || res.status === 403) {
+                    return alert("Kikao chako (Session) kimeisha. Tafadhali Login tena.");
+                }
+
+                const result = await res.json();
+                if (result.success) {
+                    showToast("✅ Global Discount imehifadhiwa!");
+                    loadStoreSettings();
+                } else {
+                    alert("Error: " + (result.error || 'Unknown server error'));
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                alert("Hitilafu: " + err.message);
+            }
+        }
+
+        async function clearGlobalDiscount() {
+            document.getElementById('globalDiscountInput').value = 0;
+            await saveGlobalDiscount();
+        }
+
+        function renderOrdersList() {
+            const list = document.getElementById('ordersList');
+            const orders = Array.isArray(allOrdersData) ? allOrdersData : [];
+            const query = document.getElementById('adminSearchInput') ? document.getElementById('adminSearchInput').value.toLowerCase() : '';
+            
+            const filteredOrders = query 
+                ? orders.filter(o => {
+                    const gameTitle = o.posts && o.posts.title ? o.posts.title.toLowerCase() : '';
+                    const guestName = o.visitors && o.visitors.name ? o.visitors.name.toLowerCase() : '';
+                    const phone = o.phone_number || '';
+                    return gameTitle.includes(query) || guestName.includes(query) || phone.includes(query);
+                })
+                : orders;
+                
+            if (filteredOrders.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;">Hauna oda yoyote kwa sasa.</p>';
+                return;
+            }
+
+            // Update order badge count
+            const orderBadge = document.getElementById('orderCountBadge');
+            if (orderBadge) orderBadge.innerText = `${filteredOrders.length} Total`;
+
+            list.innerHTML = filteredOrders.map(order => {
+                    const statusClass = (order.status === 'approved' || order.status === 'manual_approved') ? 'status-approved' : `status-${order.status}`;
+                    const date = new Date(order.created_at).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+                    const guestName = order.visitors ? order.visitors.name : 'Unknown';
+                    const guestPhone = order.visitors ? order.visitors.phone : order.phone_number;
+                    const gameTitle = order.posts ? order.posts.title : 'Deleted Game';
+                    
+                    return `
+                        <div class="order-card" style="
+                            flex-direction: column; 
+                            align-items: stretch; 
+                            margin-bottom: 0; 
+                            background: linear-gradient(135deg, #121218 0%, #0d0d12 100%);
+                            border: 1px solid rgba(255,255,255,0.05);
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                            position: relative;
+                            overflow: hidden;
+                            transition: 0.3s;
+                        ">
+                            <!-- Glowing edge for status -->
+                            <div style="position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: ${order.status === 'pending' ? '#ffab00' : ((order.status === 'approved' || order.status === 'manual_approved') ? '#00d25b' : '#ff3333')}"></div>
+                            
+                            <div class="order-info" style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${gameTitle}</h4>
+                                    <span style="font-size: 0.65rem; color: #6c7293;">${date}</span>
+                                </div>
+                                <div class="order-meta" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(0,242,255,0.1); display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-user" style="font-size: 0.7rem; color: var(--primary-color);"></i>
+                                        </div>
+                                        <span style="color: #fff; font-size: 0.85rem;">${guestName}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-phone" style="font-size: 0.7rem; color: #6c7293;"></i>
+                                        </div>
+                                        <span style="font-size: 0.8rem; color: #6c7293;">${guestPhone}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.03);">
+                                <div>
+                                    <span style="display: block; font-size: 0.6rem; text-transform: uppercase; color: #4b4b56; margin-bottom: 2px;">Amount</span>
+                                    <span style="font-weight: 500; color: #00ff88; font-size: 1.1rem;">TSh ${parseInt(order.amount).toLocaleString()}</span>
+                                    ${order.promo_used ? `<div style="font-size: 0.6rem; color: #ffab00; margin-top: 2px;"><i class="fas fa-tag"></i> ${order.promo_used}</div>` : ''}
+                                </div>
+                                <div class="order-actions">
+                                    ${order.status === 'pending' ? `
+                                        <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 6px 14px; font-size: 0.75rem; background: #00d25b; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">Approve</button>
+                                        <button class="btn-order-verify" onclick="verifyOrder('${order.id}')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(0, 242, 255, 0.1); border: 1px solid #00f2ff; color: #00f2ff; border-radius: 4px; font-weight: 500; cursor: pointer; margin-left: 5px;" title="Check status directly from HarakaPay">Verify</button>
+                                        <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(255,51,51,0.1); border: 1px solid #ff3333; color: #ff3333; border-radius: 4px; font-weight: 500; cursor: pointer; margin-top: 5px;">Reject</button>
+                                    ` : `
+                                        <span class="order-status ${statusClass}" style="opacity: 0.8;">${order.status === 'manual_approved' ? 'APPROVED' : order.status}</span>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        async function updateOrderStatus(orderId, status) {
+            const isApprove = status === 'approved' || status === 'manual_approved';
+            const confirmed = await showConfirmModal(
+                isApprove ? 'APPROVE ORDER' : 'REJECT ORDER',
+                isApprove
+                    ? 'Uko uhakika unataka kukubali oda hii? Mteja atapata access ya game mara moja.'
+                    : 'Uko uhakika unataka kukataa oda hii? Mteja hatapata access.'
+            );
+            if (!confirmed) return;
+
+            // Style confirm button based on action
+            const okBtn = document.getElementById('confirmModalOk');
+            if (isApprove) {
+                okBtn.style.background = 'rgba(0,210,91,0.15)';
+                okBtn.style.borderColor = 'rgba(0,210,91,0.4)';
+                okBtn.style.color = '#00d25b';
+            }
+
+            try {
+                const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    showToast(isApprove ? '✅ Oda imekubaliwa! Access imetolewa.' : '❌ Oda imekataliwa.');
+                    fetchOrders();
+                    fetchUserStats();
+                } else {
+                    showToast('⚠️ Imeshindwa: ' + (result.error || 'Unknown error'));
+                    console.error('Order status error:', result.error);
+                }
+            } catch (err) {
+                console.error('Network error:', err);
+                showToast('⚠️ Hitilafu ya mtandao. Jaribu tena.');
+            }
+        }
+
+        async function verifyOrder(orderId) {
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            
+            try {
+                const res = await fetch(`/api/admin/orders/${orderId}/verify`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    showToast('✅ ' + result.message);
+                    fetchOrders();
+                    fetchUserStats();
+                } else {
+                    showToast('ℹ️ ' + (result.message || 'Payment not found yet.'));
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            } catch (err) {
+                console.error('Verify error:', err);
+                showToast('⚠️ Error: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+        // Auto-refresh orders every 30 seconds if view is active
+        setInterval(() => {
+            const ordersView = document.getElementById('ordersView');
+            if (ordersView && ordersView.style.display === 'block') {
+                fetchOrders();
+            }
+        }, 30000);
+
+        // Keep the dashboard live: refresh revenue, category and trend charts
+        // every 30 seconds while the dashboard tab is on screen.
+        setInterval(() => {
+            if (currentActiveViewId === 'dashboardView') {
+                fetchOrders();     // updates revenueChart + categoryChart
+                initSalesChart();  // updates salesChart (daily trend)
+            }
+        }, 30000);
+
+        // Auto-refresh system health every 15 seconds if view is active
+        setInterval(() => {
+            if (typeof currentActiveViewId !== 'undefined' && currentActiveViewId === 'healthView') {
+                loadSystemHealth();
+            }
+        }, 15000);
+
+        // Debug: Log when script is fully loaded
+        console.log("Admin Dashboard Script: FULLY INITIALIZED ✅");
+
+        // ============================================
+        // PUSH NOTIFICATIONS (OneSignal)
+        // ============================================
+        let pushSessionCount = 0;
+        let pushLastRecipients = 0;
+
+        function initPushView() {
+            // Wire the live preview + counters once, then refresh health.
+            const titleEl = document.getElementById('pushTitle');
+            const msgEl   = document.getElementById('pushMessage');
+            const iconEl  = document.getElementById('pushIcon');
+            const previewTitle = document.getElementById('pushPreviewTitle');
+            const previewMsg   = document.getElementById('pushPreviewMsg');
+            const previewIcon  = document.querySelector('.push-preview-icon');
+
+            const paint = () => {
+                const t = (titleEl.value || 'Game Mpya Imefika! 🎮');
+                const m = (msgEl.value || 'Andika ujumbe wa push hapa...');
+                if (previewTitle) previewTitle.textContent = t;
+                if (previewMsg)   previewMsg.textContent   = m;
+                const tc = document.getElementById('pushTitleCounter');
+                if (tc) tc.textContent = `${titleEl.value.length}/60`;
+                const mc = document.getElementById('pushMsgCounter');
+                if (mc) mc.textContent = `${msgEl.value.length}/180`;
+            };
+            titleEl.addEventListener('input', paint);
+            msgEl.addEventListener('input', paint);
+            iconEl.addEventListener('input', () => {
+                if (previewIcon) {
+                    const url = iconEl.value.trim();
+                    if (url) previewIcon.style.background = `#000 center/cover url("${url}")`;
+                    else     previewIcon.style.background = 'linear-gradient(135deg, #00f2ff, #bc13fe)';
+                }
+            });
+            paint();
+            refreshPushHealth();
+            // Also boot the scheduled push section (populates day/month/year
+            // selects, wires live preview, and loads the queue). Safe to call
+            // multiple times — it self-guards with _schedInited.
+            try { initSchedView(); } catch(_) {}
+        }
+
+        async function refreshPushHealth() {
+            const dot = document.getElementById('pushStatusDot');
+            const txt = document.getElementById('pushStatusText');
+            const helper = document.getElementById('pushSetupHelper');
+            const playersEl = document.getElementById('pushPlayers');
+            const messageableEl = document.getElementById('pushMessageable');
+
+            const adminAuth = { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') };
+
+            try {
+                const statusRes = await fetch('/api/admin/onesignal/status', { headers: adminAuth });
+                const statusData = await statusRes.json();
+
+                if (!statusData.configured) {
+                    dot.className = 'push-status-dot down';
+                    txt.textContent = statusData.message || 'OneSignal haijawekwa';
+                    if (helper) helper.style.display = 'block';
+                    if (playersEl) playersEl.textContent = 'N/A';
+                    if (messageableEl) messageableEl.textContent = 'N/A';
+                    return;
+                }
+
+                if (helper) helper.style.display = 'none';
+
+                const appRes = await fetch('/api/admin/onesignal/app', { headers: adminAuth });
+                const appData = await appRes.json();
+                if (appData.success) {
+                    dot.className = 'push-status-dot ok';
+                    txt.textContent = `${appData.name || 'OneSignal'} — CONNECTED`;
+                    if (playersEl) playersEl.textContent = (appData.players || 0).toLocaleString();
+                    if (messageableEl) messageableEl.textContent = (appData.messageable_players || 0).toLocaleString();
+                } else {
+                    dot.className = 'push-status-dot down';
+                    txt.textContent = 'API key haifanyi kazi';
+                }
+            } catch (e) {
+                dot.className = 'push-status-dot down';
+                txt.textContent = 'Imeshindwa kuunganisha';
+                console.error('OneSignal health check failed:', e);
+            }
+        }
+
+        async function sendPushNotification(evt) {
+            if (evt) evt.preventDefault();
+            const btn = document.getElementById('pushSubmitBtn');
+            const status = document.getElementById('pushStatus');
+
+            const title   = document.getElementById('pushTitle').value.trim();
+            const message = document.getElementById('pushMessage').value.trim();
+            const url     = document.getElementById('pushUrl').value.trim();
+            const icon    = document.getElementById('pushIcon').value.trim();
+            const segment = document.getElementById('pushSegment').value;
+
+            if (!title || !message) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Title na Message zinahitajika';
+                return false;
+            }
+
+            const confirmed = await showConfirmModal('TUMA PUSH', `Uko tayari kutuma push kwa segment "${segment}"? Push hii itafika kwa watumiaji wote wa segment hii.`);
+            if (!confirmed) return false;
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.style.cursor = 'wait';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA...';
+            status.style.color = '#00f2ff';
+            status.textContent = 'Inatuma push kupitia OneSignal…';
+
+            try {
+                const res = await fetch('/api/admin/onesignal/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ title, message, url: url || undefined, icon: icon || undefined, segment })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || `Server responded ${res.status}`);
+                }
+
+                pushSessionCount++;
+                pushLastRecipients = data.recipients || 0;
+                const sentEl = document.getElementById('pushSentTotal');
+                if (sentEl) sentEl.textContent = pushSessionCount;
+                const lastEl = document.getElementById('pushLastRecipients');
+                if (lastEl) lastEl.textContent = pushLastRecipients.toLocaleString();
+
+                status.style.color = '#00d25b';
+                status.textContent = `✅ Push imetumwa! Wamefikiwa: ${pushLastRecipients.toLocaleString()} devices — ID: ${data.id || 'n/a'}`;
+
+                // Reset form after 1s
+                setTimeout(() => {
+                    document.getElementById('pushTitle').value = '';
+                    document.getElementById('pushMessage').value = '';
+                    document.getElementById('pushUrl').value = '';
+                    document.getElementById('pushIcon').value = '';
+                    const evt = new Event('input');
+                    document.getElementById('pushTitle').dispatchEvent(evt);
+                }, 1200);
+            } catch (err) {
+                status.style.color = '#ff3366';
+                status.textContent = `❌ ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.style.cursor = 'pointer';
+                btn.innerHTML = originalHtml;
+            }
+            return false;
+        }
+
+        // ============================================
+        // SCHEDULED PUSH — panga push kwa muda maalum
+        // ============================================
+        const SCHED_MONTHS_SW = ['Januari','Februari','Machi','Aprili','Mei','Juni','Julai','Agosti','Septemba','Oktoba','Novemba','Desemba'];
+        let _schedInited = false;
+
+        function initSchedView() {
+            if (_schedInited) { loadScheduledPushes(); return; }
+            _schedInited = true;
+
+            const daySel   = document.getElementById('schedDay');
+            const monthSel = document.getElementById('schedMonth');
+            const yearSel  = document.getElementById('schedYear');
+            const startEl  = document.getElementById('schedStartTime');
+            const endEl    = document.getElementById('schedEndTime');
+            const titleEl  = document.getElementById('schedTitle');
+            const msgEl    = document.getElementById('schedMessage');
+            const bigEl    = document.getElementById('schedBigImage');
+            const iconEl   = document.getElementById('schedIcon');
+            const repeatIn = document.getElementById('schedRepeat');
+            const custWrap = document.getElementById('schedCustomHoursWrap');
+
+            // Populate day (1-31), month (Jan-Dec), year (current +5)
+            for (let d = 1; d <= 31; d++) {
+                const o = document.createElement('option');
+                o.value = d; o.textContent = String(d).padStart(2, '0');
+                daySel.appendChild(o);
+            }
+            SCHED_MONTHS_SW.forEach((name, i) => {
+                const o = document.createElement('option');
+                o.value = i + 1; o.textContent = name;
+                monthSel.appendChild(o);
+            });
+            const curYear = new Date().getFullYear();
+            for (let y = curYear; y <= curYear + 5; y++) {
+                const o = document.createElement('option');
+                o.value = y; o.textContent = y;
+                yearSel.appendChild(o);
+            }
+            // Default to "now + 10 min"
+            const soon = new Date(Date.now() + 10 * 60 * 1000);
+            daySel.value = soon.getDate();
+            monthSel.value = soon.getMonth() + 1;
+            yearSel.value = soon.getFullYear();
+            startEl.value = String(soon.getHours()).padStart(2, '0') + ':' + String(soon.getMinutes()).padStart(2, '0');
+
+            // Repeat chip switcher
+            const chips = document.querySelectorAll('#schedRepeatChips .sched-repeat-chip');
+            chips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    chips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    const val = chip.getAttribute('data-repeat');
+                    repeatIn.value = val;
+                    custWrap.style.display = (val === 'custom') ? 'block' : 'none';
+                    paintSchedPreview();
+                });
+            });
+
+            // Live preview + counters
+            const paint = () => paintSchedPreview();
+            [titleEl, msgEl, bigEl, iconEl, daySel, monthSel, yearSel, startEl, endEl].forEach(el => {
+                el.addEventListener('input', paint);
+                el.addEventListener('change', paint);
+            });
+            titleEl.addEventListener('input', () => {
+                document.getElementById('schedTitleCounter').textContent = `${titleEl.value.length}/60`;
+            });
+            msgEl.addEventListener('input', () => {
+                document.getElementById('schedMsgCounter').textContent = `${msgEl.value.length}/180`;
+            });
+
+            paint();
+            loadScheduledPushes();
+        }
+
+        function paintSchedPreview() {
+            const title = document.getElementById('schedTitle').value.trim() || 'Jina la push...';
+            const msg   = document.getElementById('schedMessage').value.trim() || 'Maelezo yatatokea hapa...';
+            const big   = document.getElementById('schedBigImage').value.trim();
+            const icon  = document.getElementById('schedIcon').value.trim();
+            const repeat = document.getElementById('schedRepeat').value;
+
+            document.getElementById('schedPreviewTitle').textContent = title;
+            document.getElementById('schedPreviewMsg').textContent = msg;
+
+            const imgEl = document.getElementById('schedPreviewImg');
+            if (big) {
+                imgEl.style.backgroundImage = `url("${big}")`;
+                imgEl.innerHTML = '';
+            } else {
+                imgEl.style.backgroundImage = '';
+                imgEl.innerHTML = '<i class="fas fa-image"></i>';
+            }
+
+            const iconWrap = document.getElementById('schedPreviewIcon');
+            if (icon) {
+                iconWrap.style.backgroundImage = `url("${icon}")`;
+                iconWrap.innerHTML = '';
+            } else {
+                iconWrap.style.backgroundImage = '';
+                iconWrap.innerHTML = '<i class="fas fa-bell"></i>';
+            }
+
+            // When + repeat text
+            const schedIso = buildScheduledIso();
+            const whenTxt = schedIso
+                ? new Date(schedIso).toLocaleString('sw-TZ', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+                : '—';
+            document.getElementById('schedPreviewWhen').textContent = 'Muda: ' + whenTxt;
+
+            const repeatLabels = {
+                none: 'Mara moja',
+                hourly: 'Kila saa',
+                daily: 'Kila siku',
+                weekly: 'Kila wiki',
+                monthly: 'Kila mwezi',
+                custom: 'Repost Always'
+            };
+            document.getElementById('schedPreviewRepeat').textContent = repeatLabels[repeat] || 'Mara moja';
+        }
+
+        function buildScheduledIso() {
+            const day   = parseInt(document.getElementById('schedDay').value, 10);
+            const month = parseInt(document.getElementById('schedMonth').value, 10);
+            const year  = parseInt(document.getElementById('schedYear').value, 10);
+            const start = document.getElementById('schedStartTime').value;
+            if (!day || !month || !year || !start) return null;
+            const [h, m] = start.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            const dt = new Date(year, month - 1, day, h, m, 0);
+            if (Number.isNaN(dt.getTime())) return null;
+            return dt.toISOString();
+        }
+        function buildExpiresIso() {
+            const day   = parseInt(document.getElementById('schedDay').value, 10);
+            const month = parseInt(document.getElementById('schedMonth').value, 10);
+            const year  = parseInt(document.getElementById('schedYear').value, 10);
+            const end   = document.getElementById('schedEndTime').value;
+            if (!end || !day || !month || !year) return null;
+            const [h, m] = end.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            const dt = new Date(year, month - 1, day, h, m, 0);
+            if (Number.isNaN(dt.getTime())) return null;
+            return dt.toISOString();
+        }
+
+        async function schedulePush(evt) {
+            if (evt) evt.preventDefault();
+            const status = document.getElementById('schedStatus');
+            const btn    = document.getElementById('schedSubmitBtn');
+
+            const title   = document.getElementById('schedTitle').value.trim();
+            const message = document.getElementById('schedMessage').value.trim();
+            const url     = document.getElementById('schedUrl').value.trim();
+            const icon    = document.getElementById('schedIcon').value.trim();
+            const bigImg  = document.getElementById('schedBigImage').value.trim();
+            const segment = document.getElementById('schedSegment').value;
+            const repeat  = document.getElementById('schedRepeat').value;
+            const repeatHours = parseInt(document.getElementById('schedRepeatHours').value, 10) || 0;
+
+            if (!title || !message) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Jina na maelezo yanahitajika';
+                return false;
+            }
+
+            const scheduled_at = buildScheduledIso();
+            const expires_at   = buildExpiresIso();
+            if (!scheduled_at) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Tarehe/muda si sahihi';
+                return false;
+            }
+            if (new Date(scheduled_at).getTime() < Date.now() - 60_000) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Tarehe iliyowekwa imepita';
+                return false;
+            }
+            if (expires_at && new Date(expires_at) <= new Date(scheduled_at)) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ End Time lazima iwe baada ya Start Time';
+                return false;
+            }
+            if (repeat === 'custom' && (!repeatHours || repeatHours < 1)) {
+                status.style.color = '#ff3366';
+                status.textContent = '⚠️ Weka masaa ya kurudia (Repost Always)';
+                return false;
+            }
+
+            const confirmed = await showConfirmModal('PANGA PUSH', `Panga push "${title}" itume "${new Date(scheduled_at).toLocaleString('sw-TZ')}"?`);
+            if (!confirmed) return false;
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAPANGA...';
+            status.style.color = '#00f2ff';
+            status.textContent = 'Inatuma…';
+
+            try {
+                const res = await fetch('/api/admin/onesignal/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({
+                        title, message,
+                        url: url || undefined,
+                        icon: icon || undefined,
+                        big_image: bigImg || undefined,
+                        segment,
+                        scheduled_at,
+                        expires_at,
+                        repeat,
+                        repeat_interval_hours: repeatHours
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+
+                status.style.color = '#00d25b';
+                status.textContent = '✅ Push imepangwa! Itakuwa live "' + new Date(scheduled_at).toLocaleString('sw-TZ') + '"';
+
+                // Reset form (keep segment + repeat)
+                document.getElementById('schedTitle').value = '';
+                document.getElementById('schedMessage').value = '';
+                document.getElementById('schedUrl').value = '';
+                document.getElementById('schedIcon').value = '';
+                document.getElementById('schedBigImage').value = '';
+                document.getElementById('schedTitleCounter').textContent = '0/60';
+                document.getElementById('schedMsgCounter').textContent = '0/180';
+                paintSchedPreview();
+                loadScheduledPushes();
+            } catch (err) {
+                status.style.color = '#ff3366';
+                status.textContent = `❌ ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            return false;
+        }
+
+        async function loadScheduledPushes() {
+            const grid  = document.getElementById('schedQueueGrid');
+            const badge = document.getElementById('schedQueueBadge');
+            if (!grid) return;
+            grid.innerHTML = '<div class="sched-empty"><i class="fas fa-spinner fa-spin"></i><div style="font-size:0.85rem;">Inapakia…</div></div>';
+
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+
+                const items = data.items || [];
+                if (badge) badge.textContent = items.length;
+
+                if (items.length === 0) {
+                    grid.innerHTML = `
+                        <div class="sched-empty">
+                            <i class="fas fa-calendar-plus"></i>
+                            <div style="font-size:0.9rem; font-weight:600;">Bado hakuna push iliyopangwa.</div>
+                            <div style="font-size:0.75rem; margin-top:6px; opacity:0.75;">Tumia fomu juu kuunda push ya kwanza.</div>
+                        </div>`;
+                    return;
+                }
+
+                const repeatLabels = { none:'Mara moja', hourly:'Kila saa', daily:'Kila siku', weekly:'Kila wiki', monthly:'Kila mwezi', custom:'Repost Always' };
+
+                grid.innerHTML = items.map(item => {
+                    const nextTxt = item.next_fire_at
+                        ? new Date(item.next_fire_at).toLocaleString('sw-TZ', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                        : '—';
+                    const repeatTxt = repeatLabels[item.repeat] || 'Mara moja';
+                    const customExtra = (item.repeat === 'custom' && item.repeat_interval_hours)
+                        ? ` (${item.repeat_interval_hours}h)` : '';
+                    const bigStyle = item.big_image
+                        ? `background-image:url("${item.big_image}"); color:transparent;`
+                        : '';
+                    const isActive = item.status === 'active';
+                    const isPaused = item.status === 'paused';
+                    const canControl = isActive || isPaused;
+
+                    return `
+                        <div class="sched-item">
+                            <div class="sched-item-thumb" style="${bigStyle}">
+                                ${item.big_image ? '' : '<i class="fas fa-image"></i>'}
+                            </div>
+                            <div>
+                                <div class="sched-item-title" title="${_schEsc(item.title)}">${_schEsc(item.title)}</div>
+                                <div class="sched-item-msg">${_schEsc(item.message)}</div>
+                            </div>
+                            <div class="sched-item-meta">
+                                <span><i class="fas fa-clock"></i>${nextTxt}</span>
+                                <span><i class="fas fa-redo"></i>${repeatTxt}${customExtra}</span>
+                                <span><i class="fas fa-paper-plane"></i>Fires: ${item.fires_count || 0}</span>
+                                ${item.last_recipients ? `<span><i class="fas fa-users"></i>${item.last_recipients}</span>` : ''}
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                                <span class="sched-item-status ${item.status}">${item.status.toUpperCase()}</span>
+                                ${item.last_result && item.last_result !== 'ok' ? `<span style="font-size:0.65rem; color:#ff6688;" title="${_schEsc(item.last_result)}"><i class="fas fa-exclamation-triangle"></i> Error ya mwisho</span>` : ''}
+                            </div>
+                            <div class="sched-item-actions">
+                                ${canControl ? `
+                                    <button class="sched-btn-mini success" onclick="fireScheduledNow('${item.id}')" title="Tuma sasa">
+                                        <i class="fas fa-bolt"></i> Tuma
+                                    </button>
+                                    <button class="sched-btn-mini" onclick="togglePauseScheduled('${item.id}', '${isActive ? 'paused' : 'active'}')">
+                                        <i class="fas fa-${isActive ? 'pause' : 'play'}"></i> ${isActive ? 'Pause' : 'Anza'}
+                                    </button>
+                                ` : ''}
+                                <button class="sched-btn-mini danger" onclick="cancelScheduledPush('${item.id}', '${_schEsc(item.title).replace(/'/g, "\\'")}')">
+                                    <i class="fas fa-trash"></i> Futa
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (err) {
+                grid.innerHTML = `<div class="sched-empty" style="color:#ff3366;"><i class="fas fa-exclamation-triangle"></i><div>${err.message}</div></div>`;
+            }
+        }
+
+        function _schEsc(s) {
+            return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        async function togglePauseScheduled(id, newStatus) {
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled/' + id, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed');
+                loadScheduledPushes();
+            } catch (err) {
+                alert('Tatizo: ' + err.message);
+            }
+        }
+
+        async function cancelScheduledPush(id, title) {
+            const confirmed = await showConfirmModal('FUTA PUSH ILIYOPANGWA', `Uko tayari kufuta push "${title}"? Kitendo hiki hakiwezi kurudishwa.`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed');
+                loadScheduledPushes();
+            } catch (err) {
+                alert('Tatizo: ' + err.message);
+            }
+        }
+
+        async function fireScheduledNow(id) {
+            const confirmed = await showConfirmModal('TUMA SASA', 'Uko tayari kutuma push hii sasa hivi kwa segment iliyowekwa? (Recurrence itaendelea kama kawaida.)');
+            if (!confirmed) return;
+            try {
+                const res = await fetch('/api/admin/onesignal/scheduled/' + id + '/fire-now', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.result?.error || 'Failed');
+                loadScheduledPushes();
+            } catch (err) {
+                alert('Tatizo: ' + err.message);
+            }
+        }
+
+        // ============================================
+        // VIDEOS MANAGEMENT
+        // ============================================
+        async function loadAdminVideos() {
+            const grid = document.getElementById('adminVideosGrid');
+            const badge = document.getElementById('videosCountBadge');
+            grid.innerHTML = `<div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fas fa-spinner fa-spin"></i> Inapakia videos...</div>`;
+            try {
+                const res = await fetch('/api/admin/videos', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                const videos = await res.json();
+                badge.textContent = `${videos.length} Video${videos.length !== 1 ? 's' : ''}`;
+                if (!videos.length) {
+                    grid.innerHTML = `<div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fab fa-youtube" style="font-size:2rem;display:block;margin-bottom:10px;opacity:0.3;"></i>Bado hujaweka video yoyote. Tumia fomu juu kuongeza!</div>`;
+                    return;
+                }
+                grid.innerHTML = videos.map(v => `
+                    <div class="video-admin-card" id="vcard-${v.id}">
+                        <img class="video-admin-thumb" 
+                             src="https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg" 
+                             alt="${v.title}" 
+                             onerror="this.src='https://img.youtube.com/vi/${v.video_id}/default.jpg'">
+                        <span class="vid-status-badge ${v.is_published ? 'pub' : 'draft'}">${v.is_published ? '✅ LIVE' : '⏸ DRAFT'}</span>
+                        <div class="video-admin-info">
+                            <div class="video-admin-title" title="${v.title}">${v.title}</div>
+                            ${v.description ? `<div style="font-size:0.75rem;color:#6c7293;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.description}</div>` : ''}
+                            <div style="font-size:0.7rem;color:#4a4a6a;">${new Date(v.created_at).toLocaleDateString('sw-TZ', {day:'2-digit',month:'short',year:'numeric'})}</div>
+                            <div class="video-admin-actions">
+                                <button class="btn-vid-edit" onclick='openEditVideo(${JSON.stringify(v).replace(/'/g,"&#39;")})'>
+                                    <i class="fas fa-edit"></i> Hariri
+                                </button>
+                                <button class="btn-vid-toggle ${v.is_published ? '' : 'unpublished'}" onclick="toggleVideoPublish('${v.id}', ${v.is_published})">
+                                    <i class="fas fa-${v.is_published ? 'eye-slash' : 'eye'}"></i> ${v.is_published ? 'Ficha' : 'Chapisha'}
+                                </button>
+                                <button class="btn-vid-del" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g,"\\'")}')">
+                                    <i class="fas fa-trash"></i> Futa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                grid.innerHTML = `<div style="color:#ff3333;text-align:center;padding:2rem;grid-column:1/-1;">Hitilafu: ${e.message}</div>`;
+            }
+        }
+
+        async function addVideo() {
+            const title = document.getElementById('newVideoTitle').value.trim();
+            const url = document.getElementById('newVideoUrl').value.trim();
+            const desc = document.getElementById('newVideoDesc').value.trim();
+            const price = parseInt(document.getElementById('newVideoPrice').value) || 0;
+            const duration_days = parseInt(document.getElementById('newVideoDuration').value) || 0;
+            const msgEl = document.getElementById('addVideoMsg');
+            const btn = document.getElementById('addVideoBtnAdmin');
+
+            if (!title || !url) { msgEl.innerHTML = '<span style="color:#ff3333;">⚠️ Jaza Title na YouTube URL</span>'; return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inaweka...';
+            msgEl.innerHTML = '';
+
+            try {
+                const res = await fetch('/api/admin/videos', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ title, youtube_url: url, description: desc, is_published: true, price, duration_days })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    msgEl.innerHTML = '<span style="color:#00d25b;">✅ Video imewekwa!</span>';
+                    document.getElementById('newVideoTitle').value = '';
+                    document.getElementById('newVideoUrl').value = '';
+                    document.getElementById('newVideoDesc').value = '';
+                    document.getElementById('newVideoPrice').value = '';
+                    document.getElementById('newVideoDuration').value = '';
+                    loadAdminVideos();
+                } else {
+                    msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${result.error}</span>`;
+                }
+            } catch(e) {
+                msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${e.message}</span>`;
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-youtube"></i> WEKA VIDEO';
+        }
+
+        async function toggleVideoPublish(id, isCurrentlyPublished) {
+            try {
+                const res = await fetch(`/api/admin/videos/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ is_published: !isCurrentlyPublished })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(isCurrentlyPublished ? '⏸ Video imefichwa' : '✅ Video imechapishwa!');
+                    loadAdminVideos();
+                } else {
+                    showToast('❌ ' + result.error);
+                }
+            } catch(e) { showToast('❌ ' + e.message); }
+        }
+
+        // ─── VIDEO EDIT ─────────────────────────────────────
+        function openEditVideo(v) {
+            document.getElementById('editVideoId').value = v.id;
+            document.getElementById('editVideoTitle').value = v.title || '';
+            document.getElementById('editVideoUrl').value = v.youtube_url || (v.video_id ? `https://www.youtube.com/watch?v=${v.video_id}` : '');
+            document.getElementById('editVideoDesc').value = v.description || '';
+            document.getElementById('editVideoPrice').value = v.price || 0;
+            document.getElementById('editVideoDuration').value = v.duration_days || 0;
+            document.getElementById('editVideoPublished').checked = !!v.is_published;
+            // Convert stored ISO to local input format if present
+            if (v.scheduled_at) {
+                try {
+                    const d = new Date(v.scheduled_at);
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const val = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                    document.getElementById('editVideoSchedule').value = val;
+                } catch (_) { document.getElementById('editVideoSchedule').value = ''; }
+            } else {
+                document.getElementById('editVideoSchedule').value = '';
+            }
+            document.getElementById('editVideoMsg').textContent = '';
+            const overlay = document.getElementById('editVideoOverlay');
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditVideo() {
+            document.getElementById('editVideoOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        async function saveVideoEdit() {
+            const id = document.getElementById('editVideoId').value;
+            const title = document.getElementById('editVideoTitle').value.trim();
+            const url = document.getElementById('editVideoUrl').value.trim();
+            const description = document.getElementById('editVideoDesc').value.trim();
+            const price = parseInt(document.getElementById('editVideoPrice').value) || 0;
+            const duration_days = parseInt(document.getElementById('editVideoDuration').value) || 0;
+            const is_published = document.getElementById('editVideoPublished').checked;
+            const scheduleRaw = document.getElementById('editVideoSchedule').value;
+            const msg = document.getElementById('editVideoMsg');
+            const btn = document.getElementById('saveVideoBtn');
+
+            if (!title || !url) {
+                msg.innerHTML = '<span style="color:#ff3366;">⚠️ Title na URL zinahitajika</span>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHIFADHI...';
+            msg.textContent = '';
+
+            const basePayload = {
+                title,
+                youtube_url: url,
+                description,
+                price,
+                duration_days,
+                is_published
+            };
+
+            // Scheduling: if user picked a future date, keep is_published=false so
+            // the video stays DRAFT until the scheduled moment. Server can add a
+            // background publisher later that flips is_published when the time
+            // arrives. We only send scheduled_at when the user actually set one
+            // so an older DB without that column still saves cleanly.
+            let scheduledIso = null;
+            if (scheduleRaw) {
+                try { scheduledIso = new Date(scheduleRaw).toISOString(); } catch (_) {}
+                if (scheduledIso && new Date(scheduledIso) > new Date()) {
+                    basePayload.is_published = false;
+                }
+            }
+
+            const payloadWith    = scheduledIso ? { ...basePayload, scheduled_at: scheduledIso } : basePayload;
+            const payloadWithout = basePayload;
+
+            const send = async (body) => {
+                const res = await fetch(`/api/admin/videos/${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                return { res, data: await res.json().catch(() => ({})) };
+            };
+
+            try {
+                let { res, data } = await send(payloadWith);
+                // If scheduled_at column doesn't exist yet in Supabase, retry
+                // without it so the rest of the edit still saves.
+                if (!res.ok && scheduledIso && data && /schedul(ed|ing)|column .+ scheduled|does not exist/i.test(String(data.error || ''))) {
+                    console.warn('[VideoEdit] scheduled_at column missing — saving without it.');
+                    ({ res, data } = await send(payloadWithout));
+                    if (res.ok) {
+                        msg.innerHTML = '<span style="color:#ffab00;">✅ Video imesasishwa, lakini schedule haitajibiwa (DB inahitaji column mpya <code>scheduled_at</code>).</span>';
+                    }
+                }
+                if (res.ok && data.success) {
+                    if (!msg.innerHTML) msg.innerHTML = '<span style="color:#00d25b;">✅ Video imesasishwa!</span>';
+                    setTimeout(() => { closeEditVideo(); loadAdminVideos(); }, 700);
+                } else if (!msg.innerHTML) {
+                    msg.innerHTML = `<span style="color:#ff3366;">❌ ${data.error || 'Imeshindwa kuhifadhi'}</span>`;
+                }
+            } catch (e) {
+                msg.innerHTML = `<span style="color:#ff3366;">❌ ${e.message}</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> HIFADHI';
+            }
+        }
+
+        async function deleteVideo(id, title) {
+            if (!confirm(`Futa video hii?\n\n"${title}"\n\nHii haiwezi kurudishwa!`)) return;
+            try {
+                const res = await fetch(`/api/admin/videos/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('🗑️ Video imefutwa!');
+                    loadAdminVideos();
+                } else {
+                    showToast('❌ ' + result.error);
+                }
+            } catch(e) { showToast('❌ ' + e.message); }
+        }
+
+        async function saveChannelId() {
+            const channelId = document.getElementById('channelIdInput').value.trim();
+            if (!channelId) { showToast('⚠️ Weka Channel ID kwanza'); return; }
+            try {
+                const res = await fetch('/api/admin/settings/youtube_channel_id', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ value: channelId })
+                });
+                const result = await res.json();
+                if (result.success) showToast('✅ Channel ID imehifadhiwa!');
+                else showToast('❌ ' + result.error);
+            } catch(e) { showToast('❌ ' + e.message); }
+        }
+
+        // Load channel ID on page ready
+        async function loadChannelId() {
+            try {
+                const res = await fetch('/api/settings/youtube_channel_id');
                 const data = await res.json();
                 if (data && data.value) {
-                    const thumbs = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-                    if (thumbs.android) document.getElementById('androidPortalThumbInput')?.value = thumbs.android;
-                    if (thumbs.ios) document.getElementById('iosPortalThumbInput')?.value = thumbs.ios;
-                    if (thumbs.pc) document.getElementById('pcPortalThumbInput')?.value = thumbs.pc;
+                    document.getElementById('channelIdInput').value = data.value;
                 }
-            } catch (err) {
-                console.error("Failed to load portal thumbs:", err);
-            }
+            } catch(e) {}
         }
 
-        // --- GAME EDIT & MODAL CONTROLS ---
-        function toggleUploadForm() {
-            const section = document.getElementById('uploadGameSection');
-            if (section) {
-                section.style.display = section.style.display === 'none' ? 'block' : 'none';
-                if (section.style.display === 'block') {
-                    section.scrollIntoView({ behavior: 'smooth' });
-                }
-            }
-        }
+        // Trigger video load when Videos tab is clicked
+        document.querySelectorAll('.nav-link[data-view="videosView"]').forEach(link => {
+            link.addEventListener('click', () => {
+                loadAdminVideos();
+                loadChannelId();
+            });
+        });
+    </script>
 
-        function openEditModal(gameId) {
-            const game = allGamesData.find(g => g.id === gameId);
-            if (!game) return;
+    <!-- Sticky Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav" id="mobileBottomNav">
+        <a href="#" class="nav-link active" data-view="dashboardView">
+            <i class="fas fa-th-large"></i>
+            <span>Dash</span>
+        </a>
+        <a href="#" class="nav-link" data-view="ordersView">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Orders</span>
+        </a>
+        <a href="#" class="nav-link" data-view="allGamesView">
+            <i class="fas fa-gamepad"></i>
+            <span>Games</span>
+        </a>
+        <a href="#" class="nav-link" data-view="paymentsView">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+        </a>
+        <a href="#" class="nav-link" onclick="toggleSidebar(); return false;">
+            <i class="fas fa-bars"></i>
+            <span>More</span>
+        </a>
+    </div>
 
-            document.getElementById('editGameId').value = game.id;
-            document.getElementById('editTitle').value = game.title || '';
-            document.getElementById('editCategory').value = game.category || '';
-            document.getElementById('editPrice').value = game.price || 0;
-            document.getElementById('editImage').value = game.image_url || '';
-            document.getElementById('editDescription').value = game.description || '';
-            document.getElementById('editRating').value = game.rating || 5.0;
-
-            const modal = document.getElementById('editGameModal');
-            if (modal) modal.style.display = 'flex';
-        }
-
-        function closeEditModal() {
-            const modal = document.getElementById('editGameModal');
-            if (modal) modal.style.display = 'none';
-        }
-
-        async function deleteGame(gameId) {
-            if (!confirm("Je, una uhakika unataka kufuta mchezo huu? Action hii haiwezi kurudishwa.")) return;
-
-            try {
-                showToast("⏳ Inafuta mchezo...");
-                const res = await fetch(`/api/admin/games/${gameId}`, { method: 'DELETE' });
-                if (res.ok) {
-                    showToast("✅ Mchezo umefutwa kikamilifu!");
-                    loadAllGames();
-                } else {
-                    const err = await res.json();
-                    showToast(`❌ Imeshindwa kufuta: ${err.error || 'Unknown error'}`);
-                }
-            } catch (err) {
-                showToast(`❌ Hitilafu ya mtandao: ${err.message}`);
-            }
-        }
-
-        // --- TOAST NOTIFICATIONS ---
-        function showToast(message) {
-            let container = document.getElementById('adminToastContainer');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'adminToastContainer';
-                container.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px; pointer-events:none;';
-                document.body.appendChild(container);
-            }
-
-            const toast = document.createElement('div');
-            toast.style.cssText = 'background:rgba(15,23,42,0.95); border:1px solid #00f2ff; color:#fff; padding:12px 20px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-size:0.9rem; font-weight:600; animation:fadeIn 0.3s ease; backdrop-filter:blur(10px); pointer-events:auto;';
-            toast.innerText = message;
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = '0.3s opacity ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        }
-
-        // --- MOBILE SIDEBAR TOGGLE ---
+    <script>
+        // ============================================
+        // MOBILE SIDEBAR TOGGLE
+        // ============================================
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             if (!sidebar) return;
             sidebar.classList.toggle('active');
 
+            // Create/toggle dim overlay behind sidebar
             let dim = document.getElementById('sidebarDimOverlay');
             if (!dim) {
                 dim = document.createElement('div');
                 dim.id = 'sidebarDimOverlay';
-                dim.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:999; display:none;';
+                dim.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:999;display:none;';
                 dim.onclick = () => {
                     sidebar.classList.remove('active');
                     dim.style.display = 'none';
@@ -5505,66 +7063,41 @@
             dim.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
         }
 
-        // --- INITIALIZATION ON DOM READY ---
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initialize navigation system
-            initNavigation();
-            
-            // Ensure all interactive elements have correct pointer events
-            document.querySelectorAll('[onclick], .btn, .nav-link, button, input, select').forEach(el => {
-                el.style.pointerEvents = 'auto';
-                el.style.cursor = el.tagName === 'INPUT' || el.tagName === 'SELECT' ? 'text' : 'pointer';
-            });
+        // Close sidebar when a nav link inside it is clicked on mobile
+        document.querySelector('.sidebar').addEventListener('click', function(e) {
+            const link = e.target.closest('.nav-link[data-view]');
+            if (link && window.innerWidth <= 768) {
+                this.classList.remove('active');
+                const dim = document.getElementById('sidebarDimOverlay');
+                if (dim) dim.style.display = 'none';
+            }
+        });
 
-            // Wire Navigation links (Sidebar and Mobile Bottom Nav)
-            document.querySelectorAll('.nav-link[data-view]').forEach(link => {
-                link.addEventListener('click', function (e) {
+        // ============================================
+        // BOTTOM NAV — register click handlers & sync active state
+        // ============================================
+        (function() {
+            const bottomNavLinks = document.querySelectorAll('#mobileBottomNav .nav-link[data-view]');
+            bottomNavLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
                     e.preventDefault();
                     const viewId = this.getAttribute('data-view');
-                    showView(viewId);
-                    if (window.innerWidth <= 768) {
-                        const sidebar = document.querySelector('.sidebar');
-                        if (sidebar) sidebar.classList.remove('active');
-                        const dim = document.getElementById('sidebarDimOverlay');
-                        if (dim) dim.style.display = 'none';
-                    }
+                    if (typeof showView === 'function') showView(viewId);
                 });
             });
 
-            // Wire Global Search Input
-            const searchInput = document.getElementById('adminSearchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', () => {
-                    if (currentActiveViewId === 'allGamesView') renderFilteredGames(currentGamesFilter);
-                    else if (currentActiveViewId === 'usersView') renderUsersList();
-                    else if (currentActiveViewId === 'ordersView') renderOrdersList();
-                });
+            // Intercept showView to sync bottom nav active states
+            if (typeof window.showView === 'function' && !window.showView._mobilePatched) {
+                const _orig = window.showView;
+                window.showView = function(viewId) {
+                    _orig(viewId);
+                    bottomNavLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('data-view') === viewId);
+                    });
+                };
+                window.showView._mobilePatched = true;
             }
-
-            // Start Realtime Digital Clock
-            updateDigitalClock();
-            setInterval(updateDigitalClock, 1000);
-
-            // Check Login State (single declaration - no duplicate)
-            const token = localStorage.getItem('adminToken');
-            if (token) {
-                unlockVault();
-                refreshAllData();
-                showView('dashboardView');
-            } else {
-                lockVault();
-            }
-
-            // Auto-refresh orders every 20 seconds
-            setInterval(() => {
-                if (localStorage.getItem('adminToken')) {
-                    fetchOrders();
-                    fetchActivity();
-                }
-            }, 20000);
-
-            console.log("🚀 Chidy Prime Admin Controller Fully Initialized.");
-        });
+        })();
     </script>
 </body>
 </html>

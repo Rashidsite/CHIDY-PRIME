@@ -85,6 +85,8 @@ function logSystemError(type, message) {
     sendTelegramAlert(`🚨 <b>CHIDY PRIME SYSTEM ALERT</b> 🚨\n\n<b>Type:</b> ${type}\n<b>Message:</b> ${message}\n<b>Time:</b> ${new Date().toISOString()}`);
 }
 
+let consecutiveDbFailures = 0;
+
 async function runHealthCheck() {
     try {
         const totalMem = os.totalmem();
@@ -102,9 +104,14 @@ async function runHealthCheck() {
             const start = Date.now();
             const { error } = await supabase.from('site_settings').select('*').limit(1);
             if (error) {
-                if (global.healthStats.supabaseStatus !== 'Down') logSystemError('Database_Failure', error.message);
-                global.healthStats.supabaseStatus = 'Down';
+                consecutiveDbFailures++;
+                console.warn(`[HealthCheck] Supabase DB check warning (${consecutiveDbFailures}/3):`, error.message);
+                if (consecutiveDbFailures >= 3) {
+                    if (global.healthStats.supabaseStatus !== 'Down') logSystemError('Database_Failure', error.message);
+                    global.healthStats.supabaseStatus = 'Down';
+                }
             } else {
+                consecutiveDbFailures = 0;
                 global.healthStats.supabaseStatus = `OK (${Date.now() - start}ms)`;
             }
             global.healthStats.lastDbCheck = new Date().toISOString();
