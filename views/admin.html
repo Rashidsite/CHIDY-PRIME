@@ -4658,23 +4658,25 @@
 
         // --- FETCH INTERCEPTOR (Attaches Admin Token to all API Requests) ---
         const originalFetch = window.fetch.bind(window);
-        window.fetch = async function (...args) {
-            let resource = args[0];
-            let config = args[1] || {};
-            const isAdminApi = typeof resource === 'string' && resource.startsWith('/api/admin/');
+        window.fetch = async function (resource, options = {}) {
+            const url = typeof resource === 'string' ? resource : (resource && resource.url ? resource.url : '');
             
-            if (typeof resource === 'string' && resource.startsWith('/api/') && resource !== '/api/admin/login') {
-                config.headers = config.headers || {};
+            if (typeof url === 'string' && url.startsWith('/api/') && !url.includes('/api/admin/login')) {
+                options = options || {};
+                options.headers = options.headers || {};
                 const token = localStorage.getItem('adminToken');
                 if (token) {
-                    config.headers['Authorization'] = 'Bearer ' + token;
+                    if (options.headers instanceof Headers) {
+                        options.headers.set('Authorization', 'Bearer ' + token);
+                    } else {
+                        options.headers['Authorization'] = 'Bearer ' + token;
+                    }
                 }
-                args[1] = config;
             }
-            
-            const response = await originalFetch(...args);
-            if (isAdminApi && (response.status === 401 || response.status === 403)) {
-                console.warn("Unauthorized admin request. Relocking vault.");
+
+            const response = await originalFetch(resource, options);
+            if (typeof url === 'string' && url.startsWith('/api/admin/') && (response.status === 401 || response.status === 403)) {
+                console.warn("Unauthorized admin request (HTTP " + response.status + "). Relocking vault.");
                 localStorage.removeItem('adminToken');
                 lockVault();
             }
@@ -4753,6 +4755,41 @@
             else if (viewId === 'healthView') loadSystemHealth();
             else if (viewId === 'categoriesView') loadCategories();
             else if (viewId === 'promoView') loadPromoCodes();
+        }
+
+        // --- NAVIGATION SYSTEM ---
+        function showView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.main-view').forEach(view => {
+                view.style.display = 'none';
+            });
+            
+            // Show target view
+            const targetView = document.getElementById(viewId);
+            if (targetView) {
+                targetView.style.display = 'block';
+            }
+            
+            // Update active nav link
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Set active nav link
+            const activeLink = document.querySelector(`[data-view="${viewId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        }
+
+        function initNavigation() {
+            document.querySelectorAll('[data-view]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const viewId = link.getAttribute('data-view');
+                    showView(viewId);
+                });
+            });
         }
 
         // --- DATA SYNC & REFRESH ---
@@ -4883,11 +4920,16 @@
                 const rejectedOrders = allOrdersData.filter(o => o.status === 'rejected');
 
                 const totalRev = approvedOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+                const pendingRev = pendingOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
 
                 // Update Total Revenue element
                 const revEl = document.getElementById('totalRevenue');
-                if (revEl) revEl.innerText = `TSh ${totalRev.toLocaleString()}`;
-                document.querySelectorAll('.totalRevenueCount').forEach(el => el.innerText = `TSh ${totalRev.toLocaleString()}`);
+                if (revEl) revEl.innerText = `TSH ${totalRev.toLocaleString()}`;
+                document.querySelectorAll('.totalRevenueCount').forEach(el => el.innerText = `TSH ${totalRev.toLocaleString()}`);
+
+                // Update Pending Amount element
+                const pendingAmtEl = document.getElementById('pendingAmount');
+                if (pendingAmtEl) pendingAmtEl.innerText = `TSH ${pendingRev.toLocaleString()}`;
 
                 // Update Pending Orders count
                 const pendingEl = document.getElementById('pendingOrdersCount');
@@ -4900,6 +4942,11 @@
 
                 renderOrdersList();
                 renderPaymentsTable();
+                
+                // Update Dashboard Analytics Charts
+                if (typeof renderAnalyticsCharts === 'function') {
+                    renderAnalyticsCharts(allOrdersData, allGamesData);
+                }
             } catch (err) {
                 console.error("Failed to fetch orders:", err);
             }
@@ -5062,6 +5109,14 @@
                 const userCountEl = document.getElementById('totalUsersCount');
                 if (userCountEl) userCountEl.innerText = allUsersData.length;
 
+                const userTrendEl = document.getElementById('userTrend');
+                if (userTrendEl) {
+                    userTrendEl.innerHTML = `
+                        <span class="stat-trend-arrow"><i class="fas fa-arrow-up" style="color:#00d25b;"></i></span>
+                        <span class="stat-trend-text" style="color:#00d25b;">Active Visitors</span>
+                    `;
+                }
+
                 renderUsersList();
             } catch (err) {
                 console.error("Failed to fetch users:", err);
@@ -5111,7 +5166,7 @@
                     const data = await revRes.value.json();
                     const val = parseFloat(data.value || 0);
                     const lifeEl = document.getElementById('lifetimeRevenue');
-                    if (lifeEl) lifeEl.innerText = `TSh ${val.toLocaleString()}`;
+                    if (lifeEl) lifeEl.innerText = `TSH ${val.toLocaleString()}`;
                 }
 
                 if (installRes.status === 'fulfilled' && installRes.value.ok) {
@@ -5158,6 +5213,171 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        // --- DIGITAL CLOCK ---
+        function updateDigitalClock() {
+            const clockEl = document.getElementById('digitalClock');
+            if (!clockEl) return;
+            const now = new Date();
+            clockEl.innerText = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        // --- CHART.JS ANALYTICS ENGINE ---
+        let revenueChartInstance = null;
+        let salesChartInstance = null;
+        let categoryChartInstance = null;
+
+        function renderAnalyticsCharts(orders = [], games = []) {
+            if (typeof Chart === 'undefined') return;
+
+            // Generate last 7 days keys
+            const days = [];
+            const revenueMap = {};
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                days.push(dayKey);
+                revenueMap[dayKey] = 0;
+            }
+
+            (orders || []).forEach(o => {
+                if (o.status === 'approved' || o.status === 'manual_approved') {
+                    const dateKey = new Date(o.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    if (revenueMap[dateKey] !== undefined) {
+                        revenueMap[dateKey] += (parseFloat(o.amount) || 0);
+                    }
+                }
+            });
+
+            const revenueValues = days.map(d => revenueMap[d]);
+
+            // 1. Line Chart: #revenueChart
+            const revCanvas = document.getElementById('revenueChart');
+            if (revCanvas) {
+                const ctx = revCanvas.getContext('2d');
+                if (revenueChartInstance) revenueChartInstance.destroy();
+                
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(0, 242, 255, 0.0)');
+
+                revenueChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Revenue (TSH)',
+                            data: revenueValues,
+                            borderColor: '#00f2ff',
+                            backgroundColor: gradient,
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#00f2ff',
+                            pointBorderColor: '#ffffff',
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6c7293' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6c7293' } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Bar Chart: #salesChart
+            const salesCanvas = document.getElementById('salesChart');
+            if (salesCanvas) {
+                const ctx = salesCanvas.getContext('2d');
+                if (salesChartInstance) salesChartInstance.destroy();
+
+                salesChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Mauzo ya Siku (TSH)',
+                            data: revenueValues,
+                            backgroundColor: 'rgba(188, 19, 254, 0.7)',
+                            borderColor: '#bc13fe',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#6c7293' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6c7293' } }
+                        }
+                    }
+                });
+            }
+
+            // 3. Doughnut Chart: #categoryChart
+            const catMap = {};
+            (orders || []).forEach(o => {
+                const cat = (o.posts && o.posts.category) ? o.posts.category : 'General';
+                catMap[cat] = (catMap[cat] || 0) + 1;
+            });
+
+            const catLabels = Object.keys(catMap);
+            const catValues = Object.values(catMap);
+            const catColors = ['#00f2ff', '#bc13fe', '#ffab00', '#00d25b', '#ff3366', '#7952b3'];
+
+            const catCanvas = document.getElementById('categoryChart');
+            if (catCanvas) {
+                const ctx = catCanvas.getContext('2d');
+                if (categoryChartInstance) categoryChartInstance.destroy();
+
+                categoryChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: catLabels.length > 0 ? catLabels : ['N/A'],
+                        datasets: [{
+                            data: catValues.length > 0 ? catValues : [1],
+                            backgroundColor: catColors.slice(0, Math.max(1, catLabels.length)),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#ffffff', boxWidth: 10, font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+
+            // Populate category breakdown list
+            const catStatsEl = document.getElementById('categoryStatsList');
+            if (catStatsEl) {
+                if (catLabels.length === 0) {
+                    catStatsEl.innerHTML = '<div style="text-align:center; color:#6c7293; font-size:0.8rem;">Hakuna miamala bado.</div>';
+                } else {
+                    const totalOrdersCount = catValues.reduce((a, b) => a + b, 0);
+                    catStatsEl.innerHTML = catLabels.map((cat, idx) => {
+                        const count = catMap[cat];
+                        const pct = totalOrdersCount > 0 ? Math.round((count / totalOrdersCount) * 100) : 0;
+                        const color = catColors[idx % catColors.length];
+                        return `
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem;">
+                                <span style="color:#fff;"><i class="fas fa-circle" style="color:${color}; font-size:0.6rem; margin-right:6px;"></i>${cat}</span>
+                                <span style="color:#00f2ff; font-weight:700;">${count} oda (${pct}%)</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
         }
 
         // --- CATEGORIES ---
@@ -5287,6 +5507,9 @@
 
         // --- INITIALIZATION ON DOM READY ---
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialize navigation system
+            initNavigation();
+            
             // Ensure all interactive elements have correct pointer events
             document.querySelectorAll('[onclick], .btn, .nav-link, button, input, select').forEach(el => {
                 el.style.pointerEvents = 'auto';
@@ -5318,7 +5541,11 @@
                 });
             }
 
-            // Check Login State
+            // Start Realtime Digital Clock
+            updateDigitalClock();
+            setInterval(updateDigitalClock, 1000);
+
+            // Check Login State (single declaration - no duplicate)
             const token = localStorage.getItem('adminToken');
             if (token) {
                 unlockVault();
