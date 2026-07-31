@@ -416,48 +416,17 @@
             animation: fadeIn 0.4s ease-out;
         }
 
+        .view-section {
+            display: none !important;
+        }
+
+        .view-section.active {
+            display: block !important;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Responsive Improvements */
-        @media (max-width: 991px) {
-            :root { --sidebar-width: 70px; }
-            .sidebar-brand span { display: none; }
-            .sidebar-brand { font-size: 1.2rem; justify-content: center; padding: 0; margin-left: -10px; }
-            .nav-link span { display: none; }
-            .nav-link { justify-content: center; padding: 1rem; }
-            .search-box { width: 200px; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .form-row { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 576px) {
-            :root { --sidebar-width: 0px; }
-            .sidebar { transform: translateX(-100%); transition: 0.3s; }
-            .sidebar.active { transform: translateX(0); width: 240px; }
-            .sidebar.active .nav-link span { display: block; }
-            .sidebar.active .sidebar-brand span { display: inline; }
-            .main-wrapper { margin-left: 0; width: 100%; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .topbar { padding: 0 1rem; }
-            .search-box { display: none; }
-            .mobile-toggle { display: block !important; }
-        }
-
-        .mobile-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        /* Mobile bottom nav — hidden on desktop, shown by media query */
-        .mobile-bottom-nav {
-            display: none;
         }
 
         /* Orders View Styles */
@@ -4865,7 +4834,31 @@
         const fullGameTableBody = document.getElementById('fullGameTableBody');
         const totalGamesLabels = document.querySelectorAll('.totalGamesCount');
         const addLinkBtn = document.getElementById('addLinkBtn');
-        const linksContainer = document.getElementById('linksContainer');
+        // notificationSound initialized below
+
+        function showToast(msg) {
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.style.cssText = 'background:rgba(20,20,30,0.95);color:#fff;border:1px solid rgba(0,242,255,0.4);padding:12px 20px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.5);font-size:0.85rem;font-weight:600;pointer-events:auto;backdrop-filter:blur(10px);';
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = '0.4s';
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
+        }
+
+        const renderFilteredGames = function(filter) {
+            if (filter) currentGamesFilter = filter;
+            renderGamesTable();
+        };
 
         let currentActiveViewId = 'dashboardView';
         let allGamesData = [];
@@ -5009,9 +5002,15 @@
         // CORE NAVIGATION FUNCTION
         // ============================================================
         function showView(viewId) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
             const target = document.getElementById(viewId);
-            if (target) target.classList.add('active');
+            if (target) {
+                target.classList.add('active');
+                target.style.display = 'block';
+            }
 
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('active', link.dataset.view === viewId);
@@ -5023,7 +5022,7 @@
             if (viewId === 'dashboardView') refreshAllData();
             else if (viewId === 'allGamesView') loadGames();
             else if (viewId === 'usersView') loadUsers();
-            else if (viewId === 'ordersView') loadOrders();
+            else if (viewId === 'ordersView') fetchOrders();
             else if (viewId === 'categoriesView') loadCategories();
             else if (viewId === 'affiliatesView') loadAffiliates();
             else if (viewId === 'analyticsView') loadAnalyticsView();
@@ -5032,6 +5031,7 @@
             else if (viewId === 'pushView') loadScheduledPushes();
             else if (viewId === 'healthView') loadSystemHealth();
             else if (viewId === 'promoView') loadPromoCodes();
+            else if (viewId === 'paymentsView') fetchPayments();
         }
 
         // ============================================================
@@ -5656,11 +5656,243 @@
             }
         }
 
+        // ============================================================
+        // CHART & GAMES HELPERS & MISSING API ALIASES
+        // ============================================================
+        let _salesChartInst = null;
+
+        function initSalesChart() {
+            const canvas = document.getElementById('salesChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const ctx = canvas.getContext('2d');
+            
+            // Build last 7 days labels & revenue totals from allOrdersData
+            const days = [];
+            const amounts = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                days.push(d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+                
+                const sum = (allOrdersData || [])
+                    .filter(o => o.created_at && o.created_at.startsWith(dateStr) && (o.status === 'approved' || o.status === 'manual_approved'))
+                    .reduce((acc, o) => acc + (parseFloat(o.amount) || 0), 0);
+                amounts.push(sum);
+            }
+
+            if (_salesChartInst) _salesChartInst.destroy();
+            _salesChartInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Sales (TSh)',
+                        data: amounts,
+                        backgroundColor: 'rgba(0, 242, 255, 0.6)',
+                        borderColor: '#00f2ff',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#6c7293', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#6c7293', font: { size: 10 }, callback: v => 'TSh ' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        const updateRevenueChart = initSalesChart;
+        const updateAnalytics = loadAnalyticsView;
+        const loadOrders = fetchOrders;
+
+        async function fetchMaintenanceState() {
+            try {
+                const res = await fetch('/api/settings/maintenance');
+                if (res.ok) {
+                    const data = await res.json();
+                    const toggle = document.getElementById('maintenanceToggle');
+                    const status = document.getElementById('maintenanceStatus');
+                    if (toggle) toggle.checked = !!data.maintenance;
+                    if (status) status.style.display = data.maintenance ? 'block' : 'none';
+                }
+            } catch(e) { console.error('fetchMaintenanceState error:', e); }
+        }
+
+        // ============================================================
+        // GAMES MANAGEMENT (ALL GAMES VIEW)
+        // ============================================================
+        async function loadGames() {
+            try {
+                const res = await fetch('/api/admin/games');
+                if (res.ok) {
+                    const data = await res.json();
+                    allGamesData = Array.isArray(data) ? data : [];
+                }
+            } catch (err) {
+                console.error("loadGames error:", err);
+            }
+
+            // Update badge counts
+            const publishedCount = allGamesData.filter(g => (g.status || 'published') === 'published').length;
+            const draftCount = allGamesData.filter(g => g.status === 'draft').length;
+            const trashCount = allGamesData.filter(g => g.status === 'trash').length;
+
+            if (document.getElementById('count-published')) document.getElementById('count-published').innerText = publishedCount;
+            if (document.getElementById('count-draft')) document.getElementById('count-draft').innerText = draftCount;
+            if (document.getElementById('count-trash')) document.getElementById('count-trash').innerText = trashCount;
+
+            renderGamesTable();
+        }
+
+        function filterByStatus(status) {
+            currentGamesFilter = status;
+            document.querySelectorAll('.btn-filter').forEach(btn => {
+                const onclickAttr = btn.getAttribute('onclick') || '';
+                btn.classList.toggle('active', onclickAttr.includes(`'${status}'`));
+            });
+            renderGamesTable();
+        }
+
+        function renderGamesTable() {
+            const tbody = document.getElementById('fullGameTableBody');
+            if (!tbody) return;
+
+            const searchVal = (document.getElementById('adminSearchInput')?.value || '').toLowerCase();
+
+            let filtered = (allGamesData || []).filter(game => {
+                const gameStatus = game.status || 'published';
+                if (currentGamesFilter && gameStatus !== currentGamesFilter) return false;
+                if (searchVal) {
+                    const titleMatches = (game.title || '').toLowerCase().includes(searchVal);
+                    const catMatches = (game.category || '').toLowerCase().includes(searchVal);
+                    return titleMatches || catMatches;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #6c7293; padding: 2rem;">Hakuna mchezo uliopatikana (${currentGamesFilter}).</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(game => {
+                const dateStr = game.created_at ? new Date(game.created_at).toLocaleDateString('sw-TZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                const priceFormatted = (parseFloat(game.price) || 0) > 0 ? `TSh ${parseFloat(game.price).toLocaleString()}` : '<span style="color:#00d25b;">BURE</span>';
+                const statusBadgeColor = game.status === 'draft' ? '#ffab00' : (game.status === 'trash' ? '#ff3366' : '#00d25b');
+                const linksCount = Array.isArray(game.links) ? game.links.length : (game.download_links ? 1 : 0);
+
+                return `
+                    <tr>
+                        <td><span style="font-weight:700;color:#00f2ff;">#${game.sort_order || '-'}</span></td>
+                        <td><img src="${game.image_url || '/icon.png'}" style="width:42px;height:52px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.1);" onerror="this.src='/icon.png'"></td>
+                        <td>
+                            <strong style="color:#fff;font-size:0.9rem;">${game.title || 'Untitled'}</strong>
+                            <div style="font-size:0.7rem;color:#6c7293;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${game.description || ''}</div>
+                        </td>
+                        <td><span style="background:rgba(0,242,255,0.1);color:#00f2ff;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:600;">${game.category || 'HOT POST'}</span></td>
+                        <td style="font-weight:700;color:#fff;">${priceFormatted}</td>
+                        <td><span style="color:#ffab00;font-weight:700;">⭐ ${game.rating || '5.0'}</span></td>
+                        <td><span style="background:rgba(255,255,255,0.05);color:#ccc;padding:3px 8px;border-radius:6px;font-size:0.75rem;">${linksCount} Link(s)</span></td>
+                        <td style="color:#6c7293;font-size:0.8rem;">${dateStr}</td>
+                        <td><span style="background:${statusBadgeColor}22;color:${statusBadgeColor};border:1px solid ${statusBadgeColor}44;padding:3px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">${game.status || 'published'}</span></td>
+                        <td>
+                            <div style="display:flex;gap:6px;">
+                                <button class="sched-btn-mini" onclick="editGame('${game.id}')" title="Hariri"><i class="fas fa-edit"></i></button>
+                                <button class="sched-btn-mini" style="color:#ff3366;border-color:rgba(255,51,102,0.3);" onclick="deleteGame('${game.id}')" title="Futa"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function deleteGame(id) {
+            showConfirmModal("Una uhakika unataka kufuta mchezo huu?", async () => {
+                try {
+                    const token = localStorage.getItem('adminToken');
+                    const res = await fetch(`/api/games/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    if (data.success || res.ok) {
+                        showToast("✅ Mchezo umefutwa kikamilifu!");
+                        loadGames();
+                    } else {
+                        alert("Imeshindikana kufuta: " + (data.error || 'Unknown error'));
+                    }
+                } catch(e) {
+                    alert("Error: " + e.message);
+                }
+            });
+        }
+
+        function editGame(id) {
+            const game = allGamesData.find(g => String(g.id) === String(id));
+            if (!game) return;
+
+            const uploadSection = document.getElementById('uploadGameSection');
+            if (uploadSection) uploadSection.style.display = 'block';
+
+            if (document.getElementById('postTitle')) document.getElementById('postTitle').value = game.title || '';
+            if (document.getElementById('postPrice')) document.getElementById('postPrice').value = game.price || 0;
+            if (document.getElementById('postRating')) document.getElementById('postRating').value = game.rating || 5.0;
+            if (document.getElementById('postCategory')) document.getElementById('postCategory').value = game.category || 'HOT POST';
+            if (document.getElementById('postDescription')) document.getElementById('postDescription').value = game.description || '';
+            if (document.getElementById('postYoutube')) document.getElementById('postYoutube').value = game.youtube_url || '';
+            if (document.getElementById('postImage')) document.getElementById('postImage').value = game.image_url || '';
+
+            if (linksContainer && Array.isArray(game.links)) {
+                linksContainer.innerHTML = '';
+                game.links.forEach(link => {
+                    const linkRow = document.createElement('div');
+                    linkRow.className = 'link-row';
+                    linkRow.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:center;';
+                    linkRow.innerHTML = `
+                        <input type="text" class="input-field" placeholder="Jina la Link" value="${link.name || ''}" style="flex:1;">
+                        <input type="url" class="input-field" placeholder="URL ya Game File" value="${link.url || ''}" style="flex:2;">
+                        <button type="button" onclick="this.parentElement.remove()" style="background:rgba(255,51,102,0.15);border:1px solid rgba(255,51,102,0.3);color:#ff3366;padding:8px 12px;border-radius:8px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                    `;
+                    linksContainer.appendChild(linkRow);
+                });
+            }
+
+            uploadSection?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ============================================================
+        // ANALYTICS VIEW
+        // ============================================================
+        function loadAnalyticsView() {
+            const totalOrders = (allOrdersData || []).length;
+            const totalRevenue = (allOrdersData || [])
+                .filter(o => o.status === 'approved' || o.status === 'manual_approved')
+                .reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+            
+            const totalGames = (allGamesData || []).length;
+            
+            const totalOrdersEl = document.getElementById('analyticsTotalOrders');
+            if (totalOrdersEl) totalOrdersEl.innerText = totalOrders.toLocaleString();
+            
+            const revEl = document.getElementById('analyticsTotalRevenue');
+            if (revEl) revEl.innerText = `TSh ${totalRevenue.toLocaleString()}`;
+
+            const gamesEl = document.getElementById('analyticsTotalGames');
+            if (gamesEl) gamesEl.innerText = totalGames.toLocaleString();
+
+            initSalesChart();
+        }
+
         // Initialize admin dashboard
         fetchMaintenanceState();
         initSalesChart();
-        // Pre-fill announcement
-        fetch('/api/settings/announcement').then(r=>r.json()).then(d=>{ if(d.value) document.getElementById('announcementInput').value = d.value; });
+        fetch('/api/settings/announcement').then(r=>r.json()).then(d=>{ if(d.value && document.getElementById('announcementInput')) document.getElementById('announcementInput').value = d.value; });
 
         // Mobile Sidebar Toggle
         function toggleSidebar() {
@@ -5693,6 +5925,7 @@
                     if (viewId === 'paymentsView') fetchPayments();
                     if (viewId === 'promoView') loadPromoCodesWithStats();
                     if (viewId === 'settingsView') loadStoreSettings();
+                    if (viewId === 'gamesView') loadGames();
                 }
 
                 // Close sidebar on mobile after click
