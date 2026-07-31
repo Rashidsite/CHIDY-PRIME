@@ -1084,6 +1084,7 @@ app.post('/api/track-install', async (req, res) => {
         const newCount = (current ? parseInt(current.value) : 0) + 1;
         
         await supabase.from('site_settings').upsert({ key: 'total_installs', value: String(newCount) });
+        if (typeof settingsCache !== 'undefined') delete settingsCache['total_installs'];
         res.json({ success: true, count: newCount });
     } catch (err) {
         res.status(500).json({ error: err.message });

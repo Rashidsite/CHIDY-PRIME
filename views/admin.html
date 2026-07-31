@@ -409,6 +409,11 @@
             cursor: pointer;
         }
 
+        /* Hide mobile bottom navigation on desktop screens by default */
+        .mobile-bottom-nav {
+            display: none !important;
+        }
+
         /* Dashboard Content */
         .content {
             box-sizing: border-box;
@@ -3091,6 +3096,9 @@
                     <div>
                         <div class="stat-label">Total Games</div>
                         <div class="stat-val totalGamesCount" id="totalGames">0</div>
+                        <div class="stat-trend positive" id="gameTrend" style="margin-top: 5px; font-size: 0.75rem; color: #00ff88; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-arrow-up" style="font-size:0.7rem;"></i> <span id="gameTrendText">Live Inventory</span>
+                        </div>
                     </div>
                     <i class="fas fa-gamepad stat-icon" style="color: var(--primary-color);"></i>
                 </div>
@@ -3099,54 +3107,76 @@
                     <div>
                         <div class="stat-label">Total Users</div>
                         <div class="stat-val" id="totalUsersCount">0</div>
-                        <div class="stat-trend stable" id="userTrend">
-                            <span class="stat-trend-arrow"><i class="fas fa-minus"></i></span>
-                            <span class="stat-trend-text">Loading...</span>
+                        <div class="stat-trend positive" id="userTrend" style="margin-top: 5px; font-size: 0.75rem; color: #00ff88; display: flex; align-items: center; gap: 4px;">
+                            <span class="stat-trend-arrow"><i class="fas fa-arrow-up" style="font-size:0.7rem;"></i></span>
+                            <span class="stat-trend-text" id="userTrendText">Active Users</span>
                         </div>
                     </div>
                     <i class="fas fa-users stat-icon" style="color: var(--secondary-color);"></i>
                 </div>
+
                 <div class="stat-card" style="border-left: 5px solid #ffb400;">
                     <div>
                         <div class="stat-label">Pending Orders</div>
                         <div class="stat-val" id="pendingOrdersCount">0</div>
-                        <div style="font-size: 0.7rem; color: #6c7293; margin-top: 5px;">Needs Approval</div>
+                        <div class="stat-trend" id="pendingOrdersTrend" style="margin-top: 5px; font-size: 0.75rem; color: #ffab00; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-clock" style="font-size:0.7rem;"></i> <span id="pendingOrdersText">Needs Approval</span>
+                        </div>
                     </div>
                     <i class="fas fa-clock stat-icon" style="color: #ffb400;"></i>
                 </div>
+
                 <div class="stat-card" style="border-left: 5px solid #00ff88;">
                     <div>
                         <div class="stat-label">Total Revenue</div>
                         <div class="stat-val" id="totalRevenue">TSH 0</div>
+                        <div class="stat-trend positive" id="revenueTrend" style="margin-top: 5px; font-size: 0.75rem; color: #00ff88; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-arrow-up" style="font-size:0.7rem;"></i> <span id="revenueTrendText">Approved Sales</span>
+                        </div>
                     </div>
                     <i class="fas fa-coins stat-icon" style="color: #00ff88;"></i>
                 </div>
+
                 <div class="stat-card" style="border-left: 5px solid #ffaa00;">
                     <div>
                         <div class="stat-label">Lifetime Revenue</div>
                         <div class="stat-val" id="lifetimeRevenue">TSH 0</div>
+                        <div class="stat-trend positive" id="lifetimeTrend" style="margin-top: 5px; font-size: 0.75rem; color: #ffaa00; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-chart-line" style="font-size:0.7rem;"></i> <span id="lifetimeTrendText">All-Time Total</span>
+                        </div>
                     </div>
                     <i class="fas fa-money-bill-wave stat-icon" style="color: #ffaa00;"></i>
                 </div>
+
                 <div class="stat-card" style="border-left: 5px solid #ff3366;">
                     <div>
                         <div class="stat-label">Failed Trans.</div>
                         <div class="stat-val" id="failedTransactions">0</div>
+                        <div class="stat-trend negative" id="failedTrend" style="margin-top: 5px; font-size: 0.75rem; color: #ff3366; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-arrow-down" style="font-size:0.7rem;"></i> <span id="failedTrendText">Failed / Cancelled</span>
+                        </div>
                     </div>
                     <i class="fas fa-times-circle stat-icon" style="color: #ff3366;"></i>
                 </div>
+
                 <div class="stat-card" style="border-left: 5px solid #bc13fe;">
                     <div>
                         <div class="stat-label">Pending Amt</div>
                         <div class="stat-val" id="pendingAmount">TSH 0</div>
+                        <div class="stat-trend" id="pendingAmtTrend" style="margin-top: 5px; font-size: 0.75rem; color: #bc13fe; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-wallet" style="font-size:0.7rem;"></i> <span id="pendingAmtText">Awaiting Approval</span>
+                        </div>
                     </div>
                     <i class="fas fa-wallet stat-icon" style="color: #bc13fe;"></i>
                 </div>
+
                 <div class="stat-card" style="border-left: 5px solid #00f2ff;">
                     <div>
                         <div class="stat-label">App Installs</div>
                         <div class="stat-val" id="appInstallsCount">0</div>
-                        <div style="font-size: 0.7rem; color: #6c7293; margin-top: 5px;">PWA Adoption</div>
+                        <div class="stat-trend positive" id="installTrend" style="margin-top: 5px; font-size: 0.75rem; color: #00f2ff; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-download" style="font-size:0.7rem;"></i> <span id="installTrendText">PWA Adoption</span>
+                        </div>
                     </div>
                     <i class="fas fa-mobile-alt stat-icon" style="color: #00f2ff;"></i>
                 </div>
@@ -5050,12 +5080,28 @@
                 const weekAgo = new Date();
                 weekAgo.setDate(weekAgo.getDate() - 7);
                 const newThisWeek = usersArr.filter(u => new Date(u.created_at) >= weekAgo).length;
-                const trendEl = document.getElementById('userTrend');
-                if (trendEl) {
-                    trendEl.innerHTML = `<span class="stat-trend-arrow"><i class="fas fa-arrow-up" style="color:#00ff88"></i></span> <span class="stat-trend-text">+${newThisWeek} this week</span>`;
+                
+                const trendTextEl = document.getElementById('userTrendText');
+                if (trendTextEl) {
+                    trendTextEl.innerText = `+${newThisWeek} this week`;
                 }
             } catch (err) {
                 console.error('fetchUserStats error:', err);
+            }
+        }
+
+        async function fetchTotalInstalls() {
+            try {
+                const res = await fetch('/api/settings/total_installs');
+                if (!res.ok) return;
+                const data = await res.json();
+                const count = parseInt(data.value, 10) || 0;
+                const el1 = document.getElementById('appInstallsCount');
+                const el2 = document.getElementById('settingsTotalInstalls');
+                if (el1) el1.innerText = count.toLocaleString();
+                if (el2) el2.innerText = count.toLocaleString();
+            } catch(e) {
+                console.error('fetchTotalInstalls error:', e);
             }
         }
 
@@ -5069,35 +5115,138 @@
             const canvas = document.getElementById('revenueChart');
             if (!canvas || typeof Chart === 'undefined') return;
             const ctx = canvas.getContext('2d');
-            const days = [], amounts = [];
+            
+            const days = [];
+            const amounts = [];
+            const now = new Date();
+            
             for (let i = 6; i >= 0; i--) {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                days.push(d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' }));
-                const dayStr = d.toISOString().slice(0, 10);
-                const total = (orders || []).filter(o => o.status === 'approved' && o.created_at && o.created_at.startsWith(dayStr)).reduce((s, o) => s + parseFloat(o.amount || 0), 0);
-                amounts.push(total);
+                const d = new Date();
+                d.setDate(now.getDate() - i);
+                days.push(d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+                
+                const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+                const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+                
+                const sum = (orders || []).filter(o => {
+                    const isApproved = o.status === 'approved' || o.status === 'manual_approved';
+                    if (!isApproved) return false;
+                    const orderDate = new Date(o.created_at);
+                    return orderDate >= dayStart && orderDate <= dayEnd;
+                }).reduce((s, o) => s + (parseFloat(o.amount) || 0), 0);
+                
+                amounts.push(sum);
             }
-            if (_revenueChartInst) _revenueChartInst.destroy();
-            _revenueChartInst = new Chart(ctx, { type: 'line', data: { labels: days, datasets: [{ label: 'Revenue (TSh)', data: amounts, borderColor: '#00f2ff', backgroundColor: 'rgba(0,242,255,0.08)', borderWidth: 2.5, pointBackgroundColor: '#00f2ff', pointRadius: 4, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#6c7293', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#6c7293', font: { size: 11 }, callback: v => 'TSh ' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } } });
+
+            if (_revenueChartInst) {
+                try { _revenueChartInst.destroy(); } catch(e){}
+            }
+
+            // Create smooth gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 242, 255, 0.0)');
+
+            _revenueChartInst = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Revenue (TSh)',
+                        data: amounts,
+                        borderColor: '#00f2ff',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#00f2ff',
+                        pointBorderColor: '#fff',
+                        pointHoverRadius: 6,
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` TSh ${ctx.parsed.y.toLocaleString()}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#6c7293', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                        y: { ticks: { color: '#6c7293', font: { size: 10 }, callback: v => 'TSh ' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true }
+                    }
+                }
+            });
         }
 
         function drawCategoryChart(orders) {
             const canvas = document.getElementById('categoryChart');
             if (!canvas || typeof Chart === 'undefined') return;
             const ctx = canvas.getContext('2d');
+            
             const catMap = {};
-            const palette = ['#00f2ff','#bc13fe','#ff3366','#00d25b','#ffb400','#0090e7','#f96332','#e91e63','#9c27b0'];
-            (orders || []).filter(o => o.status === 'approved').forEach(o => {
-                const game = (allGamesData || []).find(g => g.id === o.post_id);
-                const cat = (game && game.category) ? game.category : 'Other';
-                catMap[cat] = (catMap[cat] || 0) + 1;
+            const palette = ['#00f2ff', '#bc13fe', '#ff3366', '#00d25b', '#ffb400', '#0090e7', '#f96332', '#e91e63'];
+            
+            (orders || []).forEach(o => {
+                if (o.status === 'approved' || o.status === 'manual_approved') {
+                    const game = (allGamesData || []).find(g => String(g.id) === String(o.post_id));
+                    const cat = (game && game.category) ? game.category : (o.category || 'General');
+                    catMap[cat] = (catMap[cat] || 0) + 1;
+                }
             });
-            const labels = Object.keys(catMap), data = Object.values(catMap);
-            if (_categoryChartInst) _categoryChartInst.destroy();
-            if (!labels.length) return;
-            _categoryChartInst = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => palette[i % palette.length]), borderWidth: 0, hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#aaa', font: { size: 10 }, padding: 10, boxWidth: 12 } } }, cutout: '65%' } });
+            
+            let labels = Object.keys(catMap);
+            let data = Object.values(catMap);
+            
+            if (labels.length === 0) {
+                labels = ['HOT POST', 'Action', 'Sports', 'RPG'];
+                data = [1, 1, 1, 1];
+            }
+
+            if (_categoryChartInst) {
+                try { _categoryChartInst.destroy(); } catch(e){}
+            }
+
+            _categoryChartInst = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#aaa', font: { size: 10 }, padding: 10, boxWidth: 12 }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+
             const listEl = document.getElementById('categoryStatsList');
-            if (listEl) listEl.innerHTML = labels.map((l, i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.03);margin-bottom:4px"><span style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#ccc;"><span style="width:10px;height:10px;border-radius:3px;background:${palette[i%palette.length]};display:inline-block"></span>${l}</span><span style="font-size:0.8rem;font-weight:700;color:#fff">${data[i]}</span></div>`).join('');
+            if (listEl) {
+                listEl.innerHTML = labels.map((l, i) => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.03);margin-bottom:4px">
+                        <span style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#ccc;">
+                            <span style="width:10px;height:10px;border-radius:3px;background:${palette[i%palette.length]};display:inline-block"></span>${l}
+                        </span>
+                        <span style="font-size:0.8rem;font-weight:700;color:#fff">${data[i]}</span>
+                    </div>
+                `).join('');
+            }
         }
 
         // ============================================================
@@ -5114,11 +5263,16 @@
                     document.querySelectorAll('.totalGamesCount').forEach(el => {
                         el.innerText = gamesArr.length.toLocaleString();
                     });
+                    const gameTrendEl = document.getElementById('gameTrendText');
+                    if (gameTrendEl) gameTrendEl.innerText = `${gamesArr.length} Total Games`;
                 }
             } catch(e) { console.error('Games load error:', e); }
 
-            // Load users
+            // Load users stats
             fetchUserStats();
+
+            // Load app installs
+            fetchTotalInstalls();
 
             // Load orders and calculate revenue
             try {
@@ -5128,14 +5282,14 @@
                     allOrdersData = Array.isArray(orders) ? orders : [];
 
                     const pending = allOrdersData.filter(o => o.status === 'pending');
-                    const approved = allOrdersData.filter(o => o.status === 'approved');
+                    const approved = allOrdersData.filter(o => o.status === 'approved' || o.status === 'manual_approved');
                     const failed = allOrdersData.filter(o => o.status === 'rejected' || o.status === 'failed');
 
                     const pendingCountEl = document.getElementById('pendingOrdersCount');
-                    if (pendingCountEl) pendingCountEl.innerText = pending.length;
+                    if (pendingCountEl) pendingCountEl.innerText = pending.length.toLocaleString();
 
                     const failedEl = document.getElementById('failedTransactions');
-                    if (failedEl) failedEl.innerText = failed.length;
+                    if (failedEl) failedEl.innerText = failed.length.toLocaleString();
 
                     const approvedTotal = approved.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
                     const pendingTotal = pending.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
@@ -5150,9 +5304,10 @@
                     const pendingAmtEl = document.getElementById('pendingAmount');
                     if (pendingAmtEl) pendingAmtEl.innerText = `TSh ${pendingTotal.toLocaleString()}`;
 
-                    // Draw revenue chart
+                    // Draw revenue & category charts
                     drawRevenueChart(allOrdersData);
                     drawCategoryChart(allOrdersData);
+                    initSalesChart();
                 }
             } catch(e) { console.error('Orders load error:', e); }
 
