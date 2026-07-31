@@ -10,7 +10,8 @@
     <!-- Chart.js pinned to a specific UMD bundle so the auto-registrar is
          included (unpinned "npm/chart.js" URL served an ESM entry that left
          canvases blank because controllers weren't registered). -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
         // ============================================
         // FULL CATEGORIES MANAGEMENT SYSTEM
         // ============================================
@@ -4769,23 +4770,7 @@
                     </div>
                 </div>
 
-                <!-- WhatsApp Business AI Status -->
-                <div style="background: rgba(37,211,102,0.05); border: 1px solid rgba(37,211,102,0.25); border-radius: 12px; padding: 1.5rem;">
-                    <h4 style="color: #25D366; font-family: 'Orbitron'; margin: 0 0 5px; letter-spacing: 1px; font-size: 0.9rem;"><i class="fab fa-whatsapp"></i> WHATSAPP AI ASSISTANT</h4>
-                    <p style="color: #6c7293; font-size: 0.8rem; margin: 0 0 1rem;">24/7 Intelligent WhatsApp Store Auto-Responder.</p>
-                    
-                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; font-size: 0.8rem; margin-bottom: 1rem;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                            <span style="color: #6c7293;">Webhook URL:</span>
-                            <span style="color: #25D366; font-family: monospace; font-size:0.75rem;">/api/whatsapp/webhook</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #6c7293;">AI Engine:</span>
-                            <span style="color: #00f2ff; font-weight: bold;" id="waAiEngineLabel">Neural Store AI</span>
-                        </div>
-                    </div>
-                    <button class="btn-primary" onclick="testWhatsAppAI()" style="width: 100%; background: #25D366; color: #000; font-weight: bold;"><i class="fab fa-whatsapp"></i> TEST WHATSAPP BOT</button>
-                </div>
+
 
                 <!-- Administrative Pulse -->
                 <div style="background: rgba(255,0,128,0.05); border: 1px solid rgba(255,0,128,0.2); border-radius: 12px; padding: 1.5rem; grid-column: span 2;">
@@ -4942,48 +4927,13 @@
                 if (el1) el1.innerText = count;
                 if (el2) el2.innerText = count;
 
-                // WhatsApp AI Status
-                fetch('/api/admin/whatsapp/status')
-                    .then(r => r.json())
-                    .then(st => {
-                        const lbl = document.getElementById('waAiEngineLabel');
-                        if (lbl) lbl.innerText = st.aiEngine || 'Chidy Prime Neural AI';
-                    }).catch(() => {});
+
             } catch (err) {
                 console.error('Error loading store settings:', err);
             }
         }
 
-        async function testWhatsAppAI() {
-            const phone = prompt("Weka namba ya simu ya kujaribu (mfano 0712345678):");
-            if (!phone) return;
-            const msg = prompt("Weka ujumbe wa jaribio:", "Habari, naomba kujua bei ya GTA V");
-            if (!msg) return;
-            try {
-                const res = await fetch('/api/whatsapp/webhook', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        object: 'whatsapp_business_account',
-                        entry: [{
-                            changes: [{
-                                value: {
-                                    messages: [{ type: 'text', from: phone, text: { body: msg } }],
-                                    contacts: [{ profile: { name: 'Admin Test' } }]
-                                }
-                            }]
-                        }]
-                    })
-                });
-                if (res.ok) {
-                    showToast("✅ Ujumbe wa jaribio umetumwa kwenye WhatsApp AI Engine!");
-                } else {
-                    alert("Error sending test message");
-                }
-            } catch(e) {
-                alert("Error: " + e.message);
-            }
-        }
+
 
         async function saveGlobalDiscount() {
             const val = document.getElementById('globalDiscountInput').value;
@@ -5055,12 +5005,172 @@
             }
         }
 
+        // ============================================================
+        // CORE NAVIGATION FUNCTION
+        // ============================================================
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(viewId);
+            if (target) target.classList.add('active');
+
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.toggle('active', link.dataset.view === viewId);
+            });
+
+            currentActiveViewId = viewId;
+
+            // Load data for specific views on navigation
+            if (viewId === 'dashboardView') refreshAllData();
+            else if (viewId === 'allGamesView') loadGames();
+            else if (viewId === 'usersView') loadUsers();
+            else if (viewId === 'ordersView') loadOrders();
+            else if (viewId === 'categoriesView') loadCategories();
+            else if (viewId === 'affiliatesView') loadAffiliates();
+            else if (viewId === 'analyticsView') loadAnalyticsView();
+            else if (viewId === 'settingsView') loadStoreSettings();
+            else if (viewId === 'videosView') { loadAdminVideos(); loadChannelId(); }
+            else if (viewId === 'pushView') loadScheduledPushes();
+            else if (viewId === 'healthView') loadSystemHealth();
+            else if (viewId === 'promoView') loadPromoCodes();
+        }
+
+        // ============================================================
+        // FETCH USER STATS (users count + recent analytics)
+        // ============================================================
+        async function fetchUserStats() {
+            try {
+                const res = await fetch('/api/users');
+                if (!res.ok) return;
+                const users = await res.json();
+                const usersArr = Array.isArray(users) ? users : (users.data || []);
+                const totalEl = document.getElementById('totalUsersCount');
+                if (totalEl) totalEl.innerText = usersArr.length.toLocaleString();
+
+                // Count new users in last 7 days
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const newThisWeek = usersArr.filter(u => new Date(u.created_at) >= weekAgo).length;
+                const trendEl = document.getElementById('userTrend');
+                if (trendEl) {
+                    trendEl.innerHTML = `<span class="stat-trend-arrow"><i class="fas fa-arrow-up" style="color:#00ff88"></i></span> <span class="stat-trend-text">+${newThisWeek} this week</span>`;
+                }
+            } catch (err) {
+                console.error('fetchUserStats error:', err);
+            }
+        }
+
+        // ============================================================
+        // CHART DRAWING FUNCTIONS
+        // ============================================================
+        let _revenueChartInst = null;
+        let _categoryChartInst = null;
+
+        function drawRevenueChart(orders) {
+            const canvas = document.getElementById('revenueChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const ctx = canvas.getContext('2d');
+            const days = [], amounts = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                days.push(d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' }));
+                const dayStr = d.toISOString().slice(0, 10);
+                const total = (orders || []).filter(o => o.status === 'approved' && o.created_at && o.created_at.startsWith(dayStr)).reduce((s, o) => s + parseFloat(o.amount || 0), 0);
+                amounts.push(total);
+            }
+            if (_revenueChartInst) _revenueChartInst.destroy();
+            _revenueChartInst = new Chart(ctx, { type: 'line', data: { labels: days, datasets: [{ label: 'Revenue (TSh)', data: amounts, borderColor: '#00f2ff', backgroundColor: 'rgba(0,242,255,0.08)', borderWidth: 2.5, pointBackgroundColor: '#00f2ff', pointRadius: 4, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#6c7293', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#6c7293', font: { size: 11 }, callback: v => 'TSh ' + v.toLocaleString() }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } } });
+        }
+
+        function drawCategoryChart(orders) {
+            const canvas = document.getElementById('categoryChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const ctx = canvas.getContext('2d');
+            const catMap = {};
+            const palette = ['#00f2ff','#bc13fe','#ff3366','#00d25b','#ffb400','#0090e7','#f96332','#e91e63','#9c27b0'];
+            (orders || []).filter(o => o.status === 'approved').forEach(o => {
+                const game = (allGamesData || []).find(g => g.id === o.post_id);
+                const cat = (game && game.category) ? game.category : 'Other';
+                catMap[cat] = (catMap[cat] || 0) + 1;
+            });
+            const labels = Object.keys(catMap), data = Object.values(catMap);
+            if (_categoryChartInst) _categoryChartInst.destroy();
+            if (!labels.length) return;
+            _categoryChartInst = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => palette[i % palette.length]), borderWidth: 0, hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#aaa', font: { size: 10 }, padding: 10, boxWidth: 12 } } }, cutout: '65%' } });
+            const listEl = document.getElementById('categoryStatsList');
+            if (listEl) listEl.innerHTML = labels.map((l, i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.03);margin-bottom:4px"><span style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#ccc;"><span style="width:10px;height:10px;border-radius:3px;background:${palette[i%palette.length]};display:inline-block"></span>${l}</span><span style="font-size:0.8rem;font-weight:700;color:#fff">${data[i]}</span></div>`).join('');
+        }
+
+        // ============================================================
+        // REFRESH ALL DASHBOARD DATA
+        // ============================================================
+        async function refreshAllData() {
+            try {
+                // Load games count
+                const gamesRes = await fetch('/api/admin/games');
+                if (gamesRes.ok) {
+                    const games = await gamesRes.json();
+                    const gamesArr = Array.isArray(games) ? games : [];
+                    allGamesData = gamesArr;
+                    document.querySelectorAll('.totalGamesCount').forEach(el => {
+                        el.innerText = gamesArr.length.toLocaleString();
+                    });
+                }
+            } catch(e) { console.error('Games load error:', e); }
+
+            // Load users
+            fetchUserStats();
+
+            // Load orders and calculate revenue
+            try {
+                const ordersRes = await fetch('/api/admin/orders');
+                if (ordersRes.ok) {
+                    const orders = await ordersRes.json();
+                    allOrdersData = Array.isArray(orders) ? orders : [];
+
+                    const pending = allOrdersData.filter(o => o.status === 'pending');
+                    const approved = allOrdersData.filter(o => o.status === 'approved');
+                    const failed = allOrdersData.filter(o => o.status === 'rejected' || o.status === 'failed');
+
+                    const pendingCountEl = document.getElementById('pendingOrdersCount');
+                    if (pendingCountEl) pendingCountEl.innerText = pending.length;
+
+                    const failedEl = document.getElementById('failedTransactions');
+                    if (failedEl) failedEl.innerText = failed.length;
+
+                    const approvedTotal = approved.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+                    const pendingTotal = pending.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+                    const lifetimeTotal = allOrdersData.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+
+                    const revenueEl = document.getElementById('totalRevenue');
+                    if (revenueEl) revenueEl.innerText = `TSh ${approvedTotal.toLocaleString()}`;
+
+                    const lifetimeEl = document.getElementById('lifetimeRevenue');
+                    if (lifetimeEl) lifetimeEl.innerText = `TSh ${lifetimeTotal.toLocaleString()}`;
+
+                    const pendingAmtEl = document.getElementById('pendingAmount');
+                    if (pendingAmtEl) pendingAmtEl.innerText = `TSh ${pendingTotal.toLocaleString()}`;
+
+                    // Draw revenue chart
+                    drawRevenueChart(allOrdersData);
+                    drawCategoryChart(allOrdersData);
+                }
+            } catch(e) { console.error('Orders load error:', e); }
+
+            // Load categories
+            loadCategories();
+
+            // Load store settings (app installs etc)
+            loadStoreSettings();
+
+            // Load activity feed
+            fetchActivity();
+        }
+
         async function clearAnnouncement() {
             document.getElementById('announcementInput').value = '';
             await updateAnnouncement();
         }
 
-        // (refreshAllData unified above)
 
         // Initial view setup if logged in
         if (localStorage.getItem('adminToken')) {
@@ -7097,6 +7207,14 @@
                 };
                 window.showView._mobilePatched = true;
             }
+        // Wire SIDEBAR nav links to showView
+        document.querySelectorAll('.sidebar .nav-link[data-view]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const viewId = this.getAttribute('data-view');
+                if (viewId && typeof showView === 'function') showView(viewId);
+            });
+        });
         })();
     </script>
 </body>

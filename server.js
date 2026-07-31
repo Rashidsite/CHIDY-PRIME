@@ -165,9 +165,7 @@ if (supabaseUrl && supabaseKey) {
 // Start health checks after everything is initialized
 runHealthCheck();
 
-// --- WHATSAPP BUSINESS AI ASSISTANT ---
-const { initWhatsAppAI } = require('./whatsapp-ai');
-initWhatsAppAI(app, supabase);
+// WhatsApp AI Assistant has been removed.
 
 // --- AUTOMATED PENDING ORDER WORKER ---
 // This worker automatically checks Haraka Pay and ZenoPay for pending orders and approves them if paid.
@@ -189,10 +187,13 @@ setInterval(async () => {
             const extOrderId = order.promo_used;
             if (!extOrderId) continue;
 
-            // Check if order is older than 30 minutes
+            // PressoPay orders (PP:) get 2 hours — webhook may arrive late.
+            // HarakaPay/ZenoPay orders get 45 minutes.
             const ageMinutes = (new Date() - new Date(order.created_at)) / 60000;
-            if (ageMinutes > 30) {
+            const maxAge = extOrderId.startsWith('PP') ? 120 : 45;
+            if (ageMinutes > maxAge) {
                 await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', order.id);
+                console.log(`[AUTO-WORKER] Expired order ${extOrderId} (age: ${Math.round(ageMinutes)}min) → rejected`);
                 continue;
             }
 
@@ -494,6 +495,23 @@ app.get('/api/settings/:key', async (req, res) => {
         res.json(result);
     } catch (err) {
         console.error("Settings getter error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET a single setting by key (used by admin panel to read current values)
+app.get('/api/admin/settings/:key', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { key } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', key)
+            .single();
+        if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message });
+        res.json({ key, value: data ? data.value : null });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -2336,12 +2354,17 @@ app.post('/api/payments/harakapay-callback', handlePaymentCallback);
 app.post('/api/payments/zenopay-callback', handlePaymentCallback);
 
 async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrderId = null, isVideo = false) {
-    const itemId = item.id;
+    const itemId = item ? item.id : null;
+    if (!itemId) {
+        console.error('[handleSuccessfulPayment] item.id is missing — aborting to prevent null post_id');
+        return;
+    }
     try {
         // 1. Update existing order or insert new one
+        // IMPORTANT: always set post_id on update so the record is complete.
         if (zenoOrderId) {
             await supabase.from('payment_orders')
-                .update({ status: 'approved', updated_at: new Date().toISOString() })
+                .update({ status: 'approved', post_id: itemId, updated_at: new Date().toISOString() })
                 .eq('promo_used', zenoOrderId);
         } else {
             await supabase.from('payment_orders').insert([{
