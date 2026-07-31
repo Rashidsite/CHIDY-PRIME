@@ -414,6 +414,52 @@
             display: none !important;
         }
 
+        /* Action buttons in Games & Posts table */
+        .btn-action-game {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+            font-family: 'Orbitron', sans-serif;
+            white-space: nowrap;
+        }
+        .btn-action-game.edit-btn {
+            background: rgba(0, 242, 255, 0.12);
+            color: #00f2ff;
+            border-color: rgba(0, 242, 255, 0.3);
+        }
+        .btn-action-game.edit-btn:hover {
+            background: #00f2ff;
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+        }
+        .btn-action-game.draft-btn {
+            background: rgba(255, 171, 0, 0.12);
+            color: #ffab00;
+            border-color: rgba(255, 171, 0, 0.3);
+        }
+        .btn-action-game.draft-btn:hover {
+            background: #ffab00;
+            color: #000;
+            box-shadow: 0 0 10px rgba(255, 171, 0, 0.5);
+        }
+        .btn-action-game.trash-btn {
+            background: rgba(255, 51, 102, 0.12);
+            color: #ff3366;
+            border-color: rgba(255, 51, 102, 0.3);
+        }
+        .btn-action-game.trash-btn:hover {
+            background: #ff3366;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+        }
+
         /* Dashboard Content */
         .content {
             box-sizing: border-box;
@@ -5957,9 +6003,10 @@
                         <td style="color:#6c7293;font-size:0.8rem;">${dateStr}</td>
                         <td><span style="background:${statusBadgeColor}22;color:${statusBadgeColor};border:1px solid ${statusBadgeColor}44;padding:3px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">${game.status || 'published'}</span></td>
                         <td>
-                            <div style="display:flex;gap:6px;">
-                                <button class="sched-btn-mini" onclick="editGame('${game.id}')" title="Hariri"><i class="fas fa-edit"></i></button>
-                                <button class="sched-btn-mini" style="color:#ff3366;border-color:rgba(255,51,102,0.3);" onclick="deleteGame('${game.id}')" title="Futa"><i class="fas fa-trash-alt"></i></button>
+                            <div style="display:flex;gap:6px;align-items:center;">
+                                <button class="btn-action-game edit-btn" onclick="editGame('${game.id}')" title="Hariri Mchezo"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="btn-action-game draft-btn" onclick="toggleGameStatus('${game.id}', '${game.status === 'draft' ? 'published' : 'draft'}')" title="${game.status === 'draft' ? 'Chapisha Mchezo' : 'Tengeneza Draft'}"><i class="fas ${game.status === 'draft' ? 'fa-check-circle' : 'fa-file-alt'}"></i> ${game.status === 'draft' ? 'Publish' : 'Draft'}</button>
+                                <button class="btn-action-game trash-btn" onclick="deleteGame('${game.id}')" title="Futa Mchezo"><i class="fas fa-trash-alt"></i> Trash</button>
                             </div>
                         </td>
                     </tr>
