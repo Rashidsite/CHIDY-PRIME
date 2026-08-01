@@ -219,6 +219,21 @@
         // ============================================
         // ADDITIONAL UTILITY CONTROLLERS
         // ============================================
+        async function fetchTotalInstalls() {
+            try {
+                const res = await fetch('/api/settings/total_installs');
+                if (!res.ok) return;
+                const data = await res.json();
+                const count = parseInt(data.value, 10) || 0;
+                const el1 = document.getElementById('appInstallsCount');
+                const el2 = document.getElementById('settingsTotalInstalls');
+                if (el1) el1.innerText = count.toLocaleString();
+                if (el2) el2.innerText = count.toLocaleString();
+            } catch(e) {
+                console.error('fetchTotalInstalls error:', e);
+            }
+        }
+
         async function loadSystemHealth() {
             try {
                 const res = await fetch('/api/system/health');
@@ -5172,7 +5187,12 @@
                 const count = parseInt(data.value, 10) || 0;
                 const el1 = document.getElementById('appInstallsCount');
                 const el2 = document.getElementById('settingsTotalInstalls');
-                
+                if (el1) el1.innerText = count.toLocaleString();
+                if (el2) el2.innerText = count.toLocaleString();
+            } catch(e) {
+                console.error('fetchTotalInstalls error:', e);
+            }
+        }
         // ============================================================
         // GUARANTEED DUAL-ENGINE CHART DRAWING SYSTEM
         // (Uses Chart.js when available, or Native HTML5 Canvas Renderer)
@@ -5900,7 +5920,7 @@
         // ============================================================
         // CHART & GAMES HELPERS & MISSING API ALIASES
         // ============================================================
-        let _salesChartInst = null;
+        
 
         function initSalesChart() {
             const canvas = document.getElementById('salesChart');
@@ -6362,7 +6382,7 @@
             link.addEventListener('click', function(e) {
                 if (!this.dataset.view) return;
                 e.preventDefault();
-                }
+                showView(this.dataset.view);
 
                 // Close sidebar on mobile after click
                 if (window.innerWidth <= 576) {
