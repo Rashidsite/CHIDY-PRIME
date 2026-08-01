@@ -3488,25 +3488,63 @@
 
         <!-- USERS VIEW -->
         <section id="usersView" class="content view-section" style="display: none;">
-            <div class="admin-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                    <h3 class="card-title" style="margin: 0;"><i class="fas fa-users"></i> Registered Users</h3>
-                    <div class="stat-val" style="font-size: 1.2rem; margin: 0;" id="userViewTotal">0 Total</div>
+            <!-- Top Stat Cards for Users Directory -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 2rem;">
+                <div class="pay-stat-card" style="border-left: 6px solid #4f46e5;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">REGISTERED USERS</div>
+                        <div style="font-size: 1.4rem; font-family: 'Orbitron'; font-weight: 800; color: #4f46e5;" id="userViewTotal">0 Total</div>
+                    </div>
+                    <i class="fas fa-users" style="font-size: 1.8rem; color: #4f46e5;"></i>
                 </div>
-                <table class="game-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Phone Number</th>
-                            <th>Joined Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <tr><td colspan="5" style="text-align:center;color:#6c7293;padding:20px;">Loading users...</td></tr>
-                    </tbody>
-                </table>
+                <div class="pay-stat-card" style="border-left: 6px solid #10b981;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">REGISTERED TODAY</div>
+                        <div style="font-size: 1.4rem; font-family: 'Orbitron'; font-weight: 800; color: #10b981;" id="usersTodayCount">0 Users</div>
+                    </div>
+                    <i class="fas fa-user-plus" style="font-size: 1.8rem; color: #10b981;"></i>
+                </div>
+                <div class="pay-stat-card" style="border-left: 6px solid #d97706;">
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">PHONE VERIFIED STATUS</div>
+                        <div style="font-size: 1.4rem; font-family: 'Orbitron'; font-weight: 800; color: #d97706;">100% Active</div>
+                    </div>
+                    <i class="fas fa-user-check" style="font-size: 1.8rem; color: #d97706;"></i>
+                </div>
+            </div>
+
+            <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 14px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-users-cog" style="color: #7c3aed;"></i> Registered Users Directory
+                        </h3>
+                        <span style="background: #0f172a; color: #ffffff; font-size: 0.75rem; font-weight: 800; padding: 3px 12px; border-radius: 20px;" id="usersCountBadge">0 Users</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="userSearchInput" placeholder="Tafuta mteja (Jina au Simu)..." style="background: #ffffff; border: 2.5px solid #0f172a; padding: 9px 16px; border-radius: 10px; color: #0f172a; font-weight: 700; width: 260px;" oninput="renderUsersList()">
+                        <button class="btn-filter" onclick="loadUsers()" style="background: #0f172a; color: #ffffff; border: 2.5px solid #0f172a; padding: 9px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-sync-alt"></i> REFRESH
+                        </button>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="game-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Phone Number</th>
+                                <th>Joined Date</th>
+                                <th style="text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="5" style="text-align:center;color:#64748b;font-weight:700;padding:20px;">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -5733,51 +5771,78 @@
         }
 
         function renderUsersList() {
-            const users = allUsersData;
-            const tbody = document.getElementById('usersTableBody');
-            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            const users = Array.isArray(allUsersData) ? allUsersData : [];
+            const tbody = document.getElementById("usersTableBody");
+            if (!tbody) return;
+
+            const searchInput = document.getElementById("userSearchInput") || document.getElementById("adminSearchInput");
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
             
             const filteredUsers = query 
-                ? users.filter(u => u.name.toLowerCase().includes(query) || u.phone.includes(query))
+                ? users.filter(u => (u.name || "").toLowerCase().includes(query) || (u.phone || "").includes(query))
                 : users;
 
-            document.getElementById('userViewTotal').innerText = filteredUsers.length + ' Total';
+            const todayStr = getLocalDayStr(new Date());
+            const usersTodayCount = users.filter(u => getLocalDayStr(u.created_at) === todayStr).length;
+            
+            const todayEl = document.getElementById("usersTodayCount");
+            if (todayEl) todayEl.innerText = `${usersTodayCount} Users`;
+
+            const totalEl = document.getElementById("userViewTotal");
+            if (totalEl) totalEl.innerText = `${filteredUsers.length} Total`;
+
+            const badgeEl = document.getElementById("usersCountBadge");
+            if (badgeEl) badgeEl.innerText = `${filteredUsers.length} Users`;
             
             if (filteredUsers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6c7293;padding:20px;">No registered users found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#64748b;font-weight:700;padding:2.5rem;"><i class="fas fa-user-slash" style="font-size:1.8rem;margin-bottom:8px;display:block;color:#94a3b8;"></i> Hauna mteja aliyepatikana kulingana na utafutaji wako.</td></tr>';
                 return;
             }
             
-            tbody.innerHTML = '';
+            tbody.innerHTML = "";
             filteredUsers.forEach((u, i) => {
-                    const date = new Date(u.created_at).toLocaleDateString([], {year: 'numeric', month: 'short', day: 'numeric'});
-                    const time = new Date(u.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    
-                    const phoneClean = u.phone.replace(/[^0-9]/g, '');
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td style="color:#64748b;font-size:0.82rem;font-weight:600;">#${i + 1}</td>
-                        <td style="font-weight:700;color:#0f172a;cursor:pointer;" onclick="viewUserDetail('${u.visitor_id || u.id}')">
-                            <i class="fas fa-external-link-alt" style="font-size:0.7rem;margin-right:5px;color:#7c3aed;"></i> ${u.name}
-                        </td>
-                        <td><span style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 10px;border-radius:6px;font-family:monospace;font-weight:600;">${u.phone}</span></td>
-                        <td><span style="color:#0f172a;font-weight:500;">${date}</span> <span style="color:#64748b;font-size:0.8rem">${time}</span></td>
-                        <td style="display:flex; gap:8px;">
-                            <a href="https://wa.me/${phoneClean}" target="_blank" class="btn-filter" style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;padding:0.4rem 0.8rem;text-decoration:none;display:flex;align-items:center;gap:5px;font-weight:600;">
-                                <i class="fab fa-whatsapp"></i> WhatsApp
+                const date = new Date(u.created_at).toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric"});
+                const time = new Date(u.created_at).toLocaleTimeString("en-GB", {hour: "2-digit", minute:"2-digit"});
+                
+                const phoneClean = (u.phone || "").replace(/[^0-9]/g, "");
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>
+                        <span style="background:#0f172a; color:#ffffff; padding:4px 10px; border-radius:8px; font-family:'Orbitron'; font-weight:800; font-size:0.78rem; border: 1.5px solid #0f172a;">#${i + 1}</span>
+                    </td>
+                    <td>
+                        <div style="font-weight:800; color:#0f172a; font-size:0.92rem; display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="viewUserDetail('${u.visitor_id || u.id}')" title="Bonyeza kuona akaunti ya mteja">
+                            <i class="fas fa-user-circle" style="color:#4f46e5; font-size:1.1rem;"></i> ${u.name || "Unknown"}
+                        </div>
+                    </td>
+                    <td>
+                        <span style="background:#f8fafc; color:#0f172a; border:1.5px solid #0f172a; padding:4px 12px; border-radius:8px; font-family:monospace; font-weight:800; font-size:0.85rem; display:inline-flex; align-items:center; gap:6px;">
+                            <i class="fas fa-phone-alt" style="color:#059669; font-size:0.75rem;"></i> ${u.phone || "N/A"}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="color:#0f172a; font-weight:700; font-size:0.85rem;"><i class="fas fa-calendar-alt" style="color:#d97706; font-size:0.78rem; margin-right:4px;"></i> ${date}</span>
+                            <span style="color:#64748b; font-size:0.75rem; font-weight:600;">${time}</span>
+                        </div>
+                    </td>
+                    <td style="text-align:center;">
+                        <div style="display:inline-flex; gap:8px; justify-content:center; align-items:center;">
+                            <a href="https://wa.me/${phoneClean}" target="_blank" style="background:#16a34a; color:#ffffff; border:1.5px solid #0f172a; padding:7px 14px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:0.75rem; font-family:'Orbitron'; box-shadow:0 2px 6px rgba(22,163,74,0.25); transition:0.2s;">
+                                <i class="fab fa-whatsapp" style="font-size:0.9rem;"></i> WhatsApp
                             </a>
-                            <a href="sms:${u.phone}" class="btn-filter" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:0.4rem 0.8rem;text-decoration:none;display:flex;align-items:center;gap:5px;font-weight:600;">
-                                <i class="fas fa-sms"></i> SMS
+                            <a href="sms:${u.phone}" style="background:#0284c7; color:#ffffff; border:1.5px solid #0f172a; padding:7px 14px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:0.75rem; font-family:'Orbitron'; box-shadow:0 2px 6px rgba(2,132,199,0.25); transition:0.2s;">
+                                <i class="fas fa-sms" style="font-size:0.9rem;"></i> SMS
                             </a>
-                            <button class="btn-filter delete-user-btn" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;padding:0.4rem 0.8rem;display:flex;align-items:center;gap:5px;font-weight:600;" data-id="${u.id}" data-name="${u.name}">
-                                <i class="fas fa-trash-alt"></i> Delete
+                            <button class="delete-user-btn" style="background:#dc2626; color:#ffffff; border:1.5px solid #0f172a; padding:7px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:0.75rem; font-family:'Orbitron'; cursor:pointer; box-shadow:0 2px 6px rgba(220,38,38,0.25); transition:0.2s;" data-id="${u.id}" data-name="${u.name}">
+                                <i class="fas fa-trash-alt" style="font-size:0.85rem;"></i> Delete
                             </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
-
         // Custom confirm modal helper
         function showConfirmModal(title, text) {
             return new Promise((resolve) => {
