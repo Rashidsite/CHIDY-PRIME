@@ -1886,23 +1886,102 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             .single();
         
         if (error || !data) {
-            // Check for pending order before saying "no access"
-            const { data: orderData } = await supabase
+            // CRITICAL FIX: Check if there's ALREADY an approved order in payment_orders!
+            const { data: approvedOrders } = await supabase
                 .from('payment_orders')
-                .select('status, created_at')
+                .select('*')
                 .eq('visitor_id', parseInt(visitor_id))
                 .eq('post_id', post_id)
-                .eq('status', 'pending');
+                .in('status', ['approved', 'manual_approved', 'completed', 'success'])
+                .order('created_at', { ascending: false })
+                .limit(1);
 
-            // Only treat it as pending if it's less than 3 minutes old
-            let hasRecentPending = false;
-            if (orderData && orderData.length > 0) {
-                const recentOrders = orderData.filter(o => {
-                    const ageMs = new Date() - new Date(o.created_at);
-                    return ageMs < 3 * 60 * 1000; // 3 minutes
+            if (approvedOrders && approvedOrders.length > 0) {
+                // Auto-heal missing user_access record
+                const dDays = game.duration_days || 0;
+                let finalExp = new Date('2099-12-31T23:59:59Z');
+                if (dDays > 0) {
+                    finalExp = new Date();
+                    finalExp.setDate(finalExp.getDate() + dDays);
+                }
+                await supabase.from('user_access').upsert({
+                    visitor_id: parseInt(visitor_id),
+                    post_id: post_id,
+                    granted_at: new Date().toISOString(),
+                    expires_at: finalExp.toISOString()
+                }, { onConflict: 'visitor_id,post_id' });
+
+                return res.json({ 
+                    has_access: true, 
+                    expires_at: finalExp.toISOString(),
+                    links: game.links || []
                 });
-                if (recentOrders.length > 0) {
+            }
+
+            // Check for pending order before saying "no access"
+            const { data: pendingOrders } = await supabase
+                .from('payment_orders')
+                .select('*')
+                .eq('visitor_id', parseInt(visitor_id))
+                .eq('post_id', post_id)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
+
+            let hasRecentPending = false;
+            if (pendingOrders && pendingOrders.length > 0) {
+                const latestPending = pendingOrders[0];
+                const ageMs = new Date() - new Date(latestPending.created_at);
+                if (ageMs < 5 * 60 * 1000) {
                     hasRecentPending = true;
+                }
+
+                // AUTO-CHECK GATEWAY STATUS LIVE ON THE FLY!
+                const extOrderId = latestPending.promo_used;
+                let isPaidLive = false;
+                if (extOrderId) {
+                    if (extOrderId.startsWith('HP')) {
+                        try {
+                            const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                                method: 'GET',
+                                headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+                            });
+                            const hData = await hRes.json().catch(() => ({}));
+                            const hStatus = (hData.payment && hData.payment.status || '').toLowerCase();
+                            if (hStatus === 'completed' || hStatus === 'success') isPaidLive = true;
+                        } catch (e) {}
+                    } else if (extOrderId.startsWith('ZP')) {
+                        try {
+                            const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': extOrderId })
+                            });
+                            const zData = await zRes.json().catch(() => ({}));
+                            const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+                            if (zStatus === 'success' || zStatus === 'completed') isPaidLive = true;
+                        } catch (e) {}
+                    } else if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+                        try {
+                            const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+                            const pStatus = await pressopay.checkPaymentStatus(ref);
+                            if ((pStatus.status || '').toUpperCase() === 'COMPLETED') isPaidLive = true;
+                        } catch (e) {}
+                    }
+                }
+
+                if (isPaidLive) {
+                    await handleSuccessfulPayment(parseInt(visitor_id), game, latestPending.amount, latestPending.phone_number, extOrderId, false);
+                    const dDays = game.duration_days || 0;
+                    let finalExp = new Date('2099-12-31T23:59:59Z');
+                    if (dDays > 0) {
+                        finalExp = new Date();
+                        finalExp.setDate(finalExp.getDate() + dDays);
+                    }
+                    return res.json({ 
+                        has_access: true, 
+                        expires_at: finalExp.toISOString(),
+                        links: game.links || []
+                    });
                 }
             }
 
@@ -2461,6 +2540,23 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
 const verifyPaymentManual = async (req, res) => {
     const { visitor_id, post_id } = req.params;
     try {
+        // 1. Check if order is ALREADY approved!
+        const { data: alreadyApproved } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', post_id)
+            .in('status', ['approved', 'manual_approved', 'completed', 'success'])
+            .limit(1);
+
+        if (alreadyApproved && alreadyApproved.length > 0) {
+            const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
+            if (game) {
+                await handleSuccessfulPayment(parseInt(visitor_id), game, alreadyApproved[0].amount, alreadyApproved[0].phone_number, alreadyApproved[0].promo_used, false);
+            }
+            return res.json({ success: true, message: 'Malipo yamehakikiwa na yamekamilika!' });
+        }
+
         const { data: pending } = await supabase
             .from('payment_orders')
             .select('*')
