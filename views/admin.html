@@ -6721,9 +6721,11 @@
             document.body.removeChild(a);
         }
 
-        async function fetchOrders() {
-            const list = document.getElementById('ordersList');
-            if (list) list.innerHTML = '<p style="text-align: center; color: #64748b; font-weight: 700; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
+        async function fetchOrders(isSilent = false) {
+            const list = document.getElementById("ordersList");
+            if (list && !isSilent && (!allOrdersData || allOrdersData.length === 0)) {
+                list.innerHTML = '<p style="text-align: center; color: #64748b; font-weight: 700; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
+            }
             
             try {
                 const res = await fetch(`/api/admin/orders?t=${Date.now()}`, {
@@ -6733,12 +6735,11 @@
                 });
                 const orders = await res.json();
                 
-                if (!Array.isArray(orders)) {
-                    console.error("Orders is not an array:", orders);
-                    allOrdersData = [];
-                } else {
-                    allOrdersData = orders;
-                }
+                const newOrders = Array.isArray(orders) ? orders : [];
+                const prevFp = (allOrdersData || []).map(o => `${o.id}_${o.status}`).join('|');
+                const newFp = newOrders.map(o => `${o.id}_${o.status}`).join('|');
+                
+                allOrdersData = newOrders;
 
                 if (Array.isArray(allOrdersData)) {
                     const actionCount = allOrdersData.filter(o => o.posts && o.posts.title && o.posts.title.toLowerCase().includes('action')).length;
@@ -6760,10 +6761,9 @@
                 if (totalRevEl) totalRevEl.innerText = `TSh ${approvedTotal.toLocaleString('en-US')}`;
 
                 if (document.getElementById('totalDownloads')) document.getElementById('totalDownloads').innerText = approvedOrders.length;
-                    if (document.getElementById('pendingAmount')) document.getElementById('pendingAmount').innerText = `TSh ${pendingTotal.toLocaleString('en-US')}`;
+                if (document.getElementById('pendingAmount')) document.getElementById('pendingAmount').innerText = `TSh ${pendingTotal.toLocaleString('en-US')}`;
                 if (document.getElementById('failedTransactions')) document.getElementById('failedTransactions').innerText = failedCount;
 
-                // Fetch and update Lifetime Revenue
                 try {
                     const r = await fetch('/api/settings/lifetime_revenue');
                     const data = await r.json();
@@ -6773,7 +6773,9 @@
                     }
                 } catch (e) {}
 
-                renderOrdersList();
+                if (!isSilent || prevFp !== newFp || !list || list.children.length === 0) {
+                    renderOrdersList();
+                }
 
                 if (Array.isArray(allOrdersData) && allOrdersData.length > 0) {
                     if (typeof updateRevenueChart === "function") updateRevenueChart(allOrdersData);
@@ -6781,10 +6783,9 @@
                 }
             } catch (err) {
                 console.error("fetchOrders error:", err);
-                renderOrdersList();
+                if (!allOrdersData || allOrdersData.length === 0) renderOrdersList();
             }
         }
-
         async function loadStoreSettings() {
             try {
                 // Fetch Global Discount
