@@ -1,8 +1,33 @@
 
+
+
+function resetDeviceLock(visitorId) {
+    const locks = loadDeviceLocks();
+    const key = String(visitorId);
+    if (locks[key]) {
+        delete locks[key];
+        saveDeviceLocks(locks);
+        console.log(`[DEVICE LOCK RESET] Device lock cleared for visitor #${visitorId}`);
+        return true;
+    }
+    return false;
+}
+
+require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
+const jwt = require('jsonwebtoken');
+const compression = require('compression');
+const https = require('https');
+const webPush = require('web-push');
+
 // ============================================================
-// DEVICE LOCK SYSTEM — ANTI ACCOUNT SHARING BINDING
+// DEVICE LOCK SYSTEM — ANTI ACCOUNT SHARING BINDING (VERCEL SAFE)
 // ============================================================
-const deviceLockFile = path.join(__dirname, 'data', 'device_locks.json');
+const deviceLockFile = path.join(os.tmpdir(), 'chidy_device_locks.json');
 
 function loadDeviceLocks() {
     try {
@@ -15,10 +40,10 @@ function loadDeviceLocks() {
 
 function saveDeviceLocks(locks) {
     try {
-        const dir = path.dirname(deviceLockFile);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(deviceLockFile, JSON.stringify(locks, null, 2));
-    } catch(e) { console.error('Failed to save device locks:', e); }
+    } catch(e) { 
+        console.warn('Failed to save device locks to tmp:', e.message); 
+    }
 }
 
 function checkOrBindDeviceLock(visitorId, deviceFp, userAgent = '') {
@@ -46,26 +71,19 @@ function checkOrBindDeviceLock(visitorId, deviceFp, userAgent = '') {
 }
 
 function resetDeviceLock(visitorId) {
-    const locks = loadDeviceLocks();
-    const key = String(visitorId);
-    if (locks[key]) {
-        delete locks[key];
-        saveDeviceLocks(locks);
-        console.log(`[DEVICE LOCK RESET] Device lock cleared for visitor #${visitorId}`);
-        return true;
-    }
+    try {
+        const locks = loadDeviceLocks();
+        const key = String(visitorId);
+        if (locks[key]) {
+            delete locks[key];
+            saveDeviceLocks(locks);
+            console.log(`[DEVICE LOCK RESET] Device lock cleared for visitor #${visitorId}`);
+            return true;
+        }
+    } catch(e) {}
     return false;
 }
 
-require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
-const jwt = require('jsonwebtoken');
-const compression = require('compression');
-const os = require('os');
-const https = require('https');
-const webPush = require('web-push');
 
 const app = express();
 const port = process.env.PORT || 3000;
