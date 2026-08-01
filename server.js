@@ -1764,25 +1764,32 @@ app.post('/api/promo/validate', async (req, res) => {
 
 
 // Helper to check and approve pending orders via HarakaPay, ZenoPay, or PressoPay
-const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
+const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhoneClean = '') => {
     try {
+        const numericVisitorId = parseInt(visitorId) || 0;
         const { data: pending } = await supabase
             .from('payment_orders')
             .select('*')
-            .eq('visitor_id', parseInt(visitorId))
-            .eq('post_id', postId)
+            .or(`post_id.eq.${postId},post_id.eq.${game.id}`)
             .eq('status', 'pending')
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .order('created_at', { ascending: false });
 
         if (pending && pending.length > 0) {
-            const order = pending[0];
-            const extOrderId = order.promo_used; // We used this for order_id
-            
-            if (extOrderId) {
+            const matchedPending = pending.filter(o => {
+                if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
+                const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
+                    return true;
+                }
+                return false;
+            });
+
+            for (const order of matchedPending) {
+                const extOrderId = order.promo_used;
+                if (!extOrderId) continue;
+
                 let isPaid = false;
                 if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
-                    console.log('Fail-safe: Checking PressoPay status for:', extOrderId);
                     try {
                         const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
                         const pStatus = await pressopay.checkPaymentStatus(ref);
@@ -1790,10 +1797,9 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
                             isPaid = true;
                         }
                     } catch (ppErr) {
-                        console.warn('Fail-safe PressoPay check failed:', ppErr.message);
+                        console.warn('PressoPay check error:', ppErr.message);
                     }
                 } else if (extOrderId.startsWith('HP')) {
-                    console.log('Fail-safe: Checking HarakaPay status for:', extOrderId);
                     const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
                         method: 'GET',
                         headers: { 'X-API-Key': HARAKAPAY_API_KEY }
@@ -1803,7 +1809,6 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
                         isPaid = true;
                     }
                 } else if (extOrderId.startsWith('ZP')) {
-                    console.log('Fail-safe: Checking ZenoPay status for:', extOrderId);
                     const zenoCheck = await fetch('https://zenoapi.com/api/payments/order_status', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1819,11 +1824,8 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
                 }
 
                 if (isPaid) {
-                    console.log(`Fail-safe: Order ${extOrderId} paid! Manually triggering success logic...`);
-                    // IT WAS PAID! Manually trigger the success logic
-                    await handleSuccessfulPayment(parseInt(visitorId), game, order.amount, order.phone_number, extOrderId, false);
-                    
-                    // Mark the pending order as approved
+                    console.log(`Fail-safe: Pending order ${extOrderId} paid! Auto approving...`);
+                    await handleSuccessfulPayment(parseInt(order.visitor_id || visitorId), game, order.amount, order.phone_number, extOrderId, false);
                     await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
 
                     const dDays = game.duration_days || 0;
@@ -1845,7 +1847,6 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game) => {
     } catch (checkErr) {
         console.error('checkAndApprovePendingOrder error:', checkErr);
     }
-    return null;
 };
 
 // Check if a visitor has active access to a game
@@ -1853,6 +1854,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
     const { visitor_id, post_id } = req.params;
+    const phoneQuery = req.query.phone || '';
     
     try {
         // 1. Fetch game details to check price & links
@@ -1876,8 +1878,8 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         const numericVisitorId = parseInt(visitor_id) || 0;
 
         // Fetch visitor profile for phone matching
-        let visitorPhoneClean = '';
-        if (numericVisitorId > 0) {
+        let visitorPhoneClean = phoneQuery ? String(phoneQuery).replace(/[^0-9]/g, '') : '';
+        if (numericVisitorId > 0 && !visitorPhoneClean) {
             const { data: vProfile } = await supabase.from('visitors').select('phone').eq('id', numericVisitorId).single();
             if (vProfile && vProfile.phone) {
                 visitorPhoneClean = String(vProfile.phone).replace(/[^0-9]/g, '');
@@ -1916,11 +1918,14 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         const { data: accessRows } = await supabase
             .from('user_access')
             .select('*')
-            .eq('visitor_id', numericVisitorId)
             .or(`post_id.eq.${post_id},post_id.eq.${game.id}`);
 
         if (accessRows && accessRows.length > 0) {
-            const activeAcc = accessRows.find(a => new Date(a.expires_at) > new Date());
+            const activeAcc = accessRows.find(a => {
+                if (new Date(a.expires_at) <= new Date()) return false;
+                if (numericVisitorId > 0 && parseInt(a.visitor_id) === numericVisitorId) return true;
+                return false;
+            });
             if (activeAcc) {
                 return res.json({
                     has_access: true,
@@ -1942,7 +1947,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
                 if (!isApproved) return false;
                 
-                if (parseInt(o.visitor_id) === numericVisitorId) return true;
+                if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
                 
                 const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
                 if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
@@ -1952,7 +1957,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             });
 
             if (approvedOrder) {
-                const expIso = await grantAccessHelper(numericVisitorId, game.id, game.duration_days || 0);
+                const expIso = await grantAccessHelper(numericVisitorId > 0 ? numericVisitorId : approvedOrder.visitor_id, game.id, game.duration_days || 0);
                 return res.json({
                     has_access: true,
                     expires_at: expIso,
@@ -1962,7 +1967,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         }
 
         // 5. Fail-safe pending order check & live gateway verify
-        const approvedAccess = await checkAndApprovePendingOrder(visitor_id, game.id, game);
+        const approvedAccess = await checkAndApprovePendingOrder(visitor_id, game.id, game, visitorPhoneClean);
         if (approvedAccess) {
             return res.json(approvedAccess);
         }
