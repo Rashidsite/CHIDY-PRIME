@@ -598,9 +598,12 @@ app.get('/api/games', async (req, res) => {
 
     // Serve from cache if still fresh
     const now = Date.now();
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     if (gamesCache.data && (now - gamesCache.timestamp) < CACHE_TTL) {
         res.set('X-Cache', 'HIT');
-        res.set('Cache-Control', 'public, max-age=300'); // 5 min browser cache
         return res.json(gamesCache.data);
     }
 
@@ -638,7 +641,6 @@ app.get('/api/games', async (req, res) => {
 
     gamesCache = { data: processedData, timestamp: now };
     res.set('X-Cache', 'MISS');
-    res.set('Cache-Control', 'public, max-age=300'); // 5 min browser cache
     res.json(processedData);
 });
 

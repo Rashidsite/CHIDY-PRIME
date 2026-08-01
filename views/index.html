@@ -6085,12 +6085,13 @@
             document.getElementById('orderHistoryOverlay').classList.remove('show');
         }
 
-        async function fetchGames() {
+        async function fetchGames(isSilent = false) {
             try {
-                // PERFORMANCE: Fetch categories + games in PARALLEL (saves ~400ms)
+                // PERFORMANCE: Fetch categories + games in PARALLEL with cache-busting timestamp
+                const t = Date.now();
                 const [catRes, gamesRes] = await Promise.all([
-                    fetch('/api/categories').catch(() => null),
-                    fetch('/api/games')
+                    fetch(`/api/categories?t=${t}`).catch(() => null),
+                    fetch(`/api/games?t=${t}`)
                 ]);
 
                 // Process categories
@@ -6106,31 +6107,31 @@
                 // Process games
                 if (!gamesRes.ok) throw new Error('Games fetch failed');
                 const games = await gamesRes.json();
-                allGames = games;
                 
-                if (!currentCategory) {
-                    renderCategories(games);
-                } else {
-                    filterByCategory(currentCategory);
+                const prevFp = (allGames || []).map(g => `${g.id}_${g.price}_${g.title}_${g.global_discount}_${g.status}`).join('|');
+                const newFp = (games || []).map(g => `${g.id}_${g.price}_${g.title}_${g.global_discount}_${g.status}`).join('|');
+
+                allGames = Array.isArray(games) ? games : [];
+                
+                // Only re-render if data actually changed or not silent
+                if (!isSilent || prevFp !== newFp) {
+                    if (!currentCategory) {
+                        renderCategories(allGames);
+                    } else {
+                        filterByCategory(currentCategory);
+                    }
                 }
             } catch (error) {
-                console.warn('Using mock data for review mode:', error);
-                // --- MOCK DATA FOR REVIEW/PREVIEW MODE ---
-                allGames = [
-                    { id: 101, title: 'EA SPORTS FIFA 25', price: 15000, rating: 4.9, category: 'HOT POST', image_url: 'https://image.api.playstation.com/vulcan/ap/rnd/202407/0414/233e8b09339e3381e4b85c3453305141.png', youtube_url: 'https://www.youtube.com/watch?v=z3pqbS49K_0' },
-                    { id: 102, title: 'GTA VI PRE-ORDER', price: 25000, rating: 5.0, category: 'HOT POST', image_url: 'https://images.tnt.it/images/2023/12/05/gta-6-trailer-1-1701732565611.jpg', youtube_url: 'https://www.youtube.com/watch?v=QdBZY2fkU-0' },
-                    { id: 103, title: 'SPIDER-MAN 2', price: 12000, rating: 4.7, category: 'ADVENTURE', image_url: 'https://image.api.playstation.com/vulcan/ap/rnd/202306/1219/1c7b753443a411538669c84918e763b6.png', youtube_url: 'https://www.youtube.com/watch?v=shM9_n1SAnM' },
-                    { id: 104, title: 'GOD OF WAR RAGNAROK', price: 10000, rating: 4.8, category: 'ADVENTURE', image_url: 'https://image.api.playstation.com/vulcan/ap/rnd/202109/2821/S9v9v9v9v9v9v9v9v9v9v9v9/S9v9v9v9v9v9v9v9v9v9v9v9.png', youtube_url: 'https://www.youtube.com/watch?v=hfJ4Km46A-0' }
-                ];
-                
-                if (!currentCategory) {
-                    renderCategories(allGames);
-                } else {
-                    filterByCategory(currentCategory);
-                }
+                console.warn('Realtime fetch games error:', error);
             }
         }
 
+        // Storefront & Installed PWA App Live Real-Time Polling (every 8s)
+        if (!window.storefrontRealtimeTimer) {
+            window.storefrontRealtimeTimer = setInterval(() => {
+                if (typeof fetchGames === "function") fetchGames(true);
+            }, 8000);
+        }
         // ===== RENDER CATEGORIES =====
         function renderCategories(games) {
             const container = document.getElementById('categoriesContainer');

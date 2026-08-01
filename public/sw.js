@@ -10,40 +10,15 @@ importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 //   Fallback       → Return cached page if offline
 // ============================================================
 
-const CACHE_NAME    = 'chidy-prime-v8';
-const API_CACHE     = 'chidy-api-v8';
+const CACHE_NAME    = 'chidy-prime-v9';
+const API_CACHE     = 'chidy-api-v9';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon.png',
   '/maskable-icon.png'
 ];
 
-// API routes that can be served stale for speed
-const STALE_API = ['/api/games', '/api/categories'];
-
-// ── INSTALL ──────────────────────────────────────────────────
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).catch(() => {})
-  );
-  self.skipWaiting();
-});
-
-// ── ACTIVATE ─────────────────────────────────────────────────
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k !== CACHE_NAME && k !== API_CACHE)
-          .map((k) => caches.delete(k))
-      )
-    )
-  );
-  self.clients.claim();
-});
-
-// ── FETCH ─────────────────────────────────────────────────────
+// API routes: Network-First (fresh live data priority, fallback to cache if offline)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -61,13 +36,7 @@ self.addEventListener('fetch', (event) => {
   // Never intercept sw.js itself
   if (url.pathname === '/sw.js') return;
 
-  // API routes: Stale-While-Revalidate for game/category data
-  if (STALE_API.some(p => url.pathname.startsWith(p))) {
-    event.respondWith(staleWhileRevalidate(request, API_CACHE, 300)); // 5 min freshness
-    return;
-  }
-
-  // Other API routes: Network-First (fresh data priority, cache fallback)
+  // ALL API routes: Network-First (100% live price & game edits priority)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request, API_CACHE));
     return;
