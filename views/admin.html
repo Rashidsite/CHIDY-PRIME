@@ -3525,18 +3525,20 @@
                     align-items: center;
                     gap: 14px;
                     transition: 0.25s;
+                    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
                 }
                 .push-stat-card:hover {
                     transform: translateY(-2px);
-                    border-color: rgba(0,242,255,0.55);
+                    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
                 }
                 .push-stat-icon {
                     width: 44px; height: 44px;
                     border-radius: 12px;
-                    background: linear-gradient(135deg, #00f2ff, #bc13fe);
+                    background: linear-gradient(135deg, #7c3aed, #4f46e5);
                     display: flex; align-items: center; justify-content: center;
                     color: #fff; font-size: 1.1rem;
-                    box-shadow: 0 6px 16px rgba(0,242,255,0.35);
+                    border: 1.5px solid #0f172a;
+                    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
                 }
                 .push-stat-val {
                     font-family: 'Orbitron', sans-serif;
@@ -3638,51 +3640,51 @@
 
             <div class="push-grid">
                 <!-- FORM -->
-                <div class="admin-card" style="margin:0;">
-                    <h3 class="card-title"><i class="fas fa-bolt" style="color:#ffab00;"></i> Tuma Push Notification</h3>
-                    <p style="color:#6c7293; font-size:0.85rem; margin:0 0 1.2rem;">Push itafika kwenye simu na browser za wateja walio-subscribe.</p>
+                <div class="admin-card" style="margin:0; border: 2.5px solid #0f172a; border-radius: 16px; background: #ffffff; padding: 1.8rem; box-shadow: 0 6px 18px rgba(15,23,42,0.05);">
+                    <h3 class="card-title" style="color:#0f172a; font-family:'Orbitron'; font-weight:800; font-size:1.05rem;"><i class="fas fa-paper-plane" style="color:#7c3aed;"></i> Tuma Push Notification</h3>
+                    <p style="color:#64748b; font-size:0.85rem; margin:0 0 1.2rem; font-weight:500;">Push itafika kwenye simu na browser za wateja walio-subscribe.</p>
 
-                    <form id="pushForm" style="display:flex; flex-direction:column; gap:14px;" onsubmit="return sendPushNotification(event)">
+                    <form id="pushForm" style="display:flex; flex-direction:column; gap:16px;" onsubmit="return sendPushNotification(event)">
                         <div>
-                            <label style="color:#000; font-size:0.8rem; margin-bottom:5px; display:flex; justify-content:space-between;">
-                                <span>Kichwa (Title)<span style="color:#dc2626;">*</span></span>
-                                <span id="pushTitleCounter" style="color:#6c7293; font-size:0.7rem;">0/60</span>
+                            <label style="color:#0f172a; font-size:0.82rem; font-weight:700; margin-bottom:6px; display:flex; justify-content:space-between;">
+                                <span>Kichwa (Title) <span style="color:#ef4444; font-weight:800;">*</span></span>
+                                <span id="pushTitleCounter" style="color:#64748b; font-size:0.75rem; font-weight:600;">0/60</span>
                             </label>
                             <input type="text" id="pushTitle" maxlength="60" required placeholder="Mfano: Game Mpya Imefika! 🎮"
-                                style="width:100%; padding:12px; background:rgba(0,0,0,0.05); border:1px solid rgba(0,0,0,0.1); border-radius:8px; color:#000; outline:none; transition:0.3s;">
+                                style="width:100%; padding:13px; background:#ffffff; border:2px solid #1e293b; border-radius:10px; color:#0f172a; font-weight:600; outline:none; transition:0.2s;">
                         </div>
                         <div>
-                            <label style="color:#000; font-size:0.8rem; margin-bottom:5px; display:flex; justify-content:space-between;">
-                                <span>Ujumbe (Message)<span style="color:#dc2626;">*</span></span>
-                                <span id="pushMsgCounter" style="color:#6c7293; font-size:0.7rem;">0/180</span>
+                            <label style="color:#0f172a; font-size:0.82rem; font-weight:700; margin-bottom:6px; display:flex; justify-content:space-between;">
+                                <span>Ujumbe (Message) <span style="color:#ef4444; font-weight:800;">*</span></span>
+                                <span id="pushMsgCounter" style="color:#64748b; font-size:0.75rem; font-weight:600;">0/180</span>
                             </label>
                             <textarea id="pushMessage" rows="3" maxlength="180" required placeholder="Andika ujumbe wa push hapa..."
-                                style="width:100%; padding:12px; background:rgba(0,0,0,0.05); border:1px solid rgba(0,0,0,0.1); border-radius:8px; color:#000; outline:none; resize:vertical; transition:0.3s;"></textarea>
+                                style="width:100%; padding:13px; background:#ffffff; border:2px solid #1e293b; border-radius:10px; color:#0f172a; font-weight:600; outline:none; resize:vertical; transition:0.2s;"></textarea>
                         </div>
-                        <div class="form-row" style="gap:12px;">
+                        <div class="form-row" style="gap:14px;">
                             <div class="form-group">
-                                <label>URL ya Kuelekezea (Optional)</label>
+                                <label style="color:#0f172a; font-size:0.82rem; font-weight:700; margin-bottom:6px; display:block;">URL ya Kuelekezea <span style="color:#64748b; font-size:0.75rem; font-weight:500;">(Optional)</span></label>
                                 <input type="url" id="pushUrl" placeholder="https://chidyprime.com/?game=123"
-                                    style="width:100%; padding:12px; background:rgba(0,0,0,0.05); border:1px solid rgba(0,0,0,0.1); border-radius:8px; color:#000; outline:none;">
+                                    style="width:100%; padding:13px; background:#ffffff; border:2px solid #1e293b; border-radius:10px; color:#0f172a; font-weight:600; outline:none;">
                             </div>
                             <div class="form-group">
-                                <label>Icon URL (Optional)</label>
+                                <label style="color:#0f172a; font-size:0.82rem; font-weight:700; margin-bottom:6px; display:block;">Icon URL <span style="color:#64748b; font-size:0.75rem; font-weight:500;">(Optional)</span></label>
                                 <input type="url" id="pushIcon" placeholder="https://…/icon.png"
-                                    style="width:100%; padding:12px; background:rgba(0,0,0,0.05); border:1px solid rgba(0,0,0,0.1); border-radius:8px; color:#000; outline:none;">
+                                    style="width:100%; padding:13px; background:#ffffff; border:2px solid #1e293b; border-radius:10px; color:#0f172a; font-weight:600; outline:none;">
                             </div>
                         </div>
                         <div>
-                            <label style="color:#000; font-size:0.8rem; margin-bottom:5px; display:block;">Segment</label>
-                            <select id="pushSegment" style="width:100%; padding:12px; background:rgba(0,0,0,0.05); border:1px solid rgba(0,0,0,0.1); border-radius:8px; color:#000; outline:none;">
+                            <label style="color:#0f172a; font-size:0.82rem; font-weight:700; margin-bottom:6px; display:block;">Segment</label>
+                            <select id="pushSegment" style="width:100%; padding:13px; background:#ffffff; border:2px solid #1e293b; border-radius:10px; color:#0f172a; font-weight:700; outline:none;">
                                 <option value="Subscribed Users">Wote walio-subscribe</option>
                                 <option value="Active Users">Wanaotumia site sasa</option>
                                 <option value="Engaged Users">Wanaotumia sana</option>
                             </select>
                         </div>
-                        <button type="submit" id="pushSubmitBtn" style="padding:14px; border-radius:10px; font-weight:800; background:linear-gradient(45deg, #00f2ff, #bc13fe); border:none; color:#fff; cursor:pointer; transition:0.3s; display:flex; justify-content:center; align-items:center; gap:10px; font-family:'Orbitron'; letter-spacing:1px;">
+                        <button type="submit" id="pushSubmitBtn" style="padding:16px; border-radius:12px; font-weight:800; background:linear-gradient(135deg, #7c3aed, #4f46e5); border:2px solid #0f172a; color:#ffffff; cursor:pointer; transition:0.2s; display:flex; justify-content:center; align-items:center; gap:10px; font-family:'Orbitron'; letter-spacing:1.5px; box-shadow: 0 4px 14px rgba(124,58,237,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                             <i class="fas fa-paper-plane"></i> <span>TUMA PUSH SASA</span>
                         </button>
-                        <p id="pushStatus" style="font-size:0.85rem; margin:0; min-height:1.2rem;"></p>
+                        <p id="pushStatus" style="font-size:0.85rem; margin:0; min-height:1.2rem; font-weight:700;"></p>
                     </form>
                 </div>
 
@@ -3728,12 +3730,12 @@
                  ═══════════════════════════════════════════════════════ -->
             <style>
                 .sched-card {
-                    background: #fff;
-                    border: 1px solid #e2e8f0;
+                    background: #ffffff;
+                    border: 2.5px solid #0f172a;
                     border-radius: 16px;
-                    padding: 22px;
+                    padding: 24px;
                     margin-top: 28px;
-                    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
                     position: relative;
                     overflow: hidden;
                 }
@@ -3745,12 +3747,14 @@
                     align-items: center;
                     gap: 10px;
                     font-size: 1.1rem;
+                    font-weight: 800;
                 }
                 .sched-subtitle {
                     color: #64748b;
                     font-size: 0.8rem;
                     margin: 0 0 22px;
                     line-height: 1.5;
+                    font-weight: 500;
                 }
                 .sched-grid {
                     display: grid;
@@ -3763,26 +3767,27 @@
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    color: #334155;
-                    font-size: 0.78rem;
-                    font-weight: 600;
+                    color: #0f172a;
+                    font-size: 0.82rem;
+                    font-weight: 700;
                     margin-bottom: 6px;
                     letter-spacing: 0.3px;
                 }
                 .sched-field-label i {
-                    color: #bc13fe;
+                    color: #7c3aed;
                     margin-right: 6px;
                 }
                 .sched-input, .sched-select, .sched-textarea {
                     width: 100%;
-                    padding: 11px 13px;
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 9px;
+                    padding: 12px 14px;
+                    background: #ffffff;
+                    border: 2px solid #1e293b;
+                    border-radius: 10px;
                     color: #0f172a;
                     outline: none;
                     font-family: inherit;
-                    font-size: 0.85rem;
+                    font-size: 0.9rem;
+                    font-weight: 600;
                     transition: 0.2s;
                 }
                 .sched-input:focus, .sched-select:focus, .sched-textarea:focus {
