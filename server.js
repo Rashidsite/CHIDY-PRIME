@@ -2768,7 +2768,7 @@ app.get('/api/orders/history/:visitorId', async (req, res) => {
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
-    // Auto-cleanup ALL orders older than 7 days
+    // 1. Auto-cleanup ALL orders older than 7 days
     try {
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         await supabase.from('payment_orders')
@@ -2778,6 +2778,68 @@ app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
         console.error("Cleanup error:", e);
     }
     
+    // 2. Auto-sync pending orders with PressoPay/HarakaPay/ZenoPay live
+    try {
+        const { data: pendingList } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (pendingList && pendingList.length > 0) {
+            for (const order of pendingList) {
+                const extOrderId = order.promo_used;
+                if (!extOrderId) continue;
+
+                let isPaidLive = false;
+                if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+                    const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+                    try {
+                        const check = await pressopay.checkPaymentStatus(ref);
+                        if ((check.status || '').toUpperCase() === 'COMPLETED') isPaidLive = true;
+                    } catch (_) {}
+                } else if (extOrderId.startsWith('HP')) {
+                    try {
+                        const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                            method: 'GET',
+                            headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+                        });
+                        const hData = await hRes.json().catch(() => ({}));
+                        const hStatus = (hData.payment && hData.payment.status || '').toLowerCase();
+                        if (hStatus === 'completed' || hStatus === 'success') isPaidLive = true;
+                    } catch (_) {}
+                } else if (extOrderId.startsWith('ZP')) {
+                    try {
+                        const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': extOrderId })
+                        });
+                        const zData = await zRes.json().catch(() => ({}));
+                        const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
+                        if (zStatus === 'success' || zStatus === 'completed') isPaidLive = true;
+                    } catch (_) {}
+                }
+
+                if (isPaidLive) {
+                    const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
+                    if (game) {
+                        await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, extOrderId, false);
+                    } else {
+                        const { data: video } = await supabase.from('videos').select('*').eq('id', order.post_id).single();
+                        if (video) {
+                            await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, extOrderId, true);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (syncErr) {
+        console.error("Auto-sync error in /api/admin/orders:", syncErr);
+    }
+
+    // 3. Return all orders
     const { data, error } = await supabase
         .from('payment_orders')
         .select(`

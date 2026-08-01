@@ -4635,40 +4635,49 @@
     </section>
 
     <section id="ordersView" class="content view-section" style="display: none;">
-        <!-- Top Categories Stats as per sketch -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 2rem;">
-            <div class="stat-card" style="background: rgba(0, 242, 255, 0.05); border-left: 4px solid var(--primary-color);">
+        <!-- Top Categories Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 2rem;">
+            <div class="pay-stat-card" style="border-left: 6px solid #7c3aed;">
                 <div>
-                    <div class="stat-label">Action Games</div>
-                    <div class="stat-val" style="font-size: 1.1rem;" id="countAction">0 Orders</div>
+                    <div style="font-size: 0.75rem; font-weight: 800; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">ACTION GAMES</div>
+                    <div style="font-size: 1.3rem; font-family: 'Orbitron'; font-weight: 800; color: #7c3aed;" id="countAction">0 Orders</div>
                 </div>
-                <i class="fas fa-fire stat-icon" style="color: #ff4444;"></i>
+                <i class="fas fa-fire" style="font-size: 1.8rem; color: #7c3aed;"></i>
             </div>
-            <div class="stat-card" style="background: rgba(188, 19, 254, 0.05); border-left: 4px solid var(--secondary-color);">
+            <div class="pay-stat-card" style="border-left: 6px solid #d97706;">
                 <div>
-                    <div class="stat-label">Sports Games</div>
-                    <div class="stat-val" style="font-size: 1.1rem;" id="countSports">0 Orders</div>
+                    <div style="font-size: 0.75rem; font-weight: 800; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">SPORTS GAMES</div>
+                    <div style="font-size: 1.3rem; font-family: 'Orbitron'; font-weight: 800; color: #d97706;" id="countSports">0 Orders</div>
                 </div>
-                <i class="fas fa-trophy stat-icon" style="color: #ffb400;"></i>
+                <i class="fas fa-trophy" style="font-size: 1.8rem; color: #d97706;"></i>
             </div>
-            <div class="stat-card" style="background: rgba(0, 210, 91, 0.05); border-left: 4px solid #00d25b;">
+            <div class="pay-stat-card" style="border-left: 6px solid #00d25b;">
                 <div>
-                    <div class="stat-label">Premium Apps</div>
-                    <div class="stat-val" style="font-size: 1.1rem;" id="countApps">0 Orders</div>
+                    <div style="font-size: 0.75rem; font-weight: 800; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">PREMIUM APPS</div>
+                    <div style="font-size: 1.3rem; font-family: 'Orbitron'; font-weight: 800; color: #00d25b;" id="countApps">0 Orders</div>
                 </div>
-                <i class="fas fa-gem stat-icon" style="color: #00d25b;"></i>
+                <i class="fas fa-gem" style="font-size: 1.8rem; color: #00d25b;"></i>
             </div>
         </div>
 
-        <div class="admin-card" style="background: transparent; border: none; padding: 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 15px;">
-                <h3 class="card-title" style="margin: 0; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-shopping-cart" style="color: var(--primary-color);"></i> Recent Orders
-                    <span style="font-family: sans-serif; font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; color: #6c7293;" id="orderCountBadge">0 Total</span>
-                </h3>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-filter" onclick="fetchOrders()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-                        <i class="fas fa-sync-alt"></i> Refresh
+        <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-shopping-cart" style="color: #4f46e5;"></i> Recent Orders
+                    </h3>
+                    <span style="background: #0f172a; color: #ffffff; font-size: 0.75rem; font-weight: 800; padding: 3px 12px; border-radius: 20px;" id="orderCountBadge">0 Total</span>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="orderSearchInput" placeholder="Tafuta oda (Jina, Simu, Game)..." style="background: #ffffff; border: 2.5px solid #0f172a; padding: 9px 16px; border-radius: 10px; color: #0f172a; font-weight: 700; width: 250px;" oninput="renderOrdersList()">
+                    <select id="orderStatusFilterSelect" style="background: #ffffff; border: 2.5px solid #0f172a; padding: 9px 16px; border-radius: 10px; color: #0f172a; font-weight: 800;" onchange="renderOrdersList()">
+                        <option value="all">Status Zote</option>
+                        <option value="pending">Pending (Zinazosubiri)</option>
+                        <option value="approved">Approved (Zilizokamilika)</option>
+                        <option value="rejected">Rejected (Zilizofeli)</option>
+                    </select>
+                    <button class="btn-filter" onclick="fetchOrders()" style="background: #0f172a; color: #ffffff; border: 2.5px solid #0f172a; padding: 9px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-sync-alt"></i> REFRESH
                     </button>
                 </div>
             </div>
@@ -6706,44 +6715,28 @@
                 }
 
                 // Notification sound for new orders (Check by UUID or timestamp)
-                if (allOrdersData.length > 0) {
-                    const latestId = allOrdersData[0].id;
-                    if (lastSeenOrderId !== null && latestId !== lastSeenOrderId) {
-                        notificationSound.play().catch(e => console.log('Audio blocked'));
-                    }
-                    lastSeenOrderId = latestId;
-                } else {
-                    lastSeenOrderId = 0;
-                }
-                
-                // Calculate Category specific counts for the top boxes (based on keywords or categories)
                 if (Array.isArray(allOrdersData)) {
-                    const actionCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('action')).length;
-                    const sportsCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('sports')).length;
-                    const appCount = allOrdersData.filter(o => o.posts && o.posts.title.toLowerCase().includes('app')).length;
+                    const actionCount = allOrdersData.filter(o => o.posts && o.posts.title && o.posts.title.toLowerCase().includes('action')).length;
+                    const sportsCount = allOrdersData.filter(o => o.posts && o.posts.title && o.posts.title.toLowerCase().includes('sports')).length;
+                    const appCount = allOrdersData.filter(o => o.posts && o.posts.title && o.posts.title.toLowerCase().includes('app')).length;
                     
-                    if (document.getElementById('actionOrders')) document.getElementById('actionOrders').innerText = `${actionCount} Orders`;
-                    if (document.getElementById('sportsOrders')) document.getElementById('sportsOrders').innerText = `${sportsCount} Orders`;
-                    if (document.getElementById('appOrders')) document.getElementById('appOrders').innerText = `${appCount} Orders`;
+                    if (document.getElementById('countAction')) document.getElementById('countAction').innerText = `${actionCount} Orders`;
+                    if (document.getElementById('countSports')) document.getElementById('countSports').innerText = `${sportsCount} Orders`;
+                    if (document.getElementById('countApps')) document.getElementById('countApps').innerText = `${appCount} Orders`;
                 }
 
                 // Update Revenue statistic
                 const approvedTotal = Array.isArray(allOrdersData) 
                     ? allOrdersData
-                        .filter(o => o.status === 'approved')
+                        .filter(o => isApprovedStatus(o.status))
                         .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
                     : 0;
                 const pendingTotal = Array.isArray(allOrdersData) 
                     ? allOrdersData
-                        .filter(o => o.status === 'pending')
+                        .filter(o => String(o.status || '').toLowerCase() === 'pending')
                         .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
                     : 0;
                 const failedCount = Array.isArray(allOrdersData) 
-                    ? allOrdersData.filter(o => o.status === 'failed' || o.status === 'rejected').length
-                    : 0;
-
-                const approvedOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => o.status === 'approved' || o.status === 'manual_approved') : [];
-                document.getElementById('totalRevenue').innerText = `TSh ${approvedTotal.toLocaleString()}`;
                 
                 // Fetch and update Lifetime Revenue
                 try {
@@ -6880,20 +6873,33 @@
 
         function renderOrdersList() {
             const list = document.getElementById('ordersList');
+            if (!list) return;
             const orders = Array.isArray(allOrdersData) ? allOrdersData : [];
-            const query = document.getElementById('adminSearchInput') ? document.getElementById('adminSearchInput').value.toLowerCase() : '';
             
-            const filteredOrders = query 
-                ? orders.filter(o => {
-                    const gameTitle = o.posts && o.posts.title ? o.posts.title.toLowerCase() : '';
-                    const guestName = o.visitors && o.visitors.name ? o.visitors.name.toLowerCase() : '';
-                    const phone = o.phone_number || '';
-                    return gameTitle.includes(query) || guestName.includes(query) || phone.includes(query);
-                })
-                : orders;
+            const searchInput = document.getElementById('orderSearchInput') || document.getElementById('adminSearchInput');
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            
+            const statusFilterSelect = document.getElementById('orderStatusFilterSelect');
+            const statusFilter = statusFilterSelect ? statusFilterSelect.value : 'all';
+
+            const filteredOrders = orders.filter(o => {
+                const gameTitle = (o.posts && o.posts.title ? o.posts.title : '').toLowerCase();
+                const guestName = (o.visitors && o.visitors.name ? o.visitors.name : '').toLowerCase();
+                const phone = (o.phone_number || (o.visitors && o.visitors.phone) || '').toLowerCase();
+                const orderId = (o.promo_used || `ID:${o.id}`).toLowerCase();
+
+                const matchesQuery = !query || gameTitle.includes(query) || guestName.includes(query) || phone.includes(query) || orderId.includes(query);
+                
+                let matchesStatus = true;
+                if (statusFilter === 'pending') matchesStatus = (String(o.status || '').toLowerCase() === 'pending');
+                else if (statusFilter === 'approved') matchesStatus = isApprovedStatus(o.status);
+                else if (statusFilter === 'rejected') matchesStatus = (['rejected', 'failed', 'cancelled'].includes(String(o.status || '').toLowerCase()));
+
+                return matchesQuery && matchesStatus;
+            });
                 
             if (filteredOrders.length === 0) {
-                list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;">Hauna oda yoyote kwa sasa.</p>';
+                list.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #64748b; font-weight: 700; padding: 3rem; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px;"><i class="fas fa-inbox" style="font-size:2rem; margin-bottom:10px; display:block; color:#94a3b8;"></i> Hauna oda yoyote kwa sasa kulingana na utafutaji wako.</div>';
                 return;
             }
 
@@ -6902,61 +6908,77 @@
             if (orderBadge) orderBadge.innerText = `${filteredOrders.length} Total`;
 
             list.innerHTML = filteredOrders.map(order => {
-                    const statusClass = (order.status === 'approved' || order.status === 'manual_approved') ? 'status-approved' : `status-${order.status}`;
+                    const isApproved = isApprovedStatus(order.status);
+                    const statusStr = isApproved ? 'completed' : String(order.status || 'pending').toLowerCase();
                     const date = new Date(order.created_at).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-                    const guestName = order.visitors ? order.visitors.name : 'Unknown';
-                    const guestPhone = order.visitors ? order.visitors.phone : order.phone_number;
-                    const gameTitle = order.posts ? order.posts.title : 'Deleted Game';
+                    const guestName = order.visitors?.name || 'Unknown User';
+                    const guestPhone = order.visitors?.phone || order.phone_number || 'N/A';
+                    const gameTitle = order.posts?.title || 'Game / Video Item';
+                    const orderRef = order.promo_used || `HP${order.id}`;
                     
+                    let borderLeftColor = '#f59e0b';
+                    if (isApproved) borderLeftColor = '#10b981';
+                    if (statusStr === 'rejected' || statusStr === 'failed') borderLeftColor = '#ef4444';
+
+                    const gw = detectGateway(orderRef);
+                    const gwMeta = ({
+                        pressopay: { label: 'PressoPay', bg: '#dbeafe', fg: '#1e40af' },
+                        harakapay: { label: 'HarakaPay', bg: '#dcfce7', fg: '#166534' },
+                        zenopay:   { label: 'ZenoPay',   bg: '#fef3c7', fg: '#92400e' }
+                    })[gw] || { label: gw, bg: '#f1f5f9', fg: '#334155' };
+
                     return `
                         <div class="order-card" style="
+                            display: flex;
                             flex-direction: column; 
-                            align-items: stretch; 
-                            margin-bottom: 0; 
-                            background: linear-gradient(135deg, #121218 0%, #0d0d12 100%);
-                            border: 1px solid rgba(255,255,255,0.05);
-                            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                            background: #ffffff;
+                            border: 2.5px solid #0f172a;
+                            border-left: 7px solid ${borderLeftColor};
+                            border-radius: 14px;
+                            padding: 18px;
+                            box-shadow: 0 4px 12px rgba(15,23,42,0.06);
                             position: relative;
                             overflow: hidden;
-                            transition: 0.3s;
+                            transition: transform 0.2s ease;
                         ">
-                            <!-- Glowing edge for status -->
-                            <div style="position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: ${order.status === 'pending' ? '#ffab00' : ((order.status === 'approved' || order.status === 'manual_approved') ? '#00d25b' : '#ff3333')}"></div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px;">
+                                <span style="background:${gwMeta.bg}; color:${gwMeta.fg}; padding:3px 10px; border-radius:8px; font-size:0.72rem; font-weight:800; border: 1.5px solid #0f172a;">${gwMeta.label}</span>
+                                <span style="font-size: 0.75rem; color: #64748b; font-weight: 700;">${date}</span>
+                            </div>
+
+                            <h4 style="margin: 0 0 12px 0; font-size: 1rem; font-weight: 800; color: #0f172a; line-height: 1.3;">${gameTitle}</h4>
                             
-                            <div class="order-info" style="margin-bottom: 15px;">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                    <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${gameTitle}</h4>
-                                    <span style="font-size: 0.65rem; color: #6c7293;">${date}</span>
+                            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-user" style="color:#4f46e5;"></i> Mteja:</span>
+                                    <span style="color: #0f172a; font-size: 0.85rem; font-weight: 800;">${guestName}</span>
                                 </div>
-                                <div class="order-meta" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(0,242,255,0.1); display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-user" style="font-size: 0.7rem; color: var(--primary-color);"></i>
-                                        </div>
-                                        <span style="color: #fff; font-size: 0.85rem;">${guestName}</span>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-phone" style="font-size: 0.7rem; color: #6c7293;"></i>
-                                        </div>
-                                        <span style="font-size: 0.8rem; color: #6c7293;">${guestPhone}</span>
-                                    </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-phone" style="color:#059669;"></i> Simu:</span>
+                                    <span style="color: #0f172a; font-size: 0.85rem; font-weight: 800; font-family: monospace;">${guestPhone}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-receipt" style="color:#d97706;"></i> Ref / Order ID:</span>
+                                    <span style="color: #0f172a; font-size: 0.75rem; font-weight: 800; font-family: monospace;">${orderRef}</span>
                                 </div>
                             </div>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.03);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 12px; border-top: 2px solid #e2e8f0;">
                                 <div>
-                                    <span style="display: block; font-size: 0.6rem; text-transform: uppercase; color: #4b4b56; margin-bottom: 2px;">Amount</span>
-                                    <span style="font-weight: 500; color: #00ff88; font-size: 1.1rem;">TSh ${parseInt(order.amount).toLocaleString()}</span>
-                                    ${order.promo_used ? `<div style="font-size: 0.6rem; color: #ffab00; margin-top: 2px;"><i class="fas fa-tag"></i> ${order.promo_used}</div>` : ''}
+                                    <span style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #64748b;">Kiasi Paid</span>
+                                    <span style="font-weight: 900; color: #059669; font-family: 'Orbitron'; font-size: 1.15rem;">TSh ${parseFloat(order.amount).toLocaleString('en-US')}</span>
                                 </div>
-                                <div class="order-actions">
+                                <div>
                                     ${order.status === 'pending' ? `
-                                        <button class="btn-order-approve" onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 6px 14px; font-size: 0.75rem; background: #00d25b; border: none; border-radius: 4px; font-weight: 500; cursor: pointer;">Approve</button>
-                                        <button class="btn-order-verify" onclick="verifyOrder('${order.id}')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(0, 242, 255, 0.1); border: 1px solid #00f2ff; color: #00f2ff; border-radius: 4px; font-weight: 500; cursor: pointer; margin-left: 5px;" title="Check status directly from HarakaPay">Verify</button>
-                                        <button class="btn-order-reject" onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 6px 14px; font-size: 0.75rem; background: rgba(255,51,51,0.1); border: 1px solid #ff3333; color: #ff3333; border-radius: 4px; font-weight: 500; cursor: pointer; margin-top: 5px;">Reject</button>
+                                        <div style="display:flex; gap:6px;">
+                                            <button onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 7px 14px; font-size: 0.75rem; background: #16a34a; color: #fff; border: 1.5px solid #0f172a; border-radius: 8px; font-weight: 800; cursor: pointer;">APPROVE</button>
+                                            <button onclick="verifyOrder('${order.id}')" style="padding: 7px 12px; font-size: 0.75rem; background: #0284c7; color: #fff; border: 1.5px solid #0f172a; border-radius: 8px; font-weight: 800; cursor: pointer;" title="Verify live from gateway">VERIFY</button>
+                                            <button onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 7px 12px; font-size: 0.75rem; background: #dc2626; color: #fff; border: 1.5px solid #0f172a; border-radius: 8px; font-weight: 800; cursor: pointer;">REJECT</button>
+                                        </div>
                                     ` : `
-                                        <span class="order-status ${statusClass}" style="opacity: 0.8;">${order.status === 'manual_approved' ? 'APPROVED' : order.status}</span>
+                                        <span style="background:${isApproved ? '#dcfce7' : '#fee2e2'}; color:${isApproved ? '#15803d' : '#b91c1c'}; border:1.5px solid ${isApproved ? '#86efac' : '#fca5a5'}; font-size:0.75rem; padding:5px 12px; border-radius:8px; font-weight:800; text-transform:uppercase; display:inline-flex; align-items:center; gap:5px;">
+                                            <i class="fas ${isApproved ? 'fa-check-circle' : 'fa-times-circle'}"></i> ${order.status === 'manual_approved' ? 'APPROVED' : order.status.toUpperCase()}
+                                        </span>
                                     `}
                                 </div>
                             </div>
