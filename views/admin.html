@@ -5297,18 +5297,21 @@
         // REFRESH ALL DASHBOARD DATA
         // ============================================================
         async function refreshAllData() {
-            const token = localStorage.getItem('adminToken');
-            const authHeaders = {
+            const token = localStorage.getItem('adminToken') || '';
+            const authHeaders = token ? {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            };
+            } : { 'Content-Type': 'application/json' };
 
+            // 1. Load Games
             try {
-                // Load games count
-                const gamesRes = await fetch('/api/admin/games', { headers: authHeaders });
+                let gamesRes = await fetch('/api/admin/games', { headers: authHeaders });
+                if (!gamesRes.ok) {
+                    gamesRes = await fetch('/api/games');
+                }
                 if (gamesRes.ok) {
                     const games = await gamesRes.json();
-                    const gamesArr = Array.isArray(games) ? games : [];
+                    const gamesArr = Array.isArray(games) ? games : (games.data || []);
                     allGamesData = gamesArr;
                     document.querySelectorAll('.totalGamesCount').forEach(el => {
                         el.innerText = gamesArr.length.toLocaleString();
@@ -5318,18 +5321,21 @@
                 }
             } catch(e) { console.error('Games load error:', e); }
 
-            // Load users stats
+            // 2. Load Users stats
             fetchUserStats();
 
-            // Load app installs
+            // 3. Load App Installs
             fetchTotalInstalls();
 
-            // Load orders and calculate revenue
+            // 4. Load Orders & Calculate Revenue
             try {
-                const ordersRes = await fetch('/api/admin/orders', { headers: authHeaders });
+                let ordersRes = await fetch('/api/admin/orders', { headers: authHeaders });
+                if (!ordersRes.ok) {
+                    ordersRes = await fetch('/api/orders');
+                }
                 if (ordersRes.ok) {
                     const orders = await ordersRes.json();
-                    allOrdersData = Array.isArray(orders) ? orders : [];
+                    allOrdersData = Array.isArray(orders) ? orders : (orders.data || []);
 
                     const pending = allOrdersData.filter(o => o.status === 'pending');
                     const approved = allOrdersData.filter(o => o.status === 'approved' || o.status === 'manual_approved');
@@ -5383,13 +5389,13 @@
                     if (revenueTrendTextEl) {
                         revenueTrendTextEl.innerHTML = `<i class="fas fa-arrow-${isUp ? 'up' : 'down'}"></i> ${trendText}`;
                     }
-
-                    // Draw revenue & category charts
-                    drawRevenueChart(allOrdersData);
-                    drawCategoryChart(allOrdersData);
-                    initSalesChart();
                 }
             } catch(e) { console.error('Orders load error:', e); }
+
+            // GUARANTEE CHART DRAWING IN ALL CONDITIONS!
+            drawRevenueChart(allOrdersData);
+            drawCategoryChart(allOrdersData);
+            initSalesChart();
 
             // Load categories
             loadCategories();
@@ -5406,8 +5412,6 @@
             await updateAnnouncement();
         }
 
-
-        // Initial view setup if logged in
         if (localStorage.getItem('adminToken')) {
             refreshAllData();
             showView('dashboardView');
