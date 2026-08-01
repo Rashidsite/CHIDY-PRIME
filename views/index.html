@@ -6682,55 +6682,50 @@
                     
                     // Auto-poll to check if access is granted (Polling Mechanism)
                     let pollCount = 0;
-                    // Clear any previous poll first
                     if (window.activePollInterval) clearInterval(window.activePollInterval);
                     window.activePollInterval = setInterval(async () => {
                         pollCount++;
-                        if (pollCount > 30) { // Timeout after ~3 minutes (every 6s)
-                            clearInterval(window.activePollInterval);
-                            window.activePollInterval = null;
-                            
-                            // If timeout, go back to input or show error
-                            alert("Muda wa kuhakiki malipo umeisha. Kama umeshalipia, bonyeza 'Nimeshalipia' au wasiliana nasi.");
-                            switchPaymentStep('input');
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fas fa-bolt"></i> <span>Nunua Sasa</span>';
-                            return;
-                        }
                         try {
-                            const res = await fetch(`/api/check-access/${visitor.id}/${postId}`);
+                            const res = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}`);
                             const access = await res.json();
                             
-                            // Update UI text based on poll count to show it's working
-                            const statusText = document.querySelector('#payment-verifying-step p');
+                            // Update UI text to show live progress
+                            const statusText = document.querySelector("#payment-verifying-step p");
                             if (statusText) {
-                                if (pollCount % 3 === 0) statusText.innerText = "Tunatekeleza malipo yako...";
-                                else if (pollCount % 3 === 1) statusText.innerText = "Tunahakiki na HarakaPay...";
-                                else statusText.innerText = "Karibu tunamaliza...";
+                                if (pollCount % 3 === 0) statusText.innerText = "Tunatekeleza malipo yako (PressoPay / M-Pesa / Tigo)...";
+                                else if (pollCount % 3 === 1) statusText.innerText = "Tunahakiki risiti na mtandao wa simu...";
+                                else statusText.innerText = "Karibu tunafungua game yako...";
                             }
 
                             if (access.has_access) {
                                 clearInterval(window.activePollInterval);
                                 window.activePollInterval = null;
                                 
-                                // Show Success State!
                                 switchPaymentStep('success');
                                 
-                                // Setup Continue Button
                                 document.getElementById('paymentContinueBtn').onclick = () => {
                                     closePayment();
-                                    openDetail(postId); // Open that specific game immediately
+                                    openDetail(postId);
                                 };
 
-                                // Celebration
                                 confetti({
                                     particleCount: 150,
                                     spread: 70,
                                     origin: { y: 0.6 },
                                     colors: ['#00f2ff', '#bc13fe', '#00d25b']
                                 });
+                                return;
                             }
-                        } catch(e){}
+
+                            if (pollCount > 100) { // Extended 5-minute timeout
+                                clearInterval(window.activePollInterval);
+                                window.activePollInterval = null;
+                                
+                                alert("Bado malipo yanahakikiwa na mtandao wa simu. Kama umeshakataa au kuweka PIN, bonyeza 'BADO SIJAPATA ACCESS? HAKIKI HAPA' au subiri admin a-approve.");
+                                const mvBtn = document.getElementById('manual-verify-btn');
+                                if (mvBtn) mvBtn.style.display = 'block';
+                            }
+                        } catch(e) {}
                     }, 3000);
                 } else {
                     alert('Hitilafu: ' + (result.message || 'Jaribu tena au tumia Manual Payment.'));
@@ -6746,7 +6741,6 @@
         }
 
         function closePayment() {
-            // Stop any active payment polling
             if (window.activePollInterval) {
                 clearInterval(window.activePollInterval);
                 window.activePollInterval = null;
@@ -6755,7 +6749,6 @@
                 clearTimeout(window.manualVerifyTimeout);
                 window.manualVerifyTimeout = null;
             }
-            // Reset confirm button to fresh state
             const btn = document.getElementById('autoPayBtn');
             if (btn) {
                 btn.disabled = false;
@@ -6771,7 +6764,6 @@
                 pOverlay.setAttribute('hidden', 'true');
             }
             
-            // Hide the manual verify button for next time
             const mvBtn = document.getElementById('manual-verify-btn');
             if (mvBtn) mvBtn.style.display = 'none';
         }
@@ -6784,9 +6776,29 @@
             const visitor = JSON.parse(visitorStr);
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI ACCESS...';
 
             try {
+                // First check /api/check-access
+                const checkRes = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}`);
+                const checkData = await checkRes.json();
+                
+                if (checkData && checkData.has_access) {
+                    switchPaymentStep('success');
+                    document.getElementById('paymentContinueBtn').onclick = () => {
+                        closePayment();
+                        openDetail(postId);
+                    };
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#00f2ff', '#bc13fe', '#00d25b']
+                    });
+                    return;
+                }
+
+                // Secondary check HarakaPay / PressoPay endpoints
                 const res = await fetch(`/api/payments/verify-haraka/${visitor.id}/${postId}`);
                 const data = await res.json();
                 
@@ -6803,7 +6815,7 @@
                         colors: ['#00f2ff', '#bc13fe', '#00d25b']
                     });
                 } else {
-                    alert(data.message || 'Malipo bado hayajaonekana. Tafadhali subiri kidogo au piga PIN kama bado.');
+                    alert(data.message || 'Malipo bado yanathibitishwa na mtandao. Kama umeweka PIN au admin ame-approve oda yako, bonyeza tena sekunde chache zikipita.');
                     btn.disabled = false;
                     btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
                 }
@@ -6813,7 +6825,6 @@
                 btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
             }
         }
-
         function buildDirectLinks(game, links) {
             return `
                 <div class="detail-links">
