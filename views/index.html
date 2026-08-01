@@ -6352,179 +6352,157 @@
         }
 
         async function updateDetailAccess(id, visitor, game) {
-            const container = document.getElementById('detailAccessContainer');
+            const container = document.getElementById("detailAccessContainer");
             if (!container) return;
+
+            if (window.detailAccessTimer) {
+                clearInterval(window.detailAccessTimer);
+                window.detailAccessTimer = null;
+            }
 
             const hasDuration = game.duration_days && game.duration_days > 0;
             const hasPricedContent = game.price && parseInt(game.price) > 0;
             const isFree = !hasPricedContent;
 
-            let accessHtml = '';
-
-            // Fetch access with a short timeout + one retry so occasional
-            // Vercel cold starts / flaky Wi-Fi don't wall the user off with
-            // a scary "Network error" screen. On real failure we fall back
-            // to a safe "assume no access" state and still show the CTA.
             async function fetchAccessOnce(timeoutMs) {
                 const ac = new AbortController();
                 const timer = setTimeout(() => ac.abort(), timeoutMs);
                 try {
-                    const r = await fetch(`/api/check-access/${visitor.id}/${game.id}`, { signal: ac.signal });
+                    const vId = visitor && visitor.id ? visitor.id : 0;
+                    const r = await fetch(`/api/check-access/${vId}/${game.id}?t=${Date.now()}`, { signal: ac.signal });
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     return await r.json();
                 } finally { clearTimeout(timer); }
             }
 
-            try {
-                if (visitor && visitor.id) {
-                    let accessData;
-                    try {
-                        accessData = await fetchAccessOnce(6000);
-                    } catch (firstErr) {
-                        console.warn('[access-check] first attempt failed, retrying…', firstErr);
-                        await new Promise(r => setTimeout(r, 800));
-                        accessData = await fetchAccessOnce(8000);
-                    }
+            const renderAccess = async () => {
+                let accessHtml = "";
+                try {
+                    if (visitor && visitor.id) {
+                        let accessData;
+                        try {
+                            accessData = await fetchAccessOnce(5000);
+                        } catch (firstErr) {
+                            console.warn('[access-check] retrying...', firstErr);
+                            accessData = await fetchAccessOnce(7000);
+                        }
 
-                    if (accessData.has_access) {
-                        const expiryDate = new Date(accessData.expires_at);
-                        const isPermanent = expiryDate.getFullYear() >= 2099;
-                        const formattedExpiry = isPermanent ? 'MAISHA YOTE (KUDUMU)' : expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
-                        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-                        const activeLinks = accessData.links || [];
+                        if (accessData.has_access) {
+                            if (window.detailAccessTimer) {
+                                clearInterval(window.detailAccessTimer);
+                                window.detailAccessTimer = null;
+                            }
 
-                        accessHtml = `
-                            <div style="background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05)); border: 1px solid rgba(0,210,91,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                                    <i class="fas fa-check-circle" style="color:#00d25b;font-size:1.1rem;"></i>
-                                    <span style="color:#00d25b;font-weight:700;font-size:0.9rem;">ACCESS ACTIVE</span>
-                                </div>
-                                <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">
-                                    <i class="fas fa-calendar-alt" style="color:#ffb400;"></i> 
-                                    Muda wako unaisha: <strong style="color:#fff;">${formattedExpiry}</strong> 
-                                    ${(hasDuration && !isPermanent) ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
-                                </p>
-                            </div>
-                            <div class="detail-links">
-                                ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name}</a>`).join('')}
-                            </div>
-                        `;
-                        triggerCelebration();
-                    } else if (accessData.pending_order) {
-                        accessHtml = `
-                            <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1px solid rgba(255,171,0,0.3); border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
-                                <div style="width:45px; height:45px; border-radius:50%; background:rgba(255,171,0,0.2); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; color:#ffab00; font-size:1.2rem;">
-                                    <i class="fas fa-clock fa-spin"></i>
-                                </div>
-                                <h4 style="color:#ffab00; margin:0 0 5px; font-family:'Orbitron'; font-size:0.85rem;">MALIPO YANATHIBITISHWA KIOTOMATIKI</h4>
-                                <p style="color:#a0a0b0; font-size:0.8rem; margin:0; line-height:1.4;">Mfumo unathibitisha malipo yako ya HarakaPay. Ukurasa huu utajifungua wenyewe mara tu utakapoingiza PIN kwenye simu yako.</p>
-                                <button class="dl-btn" disabled style="width:100%;margin-top:15px;opacity:0.6;background:#333;color:#777;cursor:not-allowed;">INATHIBITISHA KIOTOMATIKI...</button>
-                            </div>
-                            ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                        `;
-                        setTimeout(() => updateDetailAccess(id, visitor, game), 10000);
-                    } else if (accessData.expired) {
-                        accessHtml = `
-                            <div style="background: linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,51,51,0.05)); border: 1px solid rgba(255,51,51,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                                    <i class="fas fa-exclamation-triangle" style="color:#ff3333;font-size:1.1rem;"></i>
-                                    <span style="color:#ff3333;font-weight:700;font-size:0.9rem;">MUDA WAKO UMEISHA</span>
-                                </div>
-                                <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
-                            </div>
-                            ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,51,51,0.5);animation:pulse-glow-red 2s infinite;">
-                                <i class="fas fa-bolt"></i> LIPA SASA (Kama Muda Umeisha)
-                            </button>
-                        `;
-                    } else {
-                        // NO ACCESS
-                        if (hasPricedContent) {
+                            const expiryDate = new Date(accessData.expires_at);
+                            const isPermanent = expiryDate.getFullYear() >= 2099;
+                            const formattedExpiry = isPermanent ? 'MAISHA YOTE (KUDUMU)' : expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
+                            const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+                            const activeLinks = accessData.links || [];
+
                             accessHtml = `
-                                <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                    <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
+                                <div style="background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05)); border: 1.5px solid #00d25b; border-radius: 12px; padding: 14px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(0,210,91,0.2);">
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                        <i class="fas fa-check-circle" style="color:#00d25b;font-size:1.2rem;"></i>
+                                        <span style="color:#00d25b;font-weight:900;font-size:0.95rem;font-family:'Orbitron';">ACCESS ACTIVE — UNARUHUSIWA KUDOWNLOAD</span>
+                                    </div>
+                                    <p style="color:#a0a0b0;font-size:0.82rem;margin:0;">
+                                        <i class="fas fa-calendar-alt" style="color:#ffb400;"></i> 
+                                        Muda wako unaisha: <strong style="color:#fff;">${formattedExpiry}</strong> 
+                                        ${(hasDuration && !isPermanent) ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
+                                    </p>
+                                </div>
+                                <div class="detail-links">
+                                    ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #00d25b, #059669); color: #ffffff; border: 1.5px solid #0f172a; font-family: 'Orbitron'; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || "DOWNLOAD GAME"}</a>`).join('')}
+                                </div>
+                            `;
+                            if (container.innerHTML !== accessHtml) {
+                                container.innerHTML = accessHtml;
+                                container.classList.remove('access-loading-shimmer');
+                                if (typeof triggerCelebration === "function") triggerCelebration();
+                            }
+                            return;
+                        } else if (accessData.pending_order) {
+                            accessHtml = `
+                                <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1.5px solid #ffab00; border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
+                                    <i class="fas fa-spinner fa-spin" style="font-size:1.8rem; color:#ffab00; margin-bottom:8px; display:block;"></i>
+                                    <h4 style="color:#ffab00; margin:0 0 4px 0; font-family:'Orbitron';">MALIPO YAKO YANA-SYNC LIVE...</h4>
+                                    <p style="color:#a0a0b0; font-size:0.8rem; margin:0;">Umeshafanya malipo. Mfumo unathibitisha na utafungua game kiotomatiki sasa hivi.</p>
+                                </div>
+                            `;
+                            container.innerHTML = accessHtml;
+                            container.classList.remove('access-loading-shimmer');
+                        } else if (accessData.expired) {
+                            accessHtml = `
+                                <div style="background: linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,51,51,0.05)); border: 1px solid rgba(255,51,51,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                        <i class="fas fa-exclamation-triangle" style="color:#ff3333;font-size:1.1rem;"></i>
+                                        <span style="color:#ff3333;font-weight:700;font-size:0.9rem;">MUDA WAKO UMEISHA</span>
+                                    </div>
+                                    <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
                                 </div>
                                 ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
-                                    <i class="fas fa-bolt"></i> LIPA SASA (${(game.global_discount && game.global_discount > 0 && game.original_price > game.price) ? `<s style="opacity:0.7; margin-right:4px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : ''}TSh ${parseInt(game.price).toLocaleString()})
+                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,51,51,0.5);animation:pulse-glow-red 2s infinite;">
+                                    <i class="fas fa-bolt"></i> LIPA SASA (Kama Muda Umeisha)
                                 </button>
                             `;
+                            container.innerHTML = accessHtml;
+                            container.classList.remove('access-loading-shimmer');
                         } else {
-                            // Free game - check for links
-                            const freeLinks = (game.links && Array.isArray(game.links) && game.links.length > 0) ? game.links : (accessData.links || []);
-                            if (freeLinks.length > 0) {
+                            // NO ACCESS
+                            if (hasPricedContent) {
+                                accessHtml = `
+                                    <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                        <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
+                                    </div>
+                                    ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                                    <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
+                                        <i class="fas fa-bolt"></i> LIPA SASA (${(game.global_discount && game.global_discount > 0 && game.original_price > game.price) ? `<s style="opacity:0.7; margin-right:4px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : ''}TSh ${parseInt(game.price).toLocaleString()})
+                                    </button>
+                                `;
+                            } else {
+                                const freeLinks = (game.links && Array.isArray(game.links) && game.links.length > 0) ? game.links : (accessData.links || []);
                                 accessHtml = `
                                     ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                                     <div class="detail-links">
-                                        ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name || 'Download'}</a>`).join('')}
+                                        ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name || "Download"}</a>`).join('')}
                                     </div>
-                                `;
-                            } else {
-                                accessHtml = `
-                                    <div style="background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.15); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                        <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-info-circle" style="color:#00f2ff;"></i> Game hii bado haina link za download. Angalia baadaye.</p>
-                                    </div>
-                                    ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
                                 `;
                             }
+                            container.innerHTML = accessHtml;
+                            container.classList.remove('access-loading-shimmer');
                         }
-                    }
-                } else {
-                    // NOT LOGGED IN
-                    accessHtml = `
-                        <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                            <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-user-plus" style="color:var(--gold);"></i> Tafadhali jisajili kwanza ili kupata access ya kudownload.</p>
-                        </div>
-                        ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                        <button class="dl-btn" onclick="openLogin()" style="width:100%;margin-top:10px;">JISAJILI SASA</button>
-                    `;
-                }
-            } catch (e) {
-                console.error('Access check failed:', e);
-                // Graceful fallback — don't wall the user off. Show the pay
-                // (or download) CTA anyway with a small notice so they can
-                // still transact; when the request eventually goes through
-                // the button will do its own check.
-                const hasPricedContent = game.price && parseInt(game.price) > 0;
-                const trailerBtn = game.youtube_url
-                    ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : '';
-                if (hasPricedContent) {
-                    accessHtml = `
-                        <div style="background:linear-gradient(135deg,rgba(255,180,0,0.10),rgba(255,180,0,0.04));border:1px solid rgba(255,180,0,0.25);border-radius:12px;padding:12px 14px;margin-bottom:15px;">
-                            <p style="color:#a0a0b0;font-size:0.82rem;margin:0;line-height:1.5;">
-                                <i class="fas fa-triangle-exclamation" style="color:#ffb400;"></i>
-                                Tumeshindwa kupima hali ya malipo kwa sasa. Bado unaweza kulipia — mfumo utafungua kiotomatiki mara access ikithibitika.
-                            </p>
-                        </div>
-                        ${trailerBtn}
-                        <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);">
-                            <i class="fas fa-bolt"></i> LIPA SASA (TSh ${parseInt(game.price).toLocaleString()})
-                        </button>
-                    `;
-                } else {
-                    // Free game — still show trailer + free download links from game object
-                    const freeLinks = (game.links && Array.isArray(game.links)) ? game.links : [];
-                    accessHtml = `
-                        ${trailerBtn}
-                        ${freeLinks.length ? `<div class="detail-links">${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name || 'Download'}</a>`).join('')}</div>` : `
-                            <div style="text-align:center;padding:14px;color:#a0a0b0;font-size:0.82rem;">
-                                <i class="fas fa-wifi" style="color:#ffb400;"></i> Mtandao umekuwa polepole — rudi tena baada ya sekunde chache.
+                    } else {
+                        accessHtml = `
+                            <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-user-plus" style="color:var(--gold);"></i> Tafadhali jisajili kwanza ili kupata access ya kudownload.</p>
                             </div>
-                        `}
-                    `;
+                            ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                            <button class="dl-btn" onclick="openLogin()" style="width:100%;margin-top:10px;">JISAJILI SASA</button>
+                        `;
+                        container.innerHTML = accessHtml;
+                        container.classList.remove('access-loading-shimmer');
+                    }
+                } catch (e) {
+                    console.error("Access check failed:", e);
+                    if (hasPricedContent) {
+                        accessHtml = `
+                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);">
+                                <i class="fas fa-bolt"></i> LIPA SASA (TSh ${parseInt(game.price).toLocaleString()})
+                            </button>
+                        `;
+                        container.innerHTML = accessHtml;
+                        container.classList.remove('access-loading-shimmer');
+                    }
                 }
+            };
+
+            await renderAccess();
+
+            // Live auto-polling every 3 seconds while modal is open
+            if (visitor && visitor.id) {
+                window.detailAccessTimer = setInterval(renderAccess, 3000);
             }
-
-            container.innerHTML = accessHtml;
-            container.classList.remove('access-loading-shimmer');
-
-            // Genesis Engine: Init magnetic effects for new buttons
-            document.querySelectorAll('.dl-btn').forEach(btn => {
-                btn.classList.add('magnetic-btn');
-                initMagnetic(btn);
-            });
         }
-
         // Initiate payment flow (Only ZenoPay AutoPayment)
         async function initiatePayment(postId) {
             const game = allGames.find(g => g.id == postId);

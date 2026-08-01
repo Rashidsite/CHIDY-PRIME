@@ -1855,170 +1855,122 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
     const { visitor_id, post_id } = req.params;
     
     try {
-        // 1. Fetch game details to check price
+        // 1. Fetch game details to check price & links
         const { data: game, error: gameErr } = await supabase
             .from('posts')
-            .select('price, links, duration_days, title')
-            .eq('id', post_id)
+            .select('id, price, links, duration_days, title')
+            .or(`id.eq.${post_id},id.eq.${parseInt(post_id) || 0}`)
             .single();
 
         if (gameErr || !game) return res.status(404).json({ error: 'Game not found' });
 
-        // 2. If game is FREE (price <= 0), anyone with a visitor_id (this endpoint is called after signup) gets access
+        // 2. Free game check
         if (game.price <= 0) {
             return res.json({ 
                 has_access: true, 
-                expires_at: '2099-12-31T23:59:59Z', // Permanent
+                expires_at: '2099-12-31T23:59:59Z',
                 links: game.links || []
             });
         }
 
-        // 3. First, try checkAndApprovePendingOrder as a quick check/fail-safe
-        const approvedAccess = await checkAndApprovePendingOrder(visitor_id, post_id, game);
+        const numericVisitorId = parseInt(visitor_id) || 0;
+
+        // Fetch visitor profile for phone matching
+        let visitorPhoneClean = '';
+        if (numericVisitorId > 0) {
+            const { data: vProfile } = await supabase.from('visitors').select('phone').eq('id', numericVisitorId).single();
+            if (vProfile && vProfile.phone) {
+                visitorPhoneClean = String(vProfile.phone).replace(/[^0-9]/g, '');
+            }
+        }
+
+        // Helper to grant access to user_access
+        const grantAccessHelper = async (vId, pId, dDays) => {
+            let finalExp = new Date('2099-12-31T23:59:59Z');
+            if (dDays > 0) {
+                finalExp = new Date();
+                finalExp.setDate(finalExp.getDate() + dDays);
+            }
+            try {
+                await supabase.from('user_access').upsert({
+                    visitor_id: parseInt(vId),
+                    post_id: pId,
+                    granted_at: new Date().toISOString(),
+                    expires_at: finalExp.toISOString()
+                });
+            } catch (e) {
+                try {
+                    await supabase.from('user_access').delete().eq('visitor_id', parseInt(vId)).eq('post_id', pId);
+                    await supabase.from('user_access').insert({
+                        visitor_id: parseInt(vId),
+                        post_id: pId,
+                        granted_at: new Date().toISOString(),
+                        expires_at: finalExp.toISOString()
+                    });
+                } catch (e2) {}
+            }
+            return finalExp.toISOString();
+        };
+
+        // 3. Direct check in user_access
+        const { data: accessRows } = await supabase
+            .from('user_access')
+            .select('*')
+            .eq('visitor_id', numericVisitorId)
+            .or(`post_id.eq.${post_id},post_id.eq.${game.id}`);
+
+        if (accessRows && accessRows.length > 0) {
+            const activeAcc = accessRows.find(a => new Date(a.expires_at) > new Date());
+            if (activeAcc) {
+                return res.json({
+                    has_access: true,
+                    expires_at: activeAcc.expires_at,
+                    links: game.links || []
+                });
+            }
+        }
+
+        // 4. BULLETPROOF FALLBACK: Check payment_orders by visitor_id OR phone number
+        const { data: orders } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .or(`post_id.eq.${post_id},post_id.eq.${game.id}`)
+            .order('created_at', { ascending: false });
+
+        if (orders && orders.length > 0) {
+            const approvedOrder = orders.find(o => {
+                const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
+                if (!isApproved) return false;
+                
+                if (parseInt(o.visitor_id) === numericVisitorId) return true;
+                
+                const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
+                    return true;
+                }
+                return false;
+            });
+
+            if (approvedOrder) {
+                const expIso = await grantAccessHelper(numericVisitorId, game.id, game.duration_days || 0);
+                return res.json({
+                    has_access: true,
+                    expires_at: expIso,
+                    links: game.links || []
+                });
+            }
+        }
+
+        // 5. Fail-safe pending order check & live gateway verify
+        const approvedAccess = await checkAndApprovePendingOrder(visitor_id, game.id, game);
         if (approvedAccess) {
             return res.json(approvedAccess);
         }
 
-        // 4. Check user_access
-        const { data, error } = await supabase
-            .from('user_access')
-            .select('*')
-            .eq('visitor_id', parseInt(visitor_id))
-            .eq('post_id', post_id)
-            .single();
-        
-        if (error || !data) {
-            // CRITICAL FIX: Check if there's ALREADY an approved order in payment_orders!
-            const { data: approvedOrders } = await supabase
-                .from('payment_orders')
-                .select('*')
-                .eq('visitor_id', parseInt(visitor_id))
-                .eq('post_id', post_id)
-                .in('status', ['approved', 'manual_approved', 'completed', 'success'])
-                .order('created_at', { ascending: false })
-                .limit(1);
+        return res.json({ has_access: false, pending_order: false });
 
-            if (approvedOrders && approvedOrders.length > 0) {
-                // Auto-heal missing user_access record
-                const dDays = game.duration_days || 0;
-                let finalExp = new Date('2099-12-31T23:59:59Z');
-                if (dDays > 0) {
-                    finalExp = new Date();
-                    finalExp.setDate(finalExp.getDate() + dDays);
-                }
-                await supabase.from('user_access').upsert({
-                    visitor_id: parseInt(visitor_id),
-                    post_id: post_id,
-                    granted_at: new Date().toISOString(),
-                    expires_at: finalExp.toISOString()
-                }, { onConflict: 'visitor_id,post_id' });
-
-                return res.json({ 
-                    has_access: true, 
-                    expires_at: finalExp.toISOString(),
-                    links: game.links || []
-                });
-            }
-
-            // Check for pending order before saying "no access"
-            const { data: pendingOrders } = await supabase
-                .from('payment_orders')
-                .select('*')
-                .eq('visitor_id', parseInt(visitor_id))
-                .eq('post_id', post_id)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false });
-
-            let hasRecentPending = false;
-            if (pendingOrders && pendingOrders.length > 0) {
-                const latestPending = pendingOrders[0];
-                const ageMs = new Date() - new Date(latestPending.created_at);
-                if (ageMs < 5 * 60 * 1000) {
-                    hasRecentPending = true;
-                }
-
-                // AUTO-CHECK GATEWAY STATUS LIVE ON THE FLY!
-                const extOrderId = latestPending.promo_used;
-                let isPaidLive = false;
-                if (extOrderId) {
-                    if (extOrderId.startsWith('HP')) {
-                        try {
-                            const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
-                                method: 'GET',
-                                headers: { 'X-API-Key': HARAKAPAY_API_KEY }
-                            });
-                            const hData = await hRes.json().catch(() => ({}));
-                            const hStatus = (hData.payment && hData.payment.status || '').toLowerCase();
-                            if (hStatus === 'completed' || hStatus === 'success') isPaidLive = true;
-                        } catch (e) {}
-                    } else if (extOrderId.startsWith('ZP')) {
-                        try {
-                            const zRes = await fetch('https://zenoapi.com/api/payments/order_status', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: new URLSearchParams({ 'api_key': ZENOPAY_API_KEY, 'order_id': extOrderId })
-                            });
-                            const zData = await zRes.json().catch(() => ({}));
-                            const zStatus = (zData.status || zData.payment_status || '').toLowerCase();
-                            if (zStatus === 'success' || zStatus === 'completed') isPaidLive = true;
-                        } catch (e) {}
-                    } else if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
-                        try {
-                            const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
-                            const pStatus = await pressopay.checkPaymentStatus(ref);
-                            if ((pStatus.status || '').toUpperCase() === 'COMPLETED') isPaidLive = true;
-                        } catch (e) {}
-                    }
-                }
-
-                if (isPaidLive) {
-                    await handleSuccessfulPayment(parseInt(visitor_id), game, latestPending.amount, latestPending.phone_number, extOrderId, false);
-                    const dDays = game.duration_days || 0;
-                    let finalExp = new Date('2099-12-31T23:59:59Z');
-                    if (dDays > 0) {
-                        finalExp = new Date();
-                        finalExp.setDate(finalExp.getDate() + dDays);
-                    }
-                    return res.json({ 
-                        has_access: true, 
-                        expires_at: finalExp.toISOString(),
-                        links: game.links || []
-                    });
-                }
-            }
-
-            return res.json({ 
-                has_access: false,
-                pending_order: hasRecentPending
-            });
-        }
-        
-        const now = new Date();
-        const expiresAt = new Date(data.expires_at);
-        const hasAccess = expiresAt > now;
-        
-        if (hasAccess) {
-            return res.json({ 
-                has_access: true, 
-                expires_at: data.expires_at,
-                links: game.links || []
-            });
-        }
-        
-        // If expired, check if there's any pending order (already handled by step 3, but let's do a fallback check or return expired)
-        const { data: pendingAfterExpiry } = await supabase
-            .from('payment_orders')
-            .select('status')
-            .eq('visitor_id', parseInt(visitor_id))
-            .eq('post_id', post_id)
-            .eq('status', 'pending');
-
-        res.json({ 
-            has_access: false, 
-            expired: true,
-            pending_order: pendingAfterExpiry && pendingAfterExpiry.length > 0
-        });
     } catch (err) {
+        console.error('check-access error:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -2861,7 +2813,6 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
     
     const { id } = req.params;
     const { status } = req.body;
-    console.log(`[DEBUG] Status Update Request: ID=${id}, Status=${status}, Version=1.5_FIXED`);
     
     if (!['approved', 'manual_approved', 'rejected'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
@@ -2880,154 +2831,73 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
         
         // 2. If approved, grant access to the game
         if (status === 'approved' || status === 'manual_approved') {
-            const { post_id, visitor_id } = order;
+            const { post_id, visitor_id, phone_number, gift_phone, is_gift } = order;
             
-            // 2a. Fetch game info first (REQUIRED for expiresAt and title)
-            const { data: game } = await supabase.from('posts').select('title, duration_days').eq('id', post_id).single();
+            const { data: game } = await supabase.from('posts').select('id, title, duration_days').or(`id.eq.${post_id},id.eq.${parseInt(post_id) || 0}`).single();
             const dDays = game ? (game.duration_days || 0) : 0;
             const gTitle = game ? game.title : 'Game';
+            const realPostId = game ? game.id : post_id;
             
-            var finalExpiresAt = new Date();
+            let finalExpiresAt = new Date('2099-12-31T23:59:59Z');
             if (dDays > 0) {
+                finalExpiresAt = new Date();
                 finalExpiresAt.setDate(finalExpiresAt.getDate() + dDays);
-            } else {
-                finalExpiresAt = new Date('2099-12-31T23:59:59Z');
             }
 
-            let targetVisitorId = visitor_id;
-            const isGift = order.is_gift;
-            const giftPhone = order.gift_phone;
+            const targetPhones = [phone_number, gift_phone].filter(Boolean).map(p => String(p).replace(/[^0-9]/g, ''));
+            
+            const visitorIdsToGrant = new Set();
+            if (visitor_id) visitorIdsToGrant.add(parseInt(visitor_id));
 
-            if (isGift && giftPhone) {
-                const { data: giftUser } = await supabase.from('visitors').select('id').eq('phone', giftPhone.trim()).single();
-                if (giftUser) {
-                    targetVisitorId = giftUser.id;
-                } else {
-                    await supabase.from('pending_gifts').insert([{
-                        gift_phone: giftPhone.trim(),
-                        post_id: post_id,
-                        duration_days: dDays
-                    }]);
-                    targetVisitorId = null;
+            if (targetPhones.length > 0) {
+                const { data: matchedVisitors } = await supabase.from('visitors').select('id, phone');
+                if (matchedVisitors && matchedVisitors.length > 0) {
+                    matchedVisitors.forEach(v => {
+                        const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                        if (vp && targetPhones.some(tp => tp.endsWith(vp.slice(-9)) || vp.endsWith(tp.slice(-9)))) {
+                            visitorIdsToGrant.add(v.id);
+                        }
+                    });
                 }
             }
 
-            if (targetVisitorId) {
-                await supabase.from('user_access').upsert({
-                    visitor_id: targetVisitorId,
-                    post_id,
-                    granted_at: new Date().toISOString(),
-                    expires_at: finalExpiresAt.toISOString()
-                }, { onConflict: 'visitor_id,post_id' });
+            // Grant access to all resolved visitor IDs
+            for (const vId of visitorIdsToGrant) {
+                try {
+                    await supabase.from('user_access').upsert({
+                        visitor_id: vId,
+                        post_id: realPostId,
+                        granted_at: new Date().toISOString(),
+                        expires_at: finalExpiresAt.toISOString()
+                    });
+                } catch (e) {
+                    try {
+                        await supabase.from('user_access').delete().eq('visitor_id', vId).eq('post_id', realPostId);
+                        await supabase.from('user_access').insert({
+                            visitor_id: vId,
+                            post_id: realPostId,
+                            granted_at: new Date().toISOString(),
+                            expires_at: finalExpiresAt.toISOString()
+                        });
+                    } catch (e2) {}
+                }
             }
 
-            // 3. Notify requester (with post_id for auto-cleanup)
+            // Send notification
             await supabase.from('notifications').insert({
                 visitor_id: visitor_id,
-                post_id: post_id,
-                title: isGift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
-                message: isGift 
-                    ? `Oda yako ya zawadi ya "${gTitle}" kwa namba ${giftPhone} imekubaliwa.` 
+                post_id: realPostId,
+                title: is_gift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
+                message: is_gift 
+                    ? `Oda yako ya zawadi ya "${gTitle}" kwa namba ${gift_phone} imekubaliwa.` 
                     : `Malipo yako ya game "${gTitle}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
                 type: 'success'
             });
-
-            // 4. Notify recipient (with post_id for auto-cleanup)
-            if (isGift && targetVisitorId) {
-                await supabase.from('notifications').insert({
-                    visitor_id: targetVisitorId,
-                    post_id: post_id,
-                    title: 'Umepokea Zawadi! 👑',
-                    message: `Umepata zawadi ya game "${gTitle}" kutoka kwa ${order.phone_number || 'rafiki'}. Unaweza kuanza kuicheza sasa hivi!`,
-                    type: 'success'
-                });
-            }
         }
         
-        res.json({ success: true, order, debug_version: '1.5_FIXED' });
+        res.json({ success: true, order });
     } catch (err) {
         console.error(`[ERROR] Status Update Error: ${err.message}`);
-        res.status(500).json({ error: `Server Error [v1.5]: ${err.message}` });
-    }
-});
-
-// GET Leaderboard (Top 10 Gamers)
-app.get('/api/leaderboard', async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    try {
-        const { data, error } = await supabase
-            .from('payment_orders')
-            .select('visitor_id, visitors(name)')
-            .in('status', ['approved', 'manual_approved']);
-
-        if (error) throw error;
-
-        const counts = {};
-        data.forEach(item => {
-            const vid = item.visitor_id;
-            if (vid && item.visitors) {
-                if (!counts[vid]) counts[vid] = { name: item.visitors.name, purchases: 0 };
-                counts[vid].purchases++;
-            }
-        });
-
-        const leaderboard = Object.values(counts)
-            .sort((a, b) => b.purchases - a.purchases)
-            .slice(0, 10);
-
-        res.json(leaderboard);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Admin Manual Gift Grant
-app.post('/api/admin/grant-gift', verifyAdmin, async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    const { post_id, phone } = req.body;
-
-    if (!post_id || !phone) return res.status(400).json({ error: 'Post ID and Phone are required' });
-
-    try {
-        // 1. Get Game info for duration
-        const { data: game, error: gErr } = await supabase.from('posts').select('*').eq('id', post_id).single();
-        if (gErr || !game) throw new Error("Game not found");
-
-        const durationDays = game.duration_days || 30;
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + durationDays);
-
-        // 2. Check if user exists
-        const { data: user } = await supabase.from('visitors').select('id').eq('phone', phone.trim()).single();
-        
-        if (user) {
-            // Grant access directly
-            await supabase.from('user_access').upsert({
-                visitor_id: user.id,
-                post_id,
-                granted_at: new Date().toISOString(),
-                expires_at: expiresAt.toISOString()
-            }, { onConflict: 'visitor_id,post_id' });
-
-            // Notify user
-            await supabase.from('notifications').insert({
-                visitor_id: user.id,
-                title: 'Umepokea Zawadi! 👑',
-                message: `Umepewa zawadi ya game "${game.title}" na Admin wa Chidy Prime. Unaweza kuanza kuicheza sasa hivi!`,
-                type: 'success'
-            });
-            
-            res.json({ success: true, message: 'Access granted to existing user' });
-        } else {
-            // Store as pending gift
-            await supabase.from('pending_gifts').insert([{
-                gift_phone: phone.trim(),
-                post_id: post_id,
-                duration_days: durationDays
-            }]);
-            res.json({ success: true, message: 'Game stored as pending gift for new user' });
-        }
-    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
