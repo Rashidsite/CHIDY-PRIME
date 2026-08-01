@@ -1,3 +1,62 @@
+
+// ============================================================
+// DEVICE LOCK SYSTEM — ANTI ACCOUNT SHARING BINDING
+// ============================================================
+const deviceLockFile = path.join(__dirname, 'data', 'device_locks.json');
+
+function loadDeviceLocks() {
+    try {
+        if (fs.existsSync(deviceLockFile)) {
+            return JSON.parse(fs.readFileSync(deviceLockFile, 'utf8'));
+        }
+    } catch(e) {}
+    return {};
+}
+
+function saveDeviceLocks(locks) {
+    try {
+        const dir = path.dirname(deviceLockFile);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(deviceLockFile, JSON.stringify(locks, null, 2));
+    } catch(e) { console.error('Failed to save device locks:', e); }
+}
+
+function checkOrBindDeviceLock(visitorId, deviceFp, userAgent = '') {
+    if (!visitorId || !deviceFp) return true;
+    const locks = loadDeviceLocks();
+    const key = String(visitorId);
+    
+    if (!locks[key] || !locks[key].device_fp) {
+        locks[key] = {
+            device_fp: deviceFp,
+            bound_at: new Date().toISOString(),
+            user_agent: userAgent
+        };
+        saveDeviceLocks(locks);
+        console.log(`[DEVICE LOCK] Bound visitor #${visitorId} to device ${deviceFp}`);
+        return true;
+    }
+
+    if (locks[key].device_fp === deviceFp) {
+        return true;
+    }
+
+    console.warn(`[DEVICE LOCK BLOCKED] Visitor #${visitorId} tried accessing from ${deviceFp} but bound to ${locks[key].device_fp}`);
+    return false;
+}
+
+function resetDeviceLock(visitorId) {
+    const locks = loadDeviceLocks();
+    const key = String(visitorId);
+    if (locks[key]) {
+        delete locks[key];
+        saveDeviceLocks(locks);
+        console.log(`[DEVICE LOCK RESET] Device lock cleared for visitor #${visitorId}`);
+        return true;
+    }
+    return false;
+}
+
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -1851,10 +1910,23 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
 
 // Check if a visitor has active access to a game
 app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
-    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    
     const { visitor_id, post_id } = req.params;
     const phoneQuery = req.query.phone || '';
+    const deviceFp = req.query.device_fp || req.headers['x-device-fingerprint'] || '';
+    const numericVisitorId = parseInt(visitor_id) || 0;
+
+    // Check Device Lock
+    if (numericVisitorId > 0 && deviceFp) {
+        const isDeviceAllowed = checkOrBindDeviceLock(numericVisitorId, deviceFp, req.headers['user-agent'] || '');
+        if (!isDeviceAllowed) {
+            return res.json({
+                has_access: false,
+                device_blocked: true,
+                message: 'Akaunti hii imefungwa kwenye simu nyingine. Huwezi kutumia kwenye simu hii ili kuzuia usambazaji wa akaunti.'
+            });
+        }
+    }
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
     try {
         // 1. Fetch game details to check price & links
@@ -2810,6 +2882,19 @@ app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
+});
+
+
+// Admin - Reset Device Lock for a User
+app.post('/api/admin/users/:id/reset-device', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        resetDeviceLock(id);
+        sendTelegramAlert(`🔓 <b>DEVICE LOCK RESET</b>\n<b>User ID:</b> #${id}\n<b>Reset By Admin:</b> ${new Date().toLocaleString()}`);
+        res.json({ success: true, message: 'Device lock imeresetiwa kikamilifu! Mteja anaweza kufunga simu mpya.' });
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // Admin - Approve or Reject order

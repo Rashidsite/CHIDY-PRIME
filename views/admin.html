@@ -5770,6 +5770,33 @@
             }
         }
 
+        
+        async function resetUserDevice(userId, userName) {
+            const confirmed = await showConfirmModal(
+                'RESET DEVICE LOCK',
+                `Uko uhakika unataka kufuta lock ya simu kwa mteja "${userName}"? Hii itamruhusu kufunga simu yake mpya.`
+            );
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/admin/users/${userId}/reset-device`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('✅ Device Lock imeresetiwa kikamilifu!');
+                    loadUsers();
+                } else {
+                    showToast('⚠️ Imeshindwa: ' + (data.error || 'Unknown error'));
+                }
+            } catch(err) {
+                showToast('⚠️ Hitilafu ya mtandao.');
+            }
+        }
+
         function renderUsersList() {
             const users = Array.isArray(allUsersData) ? allUsersData : [];
             const tbody = document.getElementById("usersTableBody");

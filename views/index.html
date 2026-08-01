@@ -6133,6 +6133,28 @@
             }, 8000);
         }
         // ===== RENDER CATEGORIES =====
+        
+        function getDeviceFingerprint() {
+            let fp = localStorage.getItem('chidy_device_fp');
+            if (!fp) {
+                const screenStr = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+                const ua = navigator.userAgent || '';
+                const tz = (Intl.DateTimeFormat().resolvedOptions && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+                const lang = navigator.language || '';
+                const raw = `${screenStr}|${ua}|${tz}|${lang}|${Date.now()}|${Math.random()}`;
+                
+                let hash = 0;
+                for (let i = 0; i < raw.length; i++) {
+                    const char = raw.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash |= 0;
+                }
+                fp = 'DEV-' + Math.abs(hash).toString(36).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+                localStorage.setItem('chidy_device_fp', fp);
+            }
+            return fp;
+        }
+
         function renderCategories(games) {
             const container = document.getElementById('categoriesContainer');
 
@@ -6370,7 +6392,8 @@
                 try {
                     const vId = visitor && visitor.id ? visitor.id : 0;
                     const phoneQ = visitor && visitor.phone ? '&phone=' + encodeURIComponent(visitor.phone) : '';
-                    const r = await fetch(`/api/check-access/${vId}/${game.id}?t=${Date.now()}${phoneQ}`, { signal: ac.signal });
+                    const deviceFp = getDeviceFingerprint();
+                    const r = await fetch(`/api/check-access/${vId}/${game.id}?t=${Date.now()}${phoneQ}&device_fp=${encodeURIComponent(deviceFp)}`, { signal: ac.signal });
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     return await r.json();
                 } finally { clearTimeout(timer); }
@@ -6386,6 +6409,32 @@
                         } catch (firstErr) {
                             console.warn('[access-check] retrying...', firstErr);
                             accessData = await fetchAccessOnce(7000);
+                        }
+
+                        
+                        if (accessData.device_blocked) {
+                            if (window.detailAccessTimer) {
+                                clearInterval(window.detailAccessTimer);
+                                window.detailAccessTimer = null;
+                            }
+                            accessHtml = `
+                                <div style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); border: 2px solid #ef4444; border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(239,68,68,0.2);">
+                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                        <i class="fas fa-mobile-alt" style="color:#ef4444; font-size:1.6rem;"></i>
+                                        <i class="fas fa-lock" style="color:#ef4444; font-size:1.3rem;"></i>
+                                        <span style="color:#ef4444; font-weight:900; font-size:1rem; font-family:'Orbitron';">SIMU HII HAIJARUHUSIWA (DEVICE LOCK)</span>
+                                    </div>
+                                    <p style="color:#cbd5e1; font-size:0.84rem; margin:0 0 14px 0; line-height:1.6;">
+                                        Akaunti hii imesajiliwa na inatumika kwenye simu nyingine. Ili kuzuia usambazaji wa akaunti na wizi wa maudhui, hutarusiwa kupakua games kwenye simu hii. Kama umebadilisha simu mpya, wasiliana na Admin ku-reset akaunti yako.
+                                    </p>
+                                    <a href="https://wa.me/255677066929?text=Habari%20Admin%20naomba%20ku-reset%20device%20lock%20ya%20akaunti%20yangu" target="_blank" style="background:#16a34a; color:#ffffff; border:1.5px solid #0f172a; padding:10px 18px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:800; font-family:'Orbitron'; font-size:0.8rem; box-shadow:0 4px 12px rgba(22,163,74,0.3);">
+                                        <i class="fab fa-whatsapp"></i> WASILIANA NA ADMIN KU-RESET SIMU
+                                    </a>
+                                </div>
+                            `;
+                            container.innerHTML = accessHtml;
+                            container.classList.remove('access-loading-shimmer');
+                            return;
                         }
 
                         if (accessData.has_access) {
@@ -6688,7 +6737,8 @@
                         pollCount++;
                         try {
                             const phoneQ = visitor && visitor.phone ? '&phone=' + encodeURIComponent(visitor.phone) : '';
-                            const res = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}`);
+                            const deviceFp = getDeviceFingerprint();
+                            const res = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}&device_fp=${encodeURIComponent(deviceFp)}`);
                             const access = await res.json();
                             
                             // Update UI text to show live progress
