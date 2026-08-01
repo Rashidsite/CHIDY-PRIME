@@ -526,8 +526,51 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 1.5rem;
+        }
 
-        .trend-up { color: #00d25b; }
+        /* ── Stat Cards (Light Theme) ────────────────────────── */
+        .stat-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 1.2rem 1.4rem;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: box-shadow 0.2s, transform 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .stat-val {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0f172a;
+            font-family: 'Orbitron', sans-serif;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            opacity: 0.2;
+        }
+
+        .trend-up { color: #059669; }
+        .trend-down { color: #dc2626; }
         .trend-down { color: #ff3333; }
         .trend-stable { color: #6c7293; }
 
@@ -625,8 +668,8 @@
         }
 
         @keyframes countPulse {
-            0% { transform: scale(1.3); color: var(--primary-color); }
-            100% { transform: scale(1); color: #fff; }
+            0% { transform: scale(1.3); color: var(--secondary-color); }
+            100% { transform: scale(1); color: #0f172a; }
         }
 
         /* Shooting Brand Styles */
@@ -2340,24 +2383,25 @@
                     margin-top: 20px;
                 }
                 .video-admin-card {
-                    background: #1a1a24;
+                    background: #ffffff;
                     border-radius: 14px;
                     overflow: hidden;
-                    border: 1px solid rgba(255,0,0,0.15);
+                    border: 1px solid #e2e8f0;
                     transition: 0.3s;
                     position: relative;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                 }
                 .video-admin-card:hover {
-                    border-color: rgba(255,0,0,0.4);
+                    border-color: #7c3aed;
                     transform: translateY(-4px);
-                    box-shadow: 0 10px 30px rgba(255,0,0,0.1);
+                    box-shadow: 0 10px 30px rgba(124,58,237,0.1);
                 }
                 .video-admin-thumb {
                     width: 100%;
                     aspect-ratio: 16/9;
                     object-fit: cover;
                     display: block;
-                    background: #000;
+                    background: #f1f5f9;
                 }
                 .video-admin-info {
                     padding: 14px;
@@ -2365,7 +2409,7 @@
                 .video-admin-title {
                     font-family: 'Orbitron';
                     font-size: 0.85rem;
-                    color: #fff;
+                    color: #0f172a;
                     margin-bottom: 6px;
                     white-space: nowrap;
                     overflow: hidden;
@@ -2722,8 +2766,8 @@
         <section id="promoView" class="content view-section" style="display: none;">
             <style>
                 .promo-stat-card {
-                    background: rgba(188,19,254,0.06);
-                    border: 1px solid rgba(188,19,254,0.2);
+                    background: #f5f3ff;
+                    border: 1px solid rgba(124,58,237,0.2);
                     border-radius: 14px;
                     padding: 20px;
                     display: flex;
@@ -2731,20 +2775,21 @@
                     gap: 18px;
                     transition: 0.3s;
                 }
-                .promo-stat-card:hover { border-color: #bc13fe; box-shadow: 0 0 20px rgba(188,19,254,0.15); }
-                .promo-stat-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(188,19,254,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #bc13fe; flex-shrink: 0; }
+                .promo-stat-card:hover { border-color: #7c3aed; box-shadow: 0 4px 16px rgba(124,58,237,0.1); }
+                .promo-stat-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(124,58,237,0.12); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #7c3aed; flex-shrink: 0; }
                 .promo-card-item {
-                    background: rgba(0,0,0,0.3);
-                    border: 1px solid rgba(188,19,254,0.2);
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
                     border-radius: 14px;
                     padding: 20px;
                     transition: 0.3s;
                     position: relative;
                     overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                 }
-                .promo-card-item::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #bc13fe; box-shadow: 0 0 10px #bc13fe; }
-                .promo-card-item:hover { border-color: #bc13fe; transform: translateY(-2px); }
-                .promo-code-badge { font-family: 'Orbitron'; font-size: 1.1rem; letter-spacing: 2px; color: #bc13fe; text-shadow: 0 0 10px rgba(188,19,254,0.5); }
+                .promo-card-item::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #7c3aed; }
+                .promo-card-item:hover { border-color: #7c3aed; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.1); }
+                .promo-code-badge { font-family: 'Orbitron'; font-size: 1.1rem; letter-spacing: 2px; color: #7c3aed; font-weight: 800; }
             </style>
 
             <!-- Header -->
@@ -4725,6 +4770,10 @@
         // CORE NAVIGATION FUNCTION
         // ============================================================
         function showView(viewId) {
+            // Always hide upload form when switching views
+            const uploadSect = document.getElementById('uploadGameSection');
+            if (uploadSect) uploadSect.style.display = 'none';
+
             document.querySelectorAll('.view-section').forEach(s => {
                 s.classList.remove('active');
                 s.style.display = 'none';
