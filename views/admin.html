@@ -1766,6 +1766,32 @@
             box-shadow: 0 0 25px rgba(188, 19, 254, 0.6);
         }
 
+        /* General Table Styling (Desktop Default) */
+        .game-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .game-table th {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            padding: 14px 16px !important;
+            font-weight: 800 !important;
+            font-size: 0.8rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            text-align: left !important;
+            border-bottom: 2.5px solid #0f172a !important;
+            white-space: nowrap !important;
+        }
+        .game-table td {
+            padding: 14px 16px;
+            border-bottom: 1.5px solid #e2e8f0;
+            vertical-align: middle;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
         /* ==========================================================================
            RESPONSIVE MOBILE STYLES (Added for 100% Smartphone Admin Capability)
            ========================================================================== */
@@ -6697,7 +6723,7 @@
 
         async function fetchOrders() {
             const list = document.getElementById('ordersList');
-            if (list) list.innerHTML = '<p style="text-align: center; color: #6c7293; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
+            if (list) list.innerHTML = '<p style="text-align: center; color: #64748b; font-weight: 700; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
             
             try {
                 const res = await fetch(`/api/admin/orders?t=${Date.now()}`, {
@@ -6714,7 +6740,6 @@
                     allOrdersData = orders;
                 }
 
-                // Notification sound for new orders (Check by UUID or timestamp)
                 if (Array.isArray(allOrdersData)) {
                     const actionCount = allOrdersData.filter(o => o.posts && o.posts.title && o.posts.title.toLowerCase().includes('action')).length;
                     const sportsCount = allOrdersData.filter(o => o.posts && o.posts.title && o.posts.title.toLowerCase().includes('sports')).length;
@@ -6725,47 +6750,38 @@
                     if (document.getElementById('countApps')) document.getElementById('countApps').innerText = `${appCount} Orders`;
                 }
 
-                // Update Revenue statistic
-                const approvedTotal = Array.isArray(allOrdersData) 
-                    ? allOrdersData
-                        .filter(o => isApprovedStatus(o.status))
-                        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
-                    : 0;
-                const pendingTotal = Array.isArray(allOrdersData) 
-                    ? allOrdersData
-                        .filter(o => String(o.status || '').toLowerCase() === 'pending')
-                        .reduce((sum, o) => sum + parseFloat(o.amount || 0), 0)
-                    : 0;
-                const failedCount = Array.isArray(allOrdersData) 
+                const approvedOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => isApprovedStatus(o.status)) : [];
+                const approvedTotal = approvedOrders.reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
+                const pendingOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => String(o.status || '').toLowerCase() === 'pending') : [];
+                const pendingTotal = pendingOrders.reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
+                const failedCount = Array.isArray(allOrdersData) ? allOrdersData.filter(o => ['rejected', 'failed', 'cancelled'].includes(String(o.status || '').toLowerCase())).length : 0;
                 
-                // Fetch and update Lifetime Revenue
-                try {
-                    fetch('/api/settings/lifetime_revenue')
-                        .then(r => r.json())
-                        .then(data => {
-                            const val = parseFloat(data.value || 0);
-                            if (document.getElementById('lifetimeRevenue')) {
-                                document.getElementById('lifetimeRevenue').innerText = `TSh ${val.toLocaleString()}`;
-                            }
-                        });
-                } catch (e) {
-                    console.error("Failed to load lifetime revenue:", e);
-                }
+                const totalRevEl = document.getElementById('totalRevenue');
+                if (totalRevEl) totalRevEl.innerText = `TSh ${approvedTotal.toLocaleString('en-US')}`;
 
                 if (document.getElementById('totalDownloads')) document.getElementById('totalDownloads').innerText = approvedOrders.length;
-                if (document.getElementById('pendingAmount')) document.getElementById('pendingAmount').innerText = `TSh ${pendingTotal.toLocaleString()}`;
+                    if (document.getElementById('pendingAmount')) document.getElementById('pendingAmount').innerText = `TSh ${pendingTotal.toLocaleString('en-US')}`;
                 if (document.getElementById('failedTransactions')) document.getElementById('failedTransactions').innerText = failedCount;
+
+                // Fetch and update Lifetime Revenue
+                try {
+                    const r = await fetch('/api/settings/lifetime_revenue');
+                    const data = await r.json();
+                    const val = parseFloat(data.value || 0);
+                    if (document.getElementById('lifetimeRevenue')) {
+                        document.getElementById('lifetimeRevenue').innerText = `TSh ${val.toLocaleString('en-US')}`;
+                    }
+                } catch (e) {}
 
                 renderOrdersList();
 
-                // Update Dashboard Charts
                 if (Array.isArray(allOrdersData) && allOrdersData.length > 0) {
-                    updateRevenueChart(allOrdersData);
-                    updateCategoryChart(allOrdersData);
+                    if (typeof updateRevenueChart === "function") updateRevenueChart(allOrdersData);
+                    if (typeof updateCategoryChart === "function") updateCategoryChart(allOrdersData);
                 }
             } catch (err) {
-                console.error(err);
-                list.innerHTML = '<p style="text-align: center; color: #ff3333; padding: 2rem;">Error sync orders.</p>';
+                console.error("fetchOrders error:", err);
+                renderOrdersList();
             }
         }
 
