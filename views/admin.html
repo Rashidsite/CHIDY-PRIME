@@ -386,11 +386,12 @@
         .form-group textarea,
         .input-field {
             background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 8px !important;
-            padding: 10px 14px !important;
+            border: 2px solid #1e293b !important;
+            border-radius: 10px !important;
+            padding: 11px 16px !important;
             color: #0f172a !important;
-            font-size: 0.88rem !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
             font-family: inherit !important;
             outline: none !important;
             transition: border-color 0.2s, box-shadow 0.2s !important;
@@ -403,7 +404,16 @@
         .form-group textarea:focus,
         .input-field:focus {
             border-color: #7c3aed !important;
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+            box-shadow: 0 0 0 3.5px rgba(124, 58, 237, 0.2) !important;
+        }
+
+        .upload-section {
+            background: #ffffff !important;
+            border: 2px solid #0f172a !important;
+            border-radius: 14px !important;
+            padding: 1.6rem !important;
+            margin-bottom: 1.6rem !important;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
         }
 
         body {
@@ -424,18 +434,18 @@
             top: 0;
             padding: 1.5rem 1rem 3rem 1rem;
             z-index: 1000;
-            border-right: 1px solid #e2e8f0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+            border-right: 2px solid #0f172a;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 transparent;
+            scrollbar-color: #0f172a transparent;
         }
 
         .sidebar::-webkit-scrollbar {
             width: 5px;
         }
         .sidebar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: #0f172a;
             border-radius: 4px;
         }
 
@@ -466,12 +476,12 @@
             align-items: center;
             gap: 15px;
             padding: 0.8rem 1rem;
-            color: #475569;
+            color: #334155;
             text-decoration: none;
             border-radius: 8px;
             transition: 0.3s;
             font-size: 0.9rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .nav-link i { width: 20px; text-align: center; }
@@ -485,7 +495,7 @@
             background: rgba(124, 58, 237, 0.12);
             color: var(--secondary-color);
             box-shadow: inset 4px 0 0 var(--secondary-color);
-            font-weight: 700;
+            font-weight: 800;
         }
 
         /* Main Content */
@@ -505,14 +515,14 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem 0 0.5rem;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            border-bottom: 2px solid #0f172a;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
         }
 
         .search-box {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            background: #f8fafc;
+            border: 2px solid #0f172a;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             padding: 0.5rem 1rem;
@@ -3214,112 +3224,109 @@
                         <div style="text-align: center; color: #64748b; padding: 2rem;">Connecting to stream...</div>
                     </div>
                 </div>
-
-
             <!-- Moved Upload New Game from here to All Games View -->
         </section>
 
-        <!-- ALL GAMES VIEW -->
-        <section id="allGamesView" class="content view-section" style="display: none;">
-            <!-- Upload New Game Section (Hidden by default) — Professional layout -->
-            <div id="uploadGameSection" class="admin-card" style="display: none; margin-bottom: 2rem; border: 1px solid rgba(124,58,237,0.25); background: #ffffff; padding: 0; overflow: hidden;">
+        <!-- Upload New Game Section (Hidden by default) — Professional high-contrast layout -->
+            <div id="uploadGameSection" class="admin-card" style="display: none; margin-bottom: 2rem; border: 2.5px solid #0f172a; background: #ffffff; padding: 0; overflow: hidden; border-radius: 16px; box-shadow: 0 10px 30px rgba(15,23,42,0.08);">
                 <!-- Header bar -->
-                <div style="display:flex; justify-content:space-between; align-items:center; padding: 1.4rem 1.8rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 1.4rem 1.8rem; border-bottom: 2.5px solid #0f172a; background: linear-gradient(135deg, #0f172a, #1e293b); color: #ffffff;">
                     <div style="display:flex; align-items:center; gap: 14px;">
-                        <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(15,23,42,0.1)); display:flex; align-items:center; justify-content:center; color: #7c3aed; font-size: 1.1rem;">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; color: #a78bfa; font-size: 1.2rem; border: 1.5px solid rgba(255,255,255,0.2);">
                             <i class="fas fa-plus-circle"></i>
                         </div>
                         <div>
-                            <h3 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:1rem; letter-spacing:1px;" id="uploadFormHeaderTitle">Ongeza Game Mpya</h3>
-                            <p style="margin:4px 0 0; color:#64748b; font-size:0.75rem;">Jaza taarifa zote muhimu. Fields zenye <span style="color:#dc2626;">*</span> ni lazima.</p>
+                            <h3 style="margin:0; color:#ffffff; font-family:'Orbitron'; font-size:1.1rem; letter-spacing:1.5px;" id="uploadFormHeaderTitle">Ongeza Game Mpya</h3>
+                            <p style="margin:4px 0 0; color:#cbd5e1; font-size:0.78rem; font-weight: 500;">Jaza taarifa zote muhimu. Fields zenye <span style="color:#ef4444; font-weight:800;">*</span> ni lazima.</p>
                         </div>
                     </div>
-                    <button onclick="toggleUploadForm()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.3);color:#ff3366;cursor:pointer;font-size:0.95rem;transition:0.2s;" onmouseover="this.style.background='rgba(255,51,102,0.25)'; this.style.transform='rotate(90deg)'" onmouseout="this.style.background='rgba(255,51,102,0.1)'; this.style.transform='none'"><i class="fas fa-times"></i></button>
+                    <button onclick="toggleUploadForm()" style="padding: 8px 16px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); border: 2px solid #ef4444; color: #ef4444; cursor: pointer; font-size: 0.85rem; font-weight: 800; font-family: 'Orbitron'; display: flex; align-items: center; gap: 8px; transition: 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#ffffff'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444'"><i class="fas fa-times"></i> FUNGA</button>
                 </div>
 
                 <form id="uploadForm" style="padding: 1.8rem;">
                     <input type="hidden" id="editingGameId" name="editingGameId">
+                    
                     <!-- SECTION 1: Msingi (Title, Category, Description) -->
-                    <div class="upload-section" style="margin-bottom: 1.8rem;">
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
-                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00f2ff,#0090e7); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">1</span>
-                            <h4 style="margin:0; color:#00f2ff; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">TAARIFA ZA MSINGI</h4>
+                    <div class="upload-section" style="margin-bottom: 1.8rem; border: 2px solid #0f172a; border-radius: 14px; padding: 1.5rem; background: #ffffff; box-shadow: 0 4px 12px rgba(15,23,42,0.04);">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:1.2rem; padding-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9;">
+                            <span style="width:32px; height:32px; border-radius:10px; background:#7c3aed; display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:0.85rem; font-family:'Orbitron'; border: 1.5px solid #0f172a;">1</span>
+                            <h4 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:0.9rem; letter-spacing:1.5px; font-weight: 800;">TAARIFA ZA MSINGI</h4>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label><i class="fas fa-gamepad" style="color:#00f2ff;"></i> Jina la Game <span style="color:#ff3366;">*</span></label>
+                                <label style="color:#0f172a; font-weight:700;"><i class="fas fa-gamepad" style="color:#7c3aed;"></i> Jina la Game <span style="color:#ef4444; font-weight:800;">*</span></label>
                                 <input type="text" name="title" id="postTitle" required placeholder="Mfano: FIFA 25 — Tanzania Edition">
                             </div>
                             <div class="form-group">
-                                <label><i class="fas fa-tags" style="color:#bc13fe;"></i> Category <span style="color:#ff3366;">*</span></label>
+                                <label style="color:#0f172a; font-weight:700;"><i class="fas fa-tags" style="color:#7c3aed;"></i> Category <span style="color:#ef4444; font-weight:800;">*</span></label>
                                 <input type="text" name="category" list="categoryOptions" id="uploadCategory" required placeholder="Chagua au andika category" autocomplete="off" value="HOT POST">
                                 <datalist id="categoryOptions"></datalist>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-align-left" style="color:#6c7293;"></i> Maelezo <small style="color:#6c7293;">(itaonyeshwa kwenye detail modal)</small></label>
+                            <label style="color:#0f172a; font-weight:700;"><i class="fas fa-align-left" style="color:#64748b;"></i> Maelezo <small style="color:#64748b;">(itaonyeshwa kwenye detail modal)</small></label>
                             <textarea name="description" id="postDescription" rows="4" placeholder="Andika maelezo mafupi ya game — vipengele muhimu, storyline, requirements..."></textarea>
-                            <small id="descCounter" style="color:#6c7293;font-size:0.72rem;display:block;text-align:right;margin-top:4px;">0 herufi</small>
+                            <small id="descCounter" style="color:#64748b;font-size:0.75rem;display:block;text-align:right;margin-top:6px;font-weight:600;">0 herufi</small>
                         </div>
                     </div>
 
                     <!-- SECTION 2: Bei na Muda -->
-                    <div class="upload-section" style="margin-bottom: 1.8rem;">
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
-                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#ffb400,#ff8c00); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">2</span>
-                            <h4 style="margin:0; color:#ffb400; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">BEI &amp; MUDA WA ACCESS</h4>
+                    <div class="upload-section" style="margin-bottom: 1.8rem; border: 2px solid #0f172a; border-radius: 14px; padding: 1.5rem; background: #ffffff; box-shadow: 0 4px 12px rgba(15,23,42,0.04);">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:1.2rem; padding-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9;">
+                            <span style="width:32px; height:32px; border-radius:10px; background:#d97706; display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:0.85rem; font-family:'Orbitron'; border: 1.5px solid #0f172a;">2</span>
+                            <h4 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:0.9rem; letter-spacing:1.5px; font-weight: 800;">BEI &amp; MUDA WA ACCESS</h4>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label><i class="fas fa-money-bill-wave" style="color:#00d25b;"></i> Bei (TSh) <span style="color:#6c7293;font-size:0.72rem;">— 0 kwa FREE</span></label>
+                                <label style="color:#0f172a; font-weight:700;"><i class="fas fa-money-bill-wave" style="color:#059669;"></i> Bei (TSh) <span style="color:#64748b;font-size:0.75rem;font-weight:500;">— 0 kwa FREE</span></label>
                                 <input type="number" name="price" id="postPrice" step="0.01" min="0" required value="0" placeholder="Mfano: 2000">
                             </div>
                             <div class="form-group">
-                                <label><i class="fas fa-clock" style="color:#ffb400;"></i> Muda wa Access (Siku) <span style="color:#6c7293;font-size:0.72rem;">— 0 kwa milele</span></label>
+                                <label style="color:#0f172a; font-weight:700;"><i class="fas fa-clock" style="color:#d97706;"></i> Muda wa Access (Siku) <span style="color:#64748b;font-size:0.75rem;font-weight:500;">— 0 kwa milele</span></label>
                                 <input type="number" name="duration_days" id="postDurationDays" min="0" value="0" placeholder="Mfano: 7 = siku 7 za access">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label><i class="fas fa-star" style="color:#ffcc00;"></i> Rating (0 – 5)</label>
+                                <label style="color:#0f172a; font-weight:700;"><i class="fas fa-star" style="color:#eab308;"></i> Rating (0 – 5)</label>
                                 <input type="number" name="rating" id="postRating" step="0.1" min="0" max="5" required value="4.5">
                             </div>
                             <div class="form-group">
-                                <label><i class="fas fa-sort-numeric-up" style="color:#00f2ff;"></i> Order / Mpangilio</label>
+                                <label style="color:#0f172a; font-weight:700;"><i class="fas fa-sort-numeric-up" style="color:#2563eb;"></i> Order / Mpangilio</label>
                                 <input type="number" name="sort_order" id="postSortOrder" min="1" value="9999" required placeholder="1 = Kwanza kabisa; 9999 = Mwisho">
                             </div>
                         </div>
                     </div>
 
                     <!-- SECTION 3: Media (Poster + Trailer) -->
-                    <div class="upload-section" style="margin-bottom: 1.8rem;">
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
-                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#bc13fe,#8b00ff); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">3</span>
-                            <h4 style="margin:0; color:#bc13fe; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">PICHA &amp; TRAILER</h4>
+                    <div class="upload-section" style="margin-bottom: 1.8rem; border: 2px solid #0f172a; border-radius: 14px; padding: 1.5rem; background: #ffffff; box-shadow: 0 4px 12px rgba(15,23,42,0.04);">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:1.2rem; padding-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9;">
+                            <span style="width:32px; height:32px; border-radius:10px; background:#2563eb; display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:0.85rem; font-family:'Orbitron'; border: 1.5px solid #0f172a;">3</span>
+                            <h4 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:0.9rem; letter-spacing:1.5px; font-weight: 800;">PICHA &amp; TRAILER</h4>
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-image" style="color:#bc13fe;"></i> Poster / Cover <span style="color:#ff3366;">*</span></label>
-                            <div style="display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-                                <input type="url" name="image_url" id="createImageUrl" placeholder="https://example.com/poster.jpg" required style="flex:1; min-width: 220px;">
-                                <label style="margin:0; cursor:pointer; padding: 12px 20px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(188,19,254,0.1)); border: 1px solid rgba(0,242,255,0.4); color: #00f2ff; font-weight: 700; font-family:'Poppins';">
+                            <label style="color:#0f172a; font-weight:700;"><i class="fas fa-image" style="color:#2563eb;"></i> Poster / Cover <span style="color:#ef4444; font-weight:800;">*</span></label>
+                            <div style="display:flex; gap:12px; margin-bottom:8px; flex-wrap:wrap;">
+                                <input type="url" name="image_url" id="createImageUrl" placeholder="https://example.com/poster.jpg" required style="flex:1; min-width: 240px;">
+                                <label style="margin:0; cursor:pointer; padding: 12px 24px; border-radius: 10px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border: 2px solid #0f172a; color: #ffffff; font-weight: 800; font-family:'Orbitron'; box-shadow: 0 4px 10px rgba(124,58,237,0.3);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                                     <i class="fas fa-upload"></i> PAKIA
                                     <input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'createImageUrl', 'createUploadStatus')">
                                 </label>
                             </div>
-                            <p id="createUploadStatus" style="font-size: 0.75rem; margin: 0; min-height: 1rem;"></p>
+                            <p id="createUploadStatus" style="font-size: 0.78rem; margin: 0; min-height: 1rem; font-weight: 600;"></p>
                         </div>
                         <div class="form-group">
-                            <label><i class="fab fa-youtube" style="color:#ff0000;"></i> YouTube Trailer URL <span style="color:#6c7293;font-size:0.72rem;">(hiari)</span></label>
+                            <label style="color:#0f172a; font-weight:700;"><i class="fab fa-youtube" style="color:#ef4444;"></i> YouTube Trailer URL <span style="color:#64748b;font-size:0.75rem;font-weight:500;">(hiari)</span></label>
                             <input type="url" name="youtube_url" id="postYoutube" placeholder="https://www.youtube.com/watch?v=...">
                         </div>
                     </div>
 
                     <!-- SECTION 4: Links za Download / Payment -->
-                    <div class="upload-section" style="margin-bottom: 1.8rem;">
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
-                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00d25b,#00b34a); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">4</span>
-                            <h4 style="margin:0; color:#00d25b; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">LINKS ZA DOWNLOAD</h4>
-                            <span style="color:#6c7293; font-size:0.72rem;">— Ongeza kadhaa kwa alternatives</span>
+                    <div class="upload-section" style="margin-bottom: 1.8rem; border: 2px solid #0f172a; border-radius: 14px; padding: 1.5rem; background: #ffffff; box-shadow: 0 4px 12px rgba(15,23,42,0.04);">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:1.2rem; padding-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9;">
+                            <span style="width:32px; height:32px; border-radius:10px; background:#059669; display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:0.85rem; font-family:'Orbitron'; border: 1.5px solid #0f172a;">4</span>
+                            <h4 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:0.9rem; letter-spacing:1.5px; font-weight: 800;">LINKS ZA DOWNLOAD</h4>
+                            <span style="color:#64748b; font-size:0.78rem; font-weight:500;">— Ongeza kadhaa kwa alternatives</span>
                         </div>
                         <div id="linksContainer">
                             <div class="form-row link-row">
@@ -3327,35 +3334,35 @@
                                 <input type="url" placeholder="URL (https://...)" class="link-url">
                             </div>
                         </div>
-                        <button type="button" id="addLinkBtn" style="background: rgba(188, 19, 254, 0.15); color: var(--secondary-color); font-size: 0.8rem; margin-top: 0.5rem; width: auto; padding: 0.6rem 1.2rem; border: 1px solid rgba(188, 19, 254, 0.35); border-radius: 8px; cursor: pointer;">
+                        <button type="button" id="addLinkBtn" style="background: #f8fafc; color: #0f172a; font-size: 0.85rem; font-weight: 700; font-family: 'Orbitron'; margin-top: 0.8rem; width: auto; padding: 10px 20px; border: 2px dashed #0f172a; border-radius: 10px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f8fafc'">
                             <i class="fas fa-plus"></i> Ongeza Link Nyingine
                         </button>
                     </div>
 
                     <!-- SECTION 5: Publish options -->
-                    <div class="upload-section" style="margin-bottom: 1.5rem; padding: 1.2rem; background: rgba(0,0,0,0.15); border: 1px solid rgba(0,242,255,0.15); border-radius: 12px;">
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
-                            <span style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#00f2ff,#bc13fe); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900; font-size:0.75rem; font-family:'Orbitron';">5</span>
-                            <h4 style="margin:0; color:#fff; font-family:'Orbitron'; font-size:0.85rem; letter-spacing:1.5px;">PUBLISH</h4>
+                    <div class="upload-section" style="margin-bottom: 1.8rem; border: 2px solid #0f172a; border-radius: 14px; padding: 1.5rem; background: #ffffff; box-shadow: 0 4px 12px rgba(15,23,42,0.04);">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:1.2rem; padding-bottom: 0.8rem; border-bottom: 2px solid #f1f5f9;">
+                            <span style="width:32px; height:32px; border-radius:10px; background:#0f172a; display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:0.85rem; font-family:'Orbitron'; border: 1.5px solid #0f172a;">5</span>
+                            <h4 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:0.9rem; letter-spacing:1.5px; font-weight: 800;">PUBLISH &amp; SCHEDULE</h4>
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-calendar-check" style="color:#00b4ff;"></i> Schedule (Hiari) — chapisha wakati maalum</label>
+                            <label style="color:#0f172a; font-weight:700;"><i class="fas fa-calendar-check" style="color:#2563eb;"></i> Schedule (Hiari) — chapisha wakati maalum</label>
                             <input type="datetime-local" name="scheduled_at" id="uploadScheduledAt">
-                            <small style="color:#6c7293; font-size:0.72rem;">Weka tarehe ya baadaye kama unataka game ijichapishe yenyewe. Acha wazi kwa kuchapisha sasa.</small>
+                            <small style="color:#64748b; font-size:0.75rem; font-weight:500;">Weka tarehe ya baadaye kama unataka game ijichapishe yenyewe. Acha wazi kwa kuchapisha sasa.</small>
                         </div>
                     </div>
 
                     <!-- ACTIONS -->
-                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:1rem;">
-                        <button type="submit" class="btn-deploy" id="submitBtn" style="flex:1; min-width:220px; padding: 14px; font-family:'Orbitron'; font-size:0.9rem; letter-spacing:1.5px;">
+                    <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:1.5rem;">
+                        <button type="submit" class="btn-deploy" id="submitBtn" style="flex:1; min-width:220px; padding: 16px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color:#ffffff; border: 2px solid #0f172a; border-radius: 12px; font-family:'Orbitron'; font-size:0.95rem; font-weight:800; letter-spacing:1.5px; cursor:pointer; box-shadow: 0 4px 14px rgba(124,58,237,0.3); transition:0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                             <i class="fas fa-rocket"></i> CHAPISHA SASA
                         </button>
-                        <button type="button" id="saveDraftBtn" onclick="submitAsDraft()" style="flex:1; min-width:200px; padding: 14px; background:rgba(255,171,0,0.12); border:1px solid rgba(255,171,0,0.45); color:#ffab00; font-family:'Orbitron'; font-size:0.85rem; font-weight:700; letter-spacing:1.5px; border-radius:10px; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(255,171,0,0.25)'" onmouseout="this.style.background='rgba(255,171,0,0.12)'">
+                        <button type="button" id="saveDraftBtn" onclick="submitAsDraft()" style="flex:1; min-width:200px; padding: 16px; background:#ffffff; border: 2px solid #d97706; color:#d97706; font-family:'Orbitron'; font-size:0.9rem; font-weight:800; letter-spacing:1.5px; border-radius:12px; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(217,119,6,0.1)'" onmouseout="this.style.background='#ffffff'">
                             <i class="fas fa-file-alt"></i> HIFADHI KAMA DRAFT
                         </button>
                     </div>
 
-                    <p id="statusMsg" style="margin-top: 1rem; font-size: 0.85rem;"></p>
+                    <p id="statusMsg" style="margin-top: 1rem; font-size: 0.85rem; font-weight: 700;"></p>
                 </form>
             </div>
 
