@@ -3121,7 +3121,7 @@
                             <i class="fas fa-plus-circle"></i>
                         </div>
                         <div>
-                            <h3 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:1rem; letter-spacing:1px;">Ongeza Game Mpya</h3>
+                            <h3 style="margin:0; color:#0f172a; font-family:'Orbitron'; font-size:1rem; letter-spacing:1px;" id="uploadFormHeaderTitle">Ongeza Game Mpya</h3>
                             <p style="margin:4px 0 0; color:#64748b; font-size:0.75rem;">Jaza taarifa zote muhimu. Fields zenye <span style="color:#dc2626;">*</span> ni lazima.</p>
                         </div>
                     </div>
@@ -3129,6 +3129,7 @@
                 </div>
 
                 <form id="uploadForm" style="padding: 1.8rem;">
+                    <input type="hidden" id="editingGameId" name="editingGameId">
                     <!-- SECTION 1: Msingi (Title, Category, Description) -->
                     <div class="upload-section" style="margin-bottom: 1.8rem;">
                         <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
@@ -3138,7 +3139,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label><i class="fas fa-gamepad" style="color:#00f2ff;"></i> Jina la Game <span style="color:#ff3366;">*</span></label>
-                                <input type="text" name="title" required placeholder="Mfano: FIFA 25 — Tanzania Edition">
+                                <input type="text" name="title" id="postTitle" required placeholder="Mfano: FIFA 25 — Tanzania Edition">
                             </div>
                             <div class="form-group">
                                 <label><i class="fas fa-tags" style="color:#bc13fe;"></i> Category <span style="color:#ff3366;">*</span></label>
@@ -3148,7 +3149,7 @@
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-align-left" style="color:#6c7293;"></i> Maelezo <small style="color:#6c7293;">(itaonyeshwa kwenye detail modal)</small></label>
-                            <textarea name="description" rows="4" placeholder="Andika maelezo mafupi ya game — vipengele muhimu, storyline, requirements..."></textarea>
+                            <textarea name="description" id="postDescription" rows="4" placeholder="Andika maelezo mafupi ya game — vipengele muhimu, storyline, requirements..."></textarea>
                             <small id="descCounter" style="color:#6c7293;font-size:0.72rem;display:block;text-align:right;margin-top:4px;">0 herufi</small>
                         </div>
                     </div>
@@ -3162,21 +3163,21 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label><i class="fas fa-money-bill-wave" style="color:#00d25b;"></i> Bei (TSh) <span style="color:#6c7293;font-size:0.72rem;">— 0 kwa FREE</span></label>
-                                <input type="number" name="price" step="0.01" min="0" required value="0" placeholder="Mfano: 2000">
+                                <input type="number" name="price" id="postPrice" step="0.01" min="0" required value="0" placeholder="Mfano: 2000">
                             </div>
                             <div class="form-group">
                                 <label><i class="fas fa-clock" style="color:#ffb400;"></i> Muda wa Access (Siku) <span style="color:#6c7293;font-size:0.72rem;">— 0 kwa milele</span></label>
-                                <input type="number" name="duration_days" min="0" value="0" placeholder="Mfano: 7 = siku 7 za access">
+                                <input type="number" name="duration_days" id="postDurationDays" min="0" value="0" placeholder="Mfano: 7 = siku 7 za access">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label><i class="fas fa-star" style="color:#ffcc00;"></i> Rating (0 – 5)</label>
-                                <input type="number" name="rating" step="0.1" min="0" max="5" required value="4.5">
+                                <input type="number" name="rating" id="postRating" step="0.1" min="0" max="5" required value="4.5">
                             </div>
                             <div class="form-group">
                                 <label><i class="fas fa-sort-numeric-up" style="color:#00f2ff;"></i> Order / Mpangilio</label>
-                                <input type="number" name="sort_order" min="1" value="9999" required placeholder="1 = Kwanza kabisa; 9999 = Mwisho">
+                                <input type="number" name="sort_order" id="postSortOrder" min="1" value="9999" required placeholder="1 = Kwanza kabisa; 9999 = Mwisho">
                             </div>
                         </div>
                     </div>
@@ -3200,7 +3201,7 @@
                         </div>
                         <div class="form-group">
                             <label><i class="fab fa-youtube" style="color:#ff0000;"></i> YouTube Trailer URL <span style="color:#6c7293;font-size:0.72rem;">(hiari)</span></label>
-                            <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
+                            <input type="url" name="youtube_url" id="postYoutube" placeholder="https://www.youtube.com/watch?v=...">
                         </div>
                     </div>
 
@@ -4691,15 +4692,150 @@
 
         const form = document.getElementById('uploadForm');
         const statusMsg = document.getElementById('statusMsg');
+
+        function resetUploadForm() {
+            const editingIdEl = document.getElementById('editingGameId');
+            if (editingIdEl) editingIdEl.value = '';
+            
+            const headerTitle = document.getElementById('uploadFormHeaderTitle');
+            if (headerTitle) headerTitle.innerText = 'Ongeza Game Mpya';
+            
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-rocket"></i> CHAPISHA SASA';
+            
+            if (document.getElementById('postTitle')) document.getElementById('postTitle').value = '';
+            if (document.getElementById('uploadCategory')) document.getElementById('uploadCategory').value = 'HOT POST';
+            if (document.getElementById('postDescription')) document.getElementById('postDescription').value = '';
+            if (document.getElementById('postPrice')) document.getElementById('postPrice').value = '0';
+            if (document.getElementById('postDurationDays')) document.getElementById('postDurationDays').value = '0';
+            if (document.getElementById('postRating')) document.getElementById('postRating').value = '4.5';
+            if (document.getElementById('postSortOrder')) document.getElementById('postSortOrder').value = '9999';
+            if (document.getElementById('createImageUrl')) document.getElementById('createImageUrl').value = '';
+            if (document.getElementById('postYoutube')) document.getElementById('postYoutube').value = '';
+            if (document.getElementById('uploadScheduledAt')) document.getElementById('uploadScheduledAt').value = '';
+            
+            const linksContainer = document.getElementById('linksContainer');
+            if (linksContainer) {
+                linksContainer.innerHTML = `
+                    <div class="form-row link-row" style="display:flex;gap:10px;margin-bottom:10px;align-items:center;">
+                        <input type="text" placeholder="Jina la Link (mfano: Mediafire)" class="link-name input-field" style="flex:1;">
+                        <input type="url" placeholder="URL (https://...)" class="link-url input-field" style="flex:2;">
+                    </div>
+                `;
+            }
+        }
+
         function toggleUploadForm() {
             const section = document.getElementById('uploadGameSection');
-            if (section.style.display === 'none') {
+            if (!section) return;
+            if (section.style.display === 'none' || section.style.display === '') {
+                const editingId = document.getElementById('editingGameId')?.value;
+                if (!editingId) resetUploadForm();
                 section.style.display = 'block';
                 section.scrollIntoView({ behavior: 'smooth' });
             } else {
                 section.style.display = 'none';
+                resetUploadForm();
             }
         }
+
+        // Upload / Edit form submission handler
+        document.getElementById('uploadForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const editingId = document.getElementById('editingGameId')?.value;
+            const token = localStorage.getItem('adminToken');
+            
+            const linkRows = document.querySelectorAll('#linksContainer .link-row');
+            const links = [];
+            linkRows.forEach(row => {
+                const nameInput = row.querySelector('.link-name') || row.querySelector('input[type="text"]');
+                const urlInput = row.querySelector('.link-url') || row.querySelector('input[type="url"]');
+                const name = nameInput ? nameInput.value.trim() : '';
+                const url = urlInput ? urlInput.value.trim() : '';
+                if (url) {
+                    links.push({ name: name || 'Download', url });
+                }
+            });
+
+            const payload = {
+                title: document.getElementById('postTitle')?.value || '',
+                category: document.getElementById('uploadCategory')?.value || 'HOT POST',
+                description: document.getElementById('postDescription')?.value || '',
+                price: parseFloat(document.getElementById('postPrice')?.value || 0),
+                duration_days: parseInt(document.getElementById('postDurationDays')?.value || 0, 10),
+                rating: parseFloat(document.getElementById('postRating')?.value || 4.5),
+                sort_order: parseInt(document.getElementById('postSortOrder')?.value || 9999, 10),
+                image_url: document.getElementById('createImageUrl')?.value || '',
+                youtube_url: document.getElementById('postYoutube')?.value || '',
+                scheduled_at: document.getElementById('uploadScheduledAt')?.value || null,
+                links
+            };
+
+            if (!payload.image_url) {
+                return alert("Tafadhali weka Poster / Cover Image URL!");
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.6'; }
+
+            try {
+                let res, data;
+                if (editingId) {
+                    res = await fetch(`/api/games/${editingId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    data = await res.json();
+                    if (data.success || res.ok) {
+                        showToast("✅ Mchezo umehaririwa kikamilifu!");
+                    } else {
+                        throw new Error(data.error || 'Imeshindikana kuhariri');
+                    }
+                } else {
+                    res = await fetch('/api/games', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    data = await res.json();
+                    if (data.success || res.ok) {
+                        showToast("🚀 Mchezo mpya umechapishwa kikamilifu!");
+                    } else {
+                        throw new Error(data.error || 'Imeshindikana kuchapisha');
+                    }
+                }
+
+                resetUploadForm();
+                document.getElementById('uploadGameSection').style.display = 'none';
+                loadGames();
+            } catch (err) {
+                alert("Hitilafu: " + err.message);
+            } finally {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+            }
+        });
+
+        // Add extra link button handler
+        document.getElementById('addLinkBtn')?.addEventListener('click', () => {
+            const container = document.getElementById('linksContainer');
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = 'form-row link-row';
+            div.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:center;';
+            div.innerHTML = `
+                <input type="text" placeholder="Jina la Link (mfano: Mediafire)" class="link-name input-field" style="flex:1;">
+                <input type="url" placeholder="URL (https://...)" class="link-url input-field" style="flex:2;">
+                <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:8px 12px;border-radius:8px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+            `;
+            container.appendChild(div);
+        });
 
         const fullGameTableBody = document.getElementById('fullGameTableBody');
         const totalGamesLabels = document.querySelectorAll('.totalGamesCount');
@@ -5782,24 +5918,28 @@
 
             tbody.innerHTML = filtered.map(game => {
                 const dateStr = game.created_at ? new Date(game.created_at).toLocaleDateString('sw-TZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-                const priceFormatted = (parseFloat(game.price) || 0) > 0 ? `TSh ${parseFloat(game.price).toLocaleString()}` : '<span style="color:#00d25b;">BURE</span>';
-                const statusBadgeColor = game.status === 'draft' ? '#ffab00' : (game.status === 'trash' ? '#ff3366' : '#00d25b');
+                const priceFormatted = (parseFloat(game.price) || 0) > 0 ? `<span style="font-weight:900;color:#000000;-webkit-text-stroke:0.2px #000;">TSh ${parseFloat(game.price).toLocaleString()}</span>` : '<span style="color:#15803d;font-weight:900;">BURE</span>';
+                
+                let badgeStyle = 'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;';
+                if (game.status === 'draft') badgeStyle = 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;';
+                if (game.status === 'trash') badgeStyle = 'background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;';
+                
                 const linksCount = Array.isArray(game.links) ? game.links.length : (game.download_links ? 1 : 0);
 
                 return `
-                    <tr>
-                        <td><span style="font-weight:700;color:#00f2ff;">#${game.sort_order || '-'}</span></td>
-                        <td><img src="${game.image_url || '/icon.png'}" style="width:42px;height:52px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.1);" onerror="this.src='/icon.png'"></td>
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                        <td><span style="font-weight:900;color:#dc2626;-webkit-text-stroke:0.2px #000;font-size:0.9rem;">#${game.sort_order || '-'}</span></td>
+                        <td><img src="${game.image_url || '/icon.png'}" style="width:42px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;" onerror="this.src='/icon.png'"></td>
                         <td>
-                            <strong style="color:#fff;font-size:0.9rem;">${game.title || 'Untitled'}</strong>
-                            <div style="font-size:0.7rem;color:#6c7293;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${game.description || ''}</div>
+                            <strong style="color:#000000;font-size:0.92rem;font-weight:900;-webkit-text-stroke:0.2px #000;">${game.title || 'Untitled'}</strong>
+                            <div style="font-size:0.75rem;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">${game.description || ''}</div>
                         </td>
-                        <td><span style="background:rgba(0,242,255,0.1);color:#00f2ff;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:600;">${game.category || 'HOT POST'}</span></td>
-                        <td style="font-weight:700;color:#fff;">${priceFormatted}</td>
-                        <td><span style="color:#ffab00;font-weight:700;">⭐ ${game.rating || '5.0'}</span></td>
-                        <td><span style="background:rgba(255,255,255,0.05);color:#ccc;padding:3px 8px;border-radius:6px;font-size:0.75rem;">${linksCount} Link(s)</span></td>
-                        <td style="color:#6c7293;font-size:0.8rem;">${dateStr}</td>
-                        <td><span style="background:${statusBadgeColor}22;color:${statusBadgeColor};border:1px solid ${statusBadgeColor}44;padding:3px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">${game.status || 'published'}</span></td>
+                        <td><span style="background:#fee2e2;color:#991b1b;border:1.5px solid #dc2626;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:900;letter-spacing:0.5px;-webkit-text-stroke:0.3px #000;">${game.category || 'HOT POST'}</span></td>
+                        <td>${priceFormatted}</td>
+                        <td><span style="color:#b45309;font-weight:700;">⭐ ${game.rating || '5.0'}</span></td>
+                        <td><span style="background:#f1f5f9;color:#000000;border:1px solid #cbd5e1;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${linksCount} Link(s)</span></td>
+                        <td style="color:#1e293b;font-size:0.82rem;font-weight:600;">${dateStr}</td>
+                        <td><span style="${badgeStyle}padding:3px 10px;border-radius:6px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">${game.status || 'published'}</span></td>
                         <td>
                             <div style="display:flex;gap:6px;align-items:center;">
                                 <button class="btn-action-game edit-btn" onclick="editGame('${game.id}')" title="Hariri Mchezo"><i class="fas fa-edit"></i> Edit</button>
@@ -5840,27 +5980,49 @@
             const uploadSection = document.getElementById('uploadGameSection');
             if (uploadSection) uploadSection.style.display = 'block';
 
-            if (document.getElementById('postTitle')) document.getElementById('postTitle').value = game.title || '';
-            if (document.getElementById('postPrice')) document.getElementById('postPrice').value = game.price || 0;
-            if (document.getElementById('postRating')) document.getElementById('postRating').value = game.rating || 5.0;
-            if (document.getElementById('postCategory')) document.getElementById('postCategory').value = game.category || 'HOT POST';
-            if (document.getElementById('postDescription')) document.getElementById('postDescription').value = game.description || '';
-            if (document.getElementById('postYoutube')) document.getElementById('postYoutube').value = game.youtube_url || '';
-            if (document.getElementById('postImage')) document.getElementById('postImage').value = game.image_url || '';
+            const editingIdEl = document.getElementById('editingGameId');
+            if (editingIdEl) editingIdEl.value = game.id;
 
-            if (linksContainer && Array.isArray(game.links)) {
+            const headerTitle = document.getElementById('uploadFormHeaderTitle');
+            if (headerTitle) headerTitle.innerText = `Hariri Game: ${game.title || ''}`;
+
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> HIFADHI MABADILIKO';
+
+            if (document.getElementById('postTitle')) document.getElementById('postTitle').value = game.title || '';
+            if (document.getElementById('uploadCategory')) document.getElementById('uploadCategory').value = game.category || 'HOT POST';
+            if (document.getElementById('postDescription')) document.getElementById('postDescription').value = game.description || '';
+            if (document.getElementById('postPrice')) document.getElementById('postPrice').value = game.price || 0;
+            if (document.getElementById('postDurationDays')) document.getElementById('postDurationDays').value = game.duration_days || 0;
+            if (document.getElementById('postRating')) document.getElementById('postRating').value = game.rating || 5.0;
+            if (document.getElementById('postSortOrder')) document.getElementById('postSortOrder').value = game.sort_order || 9999;
+            if (document.getElementById('createImageUrl')) document.getElementById('createImageUrl').value = game.image_url || '';
+            if (document.getElementById('postYoutube')) document.getElementById('postYoutube').value = game.youtube_url || '';
+
+            const linksContainer = document.getElementById('linksContainer');
+            if (linksContainer) {
                 linksContainer.innerHTML = '';
-                game.links.forEach(link => {
-                    const linkRow = document.createElement('div');
-                    linkRow.className = 'link-row';
-                    linkRow.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:center;';
-                    linkRow.innerHTML = `
-                        <input type="text" class="input-field" placeholder="Jina la Link" value="${link.name || ''}" style="flex:1;">
-                        <input type="url" class="input-field" placeholder="URL ya Game File" value="${link.url || ''}" style="flex:2;">
-                        <button type="button" onclick="this.parentElement.remove()" style="background:rgba(255,51,102,0.15);border:1px solid rgba(255,51,102,0.3);color:#ff3366;padding:8px 12px;border-radius:8px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                const linksList = Array.isArray(game.links) ? game.links : [];
+                if (linksList.length > 0) {
+                    linksList.forEach(link => {
+                        const linkRow = document.createElement('div');
+                        linkRow.className = 'form-row link-row';
+                        linkRow.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:center;';
+                        linkRow.innerHTML = `
+                            <input type="text" class="link-name input-field" placeholder="Jina la Link" value="${link.name || ''}" style="flex:1;">
+                            <input type="url" class="link-url input-field" placeholder="URL ya Game File" value="${link.url || ''}" style="flex:2;">
+                            <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:8px 12px;border-radius:8px;cursor:pointer;"><i class="fas fa-trash"></i></button>
+                        `;
+                        linksContainer.appendChild(linkRow);
+                    });
+                } else {
+                    linksContainer.innerHTML = `
+                        <div class="form-row link-row" style="display:flex;gap:10px;margin-bottom:10px;align-items:center;">
+                            <input type="text" placeholder="Jina la Link (mfano: Mediafire)" class="link-name input-field" style="flex:1;">
+                            <input type="url" placeholder="URL (https://...)" class="link-url input-field" style="flex:2;">
+                        </div>
                     `;
-                    linksContainer.appendChild(linkRow);
-                });
+                }
             }
 
             uploadSection?.scrollIntoView({ behavior: 'smooth' });
