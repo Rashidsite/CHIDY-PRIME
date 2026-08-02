@@ -5239,133 +5239,6 @@
                 gap: 20px;
             ">
             </div>
-
-        <script>
-        function renderOrdersList() {
-            const list = document.getElementById("ordersList");
-            if (!list) return;
-            const orders = Array.isArray(allOrdersData) ? allOrdersData : [];
-            
-            const searchInput = document.getElementById("orderSearchInput") || document.getElementById("adminSearchInput");
-            const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
-            
-            const statusFilterSelect = document.getElementById("orderStatusFilterSelect");
-            const statusFilter = statusFilterSelect ? statusFilterSelect.value : "all";
-
-            const filteredOrders = orders.filter(o => {
-                const gameTitle = (o.posts && o.posts.title ? o.posts.title : "").toLowerCase();
-                const guestName = (o.visitors && o.visitors.name ? o.visitors.name : "").toLowerCase();
-                const phone = (o.phone_number || (o.visitors && o.visitors.phone) || "").toLowerCase();
-                const orderId = (o.promo_used || `ID:${o.id}`).toLowerCase();
-
-                const matchesQuery = !query || gameTitle.includes(query) || guestName.includes(query) || phone.includes(query) || orderId.includes(query);
-                
-                const st = String(o.status || "").toLowerCase();
-
-                let matchesStatus = true;
-                if (statusFilter === "all") {
-                    matchesStatus = (st !== "trashed");
-                } else if (statusFilter === "pending") {
-                    matchesStatus = (st === "pending");
-                } else if (statusFilter === "approved") {
-                    matchesStatus = (isApprovedStatus(st) && st !== "trashed");
-                } else if (statusFilter === "rejected") {
-                    matchesStatus = (["rejected", "failed", "cancelled"].includes(st) && st !== "trashed");
-                } else if (statusFilter === "trashed") {
-                    matchesStatus = (st === "trashed");
-                }
-
-                return matchesQuery && matchesStatus;
-            });
-                
-            if (filteredOrders.length === 0) {
-                list.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #64748b; font-weight: 700; padding: 3rem; background: #f8fafc; border: 2.5px dashed #cbd5e1; border-radius: 16px;"><i class="fas fa-inbox" style="font-size:2.2rem; margin-bottom:12px; display:block; color:#94a3b8;"></i> Hauna oda yoyote kwa sasa kulingana na utafutaji wako.</div>';
-                return;
-            }
-
-            // Update order badge count
-            const orderBadge = document.getElementById("orderCountBadge");
-            if (orderBadge) orderBadge.innerText = `${filteredOrders.length} Total`;
-
-            list.innerHTML = filteredOrders.map(order => {
-                    const isApproved = isApprovedStatus(order.status);
-                    const isRejected = ["rejected", "failed", "cancelled"].includes(String(order.status || "").toLowerCase());
-                    const isPending = (String(order.status || "").toLowerCase() === "pending");
-
-                    const date = new Date(order.created_at).toLocaleString("en-GB", { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-                    const guestName = order.visitors?.name || "Unknown User";
-                    const guestPhone = order.visitors?.phone || order.phone_number || "N/A";
-                    const gameTitle = order.posts?.title || "Game / Video Item";
-                    const orderRef = order.promo_used || `HP${order.id}`;
-                    const visitorId = order.visitor_id || order.visitors?.id || "";
-                    
-                    const gw = detectGateway(orderRef);
-                    const gwMeta = ({
-                        pressopay: { label: "PressoPay", bg: "#2563eb", fg: "#ffffff", icon: "fa-credit-card" },
-                        harakapay: { label: "HarakaPay", bg: "#059669", fg: "#ffffff", icon: "fa-bolt" },
-                        zenopay:   { label: "ZenoPay",   bg: "#d97706", fg: "#ffffff", icon: "fa-wallet" }
-                    })[gw] || { label: gw.toUpperCase(), bg: "#0f172a", fg: "#ffffff", icon: "fa-receipt" };
-
-                    // Animated Status Badges (✓ Tick for completed, ✕ Cross for rejected, Spinner for pending)
-                    let statusBadgeHtml = '';
-                    if (isApproved) {
-                        statusBadgeHtml = `<div class="order-status-badge badge-completed"><i class="fas fa-check-circle"></i> COMPLETED</div>`;
-                    } else if (isRejected) {
-                        statusBadgeHtml = `<div class="order-status-badge badge-rejected"><i class="fas fa-times-circle"></i> REJECTED</div>`;
-                    } else if (isPending) {
-                        statusBadgeHtml = `<div class="order-status-badge badge-pending"><i class="fas fa-hourglass-half"></i> PENDING</div>`;
-                    } else {
-                        statusBadgeHtml = `<div class="order-status-badge badge-trashed"><i class="fas fa-trash-alt"></i> TRASHED</div>`;
-                    }
-
-                    // Action buttons ONLY for pending orders
-                    let actionHtml = '';
-                    if (isPending) {
-                        actionHtml = `
-                            <div style="display:flex; gap:8px;">
-                                <button onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 7px 16px; font-size: 0.76rem; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 9px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 3px 8px rgba(22,163,74,0.25); transition: 0.2s;"><i class="fas fa-check"></i> APPROVE</button>
-                                <button onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 7px 14px; font-size: 0.76rem; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 9px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 3px 8px rgba(220,38,38,0.25); transition: 0.2s;"><i class="fas fa-times"></i> REJECT</button>
-                            </div>
-                        `;
-                    }
-
-                    return `
-                        <div class="order-card-modern">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
-                                <span style="background:${gwMeta.bg}; color:${gwMeta.fg}; padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:800; font-family:'Orbitron'; display: inline-flex; align-items: center; gap: 5px;"><i class="fas ${gwMeta.icon}"></i> ${gwMeta.label}</span>
-                                ${statusBadgeHtml}
-                            </div>
-
-                            <h4 style="margin: 0 0 10px 0; font-size: 0.96rem; font-weight: 800; color: #0f172a; line-height: 1.35; font-family: 'Poppins', sans-serif;">${gameTitle}</h4>
-                            
-                            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #64748b; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-user-circle" style="color:#4f46e5;"></i> Mteja:</span>
-                                    <span style="color: #0f172a; font-size: 0.82rem; font-weight: 800; cursor: pointer;" onclick="if(window.viewUserDetail && '${visitorId}') viewUserDetail('${visitorId}')" title="Tazama akaunti">${guestName}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #64748b; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-phone-alt" style="color:#059669;"></i> Simu:</span>
-                                    <span style="color: #0f172a; font-size: 0.8rem; font-weight: 800; font-family: monospace; background: #ffffff; border: 1px solid #cbd5e1; padding: 1px 6px; border-radius: 4px;">${guestPhone}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #64748b; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-clock" style="color:#64748b;"></i> Tarehe:</span>
-                                    <span style="color: #475569; font-size: 0.74rem; font-weight: 700;">${date}</span>
-                                </div>
-                            </div>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; border-top: 1px solid #f1f5f9;">
-                                <div>
-                                    <span style="display: block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">KIASI</span>
-                                    <span style="font-weight: 900; color: #059669; font-family: 'Orbitron'; font-size: 1.15rem;">TSh ${parseFloat(order.amount).toLocaleString('en-US')}</span>
-                                </div>
-                                <div>
-                                    ${actionHtml}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join("");
-        }
         </div>
     </section>
 
@@ -8036,10 +7909,20 @@
 
                 const matchesQuery = !query || gameTitle.includes(query) || guestName.includes(query) || phone.includes(query) || orderId.includes(query);
                 
+                const st = String(o.status || "").toLowerCase();
+
                 let matchesStatus = true;
-                if (statusFilter === "pending") matchesStatus = (String(o.status || "").toLowerCase() === "pending");
-                else if (statusFilter === "approved") matchesStatus = isApprovedStatus(o.status);
-                else if (statusFilter === "rejected") matchesStatus = (["rejected", "failed", "cancelled"].includes(String(o.status || "").toLowerCase()));
+                if (statusFilter === "all") {
+                    matchesStatus = (st !== "trashed");
+                } else if (statusFilter === "pending") {
+                    matchesStatus = (st === "pending");
+                } else if (statusFilter === "approved") {
+                    matchesStatus = (isApprovedStatus(st) && st !== "trashed");
+                } else if (statusFilter === "rejected") {
+                    matchesStatus = (["rejected", "failed", "cancelled"].includes(st) && st !== "trashed");
+                } else if (statusFilter === "trashed") {
+                    matchesStatus = (st === "trashed");
+                }
 
                 return matchesQuery && matchesStatus;
             });
@@ -8055,7 +7938,9 @@
 
             list.innerHTML = filteredOrders.map(order => {
                     const isApproved = isApprovedStatus(order.status);
-                    const statusStr = isApproved ? "completed" : String(order.status || "pending").toLowerCase();
+                    const isRejected = ["rejected", "failed", "cancelled"].includes(String(order.status || "").toLowerCase());
+                    const isPending = (String(order.status || "").toLowerCase() === "pending");
+
                     const date = new Date(order.created_at).toLocaleString("en-GB", { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
                     const guestName = order.visitors?.name || "Unknown User";
                     const guestPhone = order.visitors?.phone || order.phone_number || "N/A";
@@ -8063,70 +7948,67 @@
                     const orderRef = order.promo_used || `HP${order.id}`;
                     const visitorId = order.visitor_id || order.visitors?.id || "";
                     
-                    let borderLeftColor = "#f59e0b";
-                    if (isApproved) borderLeftColor = "#10b981";
-                    if (statusStr === "rejected" || statusStr === "failed") borderLeftColor = "#ef4444";
-
                     const gw = detectGateway(orderRef);
                     const gwMeta = ({
-                        pressopay: { label: "PressoPay", bg: "linear-gradient(135deg, #1e40af, #2563eb)", fg: "#ffffff", icon: "fa-credit-card" },
-                        harakapay: { label: "HarakaPay", bg: "linear-gradient(135deg, #166534, #059669)", fg: "#ffffff", icon: "fa-bolt" },
-                        zenopay:   { label: "ZenoPay",   bg: "linear-gradient(135deg, #92400e, #d97706)", fg: "#ffffff", icon: "fa-wallet" }
-                    })[gw] || { label: gw.toUpperCase(), bg: "linear-gradient(135deg, #0f172a, #334155)", fg: "#ffffff", icon: "fa-receipt" };
+                        pressopay: { label: "PressoPay", bg: "#2563eb", fg: "#ffffff", icon: "fa-credit-card" },
+                        harakapay: { label: "HarakaPay", bg: "#059669", fg: "#ffffff", icon: "fa-bolt" },
+                        zenopay:   { label: "ZenoPay",   bg: "#d97706", fg: "#ffffff", icon: "fa-wallet" }
+                    })[gw] || { label: gw.toUpperCase(), bg: "#0f172a", fg: "#ffffff", icon: "fa-receipt" };
+
+                    // Animated Status Badges (✓ Tick for completed, ✕ Cross for rejected, Spinner for pending)
+                    let statusBadgeHtml = '';
+                    if (isApproved) {
+                        statusBadgeHtml = `<div class="order-status-badge badge-completed"><i class="fas fa-check-circle"></i> COMPLETED</div>`;
+                    } else if (isRejected) {
+                        statusBadgeHtml = `<div class="order-status-badge badge-rejected"><i class="fas fa-times-circle"></i> REJECTED</div>`;
+                    } else if (isPending) {
+                        statusBadgeHtml = `<div class="order-status-badge badge-pending"><i class="fas fa-hourglass-half"></i> PENDING</div>`;
+                    } else {
+                        statusBadgeHtml = `<div class="order-status-badge badge-trashed"><i class="fas fa-trash-alt"></i> TRASHED</div>`;
+                    }
+
+                    // Action buttons ONLY for pending orders
+                    let actionHtml = '';
+                    if (isPending) {
+                        actionHtml = `
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 7px 16px; font-size: 0.76rem; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 9px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 3px 8px rgba(22,163,74,0.25); transition: 0.2s;"><i class="fas fa-check"></i> APPROVE</button>
+                                <button onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 7px 14px; font-size: 0.76rem; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 9px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 3px 8px rgba(220,38,38,0.25); transition: 0.2s;"><i class="fas fa-times"></i> REJECT</button>
+                            </div>
+                        `;
+                    }
 
                     return `
-                        <div class="order-card" style="
-                            display: flex;
-                            flex-direction: column; 
-                            background: #ffffff;
-                            border: 2.5px solid #0f172a;
-                            border-left: 7px solid ${borderLeftColor};
-                            border-radius: 16px;
-                            padding: 20px;
-                            box-shadow: 0 6px 18px rgba(15,23,42,0.08);
-                            position: relative;
-                            overflow: hidden;
-                            transition: all 0.25s ease-in-out;
-                        " onmouseover="this.style.transform='translateY(-3px) scale(1.01)'; this.style.boxShadow='0 12px 28px rgba(15,23,42,0.15)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 6px 18px rgba(15,23,42,0.08)';">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px;">
-                                <span style="background:${gwMeta.bg}; color:${gwMeta.fg}; padding:4px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; font-family:'Orbitron'; border: 1.5px solid #0f172a; box-shadow: 0 2px 6px rgba(15,23,42,0.15); display: inline-flex; align-items: center; gap: 6px;"><i class="fas ${gwMeta.icon}"></i> ${gwMeta.label}</span>
-                                <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 0.74rem; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 5px;"><i class="fas fa-clock" style="color: #64748b;"></i> ${date}</span>
+                        <div class="order-card-modern">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+                                <span style="background:${gwMeta.bg}; color:${gwMeta.fg}; padding:3px 10px; border-radius:6px; font-size:0.72rem; font-weight:800; font-family:'Orbitron'; display: inline-flex; align-items: center; gap: 5px;"><i class="fas ${gwMeta.icon}"></i> ${gwMeta.label}</span>
+                                ${statusBadgeHtml}
                             </div>
 
-                            <h4 style="margin: 0 0 14px 0; font-size: 1.02rem; font-weight: 900; color: #0f172a; line-height: 1.35; font-family: 'Poppins', sans-serif;">${gameTitle}</h4>
+                            <h4 style="margin: 0 0 10px 0; font-size: 0.96rem; font-weight: 800; color: #0f172a; line-height: 1.35; font-family: 'Poppins', sans-serif;">${gameTitle}</h4>
                             
-                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; background: #f8fafc; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #cbd5e1;">
+                            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-user-circle" style="color:#4f46e5; font-size: 0.9rem;"></i> Mteja:</span>
-                                    <span style="color: #0f172a; font-size: 0.88rem; font-weight: 800; cursor: pointer;" onclick="if(window.viewUserDetail && '${visitorId}') viewUserDetail('${visitorId}')" title="Bonyeza kuona akaunti ya mteja">${guestName}</span>
+                                    <span style="color: #64748b; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-user-circle" style="color:#4f46e5;"></i> Mteja:</span>
+                                    <span style="color: #0f172a; font-size: 0.82rem; font-weight: 800; cursor: pointer;" onclick="if(window.viewUserDetail && '${visitorId}') viewUserDetail('${visitorId}')" title="Tazama akaunti">${guestName}</span>
                                 </div>
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-phone-alt" style="color:#059669; font-size: 0.8rem;"></i> Simu:</span>
-                                    <span style="color: #0f172a; font-size: 0.85rem; font-weight: 800; font-family: monospace; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px;">${guestPhone}</span>
+                                    <span style="color: #64748b; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-phone-alt" style="color:#059669;"></i> Simu:</span>
+                                    <span style="color: #0f172a; font-size: 0.8rem; font-weight: 800; font-family: monospace; background: #ffffff; border: 1px solid #cbd5e1; padding: 1px 6px; border-radius: 4px;">${guestPhone}</span>
                                 </div>
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-receipt" style="color:#d97706; font-size: 0.8rem;"></i> Ref / Order ID:</span>
-                                    <span style="color: #0f172a; font-size: 0.75rem; font-weight: 800; font-family: monospace;" title="${orderRef}">${orderRef.length > 25 ? orderRef.substring(0, 24) + "..." : orderRef}</span>
+                                    <span style="color: #64748b; font-size: 0.75rem; font-weight: 700;"><i class="fas fa-clock" style="color:#64748b;"></i> Tarehe:</span>
+                                    <span style="color: #475569; font-size: 0.74rem; font-weight: 700;">${date}</span>
                                 </div>
                             </div>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 14px; border-top: 2px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px; border-top: 1px solid #f1f5f9;">
                                 <div>
-                                    <span style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Kiasi Paid</span>
-                                    <span style="font-weight: 900; color: #059669; font-family: 'Orbitron'; font-size: 1.22rem;">TSh ${parseFloat(order.amount).toLocaleString('en-US')}</span>
+                                    <span style="display: block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">KIASI</span>
+                                    <span style="font-weight: 900; color: #059669; font-family: 'Orbitron'; font-size: 1.15rem;">TSh ${parseFloat(order.amount).toLocaleString('en-US')}</span>
                                 </div>
                                 <div>
-                                    ${order.status === 'pending' ? `
-                                        <div style="display:flex; gap:6px;">
-                                            <button onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 8px 16px; font-size: 0.78rem; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 4px 10px rgba(22,163,74,0.3); transition: 0.2s;"><i class="fas fa-check"></i> APPROVE</button>
-                                            <button onclick="verifyOrder('${order.id}')" style="padding: 8px 14px; font-size: 0.78rem; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 4px 10px rgba(2,132,199,0.3); transition: 0.2s;" title="Verify live from gateway"><i class="fas fa-sync-alt"></i> VERIFY</button>
-                                            <button onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 8px 14px; font-size: 0.78rem; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 4px 10px rgba(220,38,38,0.3); transition: 0.2s;"><i class="fas fa-times"></i> REJECT</button>
-                                        </div>
-                                    ` : `
-                                        <span style="background:${isApproved ? '#dcfce7' : '#fee2e2'}; color:${isApproved ? '#15803d' : '#b91c1c'}; border:1.5px solid ${isApproved ? '#86efac' : '#fca5a5'}; font-size:0.78rem; padding:6px 14px; border-radius:10px; font-weight:800; font-family:'Orbitron'; text-transform:uppercase; display:inline-flex; align-items:center; gap:6px;">
-                                            <i class="fas ${isApproved ? 'fa-check-circle' : 'fa-times-circle'}"></i> ${order.status === 'manual_approved' ? 'APPROVED' : order.status.toUpperCase()}
-                                        </span>
-                                    `}
+                                    ${actionHtml}
                                 </div>
                             </div>
                         </div>
