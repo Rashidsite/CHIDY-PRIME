@@ -2036,6 +2036,9 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             const approvedOrder = orders.find(o => {
                 const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
                 if (!isApproved) return false;
+
+                // Enforce duration_days expiration if set
+                if (o.expires_at && new Date(o.expires_at) <= new Date()) return false;
                 
                 if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
                 
