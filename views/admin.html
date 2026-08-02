@@ -176,24 +176,106 @@
                     { key: 'pc', label: 'PC / Computer Games Portal', icon: 'fas fa-desktop', color: '#9333ea', bg: '#faf5ff' }
                 ];
 
-                container.innerHTML = platforms.map(p => `
-                    <div style="background: ${p.bg}; border: 2.5px solid #0f172a; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <span style="font-weight: 900; color: #0f172a; font-family: 'Orbitron'; font-size: 0.88rem; display: flex; align-items: center; gap: 8px;">
-                                <i class="${p.icon}" style="color: ${p.color}; font-size: 1.1rem;"></i> ${p.label}
-                            </span>
-                            <span style="font-size: 0.68rem; font-family: 'Orbitron'; font-weight: 800; background: #0f172a; color: #ffffff; padding: 3px 8px; border-radius: 6px;">${p.key.toUpperCase()}</span>
+                container.innerHTML = platforms.map(p => {
+                    const imgUrl = thumbs[p.key] || '';
+                    return `
+                        <div style="background: ${p.bg}; border: 2.5px solid #0f172a; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-weight: 900; color: #0f172a; font-family: 'Orbitron'; font-size: 0.88rem; display: flex; align-items: center; gap: 8px;">
+                                    <i class="${p.icon}" style="color: ${p.color}; font-size: 1.1rem;"></i> ${p.label}
+                                </span>
+                                <span style="font-size: 0.68rem; font-family: 'Orbitron'; font-weight: 800; background: #0f172a; color: #ffffff; padding: 3px 8px; border-radius: 6px;">${p.key.toUpperCase()}</span>
+                            </div>
+
+                            <!-- Live Image Preview Box -->
+                            <div id="preview_box_${p.key}" style="width: 100%; height: 130px; border-radius: 10px; border: 2px solid #0f172a; background: #ffffff; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
+                                ${imgUrl ? `<img src="${imgUrl}" id="preview_img_${p.key}" style="width:100%; height:100%; object-fit:cover;" />` : `<span id="preview_placeholder_${p.key}" style="font-size:0.78rem; font-weight:700; color:#64748b; text-align:center;"><i class="fas fa-image" style="font-size:1.6rem; display:block; margin-bottom:4px; color:#94a3b8;"></i> Hakuna picha iliyochaguliwa</span>`}
+                            </div>
+
+                            <!-- File Upload Button (Direct Gallery Picker) -->
+                            <button onclick="document.getElementById('thumb_file_${p.key}').click()" id="btn_upload_${p.key}" style="padding: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(124,58,237,0.25);">
+                                <i class="fas fa-camera"></i> CHAGUA PICHA (GALLERY)
+                            </button>
+                            <input type="file" id="thumb_file_${p.key}" accept="image/*" style="display: none;" onchange="uploadPortalThumbFile(event, '${p.key}')" />
+
+                            <!-- URL Input Alternative -->
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <label style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Au weka link ya picha (URL):</label>
+                                <input type="text" id="thumb_input_${p.key}" value="${imgUrl}" placeholder="https://..." 
+                                    style="width: 100%; padding: 10px 12px; background: #ffffff; border: 2px solid #0f172a; border-radius: 9px; color: #0f172a; font-weight: 700; font-size: 0.82rem; outline: none;" />
+                            </div>
+
+                            <button onclick="savePortalThumb('${p.key}')" style="padding: 10px; background: #0f172a; color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(15,23,42,0.2);">
+                                <i class="fas fa-save"></i> HIFADHI PICHA
+                            </button>
                         </div>
-                        <input type="text" id="thumb_input_${p.key}" value="${thumbs[p.key] || ''}" placeholder="URL ya Picha (https://...)" 
-                            style="width: 100%; padding: 11px 13px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 700; font-size: 0.85rem; outline: none;" />
-                        <button onclick="savePortalThumb('${p.key}')" style="padding: 10px; background: #0f172a; color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(15,23,42,0.2);">
-                            <i class="fas fa-save"></i> HIFADHI PICHA
-                        </button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
 
             } catch (err) {
                 console.error("Portal thumbs error:", err);
+            }
+        }
+
+        async function uploadPortalThumbFile(event, key) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const btn = document.getElementById(`btn_upload_${key}`);
+            const originalHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAPAKIA PICHA...';
+            }
+
+            showToast(`⏳ Inapakia picha kutoka galeria...`);
+
+            try {
+                const reader = new FileReader();
+                reader.onload = async function (e) {
+                    const base64Image = e.target.result;
+                    const res = await fetch('/api/admin/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                        },
+                        body: JSON.stringify({
+                            image: base64Image,
+                            fileName: `portal_${key}_${file.name}`
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (data.success && data.url) {
+                        const input = document.getElementById(`thumb_input_${key}`);
+                        if (input) input.value = data.url;
+
+                        // Update Live Preview Box
+                        const box = document.getElementById(`preview_box_${key}`);
+                        if (box) {
+                            box.innerHTML = `<img src="${data.url}" id="preview_img_${key}" style="width:100%; height:100%; object-fit:cover;" />`;
+                        }
+
+                        // Auto save
+                        await savePortalThumb(key);
+                        showToast(`✅ Picha imepakiwa na kuhifadhiwa kikamilifu!`);
+                    } else {
+                        showToast(`❌ Imeshindwa kupakia: ${data.error || 'Unknown error'}`);
+                    }
+
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    }
+                };
+                reader.readAsDataURL(file);
+            } catch (err) {
+                showToast(`❌ Hitilafu ya kupakia: ${err.message}`);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
             }
         }
 
@@ -216,12 +298,22 @@
 
                 const res = await fetch('/api/admin/settings/portal_thumbnails', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                    },
                     body: JSON.stringify({ value: JSON.stringify(existing) })
                 });
 
                 if (res.ok) {
                     showToast(`✅ Picha imehifadhiwa kwa ${key.toUpperCase()}!`);
+
+                    // Update Live Preview Box
+                    const box = document.getElementById(`preview_box_${key}`);
+                    const url = input.value.trim();
+                    if (box && url) {
+                        box.innerHTML = `<img src="${url}" id="preview_img_${key}" style="width:100%; height:100%; object-fit:cover;" />`;
+                    }
                 } else {
                     showToast(`❌ Failure saving thumbnail`);
                 }
