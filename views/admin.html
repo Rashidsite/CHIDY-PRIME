@@ -343,17 +343,62 @@
 
         async function loadSystemHealth() {
             try {
-                const res = await fetch('/api/system/health');
+                const token = localStorage.getItem('adminToken');
+                const res = await fetch('/api/system/health?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + (token || '') }
+                });
                 if (!res.ok) return;
                 const data = await res.json();
+                const stats = data.stats || data;
                 
-                const cpuEl = document.getElementById('cpuUsageText');
-                const memEl = document.getElementById('memUsageText');
-                const dbEl = document.getElementById('dbStatusText');
+                const dbStatusEl = document.getElementById('healthDbStatus');
+                const cpuValEl = document.getElementById('healthCpuVal');
+                const memValEl = document.getElementById('healthMemVal');
+                const cpuBarEl = document.getElementById('healthCpuBar');
+                const memBarEl = document.getElementById('healthMemBar');
+                const cpuProgEl = document.getElementById('healthCpuProgress');
+                const memProgEl = document.getElementById('healthMemProgress');
+                const uptimeEl = document.getElementById('healthUptime');
+                const telegramEl = document.getElementById('healthTelegramStatus');
+                const errorLogEl = document.getElementById('healthErrorLog');
+
+                if (dbStatusEl) dbStatusEl.innerText = stats.supabaseStatus || 'OK (Connected)';
+                if (cpuValEl) cpuValEl.innerText = (stats.cpuUsage || 0) + '%';
+                if (memValEl) memValEl.innerText = (stats.memoryUsage || 0) + '%';
+                if (cpuBarEl) cpuBarEl.innerText = (stats.cpuUsage || 0) + '%';
+                if (memBarEl) memBarEl.innerText = (stats.memoryUsage || 0) + '%';
+                if (cpuProgEl) cpuProgEl.style.width = Math.min(100, Math.max(0, stats.cpuUsage || 0)) + '%';
+                if (memProgEl) memProgEl.style.width = Math.min(100, Math.max(0, stats.memoryUsage || 0)) + '%';
                 
-                if (cpuEl) cpuEl.innerText = (data.cpuUsage || 0) + '%';
-                if (memEl) memEl.innerText = (data.memoryUsage || 0) + '%';
-                if (dbEl) dbEl.innerText = data.supabaseStatus || 'OK';
+                if (uptimeEl && stats.uptime) {
+                    const hrs = Math.floor(stats.uptime / 3600);
+                    const mins = Math.floor((stats.uptime % 3600) / 60);
+                    uptimeEl.innerText = `${hrs}h ${mins}m Active`;
+                }
+                if (telegramEl) telegramEl.innerText = stats.telegramStatus || 'Active';
+
+                // Error logs
+                if (errorLogEl) {
+                    const errors = data.errors || [];
+                    if (errors.length === 0) {
+                        errorLogEl.innerHTML = `
+                            <div style="background:#f0fdf4; border:1.5px solid #16a34a; border-radius:10px; padding:14px; color:#16a34a; font-weight:800; font-size:0.85rem; display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-check-circle" style="font-size:1.1rem;"></i> Mfumo ni Mzima kabisa 100%! Hakuna error yoyote iliyorekodiwa kwenye server.
+                            </div>
+                        `;
+                    } else {
+                        errorLogEl.innerHTML = errors.map(err => `
+                            <div style="background:#fef2f2; border:1.5px solid #ef4444; border-radius:10px; padding:12px 16px; color:#991b1b; font-weight:700; font-size:0.82rem;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:'Orbitron'; font-size:0.75rem; color:#ef4444;">
+                                    <span><i class="fas fa-bug"></i> ${err.type || 'SERVER ERROR'}</span>
+                                    <span>${err.time ? new Date(err.time).toLocaleTimeString() : 'Hivi sasa'}</span>
+                                </div>
+                                <div>${err.message || JSON.stringify(err)}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
             } catch(e) {
                 console.error("Health check error:", e);
             }
@@ -3095,69 +3140,129 @@
 
         <!-- SYSTEM HEALTH VIEW -->
         <section id="healthView" class="content view-section" style="display:none;">
-            <h2 class="view-title"><i class="fas fa-heartbeat"></i> System Health Monitor</h2>
-
-            <!-- Status Cards -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 2rem;">
-                <div class="stat-card" id="healthDbCard" style="border-left: 5px solid #00d25b;">
-                    <div>
-                        <div class="stat-label">Database</div>
-                        <div class="stat-val" id="healthDbStatus" style="font-size:1rem;">Checking...</div>
-                        <div style="font-size:0.7rem;color:#6c7293;margin-top:4px;" id="healthDbLastCheck">--</div>
-                    </div>
-                    <i class="fas fa-database stat-icon" style="color:#00d25b;"></i>
-                </div>
-                <div class="stat-card" id="healthCpuCard" style="border-left: 5px solid #00f2ff;">
-                    <div>
-                        <div class="stat-label">CPU Load</div>
-                        <div class="stat-val" id="healthCpuVal" style="font-size:1rem;">--%</div>
-                    </div>
-                    <i class="fas fa-microchip stat-icon" style="color:#00f2ff;"></i>
-                </div>
-                <div class="stat-card" id="healthMemCard" style="border-left: 5px solid #bc13fe;">
-                    <div>
-                        <div class="stat-label">Memory Usage</div>
-                        <div class="stat-val" id="healthMemVal" style="font-size:1rem;">--%</div>
-                    </div>
-                    <i class="fas fa-memory stat-icon" style="color:#bc13fe;"></i>
-                </div>
-                <div class="stat-card" style="border-left: 5px solid #ffb400;">
-                    <div>
-                        <div class="stat-label">Server Uptime</div>
-                        <div class="stat-val" id="healthUptime" style="font-size:1rem;">--</div>
-                    </div>
-                    <i class="fas fa-server stat-icon" style="color:#ffb400;"></i>
-                </div>
-                <div class="stat-card" id="healthTelegramCard" style="border-left: 5px solid #6c7293;">
-                    <div>
-                        <div class="stat-label">Telegram Alerts</div>
-                        <div class="stat-val" id="healthTelegramStatus" style="font-size:1rem;">--</div>
-                    </div>
-                    <fab class="fab fa-telegram stat-icon" style="color:#229ed9;"></fab>
-                </div>
-            </div>
-
-            <!-- Progress Bars -->
-            <div class="admin-card" style="margin-bottom:1.5rem;">
-                <h4 style="font-family:'Orbitron';color:#00f2ff;font-size:0.85rem;margin:0 0 1.2rem;letter-spacing:2px;"><i class="fas fa-tachometer-alt"></i> RESOURCE USAGE</h4>
-                <div style="margin-bottom:1rem;">
-                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#aaa;margin-bottom:6px;"><span>CPU</span><span id="healthCpuBar">--%</span></div>
-                    <div style="background:rgba(255,255,255,0.05);border-radius:30px;height:8px;overflow:hidden;"><div id="healthCpuProgress" style="height:100%;width:0%;background:linear-gradient(90deg,#00f2ff,#bc13fe);border-radius:30px;transition:width 0.6s ease;"></div></div>
-                </div>
+            <!-- Top Header -->
+            <div style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
                 <div>
-                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#aaa;margin-bottom:6px;"><span>Memory</span><span id="healthMemBar">--%</span></div>
-                    <div style="background:rgba(255,255,255,0.05);border-radius:30px;height:8px;overflow:hidden;"><div id="healthMemProgress" style="height:100%;width:0%;background:linear-gradient(90deg,#bc13fe,#ff3366);border-radius:30px;transition:width 0.6s ease;"></div></div>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.4rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-heartbeat" style="color: #ef4444;"></i> Executive System Health & Realtime Server Monitor
+                    </h3>
+                    <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin: 0;">Usimamizi wa Afya ya Mfumo: Angalia hali ya Database, CPU, Memory, Server Uptime na Log za Hitilafu Live.</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 6px; background: #f0fdf4; border: 2px solid #16a34a; padding: 6px 14px; border-radius: 20px; font-family: 'Orbitron'; font-size: 0.76rem; font-weight: 900; color: #16a34a;">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 8px #16a34a; animation: livePulse 1.5s infinite;"></span> REALTIME AUTO-REFRESH
+                    </div>
+                    <button onclick="handleManualRefresh(this, loadSystemHealth, 'Afya ya Mfumo')" style="background: #0f172a; color: #ffffff; border: 2px solid #0f172a; padding: 9px 18px; border-radius: 10px; font-size: 0.82rem; font-weight: 900; cursor: pointer; font-family: 'Orbitron'; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(15,23,42,0.2);">
+                        <i class="fas fa-sync-alt"></i> REFRESH DATA
+                    </button>
                 </div>
             </div>
 
-            <!-- Error Log -->
-            <div class="admin-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                    <h4 style="font-family:'Orbitron';color:#ff3366;font-size:0.85rem;margin:0;letter-spacing:2px;"><i class="fas fa-exclamation-triangle"></i> SYSTEM ERROR LOG</h4>
-                    <button onclick="loadSystemHealth()" style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.3);color:#00f2ff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
+            <!-- Status Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin-bottom: 2rem;">
+                <div class="stat-card" id="healthDbCard" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:0.75rem; font-family:'Orbitron'; font-weight:900; color:#64748b; text-transform:uppercase;">DATABASE STATUS</div>
+                            <div class="stat-val" id="healthDbStatus" style="font-size:1.1rem; font-weight:900; color:#16a34a; font-family:'Orbitron'; margin-top:6px;">OK (Connected)</div>
+                            <div style="font-size:0.72rem; color:#94a3b8; font-weight:700; margin-top:4px;" id="healthDbLastCheck">Imekaguliwa Hivi Sasa</div>
+                        </div>
+                        <div style="width:42px; height:42px; border-radius:10px; background:#f0fdf4; border:1.5px solid #16a34a; display:flex; align-items:center; justify-content:center; color:#16a34a; font-size:1.2rem;">
+                            <i class="fas fa-database"></i>
+                        </div>
+                    </div>
                 </div>
-                <div id="healthErrorLog" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;">
-                    <div style="color:#6c7293;font-size:0.85rem;text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+                <div class="stat-card" id="healthCpuCard" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:0.75rem; font-family:'Orbitron'; font-weight:900; color:#64748b; text-transform:uppercase;">CPU LOAD</div>
+                            <div class="stat-val" id="healthCpuVal" style="font-size:1.4rem; font-weight:900; color:#0284c7; font-family:'Orbitron'; margin-top:4px;">0%</div>
+                            <div style="font-size:0.72rem; color:#94a3b8; font-weight:700; margin-top:4px;" id="cpuUsageText">Kiwango cha Processer</div>
+                        </div>
+                        <div style="width:42px; height:42px; border-radius:10px; background:#f0f9ff; border:1.5px solid #0284c7; display:flex; align-items:center; justify-content:center; color:#0284c7; font-size:1.2rem;">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="healthMemCard" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:0.75rem; font-family:'Orbitron'; font-weight:900; color:#64748b; text-transform:uppercase;">MEMORY USAGE</div>
+                            <div class="stat-val" id="healthMemVal" style="font-size:1.4rem; font-weight:900; color:#9333ea; font-family:'Orbitron'; margin-top:4px;">0%</div>
+                            <div style="font-size:0.72rem; color:#94a3b8; font-weight:700; margin-top:4px;" id="memUsageText">Matumizi ya RAM</div>
+                        </div>
+                        <div style="width:42px; height:42px; border-radius:10px; background:#faf5ff; border:1.5px solid #9333ea; display:flex; align-items:center; justify-content:center; color:#9333ea; font-size:1.2rem;">
+                            <i class="fas fa-memory"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:0.75rem; font-family:'Orbitron'; font-weight:900; color:#64748b; text-transform:uppercase;">SERVER UPTIME</div>
+                            <div class="stat-val" id="healthUptime" style="font-size:1.1rem; font-weight:900; color:#d97706; font-family:'Orbitron'; margin-top:6px;">Online (100%)</div>
+                            <div style="font-size:0.72rem; color:#94a3b8; font-weight:700; margin-top:4px;">Mfumo uko Heche</div>
+                        </div>
+                        <div style="width:42px; height:42px; border-radius:10px; background:#fffbeb; border:1.5px solid #d97706; display:flex; align-items:center; justify-content:center; color:#d97706; font-size:1.2rem;">
+                            <i class="fas fa-server"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="healthTelegramCard" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <div style="font-size:0.75rem; font-family:'Orbitron'; font-weight:900; color:#64748b; text-transform:uppercase;">TELEGRAM ALERTS</div>
+                            <div class="stat-val" id="healthTelegramStatus" style="font-size:1.1rem; font-weight:900; color:#0284c7; font-family:'Orbitron'; margin-top:6px;">Active</div>
+                            <div style="font-size:0.72rem; color:#94a3b8; font-weight:700; margin-top:4px;">Bot Imetayarishwa</div>
+                        </div>
+                        <div style="width:42px; height:42px; border-radius:10px; background:#f0f9ff; border:1.5px solid #0284c7; display:flex; align-items:center; justify-content:center; color:#0284c7; font-size:1.2rem;">
+                            <i class="fab fa-telegram"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resource Progress Bars Box -->
+            <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 24px; margin-bottom: 2rem; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                <h4 style="font-family:'Orbitron'; color:#0f172a; font-size:0.95rem; font-weight:900; margin:0 0 1.5rem; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-tachometer-alt" style="color:#0284c7;"></i> RESOURCE USAGE & SYSTEM GAUGES
+                </h4>
+                
+                <div style="margin-bottom:1.5rem;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:800; color:#0f172a; margin-bottom:8px; font-family:'Orbitron';">
+                        <span><i class="fas fa-microchip" style="color:#0284c7;"></i> CPU POWER</span>
+                        <span id="healthCpuBar" style="color:#0284c7;">0%</span>
+                    </div>
+                    <div style="background:#e2e8f0; border: 2px solid #0f172a; border-radius:30px; height:14px; overflow:hidden;">
+                        <div id="healthCpuProgress" style="height:100%; width:0%; background:linear-gradient(90deg, #0284c7, #7c3aed); border-radius:30px; transition:width 0.6s ease;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:800; color:#0f172a; margin-bottom:8px; font-family:'Orbitron';">
+                        <span><i class="fas fa-memory" style="color:#9333ea;"></i> MEMORY (RAM) USAGE</span>
+                        <span id="healthMemBar" style="color:#9333ea;">0%</span>
+                    </div>
+                    <div style="background:#e2e8f0; border: 2px solid #0f172a; border-radius:30px; height:14px; overflow:hidden;">
+                        <div id="healthMemProgress" style="height:100%; width:0%; background:linear-gradient(90deg, #9333ea, #ef4444); border-radius:30px; transition:width 0.6s ease;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Log Box -->
+            <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; border-bottom:2px solid #f1f5f9; padding-bottom:12px;">
+                    <h4 style="font-family:'Orbitron'; color:#ef4444; font-size:0.95rem; font-weight:900; margin:0; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-exclamation-triangle"></i> REALTIME SYSTEM ERROR & AUDIT LOG
+                    </h4>
+                    <span style="font-size:0.75rem; font-weight:800; font-family:'Orbitron'; color:#64748b; background:#f1f5f9; padding:4px 10px; border-radius:6px; border:1px solid #cbd5e1;">LIVE LOGS</span>
+                </div>
+                <div id="healthErrorLog" style="display:flex; flex-direction:column; gap:10px; max-height:340px; overflow-y:auto; padding-right:6px;">
+                    <div style="color:#64748b; font-weight:700; font-size:0.9rem; text-align:center; padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia error log...</div>
                 </div>
             </div>
         </section>
@@ -7753,12 +7858,12 @@
             }
         }, 30000);
 
-        // Auto-refresh system health every 15 seconds if view is active
+        // Auto-refresh system health every 5 seconds in realtime if view is active
         setInterval(() => {
             if (typeof currentActiveViewId !== 'undefined' && currentActiveViewId === 'healthView') {
                 loadSystemHealth();
             }
-        }, 15000);
+        }, 5000);
 
         // Debug: Log when script is fully loaded
         console.log("Admin Dashboard Script: FULLY INITIALIZED ✅");
