@@ -3235,8 +3235,28 @@ app.post('/api/admin/notifications/broadcast', verifyAdmin, async (req, res) => 
             .select();
             
         if (error) throw error;
+
+        // Also update site_settings announcement for storefront top banner & modal
+        const annText = title ? `${title}: ${message}` : message;
+        await supabase.from('site_settings').upsert({
+            key: 'announcement',
+            value: annText
+        }, { onConflict: 'key' });
+        invalidateSettingsCache('announcement');
+
         res.json({ success: true, data });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/admin/notifications/broadcast', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    try {
+        await supabase.from('site_settings').upsert({ key: 'announcement', value: '' }, { onConflict: 'key' });
+        invalidateSettingsCache('announcement');
+        res.json({ success: true, message: 'Broadcast imefutwa kikamilifu!' });
+    } catch(err) {
         res.status(500).json({ error: err.message });
     }
 });

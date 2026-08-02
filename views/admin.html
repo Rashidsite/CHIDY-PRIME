@@ -3636,71 +3636,81 @@
         </section>
 
         <!-- BROADCAST MESSAGES VIEW -->
+        <!-- BROADCAST MESSAGES VIEW -->
         <section id="messagesView" class="content view-section" style="display: none;">
-            <style>
-                .broadcast-container {
-                    display: grid; 
-                    grid-template-columns: 1.2fr 0.8fr; 
-                    gap: 30px; 
-                    align-items: start;
-                }
-                @media (max-width: 768px) {
-                    .broadcast-container {
-                        grid-template-columns: 1fr;
-                    }
-                }
-            </style>
-            <div class="admin-card">
-                <h3 class="card-title"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
-                <p style="color: #6c7293; margin-bottom: 2rem;">Tuma ujumbe huu kwa wateja WOTE watakapoingia kwenye website yako.</p>
-                
-                <div class="broadcast-container">
+            <!-- Top Executive Header -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="margin: 0 0 4px 0; font-size: 1.4rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-bullhorn" style="color: #7c3aed;"></i> Executive Broadcast Center & Announcement Hub
+                </h3>
+                <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin: 0;">Tuma matangazo, ofa, na taarifa za papo hapo zinazotokea kwenye simu za wateja WOTE mtandaoni.</p>
+            </div>
+
+            <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; align-items: start;">
                     <!-- FORM SIDE -->
-                    <form id="broadcastForm" style="display: flex; flex-direction: column; gap: 15px;">
+                    <form id="broadcastForm" style="display: flex; flex-direction: column; gap: 18px;">
                         <div class="input-group">
-                            <label style="color: #000; font-size: 0.8rem; margin-bottom: 5px; display: flex; justify-content: space-between;">
-                                <span>Title</span>
-                                <span id="titleCounter" style="color: #6c7293; font-size: 0.7rem;">0/40</span>
+                            <label style="color: #0f172a; font-weight: 800; font-size: 0.82rem; margin-bottom: 6px; display: flex; justify-content: space-between; font-family: 'Orbitron';">
+                                <span>KICHWAA CHA TANGAZO (TITLE)</span>
+                                <span id="titleCounter" style="color: #64748b; font-size: 0.75rem;">0/40</span>
                             </label>
-                            <input type="text" id="bcTitle" placeholder="Mfano: Offer ya Leo!" maxlength="40"
-                                style="width: 100%; padding: 12px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; color: #000; outline: none; transition: 0.3s;"
-                                onfocus="this.style.borderColor='var(--primary-color)'" onblur="this.style.borderColor='rgba(0,0,0,0.1)'">
+                            <input type="text" id="bcTitle" placeholder="Mfano: 🚀 OFFA KUBWA YA LEO!" maxlength="40"
+                                style="width: 100%; padding: 13px 15px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 800; font-size: 0.92rem; outline: none;">
                         </div>
                         <div class="input-group">
-                            <label style="color: #000; font-size: 0.8rem; margin-bottom: 5px; display: flex; justify-content: space-between;">
-                                <span>Message Content</span>
-                                <span id="msgCounter" style="color: #6c7293; font-size: 0.7rem;">0/150</span>
+                            <label style="color: #0f172a; font-weight: 800; font-size: 0.82rem; margin-bottom: 6px; display: flex; justify-content: space-between; font-family: 'Orbitron';">
+                                <span>MAELEZO YA UJUMBE (MESSAGE CONTENT)</span>
+                                <span id="msgCounter" style="color: #64748b; font-size: 0.75rem;">0/150</span>
                             </label>
-                            <textarea id="bcMessage" rows="4" maxlength="150" placeholder="Andika ujumbe wako hapa..." 
-                                style="width: 100%; padding: 12px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; color: #000; outline: none; resize: none; transition: 0.3s;"
-                                onfocus="this.style.borderColor='var(--primary-color)'" onblur="this.style.borderColor='rgba(0,0,0,0.1)'"></textarea>
+                            <textarea id="bcMessage" rows="4" maxlength="150" placeholder="Andika ujumbe au maelezo ya tangazo lako hapa..."
+                                style="width: 100%; padding: 13px 15px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 700; font-size: 0.9rem; outline: none; resize: none; line-height: 1.5;"></textarea>
                         </div>
                         <div class="input-group">
-                            <label style="color: #000; font-size: 0.8rem; margin-bottom: 5px; display: block;">Notification Type</label>
-                            <select id="bcType" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; color: #000; outline: none;">
-                                <option value="info">🔵 Information (Blue)</option>
-                                <option value="success">🟢 Success (Green)</option>
-                                <option value="warning">🟠 Alert (Orange)</option>
+                            <label style="color: #0f172a; font-weight: 800; font-size: 0.82rem; margin-bottom: 6px; display: block; font-family: 'Orbitron';">AINI YA TANGAZO (NOTIFICATION TYPE)</label>
+                            <select id="bcType" style="width: 100%; padding: 13px 15px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 800; font-size: 0.88rem; outline: none; cursor: pointer;">
+                                <option value="info">🔵 Taarifa Kawaida (Blue Info)</option>
+                                <option value="success">🟢 Ofa / Punguzo (Green Offer)</option>
+                                <option value="warning">🟠 Tahadhari / Alert (Orange Warning)</option>
                             </select>
                         </div>
-                        <button type="submit" id="bcSubmitBtn" class="btn-primary" style="padding: 15px; border-radius: 10px; font-weight: 700; background: linear-gradient(45deg, var(--primary), var(--secondary)); border: none; color: #fff; cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 10px;">
-                            <i class="fas fa-paper-plane" id="bcIcon"></i> <span id="bcBtnText">Tuma Ujumbe Sasa</span>
+                        <button type="submit" id="bcSubmitBtn" style="padding: 15px; border-radius: 12px; font-weight: 900; font-family: 'Orbitron'; background: linear-gradient(135deg, #7c3aed, #6d28d9); border: 2.5px solid #0f172a; color: #ffffff; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 14px rgba(124,58,237,0.35); font-size: 0.95rem; transition: 0.2s;">
+                            <i class="fas fa-paper-plane" id="bcIcon"></i> <span id="bcBtnText">TUMA UJUMBE KWA WATEJA WOTE</span>
                         </button>
                     </form>
 
-                    <!-- PREVIEW SIDE -->
-                    <div style="background: rgba(0,0,0,0.05); border: 1px dashed rgba(0,0,0,0.1); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 15px; height: fit-content;">
-                        <h4 style="color: #6c7293; margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-eye"></i> Live Preview
-                        </h4>
-                        <div style="padding: 15px; border-radius: 10px; background: rgba(0, 242, 255, 0.1); border-left: 4px solid #00f2ff; position: relative; transition: all 0.3s ease;" id="livePreviewBox">
-                            <h4 id="previewTitle" style="margin: 0 0 5px 0; color: #000; font-size: 0.95rem; word-wrap: break-word;">Offer ya Leo!</h4>
-                            <p id="previewText" style="margin: 0; color: #333; font-size: 0.85rem; line-height: 1.4; word-wrap: break-word;">Andika ujumbe wako hapa...</p>
-                            <span style="position: absolute; top: 15px; right: 15px; font-size: 0.7rem; color: #6c7293;">Sasa Hivi</span>
+                    <!-- PREVIEW & CONTROLLER SIDE -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <!-- Live Phone Preview Card -->
+                        <div style="background: #f8fafc; border: 2.5px solid #0f172a; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.05);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                                <h4 style="color: #0f172a; margin: 0; font-size: 0.85rem; font-family: 'Orbitron'; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-mobile-alt" style="color: #7c3aed;"></i> LIVE PHONE PREVIEW
+                                </h4>
+                                <span style="background: #e2e8f0; color: #334155; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; font-family: 'Orbitron';">PREVIEW</span>
+                            </div>
+                            <div style="padding: 16px; border-radius: 12px; background: rgba(79, 70, 229, 0.08); border-left: 5px solid #4f46e5; border: 1.5px solid #0f172a; position: relative; transition: all 0.3s ease;" id="livePreviewBox">
+                                <h4 id="previewTitle" style="margin: 0 0 6px 0; color: #0f172a; font-weight: 900; font-size: 0.95rem; word-wrap: break-word; font-family: 'Orbitron';">🚀 OFFA KUBWA YA LEO!</h4>
+                                <p id="previewText" style="margin: 0; color: #334155; font-size: 0.85rem; line-height: 1.5; word-wrap: break-word; font-weight: 600;">Andika ujumbe wako hapa kuona jinsi utakavyoonekana...</p>
+                                <span style="position: absolute; top: 14px; right: 14px; font-size: 0.7rem; color: #64748b; font-weight: 700;">Sasa Hivi</span>
+                            </div>
+                            <p style="font-size: 0.78rem; color: #64748b; margin: 12px 0 0 0; font-weight: 600; line-height: 1.4;">
+                                <i class="fas fa-info-circle" style="color: #7c3aed;"></i> Hivi ndivyo ujumbe utaonekana juu ya mtandao na kwenye simu za wateja.
+                            </p>
                         </div>
-                        <p style="font-size: 0.75rem; color: #6c7293; margin: 0; font-style: italic;">
-                            <i class="fas fa-info-circle"></i> Hivi ndivyo ujumbe utaonekana kwenye simu za wateja kwenye sehemu yao ya notification.
-                        </p>
+
+                        <!-- Active Broadcast Controller -->
+                        <div style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.05);">
+                            <h4 style="color: #0f172a; margin: 0 0 10px 0; font-size: 0.88rem; font-family: 'Orbitron'; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-broadcast-tower" style="color: #10b981;"></i> TANGAZO LINALOFANYA KAZI (ACTIVE)
+                            </h4>
+                            <div id="activeBroadcastStatusBox" style="background: #f8fafc; border: 1.5px solid #0f172a; border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 0.85rem; color: #334155; font-weight: 700;">
+                                Hakuna tangazo lililowashwa kwa sasa.
+                            </div>
+                            <button onclick="clearActiveBroadcast()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.82rem; box-shadow: 0 4px 10px rgba(220,38,38,0.25);">
+                                <i class="fas fa-trash-alt"></i> FUTIA TANGAZO LA SASA (CLEAR)
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -6047,47 +6057,80 @@
         bcMessageInput.addEventListener('input', updatePreview);
         bcTypeSelect.addEventListener('change', updatePreview);
 
-        document.getElementById('broadcastForm').onsubmit = async (e) => {
+        async function clearActiveBroadcast() {
+            const confirmed = await showConfirmModal("FUTA TANGAZO", "Uko uhakika unataka kufuta tangazo linalofanya kazi kwa sasa?");
+            if (!confirmed) return;
+            try {
+                const res = await fetch("/api/admin/notifications/broadcast", {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + (localStorage.getItem("adminToken") || "") }
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast("✅ Tangazo limefutwa kikamilifu!");
+                    loadActiveBroadcastStatus();
+                } else { showToast("⚠️ Imeshindwa: " + (d.error || "Error")); }
+            } catch(e) { showToast("⚠️ Hitilafu ya mtandao."); }
+        }
+
+        async function loadActiveBroadcastStatus() {
+            try {
+                const res = await fetch("/api/settings/announcement?t=" + Date.now());
+                const data = await res.json();
+                const box = document.getElementById("activeBroadcastStatusBox");
+                if (box) {
+                    if (data && data.value) {
+                        box.innerHTML = `<span style="color:#059669; font-weight:800;"><i class="fas fa-check-circle"></i> ACTIVE:</span> ${data.value}`;
+                    } else {
+                        box.innerText = "Hakuna tangazo lililowashwa kwa sasa.";
+                    }
+                }
+            } catch(e) {}
+        }
+
+        document.getElementById("broadcastForm").onsubmit = async (e) => {
             e.preventDefault();
-            const title = bcTitleInput.value;
-            const message = bcMessageInput.value;
+            const title = bcTitleInput.value.trim();
+            const message = bcMessageInput.value.trim();
             const type = bcTypeSelect.value;
             
-            const submitBtn = document.getElementById('bcSubmitBtn');
-            const icon = document.getElementById('bcIcon');
-            const btnText = document.getElementById('bcBtnText');
+            const submitBtn = document.getElementById("bcSubmitBtn");
+            const icon = document.getElementById("bcIcon");
+            const btnText = document.getElementById("bcBtnText");
 
-            if (!title || !message) return alert("Tafadhali jaza title na ujumbe!");
+            if (!title || !message) return showToast("⚠️ Tafadhali jaza kichwa na ujumbe!");
 
-            // Loading state
             submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.7';
-            icon.className = 'fas fa-spinner fa-spin';
-            btnText.innerText = 'Inatuma...';
+            submitBtn.style.opacity = "0.7";
+            icon.className = "fas fa-spinner fa-spin";
+            btnText.innerText = "INATUMA UJUMBE...";
 
             try {
-                const res = await fetch('/api/admin/notifications/broadcast', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const res = await fetch("/api/admin/notifications/broadcast", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + (localStorage.getItem("adminToken") || "")
+                    },
                     body: JSON.stringify({ title, message, type })
                 });
                 const result = await res.json();
                 
                 if (result.success) {
-                    alert('✅ Safi kabisa! Ujumbe wako umetumwa kwa wateja wote kwa mafanikio.');
-                    document.getElementById('broadcastForm').reset();
-                    updatePreview(); // Reset preview
+                    showToast("✅ Safi kabisa! Ujumbe wako umetumwa kwa wateja wote kwa mafanikio.");
+                    document.getElementById("broadcastForm").reset();
+                    updatePreview();
+                    loadActiveBroadcastStatus();
                 } else {
-                    throw new Error(result.error);
+                    throw new Error(result.error || "Imeshindwa");
                 }
             } catch (err) {
-                alert('❌ Imeshindikana: ' + err.message);
+                showToast("❌ Imeshindikana: " + err.message);
             } finally {
-                // Restore button
                 submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-                icon.className = 'fas fa-paper-plane';
-                btnText.innerText = 'Tuma Ujumbe Sasa';
+                submitBtn.style.opacity = "1";
+                icon.className = "fas fa-paper-plane";
+                btnText.innerText = "TUMA UJUMBE KWA WATEJA WOTE";
             }
         };
 
