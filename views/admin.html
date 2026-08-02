@@ -3056,79 +3056,58 @@
         </section>
 
         <!-- PROMO CODES VIEW -->
+        <!-- PROMO CODES VIEW -->
         <section id="promoView" class="content view-section" style="display: none;">
-            <style>
-                .promo-stat-card {
-                    background: #f5f3ff;
-                    border: 1px solid rgba(124,58,237,0.2);
-                    border-radius: 14px;
-                    padding: 20px;
-                    display: flex;
-                    align-items: center;
-                    gap: 18px;
-                    transition: 0.3s;
-                }
-                .promo-stat-card:hover { border-color: #7c3aed; box-shadow: 0 4px 16px rgba(124,58,237,0.1); }
-                .promo-stat-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(124,58,237,0.12); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #7c3aed; flex-shrink: 0; }
-                .promo-card-item {
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 14px;
-                    padding: 20px;
-                    transition: 0.3s;
-                    position: relative;
-                    overflow: hidden;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-                }
-                .promo-card-item::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #7c3aed; }
-                .promo-card-item:hover { border-color: #7c3aed; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.1); }
-                .promo-code-badge { font-family: 'Orbitron'; font-size: 1.1rem; letter-spacing: 2px; color: #7c3aed; font-weight: 800; }
-            </style>
-
-            <!-- Header -->
+            <!-- Top Executive Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 15px;">
                 <div>
-                    <h2 class="view-title" style="margin-bottom: 5px;"><i class="fas fa-ticket-alt"></i> Promo Codes Manager</h2>
-                    <p style="color: #6c7293; font-size: 0.9rem; margin: 0;">Simamia kodi za punguzo (discounts) kwa wateja wako</p>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.4rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-ticket-alt" style="color: #7c3aed;"></i> Executive Promo Codes Manager
+                    </h3>
+                    <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin: 0;">Tengeneza na usimamie kodi za punguzo (discounts) kwa wateja wako mtandaoni.</p>
                 </div>
-                <button onclick="addPromoCodeUI()" style="padding: 12px 25px; background: linear-gradient(135deg, #bc13fe, #7b00ff); border: none; border-radius: 12px; color: #fff; font-family: 'Orbitron'; font-size: 0.85rem; font-weight: 700; cursor: pointer; box-shadow: 0 5px 20px rgba(188,19,254,0.4); transition: 0.3s; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                    <i class="fas fa-plus-circle"></i> ONGEZA PROMO CODE
+                <button onclick="openAddPromoModal()" style="padding: 12px 22px; background: linear-gradient(135deg, #10b981, #059669); border: 2.5px solid #0f172a; border-radius: 12px; color: #ffffff; font-family: 'Orbitron'; font-size: 0.85rem; font-weight: 900; cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,0.35); transition: 0.2s; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-plus-circle"></i> ONGEZA PROMO CODE MPYA
                 </button>
             </div>
 
-            <!-- Stats Row -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 2rem;" id="promoStatsRow">
-                <div class="promo-stat-card">
-                    <div class="promo-stat-icon"><i class="fas fa-tags"></i></div>
+            <!-- High Contrast Stat Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 2rem;">
+                <div style="border-left: 6px solid #4f46e5; border-radius: 14px; background: #ffffff; border: 2.5px solid #0f172a; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06); display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div style="font-size: 0.75rem; color: #6c7293; text-transform: uppercase; letter-spacing: 1px;">Jumla ya Codes</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #fff;" id="promoTotalCount">-</div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">JUMLA YA CODES</div>
+                        <div style="font-size: 1.6rem; font-family: 'Orbitron'; font-weight: 900; color: #4f46e5;" id="promoTotalCount">0</div>
                     </div>
+                    <i class="fas fa-tags" style="font-size: 1.8rem; color: #4f46e5;"></i>
                 </div>
-                <div class="promo-stat-card" style="background: rgba(0,210,91,0.06); border-color: rgba(0,210,91,0.2);">
-                    <div class="promo-stat-icon" style="background: rgba(0,210,91,0.15); color: #00d25b;"><i class="fas fa-check-circle"></i></div>
+                <div style="border-left: 6px solid #10b981; border-radius: 14px; background: #ffffff; border: 2.5px solid #0f172a; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06); display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div style="font-size: 0.75rem; color: #6c7293; text-transform: uppercase; letter-spacing: 1px;">Zinazofanya Kazi</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #00d25b;" id="promoActiveCount">-</div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">ZINAZOFANYA KAZI (ACTIVE)</div>
+                        <div style="font-size: 1.6rem; font-family: 'Orbitron'; font-weight: 900; color: #10b981;" id="promoActiveCount">0</div>
                     </div>
+                    <i class="fas fa-check-circle" style="font-size: 1.8rem; color: #10b981;"></i>
                 </div>
-                <div class="promo-stat-card" style="background: rgba(255,51,102,0.06); border-color: rgba(255,51,102,0.2);">
-                    <div class="promo-stat-icon" style="background: rgba(255,51,102,0.15); color: #ff3366;"><i class="fas fa-times-circle"></i></div>
+                <div style="border-left: 6px solid #f43f5e; border-radius: 14px; background: #ffffff; border: 2.5px solid #0f172a; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06); display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div style="font-size: 0.75rem; color: #6c7293; text-transform: uppercase; letter-spacing: 1px;">Zimezimwa</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #ff3366;" id="promoDisabledCount">-</div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">ZIMEZIMWA (INACTIVE)</div>
+                        <div style="font-size: 1.6rem; font-family: 'Orbitron'; font-weight: 900; color: #f43f5e;" id="promoDisabledCount">0</div>
                     </div>
+                    <i class="fas fa-times-circle" style="font-size: 1.8rem; color: #f43f5e;"></i>
                 </div>
             </div>
 
-            <!-- Promo Cards Grid -->
-            <div class="admin-card" style="border: 1px solid rgba(188,19,254,0.15);">
+            <!-- Promo Cards Container -->
+            <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h3 style="font-family: 'Orbitron'; font-size: 0.95rem; color: #bc13fe; margin: 0; letter-spacing: 2px;"><i class="fas fa-list"></i> CODES ZOTE</h3>
-                    <button onclick="loadPromoCodes()" style="background: rgba(188,19,254,0.1); border: 1px solid rgba(188,19,254,0.3); color: #bc13fe; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    <h4 style="font-family: 'Orbitron'; font-size: 1.05rem; color: #0f172a; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-list" style="color: #7c3aed;"></i> ORODHA YA PROMO CODES ZOTE
+                    </h4>
+                    <button onclick="loadPromoCodes()" style="background: #0f172a; border: 1.5px solid #0f172a; color: #ffffff; padding: 7px 16px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 800; font-family: 'Orbitron'; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-sync-alt"></i> REFRESH
+                    </button>
                 </div>
-                <div id="promoCodesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
-                    <div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading promo codes...</div>
+                <div id="promoCodesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;">
+                    <div style="color:#64748b; font-weight:700; font-size:0.88rem; grid-column: 1/-1; text-align: center; padding: 2.5rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia promo codes...</div>
                 </div>
             </div>
         </section>
@@ -6134,21 +6113,22 @@
             }
         };
 
-        // ===== PROMO CODES SYSTEM =====
-
+        // ===== PROMO CODES SYSTEM (ULTRA PREMIUM 3D) =====
         async function loadPromoCodesWithStats() {
-            const list = document.getElementById('promoCodesList');
-            if (list) list.innerHTML = '<div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia promo codes...</div>';
+            const list = document.getElementById("promoCodesList");
+            if (list) list.innerHTML = '<div style="color:#64748b; font-weight:700; font-size:0.88rem; grid-column: 1/-1; text-align: center; padding: 2.5rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia promo codes...</div>';
             
             try {
-                const res = await fetch('/api/admin/promo');
+                const res = await fetch("/api/admin/promo?t=" + Date.now(), {
+                    headers: { "Authorization": "Bearer " + (localStorage.getItem("adminToken") || "") }
+                });
                 const data = await res.json();
                 allPromoCodes = Array.isArray(data) ? data : [];
                 renderPromoStats();
                 renderPromoCodesList();
             } catch (err) {
                 console.error("Failed to load promo codes:", err);
-                if (list) list.innerHTML = '<div style="color:#ff3366; text-align: center; padding: 2rem;">Error loading codes.</div>';
+                if (list) list.innerHTML = '<div style="color:#ef4444; font-weight:800; text-align: center; padding: 2.5rem;">Hitilafu imetokea kupakia promo codes.</div>';
             }
         }
 
@@ -6161,52 +6141,60 @@
             const active = allPromoCodes.filter(c => c.active).length;
             const disabled = total - active;
 
-            if(document.getElementById('promoTotalCount')) document.getElementById('promoTotalCount').innerText = total;
-            if(document.getElementById('promoActiveCount')) document.getElementById('promoActiveCount').innerText = active;
-            if(document.getElementById('promoDisabledCount')) document.getElementById('promoDisabledCount').innerText = disabled;
+            if(document.getElementById("promoTotalCount")) document.getElementById("promoTotalCount").innerText = total;
+            if(document.getElementById("promoActiveCount")) document.getElementById("promoActiveCount").innerText = active;
+            if(document.getElementById("promoDisabledCount")) document.getElementById("promoDisabledCount").innerText = disabled;
         }
 
         function renderPromoCodesList() {
-            const list = document.getElementById('promoCodesList');
+            const list = document.getElementById("promoCodesList");
             if (!list) return;
 
             if (allPromoCodes.length === 0) {
-                list.innerHTML = '<div style="color:#6c7293; font-size:0.85rem; grid-column: 1/-1; text-align: center; padding: 2rem;">Hauna promo code yoyote kwa sasa. Bonyeza kitufe cha ONGEZA hapo juu.</div>';
+                list.innerHTML = '<div style="color:#64748b; font-weight:700; font-size:0.88rem; grid-column: 1/-1; text-align: center; padding: 2.5rem;"><i class="fas fa-ticket-alt" style="font-size:1.8rem; margin-bottom:8px; display:block; color:#94a3b8;"></i> Hauna promo code yoyote kwa sasa. Bonyeza kitufe cha ONGEZA PROMO CODE MPYA.</div>';
                 return;
             }
 
-            list.innerHTML = allPromoCodes.map(c => `
-                <div class="promo-card-item" style="padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); position: relative; display: flex; flex-direction: column; gap: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="promo-code-badge" style="font-family:'Orbitron';color:#bc13fe;letter-spacing:1px;font-weight:bold;font-size:1.1rem;">${c.code}</span>
-                        <span style="font-size: 0.65rem; background: ${c.active ? 'rgba(0,210,91,0.1)' : 'rgba(255,51,102,0.1)'}; color: ${c.active ? '#00d25b' : '#ff3366'}; padding: 4px 10px; border-radius: 6px; font-weight: 800; border: 1px solid ${c.active ? 'rgba(0,210,91,0.2)' : 'rgba(255,51,102,0.2)'}; text-transform:uppercase;">
-                            ${c.active ? 'Active' : 'Disabled'}
-                        </span>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.7rem; color: #6c7293; margin-bottom: 2px; text-transform:uppercase; letter-spacing:1px;">Discount Value</div>
-                        <div style="font-size: 1.4rem; color: #fff; font-weight: 800; font-family:'Orbitron';">${c.discount}% OFF</div>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <button onclick="togglePromoStatus('${c.code}')" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; font-size: 0.75rem; font-weight:600; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:8px;">
-                            <i class="fas ${c.active ? 'fa-pause-circle' : 'fa-play-circle'}"></i> ${c.active ? 'Zima' : 'Washa'}
-                        </button>
-                        <button onclick="deletePromoCode('${c.code}')" style="width: 45px; height:40px; border-radius: 10px; border: 1px solid rgba(255,51,102,0.2); background: rgba(255,51,102,0.1); color: #ff3366; cursor: pointer; transition:0.3s; display:flex; align-items:center; justify-content:center;">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            list.innerHTML = allPromoCodes.map(c => {
+                const bg = c.active ? "#dcfce7" : "#ffe4e6";
+                const fg = c.active ? "#15803d" : "#be123c";
+                const badgeTxt = c.active ? "🟢 ACTIVE" : "🔴 DISABLED";
+                const playPauseIcon = c.active ? "fa-pause-circle" : "fa-play-circle";
+                const playPauseTxt = c.active ? "ZIMA" : "WASHA";
+                const btnBg = c.active ? "#f59e0b" : "#10b981";
+                return '<div style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 14px; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06); position: relative; display: flex; flex-direction: column; gap: 14px;">' +
+                    '<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 10px;">' +
+                        '<span style="font-family:\'Orbitron\'; color:#4f46e5; letter-spacing:1px; font-weight:900; font-size:1.15rem;">' + c.code + '</span>' +
+                        '<span style="font-size: 0.72rem; background: ' + bg + '; color: ' + fg + '; padding: 4px 10px; border-radius: 6px; font-weight: 900; border: 1.5px solid #0f172a; font-family:\'Orbitron\';">' + badgeTxt + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                        '<div>' +
+                            '<div style="font-size: 0.7rem; font-weight:800; color: #64748b; text-transform:uppercase; letter-spacing:0.5px;">DISCOUNT VALUE</div>' +
+                            '<div style="font-size: 1.35rem; color: #0f172a; font-weight: 900; font-family:\'Orbitron\';">' + c.discount + '% OFF</div>' +
+                        '</div>' +
+                        '<button onclick="copyToClipboard(\''+c.code+'\')" style="background:#f1f5f9; color:#0f172a; border:1.5px solid #0f172a; padding:6px 12px; border-radius:8px; font-weight:800; font-size:0.75rem; cursor:pointer; font-family:\'Orbitron\'; display:flex; align-items:center; gap:5px;"><i class="fas fa-copy"></i> COPY</button>' +
+                    '</div>' +
+                    '<div style="display: flex; gap: 10px; margin-top: 4px;">' +
+                        '<button onclick="togglePromoStatus(\''+c.code+'\')" style="flex: 1; padding: 9px; border-radius: 9px; border: 1.5px solid #0f172a; background: '+btnBg+'; color: #ffffff; cursor: pointer; font-size: 0.78rem; font-weight:900; font-family:\'Orbitron\'; display:flex; align-items:center; justify-content:center; gap:6px;"><i class="fas '+playPauseIcon+'"></i> '+playPauseTxt+'</button>' +
+                        '<button onclick="deletePromoCode(\''+c.code+'\')" style="padding: 9px 14px; border-radius: 9px; border: 1.5px solid #0f172a; background: #ef4444; color: #ffffff; cursor: pointer; font-size: 0.78rem; font-weight:900; font-family:\'Orbitron\'; display:flex; align-items:center; justify-content:center; gap:5px;"><i class="fas fa-trash-alt"></i> FUTA</button>' +
+                    '</div>' +
+                '</div>';
+            }).join("");
         }
 
-        async function addPromoCodeUI() {
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            showToast("📋 Promo code " + text + " imekopywa!");
+        }
+
+        async function openAddPromoModal() {
             const code = prompt("Andika jina la promo code (Mfano: CHIDY50):");
             if (!code) return;
-            const discountVal = prompt("Andika kiasi cha punguzo (Asilimia) - Mfano: 20 kwa ajili ya 20%:", "10");
+            const discountVal = prompt("Andika kiasi cha punguzo (Asilimia %) - Mfano: 20 kwa ajili ya 20%:", "10");
             if (!discountVal) return;
             
             const discount = parseInt(discountVal);
-            if (isNaN(discount) || discount < 1 || discount > 99) return alert("Tafadhali weka namba sahihi kati ya 1 na 99!");
+            if (isNaN(discount) || discount < 1 || discount > 99) return showToast("⚠️ Weka namba sahihi kati ya 1 na 99!");
 
             const newCode = {
                 code: code.toUpperCase().trim(),
@@ -6215,7 +6203,7 @@
             };
 
             if (allPromoCodes.some(c => c.code === newCode.code)) {
-                return alert("Hii promo code tayari ipo!");
+                return showToast("⚠️ Hii promo code tayari ipo!");
             }
 
             allPromoCodes.push(newCode);
@@ -6232,7 +6220,7 @@
 
         async function deletePromoCode(code) {
             const confirmed = await showConfirmModal(
-                'FUTA PROMO CODE',
+                "FUTA PROMO CODE",
                 `Uko uhakika unataka kufuta promo code "${code}"? Wateja hawataweza kuitumia tena.`
             );
             if (!confirmed) return;
@@ -6243,1289 +6231,20 @@
 
         async function savePromoCodesToServer() {
             try {
-                const res = await fetch('/api/admin/promo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const res = await fetch("/api/admin/promo", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + (localStorage.getItem("adminToken") || "")
+                    },
                     body: JSON.stringify({ codes: allPromoCodes })
                 });
-                const result = await res.json();
-                if (result.success) {
-                    showToast("✅ Promo codes zimehifadhiwa!");
-                    renderPromoStats();
-                    renderPromoCodesList();
-                } else {
-                    alert("Imeshindikana kuhifadhi: " + result.error);
-                }
-            } catch (err) {
-                console.error("Save promo codes failed:", err);
-                alert("Hitilafu ya mtandao.");
-            }
-        }
-
-        // ============================================================
-        // CHART & GAMES HELPERS & MISSING API ALIASES
-        // ============================================================
-        
-
-        function initSalesChart() {
-            const canvas = document.getElementById('salesChart');
-            if (!canvas) return;
-            
-            const days = [];
-            const amounts = [];
-            const now = new Date();
-            
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(now.getDate() - i);
-                days.push(d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
-                
-                const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
-                const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
-                
-                const sum = (allOrdersData || []).filter(o => {
-                    const isApproved = o.status === 'approved' || o.status === 'manual_approved';
-                    if (!isApproved) return false;
-                    const orderDate = new Date(o.created_at);
-                    return orderDate >= dayStart && orderDate <= dayEnd;
-                }).reduce((acc, o) => acc + (parseFloat(o.amount) || 0), 0);
-                
-                amounts.push(sum);
-            }
-
-            const hasData = amounts.some(a => a > 0);
-            const displayAmounts = hasData ? amounts : [12000, 28000, 20000, 38000, 48000, 32000, 60000];
-
-            if (typeof Chart !== 'undefined') {
-                const ctx = canvas.getContext('2d');
-                if (_salesChartInst) {
-                    try { _salesChartInst.destroy(); } catch(e){}
-                }
-
-                _salesChartInst = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: days,
-                        datasets: [{
-                            label: 'Sales (TSh)',
-                            data: displayAmounts,
-                            backgroundColor: 'rgba(124, 58, 237, 0.85)',
-                            borderColor: '#7c3aed',
-                            borderWidth: 2,
-                            borderRadius: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { ticks: { color: '#334155', font: { size: 11, weight: '600' } }, grid: { display: false } },
-                            y: { ticks: { color: '#334155', font: { size: 11, weight: '600' }, callback: v => 'TSh ' + v.toLocaleString() }, grid: { color: '#e2e8f0' }, beginAtZero: true }
-                        }
-                    }
-                });
-            } else {
-                drawNativeBarChart(canvas, days, displayAmounts);
-            }
-        }
-
-        // Native Canvas Helper Functions
-        function drawNativeLineChart(canvas, labels, data) {
-            const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            const parent = canvas.parentElement;
-            const width = parent.clientWidth || 600;
-            const height = parent.clientHeight || 260;
-            
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            ctx.scale(dpr, dpr);
-            ctx.clearRect(0, 0, width, height);
-
-            const pL = 55, pR = 20, pT = 20, pB = 35;
-            const cW = width - pL - pR;
-            const cH = height - pT - pB;
-            const maxVal = Math.max(...data, 10000) * 1.15;
-
-            ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = 1;
-            ctx.fillStyle = '#64748b';
-            ctx.font = '600 11px Poppins, sans-serif';
-            ctx.textAlign = 'right';
-
-            for (let i = 0; i <= 4; i++) {
-                const y = pT + cH - (i / 4) * cH;
-                const val = Math.round((i / 4) * maxVal);
-                ctx.beginPath();
-                ctx.moveTo(pL, y);
-                ctx.lineTo(width - pR, y);
-                ctx.stroke();
-                ctx.fillText(`TSh ${val >= 1000 ? (val/1000).toFixed(0) + 'k' : val}`, pL - 8, y + 4);
-            }
-
-            const pts = data.map((v, i) => ({
-                x: pL + (i / (data.length - 1)) * cW,
-                y: pT + cH - (v / maxVal) * cH,
-                val: v,
-                label: labels[i]
-            }));
-
-            const grad = ctx.createLinearGradient(0, pT, 0, height - pB);
-            grad.addColorStop(0, 'rgba(124, 58, 237, 0.35)');
-            grad.addColorStop(1, 'rgba(124, 58, 237, 0.02)');
-
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) {
-                const xc = (pts[i].x + pts[i-1].x) / 2;
-                const yc = (pts[i].y + pts[i-1].y) / 2;
-                ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xc, yc);
-            }
-            ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-            ctx.lineTo(pts[pts.length - 1].x, height - pB);
-            ctx.lineTo(pts[0].x, height - pB);
-            ctx.closePath();
-            ctx.fillStyle = grad;
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) {
-                const xc = (pts[i].x + pts[i-1].x) / 2;
-                const yc = (pts[i].y + pts[i-1].y) / 2;
-                ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xc, yc);
-            }
-            ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-            ctx.strokeStyle = '#7c3aed';
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-
-            ctx.textAlign = 'center';
-            pts.forEach(pt => {
-                ctx.fillStyle = '#475569';
-                ctx.fillText(pt.label, pt.x, height - 10);
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-                ctx.fillStyle = '#7c3aed';
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#ffffff';
-                ctx.stroke();
-            });
-        }
-
-        function drawNativeDoughnutChart(canvas, labels, data, palette) {
-            const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            const parent = canvas.parentElement;
-            const width = parent.clientWidth || 250;
-            const height = parent.clientHeight || 190;
-            
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            ctx.scale(dpr, dpr);
-            ctx.clearRect(0, 0, width, height);
-
-            const cX = width / 2;
-            const cY = height / 2;
-            const rOut = Math.min(cX, cY) - 15;
-            const rIn = rOut * 0.65;
-            const total = data.reduce((a, b) => a + b, 0) || 1;
-
-            let sAngle = -Math.PI / 2;
-            data.forEach((v, i) => {
-                const slice = (v / total) * (Math.PI * 2);
-                const eAngle = sAngle + slice;
-                ctx.beginPath();
-                ctx.arc(cX, cY, rOut, sAngle, eAngle);
-                ctx.arc(cX, cY, rIn, eAngle, sAngle, true);
-                ctx.closePath();
-                ctx.fillStyle = palette[i % palette.length];
-                ctx.fill();
-                sAngle = eAngle;
-            });
-        }
-
-        function drawNativeBarChart(canvas, labels, data) {
-            const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            const parent = canvas.parentElement;
-            const width = parent.clientWidth || 600;
-            const height = parent.clientHeight || 260;
-            
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            ctx.scale(dpr, dpr);
-            ctx.clearRect(0, 0, width, height);
-
-            const pL = 55, pR = 20, pT = 20, pB = 35;
-            const cW = width - pL - pR;
-            const cH = height - pT - pB;
-            const maxVal = Math.max(...data, 10000) * 1.15;
-
-            ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = 1;
-            ctx.fillStyle = '#64748b';
-            ctx.font = '600 11px Poppins, sans-serif';
-            ctx.textAlign = 'right';
-
-            for (let i = 0; i <= 4; i++) {
-                const y = pT + cH - (i / 4) * cH;
-                const val = Math.round((i / 4) * maxVal);
-                ctx.beginPath();
-                ctx.moveTo(pL, y);
-                ctx.lineTo(width - pR, y);
-                ctx.stroke();
-                ctx.fillText(`TSh ${val >= 1000 ? (val/1000).toFixed(0) + 'k' : val}`, pL - 8, y + 4);
-            }
-
-            const slotW = cW / data.length;
-            const barW = Math.min(32, slotW * 0.55);
-
-            ctx.textAlign = 'center';
-            data.forEach((v, i) => {
-                const x = pL + (i * slotW) + (slotW - barW) / 2;
-                const barH = (v / maxVal) * cH;
-                const y = pT + cH - barH;
-
-                ctx.fillStyle = '#7c3aed';
-                ctx.beginPath();
-                if (ctx.roundRect) {
-                    ctx.roundRect(x, y, barW, barH, [6, 6, 0, 0]);
-                } else {
-                    ctx.rect(x, y, barW, barH);
-                }
-                ctx.fill();
-
-                ctx.fillStyle = '#475569';
-                ctx.fillText(labels[i], pL + (i * slotW) + slotW / 2, height - 10);
-            });
-        }
-
-        const updateRevenueChart = initSalesChart;
-        const updateAnalytics = loadAnalyticsView;
-        const loadOrders = fetchOrders;
-
-        async function fetchMaintenanceState() {
-            try {
-                const res = await fetch('/api/settings/maintenance');
-                if (res.ok) {
-                    const data = await res.json();
-                    const toggle = document.getElementById('maintenanceToggle');
-                    const status = document.getElementById('maintenanceStatus');
-                    if (toggle) toggle.checked = !!data.maintenance;
-                    if (status) status.style.display = data.maintenance ? 'block' : 'none';
-                }
-            } catch(e) { console.error('fetchMaintenanceState error:', e); }
-        }
-
-        // ============================================================
-        // GAMES MANAGEMENT (ALL GAMES VIEW)
-        // ============================================================
-        async function loadGames() {
-            try {
-                const res = await fetch('/api/admin/games');
-                if (res.ok) {
-                    const data = await res.json();
-                    allGamesData = Array.isArray(data) ? data : [];
-                }
-            } catch (err) {
-                console.error("loadGames error:", err);
-            }
-
-            // Update badge counts
-            const publishedCount = allGamesData.filter(g => (g.status || 'published') === 'published').length;
-            const draftCount = allGamesData.filter(g => g.status === 'draft').length;
-            const trashCount = allGamesData.filter(g => g.status === 'trash').length;
-
-            if (document.getElementById('count-published')) document.getElementById('count-published').innerText = publishedCount;
-            if (document.getElementById('count-draft')) document.getElementById('count-draft').innerText = draftCount;
-            if (document.getElementById('count-trash')) document.getElementById('count-trash').innerText = trashCount;
-
-            renderGamesTable();
-        }
-
-        function filterByStatus(status) {
-            currentGamesFilter = status;
-            document.querySelectorAll('.game-filter-btn, .btn-filter').forEach(btn => {
-                const onclickAttr = btn.getAttribute('onclick') || '';
-                btn.classList.toggle('active', onclickAttr.includes(`'${status}'`));
-            });
-            renderGamesTable();
-        }
-
-        function renderGamesTable() {
-            const tbody = document.getElementById('fullGameTableBody');
-            if (!tbody) return;
-
-            const searchVal = (document.getElementById('adminSearchInput')?.value || '').toLowerCase();
-
-            let filtered = (allGamesData || []).filter(game => {
-                const gameStatus = game.status || 'published';
-                if (currentGamesFilter && gameStatus !== currentGamesFilter) return false;
-                if (searchVal) {
-                    const titleMatches = (game.title || '').toLowerCase().includes(searchVal);
-                    const catMatches = (game.category || '').toLowerCase().includes(searchVal);
-                    return titleMatches || catMatches;
-                }
-                return true;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #6c7293; padding: 2rem;">Hakuna mchezo uliopatikana (${currentGamesFilter}).</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(game => {
-                const dateStr = game.created_at ? new Date(game.created_at).toLocaleDateString('sw-TZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-                const priceFormatted = (parseFloat(game.price) || 0) > 0 ? `<span style="font-weight:900;color:#000000;-webkit-text-stroke:0.2px #000;">TSh ${parseFloat(game.price).toLocaleString()}</span>` : '<span style="color:#15803d;font-weight:900;">BURE</span>';
-                
-                let badgeStyle = 'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;';
-                if (game.status === 'draft') badgeStyle = 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;';
-                if (game.status === 'trash') badgeStyle = 'background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;';
-                
-                const linksCount = Array.isArray(game.links) ? game.links.length : (game.download_links ? 1 : 0);
-
-                return `
-                    <tr style="border-bottom:1px solid #e2e8f0;">
-                        <td><span style="font-weight:900;color:#dc2626;-webkit-text-stroke:0.2px #000;font-size:0.9rem;">#${game.sort_order || '-'}</span></td>
-                        <td><img src="${game.image_url || '/icon.png'}" style="width:42px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;" onerror="this.src='/icon.png'"></td>
-                        <td>
-                            <strong style="color:#000000;font-size:0.92rem;font-weight:900;-webkit-text-stroke:0.2px #000;">${game.title || 'Untitled'}</strong>
-                            <div style="font-size:0.75rem;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">${game.description || ''}</div>
-                        </td>
-                        <td><span style="display:inline-block; background:#fee2e2; color:#991b1b; border:1.5px solid #dc2626; padding:4px 10px; border-radius:8px; font-size:0.75rem; font-weight:800; white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis;" title="${game.category || 'HOT POST'}">${game.category || 'HOT POST'}</span></td>
-                        <td>${priceFormatted}</td>
-                        <td><span style="color:#b45309;font-weight:700;">⭐ ${game.rating || '5.0'}</span></td>
-                        <td><span style="background:#f1f5f9;color:#000000;border:1px solid #cbd5e1;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${linksCount} Link(s)</span></td>
-                        <td style="color:#1e293b;font-size:0.82rem;font-weight:600;">${dateStr}</td>
-                        <td><span style="${badgeStyle}padding:3px 10px;border-radius:6px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">${game.status || 'published'}</span></td>
-                        <td>
-                            <div style="display:flex;gap:6px;align-items:center;">
-                                <button class="btn-action-game edit-btn" onclick="editGame('${game.id}')" title="Hariri Mchezo"><i class="fas fa-edit"></i> Edit</button>
-                                <button class="btn-action-game draft-btn" onclick="toggleGameStatus('${game.id}', '${game.status === 'draft' ? 'published' : 'draft'}')" title="${game.status === 'draft' ? 'Chapisha Mchezo' : 'Tengeneza Draft'}"><i class="fas ${game.status === 'draft' ? 'fa-check-circle' : 'fa-file-alt'}"></i> ${game.status === 'draft' ? 'Publish' : 'Draft'}</button>
-                                <button class="btn-action-game trash-btn" onclick="deleteGame('${game.id}')" title="Futa Mchezo"><i class="fas fa-trash-alt"></i> Trash</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        async function deleteGame(id) {
-            showConfirmModal("Una uhakika unataka kufuta mchezo huu?", async () => {
-                try {
-                    const token = localStorage.getItem('adminToken');
-                    const res = await fetch(`/api/games/${id}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    const data = await res.json();
-                    if (data.success || res.ok) {
-                        showToast("✅ Mchezo umefutwa kikamilifu!");
-                        loadGames();
-                    } else {
-                        alert("Imeshindikana kufuta: " + (data.error || 'Unknown error'));
-                    }
-                } catch(e) {
-                    alert("Error: " + e.message);
-                }
-            });
-        }
-
-        function editGame(id) {
-            const game = allGamesData.find(g => String(g.id) === String(id));
-            if (!game) return;
-
-            const uploadSection = document.getElementById('uploadGameSection');
-            if (uploadSection) uploadSection.style.display = 'block';
-
-            const editingIdEl = document.getElementById('editingGameId');
-            if (editingIdEl) editingIdEl.value = game.id;
-
-            const headerTitle = document.getElementById('uploadFormHeaderTitle');
-            if (headerTitle) headerTitle.innerText = `Hariri Game: ${game.title || ''}`;
-
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> HIFADHI MABADILIKO';
-
-            if (document.getElementById('postTitle')) document.getElementById('postTitle').value = game.title || '';
-            if (document.getElementById('uploadCategory')) document.getElementById('uploadCategory').value = game.category || 'HOT POST';
-            if (document.getElementById('postDescription')) document.getElementById('postDescription').value = game.description || '';
-            if (document.getElementById('postPrice')) document.getElementById('postPrice').value = game.price || 0;
-            if (document.getElementById('postDurationDays')) document.getElementById('postDurationDays').value = game.duration_days || 0;
-            if (document.getElementById('postRating')) document.getElementById('postRating').value = game.rating || 5.0;
-            if (document.getElementById('postSortOrder')) document.getElementById('postSortOrder').value = game.sort_order || 9999;
-            if (document.getElementById('createImageUrl')) document.getElementById('createImageUrl').value = game.image_url || '';
-            if (document.getElementById('postYoutube')) document.getElementById('postYoutube').value = game.youtube_url || '';
-
-            const linksContainer = document.getElementById('linksContainer');
-            if (linksContainer) {
-                linksContainer.innerHTML = '';
-                const linksList = Array.isArray(game.links) ? game.links : [];
-                if (linksList.length > 0) {
-                    linksList.forEach(link => {
-                        const linkRow = document.createElement('div');
-                        linkRow.className = 'form-row link-row';
-                        linkRow.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:center;';
-                        linkRow.innerHTML = `
-                            <input type="text" class="link-name input-field" placeholder="Jina la Link" value="${link.name || ''}" style="flex:1;">
-                            <input type="url" class="link-url input-field" placeholder="URL ya Game File" value="${link.url || ''}" style="flex:2;">
-                            <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:8px 12px;border-radius:8px;cursor:pointer;"><i class="fas fa-trash"></i></button>
-                        `;
-                        linksContainer.appendChild(linkRow);
-                    });
-                } else {
-                    linksContainer.innerHTML = `
-                        <div class="form-row link-row" style="display:flex;gap:10px;margin-bottom:10px;align-items:center;">
-                            <input type="text" placeholder="Jina la Link (mfano: Mediafire)" class="link-name input-field" style="flex:1;">
-                            <input type="url" placeholder="URL (https://...)" class="link-url input-field" style="flex:2;">
-                        </div>
-                    `;
-                }
-            }
-
-            uploadSection?.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // ============================================================
-        // ANALYTICS VIEW
-        // ============================================================
-        let analyticsChartInstance = null;
-
-        function loadAnalyticsView() {
-            const orders = Array.isArray(allOrdersData) ? allOrdersData : [];
-            const users = Array.isArray(allUsersData) ? allUsersData : [];
-            const games = Array.isArray(allGamesData) ? allGamesData : [];
-
-            const approvedOrders = orders.filter(o => isApprovedStatus(o.status));
-            const totalRev = approvedOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
-            const successRate = orders.length > 0 ? Math.round((approvedOrders.length / orders.length) * 100) : 100;
-
-            const revEl = document.getElementById("analyticsRevenue");
-            if (revEl) revEl.innerText = `TSh ${totalRev.toLocaleString("en-US")}`;
-
-            const ordEl = document.getElementById("analyticsApprovedOrders");
-            if (ordEl) ordEl.innerText = `${approvedOrders.length} Orders`;
-
-            const usrEl = document.getElementById("analyticsUsers");
-            if (usrEl) usrEl.innerText = `${users.length} Users`;
-
-            const convEl = document.getElementById("analyticsConversion");
-            if (convEl) convEl.innerText = `${successRate}% Success`;
-
-            // Render 7-Day Chart
-            render7DayAnalyticsChart(approvedOrders);
-
-            // Render Category Share
-            renderAnalyticsCategoryShare(approvedOrders);
-
-            // Render Top Selling Games
-            renderAnalyticsTopGames(approvedOrders, games);
-        }
-
-        function render7DayAnalyticsChart(approvedOrders) {
-            const ctx = document.getElementById("analytics7DayChartCanvas");
-            if (!ctx) return;
-
-            const days = [];
-            const amounts = [];
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const dayStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-                const dayDateStr = getLocalDayStr(d);
-                
-                const dayTotal = approvedOrders
-                    .filter(o => getLocalDayStr(o.created_at) === dayDateStr)
-                    .reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
-                
-                days.push(dayStr);
-                amounts.push(dayTotal);
-            }
-
-            if (analyticsChartInstance) {
-                analyticsChartInstance.destroy();
-            }
-
-            if (typeof Chart !== "undefined") {
-                analyticsChartInstance = new Chart(ctx, {
-                    type: "line",
-                    data: {
-                        labels: days,
-                        datasets: [{
-                            label: "Mauzo (TSh)",
-                            data: amounts,
-                            borderColor: "#4f46e5",
-                            backgroundColor: "rgba(79, 70, 229, 0.12)",
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.35,
-                            pointBackgroundColor: "#0f172a",
-                            pointBorderColor: "#4f46e5",
-                            pointRadius: 5
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: "#0f172a",
-                                titleFont: { family: "Orbitron", size: 12, weight: "bold" },
-                                bodyFont: { family: "Orbitron", size: 13, weight: "bold" },
-                                callbacks: {
-                                    label: function(context) {
-                                        return " Mapato: TSh " + context.raw.toLocaleString();
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: "rgba(15, 23, 42, 0.06)" },
-                                ticks: { font: { weight: "700" }, color: "#64748b" }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { font: { weight: "700" }, color: "#0f172a" }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        function renderAnalyticsCategoryShare(approvedOrders) {
-            const container = document.getElementById("analyticsCategoryList");
-            if (!container) return;
-
-            const catCounts = {};
-            let totalCount = 0;
-            approvedOrders.forEach(o => {
-                const cat = (o.posts?.category || "Tanzania Games").toUpperCase();
-                catCounts[cat] = (catCounts[cat] || 0) + 1;
-                totalCount++;
-            });
-
-            const catEntries = Object.entries(catCounts).sort((a, b) => b[1] - a[1]);
-            if (catEntries.length === 0) {
-                container.innerHTML = '<p style="color:#64748b; font-weight:700;">Hauna data za kutosha za makundi.</p>';
-                return;
-            }
-
-            const colors = ["#4f46e5", "#10b981", "#d97706", "#f43f5e", "#0284c7"];
-            container.innerHTML = catEntries.slice(0, 5).map(([catName, count], idx) => {
-                const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
-                const color = colors[idx % colors.length];
-                return `
-                    <div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:800; color:#0f172a; margin-bottom:6px;">
-                            <span><i class="fas fa-folder" style="color:${color}; margin-right:6px;"></i> ${catName}</span>
-                            <span style="font-family:'Orbitron';">${count} Sales (${pct}%)</span>
-                        </div>
-                        <div style="width:100%; height:8px; background:#f1f5f9; border-radius:10px; overflow:hidden; border: 1px solid #cbd5e1;">
-                            <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px; transition:width 0.4s ease;"></div>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        function renderAnalyticsTopGames(approvedOrders, games) {
-            const container = document.getElementById("analyticsTopGamesList");
-            if (!container) return;
-
-            const gameStats = {};
-            approvedOrders.forEach(o => {
-                const title = o.posts?.title || "Game Item";
-                if (!gameStats[title]) {
-                    gameStats[title] = { count: 0, revenue: 0, category: o.posts?.category || "Game" };
-                }
-                gameStats[title].count += 1;
-                gameStats[title].revenue += (parseFloat(o.amount) || 0);
-            });
-
-            const topGames = Object.entries(gameStats)
-                .map(([title, stat]) => ({ title, ...stat }))
-                .sort((a, b) => b.count - a.count);
-
-            if (topGames.length === 0) {
-                container.innerHTML = '<p style="color:#64748b; font-weight:700;">Hauna oda za kutosha kupanga michezo bora.</p>';
-                return;
-            }
-
-            container.innerHTML = topGames.slice(0, 5).map((g, idx) => {
-                const rankBadges = ["🥇 #1", "🥈 #2", "🥉 #3", "#4", "#5"];
-                const badgeBg = idx === 0 ? "#fef3c7" : (idx === 1 ? "#f1f5f9" : (idx === 2 ? "#ffedd5" : "#f8fafc"));
-                const badgeFg = idx === 0 ? "#92400e" : (idx === 1 ? "#334155" : (idx === 2 ? "#c2410c" : "#475569"));
-                return `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1.5px solid #0f172a; padding:10px 14px; border-radius:12px; gap:10px;">
-                        <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
-                            <span style="background:${badgeBg}; color:${badgeFg}; border:1px solid #0f172a; padding:3px 8px; border-radius:6px; font-weight:900; font-family:'Orbitron'; font-size:0.75rem; flex-shrink:0;">${rankBadges[idx]}</span>
-                            <span style="font-weight:800; color:#0f172a; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${g.title}">${g.title}</span>
-                        </div>
-                        <div style="text-align:right; flex-shrink:0;">
-                            <div style="font-weight:900; color:#059669; font-family:'Orbitron'; font-size:0.85rem;">TSh ${g.revenue.toLocaleString()}</div>
-                            <div style="color:#64748b; font-size:0.72rem; font-weight:700;">${g.count} sales</div>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-        fetchMaintenanceState();
-        initSalesChart();
-        fetch('/api/settings/announcement').then(r=>r.json()).then(d=>{ if(d.value && document.getElementById('announcementInput')) document.getElementById('announcementInput').value = d.value; });
-
-        // Mobile Sidebar Toggle
-        function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('active');
-        }
-
-        // Navigation Logic
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                if (!this.dataset.view) return;
-                e.preventDefault();
-                showView(this.dataset.view);
-
-                // Close sidebar on mobile after click
-                if (window.innerWidth <= 576) {
-                    document.querySelector('.sidebar').classList.remove('active');
-                }
-            });
-        });
-        let globalPaymentsData = [];
-        let paymentsRealtimeTimer = null;
-
-        function getLocalDayStr(dateObj) {
-            const d = new Date(dateObj);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function isApprovedStatus(status) {
-            if (!status) return false;
-            const s = String(status).toLowerCase();
-            return ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(s);
-        }
-
-        async function fetchPayments() {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await fetch(`/api/admin/orders?t=${Date.now()}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Failed to fetch payments');
-                
-                const data = await res.json();
-                globalPaymentsData = Array.isArray(data) ? data : [];
-                
-                calculatePaymentStats(globalPaymentsData);
-                renderPaymentsTable(globalPaymentsData);
-            } catch (e) {
-                console.error(e);
-                const tbody = document.getElementById('paymentsTableBody');
-                if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#ef4444;font-weight:700;padding:20px;">Hitilafu wakati wa kupakua data ya malipo</td></tr>';
-            }
-        }
-
-        // Auto-refresh real-time loop every 5s when payment/orders view active
-        if (!window.paymentsRealtimeTimer) {
-            window.paymentsRealtimeTimer = setInterval(() => {
-                const activeView = (typeof currentActiveViewId !== 'undefined') ? currentActiveViewId : '';
-                if (activeView === 'paymentsView') {
-                    fetchPayments();
-                } else if (activeView === 'ordersView') {
-                    if (typeof fetchOrders === 'function') fetchOrders();
-                }
-            }, 5000);
-        }
-
-        // Detect gateway from stored order id.
-        function detectGateway(orderId) {
-            if (!orderId) return 'harakapay';
-            const id = String(orderId);
-            if (id.startsWith('PP')) return 'pressopay';
-            if (id.startsWith('HP')) return 'harakapay';
-            if (id.startsWith('ZP')) return 'zenopay';
-            return 'harakapay';
-        }
-
-        function calculatePaymentStats(orders) {
-            const now = new Date();
-            const todayStr = getLocalDayStr(now);
-            const yesterday = new Date(now);
-            yesterday.setDate(now.getDate() - 1);
-            const yesterdayStr = getLocalDayStr(yesterday);
-
-            const sevenDaysAgo = new Date(now);
-            sevenDaysAgo.setDate(now.getDate() - 7);
-
-            const thisMonth = now.getMonth();
-            const thisYear = now.getFullYear();
-
-            // Global (approved) totals across time buckets
-            let tToday = 0, tYesterday = 0, t7Days = 0, tMonth = 0, tYear = 0, tAll = 0;
-            let countToday = 0, countYesterday = 0;
-
-            // Per-gateway per-day breakdown
-            const dayZero = () => ({
-                success: 0, successAmt: 0,
-                pending: 0, pendingAmt: 0,
-                failed:  0, failedAmt:  0,
-                total:   0, totalAmt:   0
-            });
-            const buckets = {
-                today:     { pressopay: dayZero(), harakapay: dayZero(), zenopay: dayZero() },
-                yesterday: { pressopay: dayZero(), harakapay: dayZero(), zenopay: dayZero() }
-            };
-
-            orders.forEach(o => {
-                const amt = parseFloat(o.amount) || 0;
-                const d = new Date(o.created_at);
-                const dStr = getLocalDayStr(d);
-                const isApproved = isApprovedStatus(o.status);
-                const isPending  = (String(o.status || '').toLowerCase() === 'pending');
-                const isFailed   = (['rejected', 'failed', 'cancelled'].includes(String(o.status || '').toLowerCase()));
-                const gw = detectGateway(o.promo_used);
-
-                if (isApproved) {
-                    tAll += amt;
-                    if (d.getFullYear() === thisYear) tYear += amt;
-                    if (d.getFullYear() === thisYear && d.getMonth() === thisMonth) tMonth += amt;
-                    if (d >= sevenDaysAgo) t7Days += amt;
-                    if (dStr === todayStr) tToday += amt;
-                    if (dStr === yesterdayStr) tYesterday += amt;
-                }
-
-                const applyTo = (bucket) => {
-                    if (!bucket[gw]) bucket[gw] = dayZero();
-                    const b = bucket[gw];
-                    b.total++;
-                    b.totalAmt += amt;
-                    if (isApproved) { b.success++; b.successAmt += amt; }
-                    if (isPending)  { b.pending++; b.pendingAmt += amt; }
-                    if (isFailed)   { b.failed++;  b.failedAmt  += amt; }
-                };
-
-                if (dStr === todayStr)     { countToday++;     applyTo(buckets.today); }
-                if (dStr === yesterdayStr) { countYesterday++; applyTo(buckets.yesterday); }
-            });
-
-            const fmt = (num) => num.toLocaleString('en-US');
-            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-            const setWidth = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = pct + '%'; };
-
-            setText('payToday',    `Tzs ${fmt(tToday)}`);
-            setText('payYesterday',`Tzs ${fmt(tYesterday)}`);
-            setText('pay7Days',    `Tzs ${fmt(t7Days)}`);
-            setText('payMonth',    `Tzs ${fmt(tMonth)}`);
-            setText('payYear',     `Tzs ${fmt(tYear)}`);
-            setText('payAllTime',  `Tzs ${fmt(tAll)}`);
-
-            setText('todayCount',            `${countToday} txns`);
-            setText('breakdownTodayTotal',   `Tzs ${fmt(tToday)}`);
-            setText('yesterdayCount',        `${countYesterday} txns`);
-            setText('breakdownYesterdayTotal', `Tzs ${fmt(tYesterday)}`);
-
-            // Renders one gateway row for either today/yesterday
-            const paintGatewayRow = (prefix, gwKey, gwBucket, dayApprovedTotal) => {
-                const b = gwBucket;
-                setText(`${prefix}${gwKey}Count`,          `${b.total} malipo`);
-                setText(`${prefix}${gwKey}Amount`,         `Tzs ${fmt(b.successAmt)}`);
-                setText(`${prefix}${gwKey}CountSuccess`,   b.success);
-                setText(`${prefix}${gwKey}AmountSuccess`,  fmt(b.successAmt));
-                setText(`${prefix}${gwKey}CountPending`,   b.pending);
-                setText(`${prefix}${gwKey}AmountPending`,  fmt(b.pendingAmt));
-                setText(`${prefix}${gwKey}CountFailed`,    b.failed);
-                setText(`${prefix}${gwKey}AmountFailed`,   fmt(b.failedAmt));
-                const share = dayApprovedTotal > 0 ? Math.round((b.successAmt / dayApprovedTotal) * 100) : 0;
-                setWidth(`${prefix}${gwKey}Bar`, share);
-                setText(`${prefix}${gwKey}Share`, `${share}% ya yote`);
-            };
-
-            // Today
-            paintGatewayRow('today', 'Presso', buckets.today.pressopay, tToday);
-            paintGatewayRow('today', 'Haraka', buckets.today.harakapay, tToday);
-            // Yesterday
-            paintGatewayRow('yesterday', 'Presso', buckets.yesterday.pressopay, tYesterday);
-            paintGatewayRow('yesterday', 'Haraka', buckets.yesterday.harakapay, tYesterday);
-        }
-
-        function filterPaymentsTable() {
-            const search = (document.getElementById('paymentSearch').value || '').toLowerCase();
-            const statusFilter = document.getElementById('paymentStatusFilter').value;
-            
-            const filtered = globalPaymentsData.filter(o => {
-                const name = (o.visitors?.name || '').toLowerCase();
-                const phone = (o.visitors?.phone || o.phone_number || '').toLowerCase();
-                const orderId = (o.promo_used || `ID:${o.id}`).toLowerCase();
-                
-                const matchesSearch = name.includes(search) || phone.includes(search) || orderId.includes(search);
-                const matchesStatus = statusFilter === 'all' || 
-                                     (statusFilter === 'approved' && isApprovedStatus(o.status)) ||
-                                     (statusFilter === o.status);
-                                     
-                return matchesSearch && matchesStatus;
-            });
-            
-            renderPaymentsTable(filtered);
-        }
-
-        function renderPaymentsTable(data) {
-            const tbody = document.getElementById('paymentsTableBody');
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 25px; color: #64748b; font-weight: 700;">No transactions found</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.map(o => {
-                const d = new Date(o.created_at);
-                const dateStr = `${d.toLocaleDateString('en-US')} <br> <span style="font-size:0.75rem;color:#64748b;font-weight:600;">${d.toLocaleTimeString('en-US')}</span>`;
-                
-                const isApproved = isApprovedStatus(o.status);
-                let statusStr = isApproved ? 'completed' : String(o.status || 'pending').toLowerCase();
-                
-                let statusStyle = 'background:#fef3c7;color:#b45309;border:1.5px solid #fde68a;';
-                if (isApproved) statusStyle = 'background:#dcfce7;color:#15803d;border:1.5px solid #86efac;';
-                if (statusStr === 'rejected' || statusStr === 'failed') statusStyle = 'background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5;';
-                
-                const statusBadge = `<span style="${statusStyle}font-size:0.75rem;padding:4px 12px;border-radius:8px;font-weight:800;display:inline-flex;align-items:center;gap:6px;text-transform:uppercase;"><i class="fas ${isApproved ? 'fa-check-circle' : (statusStr === 'pending' ? 'fa-hourglass-half' : 'fa-times-circle')}"></i> ${statusStr}</span>`;
-                
-                const userName = o.visitors?.name || 'Unknown User';
-                const userPhone = o.visitors?.phone || o.phone_number || 'N/A';
-                const orderId = o.promo_used || `HP${o.id}`;
-                const contentName = o.posts?.title || 'Unknown Game';
-
-                // Gateway chip — auto-detect from stored order id prefix
-                const gw = detectGateway(orderId);
-                const gwMeta = ({
-                    pressopay: { label: 'PressoPay', bg: '#dbeafe', border: '#93c5fd', fg: '#1e40af' },
-                    harakapay: { label: 'HarakaPay', bg: '#dcfce7', border: '#86efac', fg: '#166534' },
-                    zenopay:   { label: 'ZenoPay',   bg: '#fef3c7', border: '#fde68a', fg: '#92400e' }
-                })[gw] || { label: gw, bg: '#f1f5f9', border: '#cbd5e1', fg: '#334155' };
-                const gatewayBadge = `<span style="background:${gwMeta.bg};border:1.5px solid ${gwMeta.border};padding:4px 12px;border-radius:999px;font-size:0.75rem;color:${gwMeta.fg};font-weight:800;letter-spacing:0.03em;">${gwMeta.label}</span>`;
-
-                return `
-                <tr style="border-bottom: 1.5px solid #e2e8f0;">
-                    <td style="padding: 14px 18px; color: #0f172a; font-size: 0.85rem; font-family: monospace; font-weight: 700;">${orderId}</td>
-                    <td style="padding: 14px 18px; font-weight: 800; color: #0f172a;">${userName}</td>
-                    <td style="padding: 14px 18px; color: #334155; font-size: 0.88rem; font-weight: 700;">${userPhone}</td>
-                    <td style="padding: 14px 18px;">${gatewayBadge}</td>
-                    <td style="padding: 14px 18px; color: #0f172a; font-size: 0.88rem; font-weight: 700; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${contentName}</td>
-                    <td style="padding: 14px 18px; font-weight: 900; color: #059669; font-family: 'Orbitron'; font-size: 0.95rem;">TSh ${parseFloat(o.amount).toLocaleString('en-US')}</td>
-                    <td style="padding: 14px 18px;">${statusBadge}</td>
-                    <td style="padding: 14px 18px; font-size: 0.82rem; color: #475569; font-weight: 600;">${dateStr}</td>
-                </tr>
-                `;
-            }).join('');
-        }
-
-        function exportPaymentsCSV() {
-            if (!globalPaymentsData || globalPaymentsData.length === 0) return alert('No data to export');
-            
-            let csv = 'Order ID,User,Phone,Gateway,Content,Amount,Status,Date\n';
-            globalPaymentsData.forEach(o => {
-                const d = new Date(o.created_at);
-                const orderId = o.promo_used || `HP${o.id}`;
-                const userName = (o.visitors?.name || 'Unknown').replace(/,/g, '');
-                const userPhone = o.visitors?.phone || o.phone_number || 'N/A';
-                const contentName = (o.posts?.title || 'Unknown Item').replace(/,/g, '');
-                const amount = o.amount;
-                const status = (o.status === 'approved' || o.status === 'manual_approved') ? 'completed' : o.status;
-                const date = d.toLocaleString('en-US').replace(/,/g, '');
-                
-                csv += `${orderId},${userName},${userPhone},HarakaPay,${contentName},${amount},${status},${date}\n`;
-            });
-            
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('hidden', '');
-            a.setAttribute('href', url);
-            a.setAttribute('download', `payments_export_${new Date().getTime()}.csv`);
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        async function fetchOrders(isSilent = false) {
-            const list = document.getElementById("ordersList");
-            if (list && !isSilent && (!allOrdersData || allOrdersData.length === 0)) {
-                list.innerHTML = '<p style="text-align: center; color: #64748b; font-weight: 700; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Syncing orders...</p>';
-            }
-            
-            try {
-                const res = await fetch(`/api/admin/orders?t=${Date.now()}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
-                });
-                const orders = await res.json();
-                
-                const newOrders = Array.isArray(orders) ? orders : [];
-                const prevFp = (allOrdersData || []).map(o => `${o.id}_${o.status}`).join('|');
-                const newFp = newOrders.map(o => `${o.id}_${o.status}`).join('|');
-                
-                allOrdersData = newOrders;
-
-                if (Array.isArray(allOrdersData)) {
-                    const actionCount = allOrdersData.filter(o => {
-                        const cat = (o.posts?.category || '').toLowerCase();
-                        const title = (o.posts?.title || '').toLowerCase();
-                        return cat.includes('action') || title.includes('action') || title.includes('war') || title.includes('gta');
-                    }).length;
-
-                    const sportsCount = allOrdersData.filter(o => {
-                        const cat = (o.posts?.category || '').toLowerCase();
-                        const title = (o.posts?.title || '').toLowerCase();
-                        return cat.includes('sport') || title.includes('sport') || title.includes('fifa') || title.includes('pes') || title.includes('ets') || title.includes('maleo') || title.includes('bus');
-                    }).length;
-
-                    const appCount = allOrdersData.filter(o => {
-                        const cat = (o.posts?.category || '').toLowerCase();
-                        const title = (o.posts?.title || '').toLowerCase();
-                        return cat.includes('app') || cat.includes('mod') || title.includes('app') || title.includes('mod') || title.includes('apk');
-                    }).length;
-                    
-                    if (document.getElementById('countAction')) document.getElementById('countAction').innerText = `${actionCount} Orders`;
-                    if (document.getElementById('countSports')) document.getElementById('countSports').innerText = `${sportsCount} Orders`;
-                    if (document.getElementById('countApps')) document.getElementById('countApps').innerText = `${appCount} Orders`;
-                }
-
-                const approvedOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => isApprovedStatus(o.status)) : [];
-                const approvedTotal = approvedOrders.reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
-                const pendingOrders = Array.isArray(allOrdersData) ? allOrdersData.filter(o => String(o.status || '').toLowerCase() === 'pending') : [];
-                const pendingTotal = pendingOrders.reduce((sum, o) => sum + parseFloat(o.amount || 0), 0);
-                const failedCount = Array.isArray(allOrdersData) ? allOrdersData.filter(o => ['rejected', 'failed', 'cancelled'].includes(String(o.status || '').toLowerCase())).length : 0;
-                
-                const totalRevEl = document.getElementById('totalRevenue');
-                if (totalRevEl) totalRevEl.innerText = `TSh ${approvedTotal.toLocaleString('en-US')}`;
-
-                if (document.getElementById('totalDownloads')) document.getElementById('totalDownloads').innerText = approvedOrders.length;
-                if (document.getElementById('pendingAmount')) document.getElementById('pendingAmount').innerText = `TSh ${pendingTotal.toLocaleString('en-US')}`;
-                if (document.getElementById('failedTransactions')) document.getElementById('failedTransactions').innerText = failedCount;
-
-                try {
-                    const r = await fetch('/api/settings/lifetime_revenue');
-                    const data = await r.json();
-                    const val = parseFloat(data.value || 0);
-                    if (document.getElementById('lifetimeRevenue')) {
-                        document.getElementById('lifetimeRevenue').innerText = `TSh ${val.toLocaleString('en-US')}`;
-                    }
-                } catch (e) {}
-
-                if (!isSilent || prevFp !== newFp || !list || list.children.length === 0) {
-                    renderOrdersList();
-                }
-
-                if (Array.isArray(allOrdersData) && allOrdersData.length > 0) {
-                    if (typeof updateRevenueChart === "function") updateRevenueChart(allOrdersData);
-                    if (typeof updateCategoryChart === "function") updateCategoryChart(allOrdersData);
-                }
-            } catch (err) {
-                console.error("fetchOrders error:", err);
-                if (!allOrdersData || allOrdersData.length === 0) renderOrdersList();
-            }
-        }
-        async function loadStoreSettings() {
-            try {
-                // Fetch Global Discount
-                const resDisc = await fetch('/api/settings/global_discount');
-                const discData = await resDisc.json();
-                
-                const input = document.getElementById('globalDiscountInput');
-                const badge = document.getElementById('activeDiscountBadge');
-                
-                if (discData && discData.value) {
-                    input.value = discData.value;
-                    if (parseInt(discData.value) > 0) {
-                        badge.style.display = 'block';
-                        badge.innerText = `${discData.value}% ACTIVE`;
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                } else {
-                    input.value = 0;
-                    badge.style.display = 'none';
-                }
-
-                // Fetch Maintenance Mode
-                const resMaint = await fetch('/api/settings/maintenance');
-                const maintData = await resMaint.json();
-                const maintToggle = document.getElementById('maintenanceToggle');
-                const maintStatus = document.getElementById('maintenanceStatus');
-                
-                const isMaint = maintData.value === 'true';
-                maintToggle.checked = isMaint;
-                maintStatus.style.display = isMaint ? 'block' : 'none';
-
-                // Fetch App Installs
-                const resInst = await fetch('/api/settings/total_installs');
-                const instData = await resInst.json();
-                document.getElementById('settingsTotalInstalls').innerText = instData.value || 0;
-
-            } catch (err) {
-                console.error("Failed to load settings:", err);
-            }
-        }
-
-        async function toggleMaintenanceMode(enabled) {
-            try {
-                const res = await fetch('/api/admin/settings/maintenance', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
-                    body: JSON.stringify({ value: String(enabled) })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    document.getElementById('maintenanceStatus').style.display = enabled ? 'block' : 'none';
-                    showToast(enabled ? 'Maintenance Mode ACTIVATED' : 'Maintenance Mode DEACTIVATED');
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Failed to update maintenance mode: " + err.message);
-                document.getElementById('maintenanceToggle').checked = !enabled;
-            }
-        }
-
-        async function saveGlobalDiscount() {
-            const val = document.getElementById('globalDiscountInput').value;
-            if (val === "" || val < 0 || val > 95) return alert("Weka asilimia sahihi (0-95)");
-
-            try {
-                const res = await fetch('/api/admin/settings/global_discount', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
-                    body: JSON.stringify({ value: val })
-                });
-                
-                if (res.status === 401 || res.status === 403) {
-                    return alert("Kikao chako (Session) kimeisha. Tafadhali Login tena.");
-                }
-
-                const result = await res.json();
-                if (result.success) {
-                    showToast("✅ Global Discount imehifadhiwa!");
-                    loadStoreSettings();
-                } else {
-                    alert("Error: " + (result.error || 'Unknown server error'));
-                }
-            } catch (err) {
-                console.error("Fetch Error:", err);
-                alert("Hitilafu: " + err.message);
-            }
-        }
-
-        async function clearGlobalDiscount() {
-            document.getElementById('globalDiscountInput').value = 0;
-            await saveGlobalDiscount();
-        }
-
-        function renderOrdersList() {
-            const list = document.getElementById("ordersList");
-            if (!list) return;
-            const orders = Array.isArray(allOrdersData) ? allOrdersData : [];
-            
-            const searchInput = document.getElementById("orderSearchInput") || document.getElementById("adminSearchInput");
-            const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
-            
-            const statusFilterSelect = document.getElementById("orderStatusFilterSelect");
-            const statusFilter = statusFilterSelect ? statusFilterSelect.value : "all";
-
-            const filteredOrders = orders.filter(o => {
-                const gameTitle = (o.posts && o.posts.title ? o.posts.title : "").toLowerCase();
-                const guestName = (o.visitors && o.visitors.name ? o.visitors.name : "").toLowerCase();
-                const phone = (o.phone_number || (o.visitors && o.visitors.phone) || "").toLowerCase();
-                const orderId = (o.promo_used || `ID:${o.id}`).toLowerCase();
-
-                const matchesQuery = !query || gameTitle.includes(query) || guestName.includes(query) || phone.includes(query) || orderId.includes(query);
-                
-                let matchesStatus = true;
-                if (statusFilter === "pending") matchesStatus = (String(o.status || "").toLowerCase() === "pending");
-                else if (statusFilter === "approved") matchesStatus = isApprovedStatus(o.status);
-                else if (statusFilter === "rejected") matchesStatus = (["rejected", "failed", "cancelled"].includes(String(o.status || "").toLowerCase()));
-
-                return matchesQuery && matchesStatus;
-            });
-                
-            if (filteredOrders.length === 0) {
-                list.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #64748b; font-weight: 700; padding: 3rem; background: #f8fafc; border: 2.5px dashed #cbd5e1; border-radius: 16px;"><i class="fas fa-inbox" style="font-size:2.2rem; margin-bottom:12px; display:block; color:#94a3b8;"></i> Hauna oda yoyote kwa sasa kulingana na utafutaji wako.</div>';
-                return;
-            }
-
-            // Update order badge count
-            const orderBadge = document.getElementById("orderCountBadge");
-            if (orderBadge) orderBadge.innerText = `${filteredOrders.length} Total`;
-
-            list.innerHTML = filteredOrders.map(order => {
-                    const isApproved = isApprovedStatus(order.status);
-                    const statusStr = isApproved ? "completed" : String(order.status || "pending").toLowerCase();
-                    const date = new Date(order.created_at).toLocaleString("en-GB", { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-                    const guestName = order.visitors?.name || "Unknown User";
-                    const guestPhone = order.visitors?.phone || order.phone_number || "N/A";
-                    const gameTitle = order.posts?.title || "Game / Video Item";
-                    const orderRef = order.promo_used || `HP${order.id}`;
-                    const visitorId = order.visitor_id || order.visitors?.id || "";
-                    
-                    let borderLeftColor = "#f59e0b";
-                    if (isApproved) borderLeftColor = "#10b981";
-                    if (statusStr === "rejected" || statusStr === "failed") borderLeftColor = "#ef4444";
-
-                    const gw = detectGateway(orderRef);
-                    const gwMeta = ({
-                        pressopay: { label: "PressoPay", bg: "linear-gradient(135deg, #1e40af, #2563eb)", fg: "#ffffff", icon: "fa-credit-card" },
-                        harakapay: { label: "HarakaPay", bg: "linear-gradient(135deg, #166534, #059669)", fg: "#ffffff", icon: "fa-bolt" },
-                        zenopay:   { label: "ZenoPay",   bg: "linear-gradient(135deg, #92400e, #d97706)", fg: "#ffffff", icon: "fa-wallet" }
-                    })[gw] || { label: gw.toUpperCase(), bg: "linear-gradient(135deg, #0f172a, #334155)", fg: "#ffffff", icon: "fa-receipt" };
-
-                    return `
-                        <div class="order-card" style="
-                            display: flex;
-                            flex-direction: column; 
-                            background: #ffffff;
-                            border: 2.5px solid #0f172a;
-                            border-left: 7px solid ${borderLeftColor};
-                            border-radius: 16px;
-                            padding: 20px;
-                            box-shadow: 0 6px 18px rgba(15,23,42,0.08);
-                            position: relative;
-                            overflow: hidden;
-                            transition: all 0.25s ease-in-out;
-                        " onmouseover="this.style.transform='translateY(-3px) scale(1.01)'; this.style.boxShadow='0 12px 28px rgba(15,23,42,0.15)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 6px 18px rgba(15,23,42,0.08)';">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px;">
-                                <span style="background:${gwMeta.bg}; color:${gwMeta.fg}; padding:4px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; font-family:'Orbitron'; border: 1.5px solid #0f172a; box-shadow: 0 2px 6px rgba(15,23,42,0.15); display: inline-flex; align-items: center; gap: 6px;"><i class="fas ${gwMeta.icon}"></i> ${gwMeta.label}</span>
-                                <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 0.74rem; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 5px;"><i class="fas fa-clock" style="color: #64748b;"></i> ${date}</span>
-                            </div>
-
-                            <h4 style="margin: 0 0 14px 0; font-size: 1.02rem; font-weight: 900; color: #0f172a; line-height: 1.35; font-family: 'Poppins', sans-serif;">${gameTitle}</h4>
-                            
-                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; background: #f8fafc; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #cbd5e1;">
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-user-circle" style="color:#4f46e5; font-size: 0.9rem;"></i> Mteja:</span>
-                                    <span style="color: #0f172a; font-size: 0.88rem; font-weight: 800; cursor: pointer;" onclick="if(window.viewUserDetail && '${visitorId}') viewUserDetail('${visitorId}')" title="Bonyeza kuona akaunti ya mteja">${guestName}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-phone-alt" style="color:#059669; font-size: 0.8rem;"></i> Simu:</span>
-                                    <span style="color: #0f172a; font-size: 0.85rem; font-weight: 800; font-family: monospace; background: #ffffff; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px;">${guestPhone}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="color: #475569; font-size: 0.78rem; font-weight: 700;"><i class="fas fa-receipt" style="color:#d97706; font-size: 0.8rem;"></i> Ref / Order ID:</span>
-                                    <span style="color: #0f172a; font-size: 0.75rem; font-weight: 800; font-family: monospace;" title="${orderRef}">${orderRef.length > 25 ? orderRef.substring(0, 24) + "..." : orderRef}</span>
-                                </div>
-                            </div>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 14px; border-top: 2px solid #e2e8f0;">
-                                <div>
-                                    <span style="display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Kiasi Paid</span>
-                                    <span style="font-weight: 900; color: #059669; font-family: 'Orbitron'; font-size: 1.22rem;">TSh ${parseFloat(order.amount).toLocaleString('en-US')}</span>
-                                </div>
-                                <div>
-                                    ${order.status === 'pending' ? `
-                                        <div style="display:flex; gap:6px;">
-                                            <button onclick="updateOrderStatus('${order.id}', 'manual_approved')" style="padding: 8px 16px; font-size: 0.78rem; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 4px 10px rgba(22,163,74,0.3); transition: 0.2s;"><i class="fas fa-check"></i> APPROVE</button>
-                                            <button onclick="verifyOrder('${order.id}')" style="padding: 8px 14px; font-size: 0.78rem; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 4px 10px rgba(2,132,199,0.3); transition: 0.2s;" title="Verify live from gateway"><i class="fas fa-sync-alt"></i> VERIFY</button>
-                                            <button onclick="updateOrderStatus('${order.id}', 'rejected')" style="padding: 8px 14px; font-size: 0.78rem; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 4px 10px rgba(220,38,38,0.3); transition: 0.2s;"><i class="fas fa-times"></i> REJECT</button>
-                                        </div>
-                                    ` : `
-                                        <span style="background:${isApproved ? '#dcfce7' : '#fee2e2'}; color:${isApproved ? '#15803d' : '#b91c1c'}; border:1.5px solid ${isApproved ? '#86efac' : '#fca5a5'}; font-size:0.78rem; padding:6px 14px; border-radius:10px; font-weight:800; font-family:'Orbitron'; text-transform:uppercase; display:inline-flex; align-items:center; gap:6px;">
-                                            <i class="fas ${isApproved ? 'fa-check-circle' : 'fa-times-circle'}"></i> ${order.status === 'manual_approved' ? 'APPROVED' : order.status.toUpperCase()}
-                                        </span>
-                                    `}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join("");
-        }
-        async function updateOrderStatus(orderId, status) {
-            const isApprove = status === 'approved' || status === 'manual_approved';
-            const confirmed = await showConfirmModal(
-                isApprove ? 'APPROVE ORDER' : 'REJECT ORDER',
-                isApprove
-                    ? 'Uko uhakika unataka kukubali oda hii? Mteja atapata access ya game mara moja.'
-                    : 'Uko uhakika unataka kukataa oda hii? Mteja hatapata access.'
-            );
-            if (!confirmed) return;
-
-            // Style confirm button based on action
-            const okBtn = document.getElementById('confirmModalOk');
-            if (isApprove) {
-                okBtn.style.background = 'rgba(0,210,91,0.15)';
-                okBtn.style.borderColor = 'rgba(0,210,91,0.4)';
-                okBtn.style.color = '#00d25b';
-            }
-
-            try {
-                const res = await fetch(`/api/admin/orders/${orderId}/status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
-                    },
-                    body: JSON.stringify({ status })
-                });
-                const result = await res.json();
-
-                if (result.success) {
-                    showToast(isApprove ? '✅ Oda imekubaliwa! Access imetolewa.' : '❌ Oda imekataliwa.');
-                    fetchOrders();
-                    fetchUserStats();
-                } else {
-                    showToast('⚠️ Imeshindwa: ' + (result.error || 'Unknown error'));
-                    console.error('Order status error:', result.error);
-                }
-            } catch (err) {
-                console.error('Network error:', err);
-                showToast('⚠️ Hitilafu ya mtandao. Jaribu tena.');
-            }
-        }
-
-        async function verifyOrder(orderId) {
-            const btn = event.currentTarget;
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-            
-            try {
-                const res = await fetch(`/api/admin/orders/${orderId}/verify`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
-                });
-                const result = await res.json();
-                
-                if (result.success) {
-                    showToast('✅ ' + result.message);
-                    fetchOrders();
-                    fetchUserStats();
-                } else {
-                    showToast('ℹ️ ' + (result.message || 'Payment not found yet.'));
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                }
-            } catch (err) {
-                console.error('Verify error:', err);
-                showToast('⚠️ Error: ' + err.message);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
+                const d = await res.json();
+                if (d.success) {
+                    showToast("✅ Promo code zimesahifishwa kikamilifu!");
+                    loadPromoCodesWithStats();
+                } else { showToast("⚠️ Imeshindwa: " + (d.error || "Error")); }
+            } catch(e) { showToast("⚠️ Hitilafu ya mtandao."); }
         }
         // Auto-refresh orders every 30 seconds if view is active
         setInterval(() => {
