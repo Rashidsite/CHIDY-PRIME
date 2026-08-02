@@ -3560,7 +3560,7 @@
                     <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin: 0;">Takwimu za mauzo, mienendo ya wateja na utendaji wa mtandao real-time.</p>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="btn-filter" onclick="loadAnalyticsView()" style="background: #0f172a; color: #ffffff; border: 2.5px solid #0f172a; padding: 9px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <button class="btn-filter" onclick="handleManualRefresh(this, loadAnalyticsView, 'Analytics')" style="background: #0f172a; color: #ffffff; border: 2.5px solid #0f172a; padding: 9px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-sync-alt"></i> REFRESH ANALYTICS
                     </button>
                 </div>
@@ -4639,7 +4639,7 @@
                     <span style="width: 10px; height: 10px; background: #22c55e; border-radius: 50%; display: inline-block; animation: livePulse 1.8s infinite;"></span> LIVE REALTIME
                 </span>
             </div>
-            <button class="btn-filter" style="background: #0f172a; color: #ffffff; border: 2.5px solid #0f172a; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15,23,42,0.15);" onclick="fetchPayments()">
+            <button class="btn-filter" style="background: #0f172a; color: #ffffff; border: 2.5px solid #0f172a; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15,23,42,0.15);" onclick="handleManualRefresh(this, fetchPayments, 'Malipo')">
                 <i class="fas fa-sync-alt"></i> REFRESH DATA
             </button>
         </div>
@@ -5031,6 +5031,48 @@
 
 
     <script>
+        // LIVE REALTIME DIGITAL CLOCK
+        function updateDigitalClock() {
+            const clock = document.getElementById('digitalClock');
+            if (!clock) return;
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            clock.innerText = `${String(hours).padStart(2, '0')}:${minutes}:${seconds} ${ampm}`;
+        }
+        setInterval(updateDigitalClock, 1000);
+        document.addEventListener('DOMContentLoaded', updateDigitalClock);
+        updateDigitalClock();
+
+        // MANUAL REFRESH WITH VISUAL FEEDBACK & SPINNER
+        async function handleManualRefresh(btnEl, refreshFn, label) {
+            if (!btnEl) return;
+            const icon = btnEl.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            btnEl.disabled = true;
+            btnEl.style.opacity = '0.7';
+            showToast(`🔄 Inasafisha ${label || 'takwimu'}...`);
+
+            try {
+                if (typeof refreshFn === 'function') {
+                    await refreshFn();
+                }
+                showToast(`✅ ${label || 'Takwimu'} zimesafishwa 100%!`);
+            } catch(err) {
+                showToast(`⚠️ Hitilafu: ${err.message || 'Error'}`);
+            } finally {
+                setTimeout(() => {
+                    if (icon) icon.classList.remove('fa-spin');
+                    btnEl.disabled = false;
+                    btnEl.style.opacity = '1';
+                }, 500);
+            }
+        }
+
         // Intercept all fetch requests to add the Admin Token automatically
         const originalFetch = window.fetch.bind(window);
         window.fetch = async function (...args) {
