@@ -7430,7 +7430,10 @@
             try {
                 const res = await fetch(`/api/admin/orders/${orderId}/status`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+                    },
                     body: JSON.stringify({ status })
                 });
                 const result = await res.json();
