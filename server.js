@@ -2371,42 +2371,39 @@ app.post('/api/payments/zenopay-checkout',    initiateGameCheckout);
 // PressoPay POSTs the payment result here. Payload shape:
 //   { reference, merchantReference, status, amountMinor, ... }
 // Signature is verified via HMAC to prevent spoofed unlocks.
-app.post('/api/payments/pressopay-callback', async (req, res) => {
+app.post(['/api/payments/pressopay-callback', '/api/payments/pressopay-webhook', '/api/pressopay-callback', '/api/pressopay-webhook'], async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-    // Capture raw body for signature verification. If body-parser already
-    // parsed the JSON we re-stringify with stable ordering — pressopay
-    // signs the RAW body, so ideally clients send small enough payloads
-    // that our re-stringify matches. If verification fails we still fall
-    // back to a status re-check against the API for safety.
     const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {});
-    const sigOk = pressopay.verifyWebhookSignature(req.headers, rawBody, '/api/payments/pressopay-callback');
+    const sigOk = pressopay.verifyWebhookSignature(req.headers, rawBody, req.path);
 
     const payload = typeof req.body === 'string' ? (() => { try { return JSON.parse(req.body); } catch { return {}; } })() : (req.body || {});
     const { reference, status: bodyStatus } = payload;
 
-    console.log(`[PressoPay callback] reference=${reference} status=${bodyStatus} sigOk=${sigOk}`);
+    console.log(`[PressoPay callback] path=${req.path} reference=${reference} status=${bodyStatus} sigOk=${sigOk}`);
 
     if (!reference) return res.status(400).json({ error: 'reference missing' });
 
     try {
-        // Trust the API over the body — always re-check status.
-        const check = await pressopay.checkPaymentStatus(reference);
-        const finalStatus = (check.status || '').toUpperCase();
+        const cleanRef = String(reference).replace(/^PP:/i, '');
+        const check = await pressopay.checkPaymentStatus(cleanRef).catch(() => ({ status: bodyStatus || 'PENDING' }));
+        const finalStatus = (check.status || bodyStatus || '').toUpperCase();
 
-        const extOrderId = `PP:${reference}`;
-        const { data: order } = await supabase
+        const extOrderId = `PP:${cleanRef}`;
+        const { data: orderList } = await supabase
             .from('payment_orders')
             .select('*')
-            .eq('promo_used', extOrderId)
-            .single();
+            .or(`promo_used.eq.${extOrderId},promo_used.eq.${cleanRef},promo_used.eq.${reference}`);
+
+        const order = orderList && orderList.length > 0 ? orderList[0] : null;
 
         if (!order) {
-            console.warn(`[PressoPay callback] order not found for ${extOrderId}`);
+            console.warn(`[PressoPay callback] order not found for ${extOrderId} / ${cleanRef}`);
             return res.json({ received: true });
         }
 
-        if (finalStatus === 'COMPLETED') {
+        if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(finalStatus)) {
+            console.log(`[PressoPay callback] Payment COMPLETED for order ${order.id}! Granting access...`);
             const { data: game } = await supabase.from('posts').select('*').eq('id', order.post_id).single();
             if (game) {
                 await handleSuccessfulPayment(order.visitor_id, game, order.amount, order.phone_number, extOrderId, false);
@@ -2416,6 +2413,7 @@ app.post('/api/payments/pressopay-callback', async (req, res) => {
                     await handleSuccessfulPayment(order.visitor_id, video, order.amount, order.phone_number, extOrderId, true);
                 }
             }
+            await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
         } else if (['FAILED', 'CANCELLED', 'EXPIRED'].includes(finalStatus)) {
             await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', order.id);
         }

@@ -5,8 +5,8 @@
 
 const { createHmac, randomUUID } = require('crypto');
 
-const PRESSOPAY_KEY    = process.env.PRESSOPAY_API_KEY    || '';
-const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || '';
+const PRESSOPAY_KEY    = process.env.PRESSOPAY_API_KEY    || 'pk_kRsKlIaA-C78A3yZ';
+const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || 'sk_LfmKFVlJdCPDq57PZOtmAbwVf-ljYNjsbfi8WSbetD8';
 const PRESSOPAY_BASE   = process.env.PRESSOPAY_BASE_URL   || 'https://pressopay.com';
 
 // ══════════════════════════════════════════════════════════
