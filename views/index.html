@@ -5265,6 +5265,12 @@
                     Tumetuma ombi la malipo kwenye simu yako.<br>
                     Tafadhali <b>weka PIN</b> yako sasa hivi kukamilisha malipo.
                 </p>
+                <div style="background: rgba(255,180,0,0.08); border-radius: 15px; padding: 15px; border: 1px dashed rgba(255,180,0,0.3); margin-bottom: 10px;">
+                    <div style="display:flex; align-items:center; gap:10px; color: #ffb400; font-size: 0.8rem; font-weight: 600; text-align: left;">
+                        <i class="fas fa-bolt" style="font-size: 1.2rem; flex-shrink: 0;"></i>
+                        <span>Iwapo pop-up ya PIN inachelewa kwenye simu yako, fungua menu ya M-Pesa / Tigo Pesa / Airtel Money au bonyeza kitufe cha HAKIKI hapo chini mara tu ukishaweka PIN.</span>
+                    </div>
+                </div>
                 <div style="background: rgba(255,255,255,0.03); border-radius: 15px; padding: 20px; border: 1px dashed rgba(255,255,255,0.1);">
                     <div style="display:flex; align-items:center; gap:12px; color: #ffb400; font-size: 0.85rem; font-weight: 600;">
                         <i class="fas fa-info-circle"></i>
@@ -6553,7 +6559,7 @@
                 window.detailAccessTimer = setInterval(renderAccess, 3000);
             }
         }
-        // Initiate payment flow (Only ZenoPay AutoPayment)
+        // Initiate payment flow
         async function initiatePayment(postId) {
             const game = allGames.find(g => g.id == postId);
             if (!game) return;
@@ -6567,15 +6573,12 @@
             const visitor = JSON.parse(visitorStr);
 
             try {
-                // Reset steps to first step
                 switchPaymentStep('input');
 
-                // Reset button to fresh state for this new game
                 const btn = document.getElementById('autoPayBtn');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-bolt"></i> <span>Nunua Sasa</span>';
 
-                // Populate Game Name and Price in Popup
                 const isDiscounted = game.global_discount && game.global_discount > 0 && game.original_price > 0 && game.original_price > game.price;
                 if (isDiscounted) {
                     document.getElementById('payAmount').innerHTML = `<s style="color: #ff3366; font-size: 0.8rem; margin-right: 8px;">TSh ${parseInt(game.original_price).toLocaleString()}</s> TSh ${parseInt(game.price).toLocaleString()}`;
@@ -6584,20 +6587,16 @@
                 }
                 document.getElementById('payPostId').value = postId;
                 
-                // Populate game title in Content field
                 const payContentEl = document.getElementById('payContentName');
                 if (payContentEl) payContentEl.textContent = game.title;
 
-                // Clear phone field — user must type their number
                 document.getElementById('autoPayPhone').value = '';
                 
-                // Clear promo field
                 document.getElementById('promoCodeInput').value = '';
                 document.getElementById('promoMessage').textContent = '';
                 window.currentDiscount = 0;
                 window.appliedPromoCode = null;
 
-                // Show the Payment Overlay
                 const pOverlay = document.getElementById('paymentOverlay');
                 pOverlay.style.display = 'flex';
                 pOverlay.style.visibility = 'visible';
@@ -6644,7 +6643,6 @@
                     msgEl.style.color = '#16a34a';
                     amountEl.innerHTML = `<s>TSh ${parseInt(game.price).toLocaleString()}</s> <span style="color:#16a34a; margin-left:8px;">TSh ${finalPrice.toLocaleString()}</span>`;
                     
-                    // Small celebration effect
                     confetti({
                         particleCount: 20,
                         spread: 40,
@@ -6669,31 +6667,12 @@
             const btn = document.getElementById('autoPayBtn');
             const game = allGames.find(g => g.id == postId);
             
-            
             let visitorStr = localStorage.getItem('chidy_visitor');
             let visitor = visitorStr ? JSON.parse(visitorStr) : null;
-
-            // Auto-register visitor if missing or has no valid ID
-            if (!visitor || !visitor.id) {
-                try {
-                    const regRes = await fetch('/api/signup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: 'Mteja ' + phone.slice(-4), phone: phone })
-                    });
-                    const regData = await regRes.json();
-                    if (regData.success && regData.visitor) {
-                        visitor = { name: regData.visitor.name, phone: regData.visitor.phone, id: regData.visitor.id };
-                        localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
-                    }
-                } catch(e) { console.warn('Auto-signup during payment fallback:', e); }
-            }
-
             if (!visitor || !visitor.id) {
                 visitor = { id: Date.now(), phone: phone, name: 'Mteja ' + phone.slice(-4) };
                 localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
             }
-
 
             if (!phone || phone.length < 10) {
                 alert('Tafadhali ingiza namba sahihi ya simu!');
@@ -6704,23 +6683,20 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INATUMA MAOMBI...';
             btn.style.background = '#16a34a';
 
-            const finalAmount = Math.max(0, game.price - (window.currentDiscount || 0));
+            const finalAmount = Math.max(0, (game ? game.price : 0) - (window.currentDiscount || 0));
 
             try {
                 const checkoutBody = JSON.stringify({
                     amount: finalAmount,
                     phone: phone,
-                    gameTitle: game.title,
+                    gameTitle: game ? game.title : 'Game',
                     visitorId: visitor.id,
                     postId: postId,
-                    email: `${visitor.phone}@chidyprime.com`, // Fallback email
+                    email: `${visitor.phone}@chidyprime.com`,
                     name: visitor.name,
                     promo_used: window.appliedPromoCode || null
                 });
 
-                // PressoPay is now the primary gateway. If it returns "not
-                // configured" or a network/server error, fall back to
-                // HarakaPay automatically so the payment flow never breaks.
                 let response = await fetch('/api/payments/pressopay-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -6742,17 +6718,14 @@
                 console.log('Payment Checkout Result:', result);
 
                 if (result.status === 'success' || result.success === true) {
-                    // Switch to Verifying state immediately
                     switchPaymentStep('verifying');
                     
-                    // Show manual verify button after 10 seconds as a backup
                     if (window.manualVerifyTimeout) clearTimeout(window.manualVerifyTimeout);
                     window.manualVerifyTimeout = setTimeout(() => {
                         const mvBtn = document.getElementById('manual-verify-btn');
                         if (mvBtn) mvBtn.style.display = 'block';
-                    }, 10000);
-                    
-                    // Auto-poll to check if access is granted (Polling Mechanism)
+                    }, 4000);
+
                     let pollCount = 0;
                     if (window.activePollInterval) clearInterval(window.activePollInterval);
                     window.activePollInterval = setInterval(async () => {
@@ -6763,7 +6736,6 @@
                             const res = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}&device_fp=${encodeURIComponent(deviceFp)}`);
                             const access = await res.json();
                             
-                            // Update UI text to show live progress
                             const statusText = document.querySelector("#payment-verifying-step p");
                             if (statusText) {
                                 if (pollCount % 3 === 0) statusText.innerText = "Tunatekeleza malipo yako (PressoPay / M-Pesa / Tigo)...";
@@ -6774,27 +6746,18 @@
                             if (access.has_access) {
                                 clearInterval(window.activePollInterval);
                                 window.activePollInterval = null;
-                                
                                 switchPaymentStep('success');
-                                
                                 document.getElementById('paymentContinueBtn').onclick = () => {
                                     closePayment();
                                     openDetail(postId);
                                 };
-
-                                confetti({
-                                    particleCount: 150,
-                                    spread: 70,
-                                    origin: { y: 0.6 },
-                                    colors: ['#00f2ff', '#bc13fe', '#00d25b']
-                                });
+                                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f2ff', '#bc13fe', '#00d25b'] });
                                 return;
                             }
 
-                            if (pollCount > 100) { // Extended 5-minute timeout
+                            if (pollCount > 100) {
                                 clearInterval(window.activePollInterval);
                                 window.activePollInterval = null;
-                                
                                 alert("Bado malipo yanahakikiwa na mtandao wa simu. Kama umeshakataa au kuweka PIN, bonyeza 'BADO SIJAPATA ACCESS? HAKIKI HAPA' au subiri admin a-approve.");
                                 const mvBtn = document.getElementById('manual-verify-btn');
                                 if (mvBtn) mvBtn.style.display = 'block';
