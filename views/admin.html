@@ -5451,7 +5451,12 @@
             else if (viewId === 'ordersView') fetchOrders();
             else if (viewId === 'categoriesView') loadCategories();
             else if (viewId === 'affiliatesView') loadAffiliates();
-            else if (viewId === 'analyticsView') loadAnalyticsView();
+            else if (viewId === 'analyticsView') {
+                loadAnalyticsView();
+                setTimeout(() => {
+                    if (analyticsChartInstance) try { analyticsChartInstance.resize(); } catch(e){}
+                }, 200);
+            }
             else if (viewId === 'settingsView') loadStoreSettings();
             else if (viewId === 'videosView') { loadAdminVideos(); loadChannelId(); }
             else if (viewId === 'pushView') loadScheduledPushes();
@@ -6848,7 +6853,7 @@
                             data: amounts,
                             borderColor: "#4f46e5",
                             backgroundColor: "rgba(79, 70, 229, 0.12)",
-                            borderWidth: 3,
+                            borderWidth: 3.5,
                             fill: true,
                             tension: 0.35,
                             pointBackgroundColor: "#0f172a",
@@ -6885,6 +6890,8 @@
                         }
                     }
                 });
+            } else {
+                drawNativeLineChart(ctx, days, amounts);
             }
         }
 
