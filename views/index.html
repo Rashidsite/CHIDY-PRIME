@@ -6839,7 +6839,7 @@
                 }
 
                 // Secondary check HarakaPay / PressoPay endpoints
-                const res = await fetch(`/api/payments/verify-haraka/${visitor.id}/${postId}`);
+                const res = await fetch(`/api/payments/verify/${visitor.id}/${postId}`);
                 const data = await res.json();
                 
                 if (data.success) {

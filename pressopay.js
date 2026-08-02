@@ -153,9 +153,10 @@ async function checkPaymentStatus(reference) {
 // Callback headers mirror the request-side scheme.
 function verifyWebhookSignature(headers, rawBody, path = '/api/payments/pressopay-callback') {
     if (!PRESSOPAY_SECRET) return false;
-    const timestamp = headers['x-pressso-timestamp'] || headers['X-Pressso-Timestamp'];
-    const nonce     = headers['x-pressso-nonce']     || headers['X-Pressso-Nonce'];
-    const provided  = headers['x-pressso-signature'] || headers['X-Pressso-Signature'];
+    const h = headers || {};
+    const timestamp = h['x-pressso-timestamp'] || h['x-presso-timestamp'] || h['X-Pressso-Timestamp'] || h['X-Presso-Timestamp'];
+    const nonce     = h['x-pressso-nonce']     || h['x-presso-nonce']     || h['X-Pressso-Nonce']     || h['X-Presso-Nonce'];
+    const provided  = h['x-pressso-signature'] || h['x-presso-signature'] || h['X-Pressso-Signature'] || h['X-Presso-Signature'];
     if (!timestamp || !nonce || !provided) return false;
 
     const expected = generateSignature(timestamp, nonce, 'POST', path, rawBody || '');

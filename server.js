@@ -2707,8 +2707,11 @@ const verifyPaymentManual = async (req, res) => {
             const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
             try {
                 const pStatus = await pressopay.checkPaymentStatus(ref);
-                statusMessage = (pStatus.status || 'PENDING').toLowerCase();
-                if ((pStatus.status || '').toUpperCase() === 'COMPLETED') isPaid = true;
+                const pStatUpper = String(pStatus.status || 'PENDING').toUpperCase();
+                statusMessage = pStatUpper.toLowerCase();
+                if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatUpper)) {
+                    isPaid = true;
+                }
             } catch (e) {
                 statusMessage = 'pending';
             }
@@ -2739,6 +2742,8 @@ const verifyPaymentManual = async (req, res) => {
 
 app.get('/api/payments/verify-haraka/:visitor_id/:post_id', verifyPaymentManual);
 app.get('/api/payments/verify-zeno/:visitor_id/:post_id', verifyPaymentManual);
+app.get('/api/payments/verify-pressopay/:visitor_id/:post_id', verifyPaymentManual);
+app.get('/api/payments/verify/:visitor_id/:post_id', verifyPaymentManual);
 
 // Admin: Auto-Verify Order via HarakaPay/ZenoPay/PressoPay
 app.post('/api/admin/orders/:id/verify', verifyAdmin, async (req, res) => {
