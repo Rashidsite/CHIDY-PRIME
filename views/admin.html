@@ -19,18 +19,19 @@
             try {
                 const listEl = document.getElementById('categoriesList');
                 if (listEl) {
-                    listEl.innerHTML = '<div style="color: #6c7293; font-size: 0.9rem;"><i class="fas fa-spinner fa-spin"></i> Loading categories...</div>';
+                    listEl.innerHTML = '<div style="color: #64748b; font-weight:700; font-size: 0.9rem; grid-column: 1/-1; text-align:center; padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia categories...</div>';
                 }
-                const res = await fetch('/api/categories');
+                const res = await fetch('/api/categories?t=' + Date.now());
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 allCategories = await res.json();
 
                 renderCategoriesList();
+                loadPortalThumbs();
             } catch (err) {
                 console.error("Failed to load categories:", err);
                 const listEl = document.getElementById('categoriesList');
                 if (listEl) {
-                    listEl.innerHTML = `<div style="color: #ff3366; font-size: 0.9rem;">Hitilafu ya kupakia categories: ${err.message}</div>`;
+                    listEl.innerHTML = `<div style="color: #ef4444; font-weight:800; font-size: 0.9rem; grid-column: 1/-1; text-align:center; padding:2rem;">Hitilafu ya kupakia categories: ${err.message}</div>`;
                 }
             }
         }
@@ -52,21 +53,23 @@
             if (!listEl) return;
 
             if (!allCategories || allCategories.length === 0) {
-                listEl.innerHTML = '<div style="color: #6c7293; font-size: 0.9rem;">Hakuna category yoyote iliyopatikana. Ongeza category mpya hapo juu.</div>';
+                listEl.innerHTML = '<div style="color: #64748b; font-weight:700; font-size: 0.9rem; grid-column: 1/-1; text-align:center; padding:2rem;"><i class="fas fa-folder-open" style="font-size:1.8rem; margin-bottom:8px; display:block; color:#94a3b8;"></i> Hakuna category yoyote iliyopatikana. Ongeza category mpya hapo juu.</div>';
                 return;
             }
 
             listEl.innerHTML = allCategories.map(cat => `
-                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 220px; flex: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-folder" style="color: #7c3aed; font-size: 1.1rem;"></i>
-                        <div>
-                            <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: 'Orbitron', sans-serif;">${cat.name}</div>
-                            <div style="font-size: 0.75rem; color: #64748b;">Order: #${cat.display_order || cat.id}</div>
+                <div style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); transition: 0.2s;">
+                    <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+                        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(124,58,237,0.1); border: 1.5px solid #7c3aed; display: flex; align-items: center; justify-content: center; color: #7c3aed; font-size: 1.1rem; flex-shrink: 0;">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div style="overflow: hidden; text-overflow: ellipsis;">
+                            <div style="font-weight: 900; color: #0f172a; font-size: 0.92rem; font-family: 'Orbitron', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${cat.name}</div>
+                            <div style="font-size: 0.72rem; color: #64748b; font-weight: 700;">Order: #${cat.display_order || cat.id}</div>
                         </div>
                     </div>
-                    <button onclick="deleteCategory('${cat.id}', '${cat.name.replace(/'/g, "\\'")}')" class="neon-btn" style="padding: 6px 12px; font-size: 0.75rem; border-color: #ff3366; color: #ff3366; background: rgba(255,51,102,0.1);">
-                        <i class="fas fa-trash"></i> Futa
+                    <button onclick="deleteCategory('${cat.id}', '${cat.name.replace(/'/g, "\\'")}')" style="padding: 7px 14px; font-size: 0.76rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 8px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(239,68,68,0.25); flex-shrink: 0;">
+                        <i class="fas fa-trash-alt"></i> FUTA
                     </button>
                 </div>
             `).join('');
@@ -81,7 +84,7 @@
             if (!name) {
                 if (msg) {
                     msg.style.display = 'block';
-                    msg.style.color = '#ff3366';
+                    msg.style.color = '#ef4444';
                     msg.innerText = '⚠️ Tafadhali andika jina la category!';
                 }
                 return;
@@ -90,13 +93,16 @@
             try {
                 if (msg) {
                     msg.style.display = 'block';
-                    msg.style.color = '#00f2ff';
+                    msg.style.color = '#2563eb';
                     msg.innerText = '⏳ Inahifadhi category mpya...';
                 }
 
                 const res = await fetch('/api/categories', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                    },
                     body: JSON.stringify({ name })
                 });
 
@@ -104,7 +110,7 @@
                 if (res.ok && result.success) {
                     input.value = '';
                     if (msg) {
-                        msg.style.color = '#00d25b';
+                        msg.style.color = '#16a34a';
                         msg.innerText = `✅ Category "${result.category.name}" imeongezwa kikamilifu!`;
                         setTimeout(() => { msg.style.display = 'none'; }, 3000);
                     }
@@ -112,25 +118,30 @@
                     await loadCategories();
                 } else {
                     if (msg) {
-                        msg.style.color = '#ff3366';
+                        msg.style.color = '#ef4444';
                         msg.innerText = `❌ Error: ${result.error || 'Imeshindwa kuongeza category'}`;
                     }
                 }
             } catch (err) {
                 if (msg) {
-                    msg.style.color = '#ff3366';
+                    msg.style.color = '#ef4444';
                     msg.innerText = `❌ Hitilafu ya mtandao: ${err.message}`;
                 }
             }
         }
 
         async function deleteCategory(id, name) {
-            if (!confirm(`Je, una uhakika unataka kufuta category "${name}"?\n\nFuta tu kama huna michezo iliyounganishwa na category hii.`)) return;
+            const confirmed = await showConfirmModal(
+                'FUTA CATEGORY',
+                `Je, una uhakika unataka kufuta category "${name}"?\nFuta tu kama huna michezo iliyounganishwa na category hii.`
+            );
+            if (!confirmed) return;
 
             try {
                 showToast(`⏳ Inafuta category "${name}"...`);
                 const res = await fetch(`/api/categories/${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') }
                 });
                 const result = await res.json();
                 if (res.ok && result.success) {
@@ -149,8 +160,8 @@
             if (!container) return;
 
             try {
-                container.innerHTML = '<div style="color: #6c7293; font-size: 0.9rem; grid-column: 1/-1;"><i class="fas fa-spinner fa-spin"></i> Loading portal thumbnails...</div>';
-                const res = await fetch('/api/settings/portal_thumbnails');
+                container.innerHTML = '<div style="color: #64748b; font-weight:700; font-size: 0.9rem; grid-column: 1/-1; text-align:center; padding:1.5rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia portal thumbnails...</div>';
+                const res = await fetch('/api/settings/portal_thumbnails?t=' + Date.now());
                 let thumbs = {};
                 if (res.ok) {
                     const data = await res.json();
@@ -160,19 +171,23 @@
                 }
 
                 const platforms = [
-                    { key: 'android', label: 'Android Games Portal', icon: 'fab fa-android', color: '#00d25b' },
-                    { key: 'ios', label: 'iOS / iPhone Games Portal', icon: 'fab fa-apple', color: '#00f2ff' },
-                    { key: 'pc', label: 'PC / Computer Games Portal', icon: 'fas fa-desktop', color: '#bc13fe' }
+                    { key: 'android', label: 'Android Games Portal', icon: 'fab fa-android', color: '#16a34a', bg: '#f0fdf4' },
+                    { key: 'ios', label: 'iOS / iPhone Games Portal', icon: 'fab fa-apple', color: '#0284c7', bg: '#f0f9ff' },
+                    { key: 'pc', label: 'PC / Computer Games Portal', icon: 'fas fa-desktop', color: '#9333ea', bg: '#faf5ff' }
                 ];
 
                 container.innerHTML = platforms.map(p => `
-                    <div style="background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;">
-                        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: ${p.color}; margin-bottom: 10px;">
-                            <i class="${p.icon}"></i> ${p.label}
+                    <div style="background: ${p.bg}; border: 2.5px solid #0f172a; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 900; color: #0f172a; font-family: 'Orbitron'; font-size: 0.88rem; display: flex; align-items: center; gap: 8px;">
+                                <i class="${p.icon}" style="color: ${p.color}; font-size: 1.1rem;"></i> ${p.label}
+                            </span>
+                            <span style="font-size: 0.68rem; font-family: 'Orbitron'; font-weight: 800; background: #0f172a; color: #ffffff; padding: 3px 8px; border-radius: 6px;">${p.key.toUpperCase()}</span>
                         </div>
-                        <input type="text" id="thumb_input_${p.key}" value="${thumbs[p.key] || ''}" placeholder="Picha URL (https://...)" style="width: 100%; margin-bottom: 10px;" />
-                        <button onclick="savePortalThumb('${p.key}')" class="neon-btn" style="padding: 6px 14px; font-size: 0.8rem;">
-                            <i class="fas fa-save"></i> Hifadhi Image
+                        <input type="text" id="thumb_input_${p.key}" value="${thumbs[p.key] || ''}" placeholder="URL ya Picha (https://...)" 
+                            style="width: 100%; padding: 11px 13px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 700; font-size: 0.85rem; outline: none;" />
+                        <button onclick="savePortalThumb('${p.key}')" style="padding: 10px; background: #0f172a; color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(15,23,42,0.2);">
+                            <i class="fas fa-save"></i> HIFADHI PICHA
                         </button>
                     </div>
                 `).join('');
@@ -963,14 +978,14 @@
         #digitalClock {
             font-family: 'Orbitron';
             font-size: 1rem;
-            color: #fff;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px var(--primary-color);
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: 1.5px;
         }
 
         .clock-icon {
-            color: var(--primary-color);
-            font-size: 0.9rem;
+            color: #7c3aed;
+            font-size: 1rem;
             animation: clockPulse 1s infinite alternate;
         }
 
@@ -4541,55 +4556,61 @@
     </div>
 
     <!-- CATEGORIES VIEW -->
+    <!-- CATEGORIES & PORTAL THUMBNAILS VIEW -->
     <section id="categoriesView" class="content view-section" style="display: none;">
-        <div class="admin-card">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 2rem;">
-                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, rgba(188,19,254,0.3), rgba(0,242,255,0.1)); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #bc13fe;">
-                    <i class="fas fa-tags"></i>
-                </div>
-                <div>
-                    <h3 class="card-title" style="margin: 0;">Manage Categories</h3>
-                    <p style="color: #6c7293; font-size: 0.85rem; margin: 4px 0 0;">Ongeza au futa categories za mchezo</p>
-                </div>
-            </div>
+        <!-- Top Executive Header -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 4px 0; font-size: 1.4rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-tags" style="color: #7c3aed;"></i> Executive Category Manager & Portal Media Hub
+            </h3>
+            <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin: 0;">Ongeza, rekebisha na usimamie makundi ya michezo (Categories) na picha zake za Portal.</p>
+        </div>
 
-            <!-- Add New Category -->
-            <div style="background: rgba(188,19,254,0.05); border: 1px solid rgba(188,19,254,0.2); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
-                <h4 style="color: #bc13fe; font-family: 'Orbitron'; font-size: 0.9rem; margin: 0 0 1rem; letter-spacing: 2px;"><i class="fas fa-plus-circle"></i> ADD NEW CATEGORY</h4>
+        <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+            <!-- Add New Category Box -->
+            <div style="background: #f8fafc; border: 2.5px solid #0f172a; border-radius: 14px; padding: 20px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(15,23,42,0.05);">
+                <h4 style="color: #0f172a; font-family: 'Orbitron'; font-size: 0.95rem; font-weight: 900; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-plus-circle" style="color: #7c3aed;"></i> ONGEZA CATEGORY MPYA (ADD CATEGORY)
+                </h4>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                    <input type="text" id="newCategoryInput" placeholder="e.g. PS5 GAMES" 
-                        style="flex: 1; min-width: 200px; text-transform: uppercase;"
+                    <input type="text" id="newCategoryInput" placeholder="Mfano: PS5 GAMES au NINTENDO SWITCH" 
+                        style="flex: 1; min-width: 240px; padding: 13px 15px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 800; font-size: 0.92rem; outline: none; text-transform: uppercase;"
                         onkeypress="if(event.key==='Enter') addCategory()">
-                    <button onclick="addCategory()" class="btn-deploy" style="padding: 0.8rem 2rem; white-space: nowrap;">
-                        <i class="fas fa-plus"></i> Add Category
+                    <button onclick="addCategory()" style="padding: 13px 24px; background: linear-gradient(135deg, #7c3aed, #6d28d9); border: 2.5px solid #0f172a; border-radius: 10px; color: #ffffff; font-family: 'Orbitron'; font-size: 0.88rem; font-weight: 900; cursor: pointer; box-shadow: 0 4px 14px rgba(124,58,237,0.35); display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                        <i class="fas fa-plus"></i> ONGEZA CATEGORY
                     </button>
                 </div>
-                <p id="catMsg" style="margin-top: 0.7rem; font-size: 0.8rem; display: none;"></p>
+                <p id="catMsg" style="margin-top: 10px; font-size: 0.82rem; font-weight: 800; display: none;"></p>
             </div>
 
-            <!-- Categories List -->
+            <!-- Current Categories List -->
             <div>
-                <h4 style="color: #6c7293; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 1.2rem; text-transform: uppercase;">Current Categories (<span id="catCount">0</span>)</h4>
-                <div id="categoriesList" style="display: flex; flex-wrap: wrap; gap: 12px;">
-                    <div style="color: #6c7293; font-size: 0.9rem;">Loading categories...</div>
+                <h4 style="color: #0f172a; font-size: 0.95rem; font-family: 'Orbitron'; font-weight: 900; margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-list" style="color: #7c3aed;"></i> CATEGORIES ZOTE ZILIZOPO (<span id="catCount">0</span>)</span>
+                    <button onclick="loadCategories()" style="background: #0f172a; color: #ffffff; border: 1.5px solid #0f172a; padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 800; cursor: pointer; font-family: 'Orbitron'; display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-sync-alt"></i> REFRESH
+                    </button>
+                </h4>
+                <div id="categoriesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
+                    <div style="color: #64748b; font-weight: 700; font-size: 0.9rem; grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia categories...</div>
                 </div>
             </div>
         </div>
 
-        <!-- PORTAL CARD THUMBNAILS -->
-        <div class="admin-card" style="margin-top: 2rem;">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem;">
-                <div style="width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(220,38,38,0.15)); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #2563EB;">
+        <!-- PORTAL CARD THUMBNAILS CONTAINER -->
+        <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 24px; margin-top: 2rem; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 14px;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(37,99,235,0.1); border: 2px solid #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #2563eb;">
                     <i class="fas fa-images"></i>
                 </div>
                 <div>
-                    <h3 class="card-title" style="margin: 0;">Portal Card Thumbnails</h3>
-                    <p style="color: #6c7293; font-size: 0.85rem; margin: 4px 0 0;">Weka picha ya kila category itakayoonekana kwenye home page cards</p>
+                    <h4 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron';">PORTAL CARD THUMBNAILS (HOME PAGE CARDS)</h4>
+                    <p style="color: #64748b; font-weight: 600; font-size: 0.82rem; margin: 3px 0 0 0;">Weka picha za mchoro wa Portal zitakazoonekana kwenye kadi za Home Page.</p>
                 </div>
             </div>
 
-            <div id="portalThumbsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
-                <div style="color: #6c7293; font-size: 0.9rem; grid-column: 1/-1;">Loading portal thumbnails...</div>
+            <div id="portalThumbsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;">
+                <div style="color: #64748b; font-weight: 700; font-size: 0.9rem; grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia portal thumbnails...</div>
             </div>
 
             <p id="portalThumbsMsg" style="margin-top: 1rem; font-size: 0.85rem; display: none;"></p>
