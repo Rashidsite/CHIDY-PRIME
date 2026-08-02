@@ -6289,8 +6289,12 @@
 
             const overlay = document.getElementById('detailOverlay');
             const card = document.getElementById('detailCard');
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            const visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            let visitorStr = localStorage.getItem('chidy_visitor');
+            let visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            if (!visitor || !visitor.id) {
+                visitor = { id: Date.now(), phone: '', name: 'Mteja ' + String(Date.now()).slice(-4) };
+                localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
+            }
 
             // Extract YouTube Video ID if youtube_url is provided
             let videoEmbedHtml = '';
@@ -6564,13 +6568,12 @@
             const game = allGames.find(g => g.id == postId);
             if (!game) return;
 
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) {
-                alert('Tafadhali jisajili kwanza!');
-                document.getElementById('signupOverlay').classList.remove('hidden');
-                return;
+            let visitorStr = localStorage.getItem('chidy_visitor');
+            let visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            if (!visitor || !visitor.id) {
+                visitor = { id: Date.now(), phone: '', name: 'Mteja ' + String(Date.now()).slice(-4) };
+                localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
             }
-            const visitor = JSON.parse(visitorStr);
 
             try {
                 switchPaymentStep('input');
