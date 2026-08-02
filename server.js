@@ -2885,14 +2885,27 @@ app.get('/api/orders/history/:visitorId', async (req, res) => {
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
-    // 1. Auto-cleanup ALL orders older than 7 days
+    // 1. AUTOMATED LIFECYCLE CLEANUP:
+    // - Move completed/approved/rejected orders older than 2 Days (48h) to status 'trashed'
+    // - Permanently delete trashed orders older than 7 Days (168h)
     try {
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        // Auto-trash >2 day old processed orders
+        await supabase.from('payment_orders')
+            .update({ status: 'trashed', updated_at: new Date().toISOString() })
+            .neq('status', 'trashed')
+            .neq('status', 'pending')
+            .lt('created_at', twoDaysAgo);
+
+        // Permanently purge >7 day old trashed orders
         await supabase.from('payment_orders')
             .delete()
-            .lt('created_at', sevenDaysAgo.toISOString());
+            .eq('status', 'trashed')
+            .lt('updated_at', sevenDaysAgo);
     } catch (e) {
-        console.error("Cleanup error:", e);
+        console.error("Order lifecycle cleanup error:", e);
     }
     
     // 2. Auto-sync pending orders with PressoPay/HarakaPay/ZenoPay live
