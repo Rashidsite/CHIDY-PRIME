@@ -6091,13 +6091,24 @@
             document.getElementById('orderHistoryOverlay').classList.remove('show');
         }
 
+        // PERFORMANCE BOOST: Load games from localStorage instantly (0ms load time)
+        try {
+            const cachedGamesStr = localStorage.getItem('chidy_games_cache');
+            if (cachedGamesStr) {
+                const cachedGames = JSON.parse(cachedGamesStr);
+                if (Array.isArray(cachedGames) && cachedGames.length > 0) {
+                    allGames = cachedGames;
+                    renderCategories(allGames);
+                }
+            }
+        } catch (_) {}
+
         async function fetchGames(isSilent = false) {
             try {
-                // PERFORMANCE: Fetch categories + games in PARALLEL with cache-busting timestamp
-                const t = Date.now();
+                // PERFORMANCE: Fetch categories + games in PARALLEL using HTTP cache
                 const [catRes, gamesRes] = await Promise.all([
-                    fetch(`/api/categories?t=${t}`).catch(() => null),
-                    fetch(`/api/games?t=${t}`)
+                    fetch('/api/categories').catch(() => null),
+                    fetch('/api/games')
                 ]);
 
                 // Process categories
@@ -6119,6 +6130,10 @@
 
                 allGames = Array.isArray(games) ? games : [];
                 
+                try {
+                    localStorage.setItem('chidy_games_cache', JSON.stringify(allGames));
+                } catch (_) {}
+
                 // Only re-render if data actually changed or not silent
                 if (!isSilent || prevFp !== newFp) {
                     if (!currentCategory) {
@@ -6132,11 +6147,13 @@
             }
         }
 
-        // Storefront & Installed PWA App Live Real-Time Polling (every 8s)
+        // Storefront & Installed PWA App Live Real-Time Sync (every 20s when visible)
         if (!window.storefrontRealtimeTimer) {
             window.storefrontRealtimeTimer = setInterval(() => {
-                if (typeof fetchGames === "function") fetchGames(true);
-            }, 8000);
+                if (typeof fetchGames === "function" && document.visibilityState === 'visible') {
+                    fetchGames(true);
+                }
+            }, 20000);
         }
         // ===== RENDER CATEGORIES =====
         
