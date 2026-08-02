@@ -5551,113 +5551,145 @@
         async function loadStoreSettings() {
             try {
                 // Flash sale global discount
-                const resDisc = await fetch('/api/settings/global_discount');
-                const dataDisc = await resDisc.json();
-                const discVal = parseInt(dataDisc.value, 10) || 0;
-                const discInput = document.getElementById('globalDiscountInput');
-                if (discInput) discInput.value = discVal;
-                const discBadge = document.getElementById('activeDiscountBadge');
-                if (discBadge) discBadge.style.display = discVal > 0 ? 'block' : 'none';
+                const resDisc = await fetch('/api/settings/global_discount?t=' + Date.now());
+                if (resDisc.ok) {
+                    const dataDisc = await resDisc.json();
+                    const discVal = parseInt(dataDisc.value, 10) || 0;
+                    const discInput = document.getElementById('globalDiscountInput');
+                    if (discInput) discInput.value = discVal;
+                    const discBadge = document.getElementById('activeDiscountBadge');
+                    if (discBadge) {
+                        discBadge.style.display = discVal > 0 ? 'inline-block' : 'none';
+                        discBadge.innerText = `${discVal}% ACTIVE`;
+                    }
+                }
 
                 // Maintenance Mode
-                const resMaint = await fetch('/api/settings/maintenance');
-                const dataMaint = await resMaint.json();
-                const isMaint = dataMaint.value === 'true';
-                const maintToggle = document.getElementById('maintenanceToggle');
-                if (maintToggle) maintToggle.checked = isMaint;
-                const maintStatus = document.getElementById('maintenanceStatus');
-                if (maintStatus) maintStatus.style.display = isMaint ? 'block' : 'none';
+                const resMaint = await fetch('/api/settings/maintenance?t=' + Date.now());
+                if (resMaint.ok) {
+                    const dataMaint = await resMaint.json();
+                    const isMaint = dataMaint.value === 'true';
+                    const maintToggle = document.getElementById('maintenanceToggle');
+                    if (maintToggle) maintToggle.checked = isMaint;
+                    const maintStatus = document.getElementById('maintenanceStatus');
+                    if (maintStatus) maintStatus.style.display = isMaint ? 'block' : 'none';
+                }
 
                 // Announcement Banner
-                const resAnn = await fetch('/api/settings/announcement');
-                const dataAnn = await resAnn.json();
-                const annInput = document.getElementById('announcementInput');
-                if (annInput) annInput.value = dataAnn.value || '';
+                const resAnn = await fetch('/api/settings/announcement?t=' + Date.now());
+                if (resAnn.ok) {
+                    const dataAnn = await resAnn.json();
+                    const annInput = document.getElementById('announcementInput');
+                    if (annInput) annInput.value = dataAnn.value || '';
+                }
 
                 // PWA App Installations
-                const resInst = await fetch('/api/settings/total_installs');
-                const dataInst = await resInst.json();
-                const count = dataInst.value || 0;
-                const el1 = document.getElementById('appInstallsCount');
-                const el2 = document.getElementById('settingsTotalInstalls');
-                if (el1) el1.innerText = count;
-                if (el2) el2.innerText = count;
-
+                const resInst = await fetch('/api/settings/total_installs?t=' + Date.now());
+                if (resInst.ok) {
+                    const dataInst = await resInst.json();
+                    const count = dataInst.value || 0;
+                    const el1 = document.getElementById('appInstallsCount');
+                    const el2 = document.getElementById('settingsTotalInstalls');
+                    if (el1) el1.innerText = count;
+                    if (el2) el2.innerText = count;
+                }
 
             } catch (err) {
                 console.error('Error loading store settings:', err);
             }
         }
 
-
-
         async function saveGlobalDiscount() {
-            const val = document.getElementById('globalDiscountInput').value;
+            const valInput = document.getElementById('globalDiscountInput');
+            const val = valInput ? valInput.value : "0";
             const num = parseInt(val, 10) || 0;
+
+            if (num < 0 || num > 95) {
+                return alert("Tafadhali weka asilimia sahihi ya punguzo kati ya 0 na 95%");
+            }
+
             try {
+                showToast("⏳ Inahifadhi discount...");
+                const token = localStorage.getItem('adminToken');
                 const res = await fetch('/api/admin/settings/global_discount', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (token || '')
+                    },
                     body: JSON.stringify({ value: String(num) })
                 });
                 const result = await res.json();
                 if (result.success) {
-                    showToast(num > 0 ? `✅ Flash Sale Discount (${num}%) Activated!` : "✅ Discount Cleared!");
+                    showToast(num > 0 ? `✅ Flash Sale Discount (${num}%) Imewashwa!` : "✅ Discount Imefutwa!");
                     loadStoreSettings();
                 } else {
-                    alert("Failed to update discount: " + (result.error || 'Server error'));
+                    alert("Imeshindwa kuhifadhi discount: " + (result.error || 'Server error'));
                 }
             } catch (e) {
-                alert("Failed to update discount: " + e.message);
+                alert("Hitilafu ya mtandao: " + e.message);
             }
         }
 
         async function clearGlobalDiscount() {
-            document.getElementById('globalDiscountInput').value = 0;
+            const valInput = document.getElementById('globalDiscountInput');
+            if (valInput) valInput.value = 0;
             await saveGlobalDiscount();
         }
 
         async function toggleMaintenance() {
             const toggle = document.getElementById('maintenanceToggle');
+            if (!toggle) return;
             const enabled = toggle.checked;
             try {
+                showToast("⏳ Inabadilisha Maintenance Mode...");
+                const token = localStorage.getItem('adminToken');
                 const res = await fetch('/api/admin/settings/maintenance', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (token || '')
+                    },
                     body: JSON.stringify({ value: String(enabled) })
                 });
                 const result = await res.json();
                 if (result.success) {
                     const maintStatus = document.getElementById('maintenanceStatus');
                     if (maintStatus) maintStatus.style.display = enabled ? 'block' : 'none';
-                    showToast(enabled ? '⚠️ System Maintenance Mode ACTIVATED' : '✅ Maintenance Mode DEACTIVATED');
+                    showToast(enabled ? '⚠️ Duka Limefungwa (Maintenance Mode Active)' : '✅ Duka Limefunguliwa Live!');
                 } else {
                     throw new Error(result.error || 'Server error');
                 }
             } catch (err) {
                 console.error(err);
                 toggle.checked = !enabled;
-                alert('Error updating maintenance state: ' + err.message);
+                alert('Hitilafu ya kubadilisha Maintenance Mode: ' + err.message);
             }
         }
 
         async function updateAnnouncement() {
-            const text = document.getElementById('announcementInput').value.trim();
+            const annInput = document.getElementById('announcementInput');
+            const text = annInput ? annInput.value.trim() : '';
             try {
+                showToast("⏳ Inahifadhi tangazo la duka...");
+                const token = localStorage.getItem('adminToken');
                 const res = await fetch('/api/admin/settings/announcement', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (token || '')
+                    },
                     body: JSON.stringify({ value: text })
                 });
                 const result = await res.json();
                 if (result.success) {
-                    showToast(text ? "✅ Announcement Banner Updated!" : "✅ Banner Cleared!");
+                    showToast(text ? "✅ Tangazo la Duka Limesasishwa Live!" : "✅ Tangazo Limefutwa!");
                     loadStoreSettings();
                 } else {
-                    alert("Failed to update banner: " + (result.error || 'Server error'));
+                    alert("Imeshindwa kuhifadhi tangazo: " + (result.error || 'Server error'));
                 }
             } catch (e) {
-                alert("Failed to update banner: " + e.message);
+                alert("Hitilafu ya mtandao: " + e.message);
             }
         }
 
@@ -7578,107 +7610,7 @@
                 if (!allOrdersData || allOrdersData.length === 0) renderOrdersList();
             }
         }
-        async function loadStoreSettings() {
-            try {
-                // Fetch Global Discount
-                const resDisc = await fetch('/api/settings/global_discount');
-                const discData = await resDisc.json();
-                
-                const input = document.getElementById('globalDiscountInput');
-                const badge = document.getElementById('activeDiscountBadge');
-                
-                if (discData && discData.value) {
-                    input.value = discData.value;
-                    if (parseInt(discData.value) > 0) {
-                        badge.style.display = 'block';
-                        badge.innerText = `${discData.value}% ACTIVE`;
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                } else {
-                    input.value = 0;
-                    badge.style.display = 'none';
-                }
 
-                // Fetch Maintenance Mode
-                const resMaint = await fetch('/api/settings/maintenance');
-                const maintData = await resMaint.json();
-                const maintToggle = document.getElementById('maintenanceToggle');
-                const maintStatus = document.getElementById('maintenanceStatus');
-                
-                const isMaint = maintData.value === 'true';
-                maintToggle.checked = isMaint;
-                maintStatus.style.display = isMaint ? 'block' : 'none';
-
-                // Fetch App Installs
-                const resInst = await fetch('/api/settings/total_installs');
-                const instData = await resInst.json();
-                document.getElementById('settingsTotalInstalls').innerText = instData.value || 0;
-
-            } catch (err) {
-                console.error("Failed to load settings:", err);
-            }
-        }
-
-        async function toggleMaintenanceMode(enabled) {
-            try {
-                const res = await fetch('/api/admin/settings/maintenance', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
-                    body: JSON.stringify({ value: String(enabled) })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    document.getElementById('maintenanceStatus').style.display = enabled ? 'block' : 'none';
-                    showToast(enabled ? 'Maintenance Mode ACTIVATED' : 'Maintenance Mode DEACTIVATED');
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Failed to update maintenance mode: " + err.message);
-                document.getElementById('maintenanceToggle').checked = !enabled;
-            }
-        }
-
-        async function saveGlobalDiscount() {
-            const val = document.getElementById('globalDiscountInput').value;
-            if (val === "" || val < 0 || val > 95) return alert("Weka asilimia sahihi (0-95)");
-
-            try {
-                const res = await fetch('/api/admin/settings/global_discount', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
-                    body: JSON.stringify({ value: val })
-                });
-                
-                if (res.status === 401 || res.status === 403) {
-                    return alert("Kikao chako (Session) kimeisha. Tafadhali Login tena.");
-                }
-
-                const result = await res.json();
-                if (result.success) {
-                    showToast("✅ Global Discount imehifadhiwa!");
-                    loadStoreSettings();
-                } else {
-                    alert("Error: " + (result.error || 'Unknown server error'));
-                }
-            } catch (err) {
-                console.error("Fetch Error:", err);
-                alert("Hitilafu: " + err.message);
-            }
-        }
-
-        async function clearGlobalDiscount() {
-            document.getElementById('globalDiscountInput').value = 0;
-            await saveGlobalDiscount();
-        }
 
         function renderOrdersList() {
             const list = document.getElementById("ordersList");
