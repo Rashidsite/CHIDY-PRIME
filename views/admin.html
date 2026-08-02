@@ -5120,112 +5120,142 @@
 
     <!-- SETTINGS VIEW -->
     <section id="settingsView" class="content view-section" style="display: none;">
-        <div class="admin-card">
-            <h3 class="card-title"><i class="fas fa-cog"></i> Store Settings</h3>
-            <p style="color: #6c7293; font-size: 0.9rem; margin-bottom: 2rem;">Manage your storefront parameters and operational state.</p>
+        <!-- Top Executive Header -->
+        <div style="margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 4px 0; font-size: 1.4rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-sliders-h" style="color: #7c3aed;"></i> Executive Store Control & Settings Hub
+            </h3>
+            <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin: 0;">Usimamizi Mkuu wa Duka: Rekebisha punguzo la bei (Flash Sale), Fungua/Funga Duka (Maintenance Mode), Chapisha Tangazo Kuu na angalia takwimu za PWA App.</p>
+        </div>
+
+        <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
             
             <style>
-                .switch input:checked + .slider { background-color: #ffb400; box-shadow: 0 0 15px rgba(255, 180, 0, 0.5); }
-                .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-                .switch input:checked + .slider:before { transform: translateX(26px); }
+                .switch input:checked + .slider { background-color: #16a34a; box-shadow: 0 0 12px rgba(22, 163, 74, 0.4); }
+                .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 4px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; border: 1.5px solid #0f172a; }
+                .switch input:checked + .slider:before { transform: translateX(24px); }
             </style>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                
                 <!-- Global Discount / Flash Sale -->
-                <div style="background: rgba(188,19,254,0.05); border: 1px solid rgba(188,19,254,0.2); border-radius: 12px; padding: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
-                        <div>
-                            <h4 style="color: #bc13fe; font-family: 'Orbitron'; margin: 0; letter-spacing: 1px; font-size: 0.9rem;">GLOBAL FLASH SALE</h4>
-                            <p style="color: #6c7293; font-size: 0.8rem; margin: 5px 0 0;">Apply a sitewide discount to all games.</p>
+                <div style="background: #faf5ff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                            <div>
+                                <h4 style="color: #0f172a; font-family: 'Orbitron'; font-weight: 900; margin: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-tags" style="color: #7c3aed;"></i> GLOBAL FLASH SALE
+                                </h4>
+                                <p style="color: #64748b; font-size: 0.8rem; font-weight: 600; margin: 4px 0 0;">Weka punguzo la bei (% discount) kwa michezo yote ya duka.</p>
+                            </div>
+                            <span id="activeDiscountBadge" style="display:none; background: #16a34a; color: #ffffff; font-family: 'Orbitron'; font-weight: 900; font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; border: 1.5px solid #0f172a; flex-shrink:0;">
+                                ACTIVE
+                            </span>
                         </div>
-                        <div id="activeDiscountBadge" style="display:none; background: rgba(0,210,91,0.1); color: #00d25b; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; border: 1px solid rgba(0,210,91,0.2);">
-                            ACTIVE
+
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; margin-bottom: 6px; text-transform: uppercase;">Punguzo (%)</label>
+                            <input type="number" id="globalDiscountInput" placeholder="0" min="0" max="95" 
+                                style="width: 100%; padding: 11px 14px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 900; font-family: 'Orbitron'; font-size: 1.1rem; outline: none;">
                         </div>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div>
-                            <label style="display: block; font-size: 0.7rem; color: #6c7293; margin-bottom: 8px; text-transform: uppercase;">Discount %</label>
-                            <input type="number" id="globalDiscountInput" placeholder="0" min="0" max="95" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white;">
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="saveGlobalDiscount()" class="btn-deploy" style="flex: 1; padding: 10px; font-size: 0.8rem;">
-                                <i class="fas fa-save"></i> Save
-                            </button>
-                            <button onclick="clearGlobalDiscount()" style="padding: 10px; background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.2); color: #ff3366; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
-                                Clear
-                            </button>
-                        </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="saveGlobalDiscount()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(124,58,237,0.25);">
+                            <i class="fas fa-save"></i> HIFADHI
+                        </button>
+                        <button onclick="clearGlobalDiscount()" style="padding: 12px 18px; background: #ef4444; color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.82rem; cursor: pointer; box-shadow: 0 4px 10px rgba(239,68,68,0.2);">
+                            FUTA
+                        </button>
                     </div>
                 </div>
 
                 <!-- Maintenance Mode -->
-                <div style="background: rgba(255,180,0,0.05); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 1.5rem;">
-                    <h4 style="color: #ffb400; font-family: 'Orbitron'; margin: 0 0 5px; letter-spacing: 1px; font-size: 0.9rem;"><i class="fas fa-tools"></i> SYSTEM MAINTENANCE</h4>
-                    <p style="color: #6c7293; font-size: 0.8rem; margin: 0 0 1.5rem;">Disable storefront for all users during updates.</p>
-                    
-                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px;">
-                        <span style="font-size: 0.85rem; color: #eee;">Maintenance Mode</span>
-                        <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
-                            <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()" style="opacity: 0; width: 0; height: 0;">
-                            <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2a2d3a; transition: .4s; border-radius: 34px;"></span>
-                        </label>
+                <div style="background: #fffbeb; border: 2.5px solid #0f172a; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                    <div>
+                        <h4 style="color: #0f172a; font-family: 'Orbitron'; font-weight: 900; margin: 0 0 4px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-tools" style="color: #d97706;"></i> SYSTEM MAINTENANCE
+                        </h4>
+                        <p style="color: #64748b; font-size: 0.8rem; font-weight: 600; margin: 0 0 14px;">Funga duka kwa muda ili kufanya matengenezo au updates.</p>
+                        
+                        <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 2.5px solid #0f172a; padding: 12px 16px; border-radius: 12px;">
+                            <span style="font-size: 0.88rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron';">Funga Duka Live</span>
+                            <label class="switch" style="position: relative; display: inline-block; width: 56px; height: 30px;">
+                                <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()" style="opacity: 0; width: 0; height: 0;">
+                                <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; border: 2px solid #0f172a;"></span>
+                            </label>
+                        </div>
                     </div>
-                    <p id="maintenanceStatus" style="font-size: 0.7rem; color: #ffb400; margin-top: 10px; text-align: center; display: none;">
-                        <i class="fas fa-exclamation-triangle"></i> Storefront is currently offline.
+
+                    <p id="maintenanceStatus" style="font-size: 0.8rem; font-weight: 800; color: #dc2626; margin: 0; text-align: center; display: none; background: #fef2f2; border: 1.5px solid #dc2626; padding: 8px; border-radius: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i> DUKA LIMECLOSED / UNDER MAINTENANCE!
                     </p>
                 </div>
 
                 <!-- Global Announcement -->
-                <div style="background: rgba(0,210,91,0.05); border: 1px solid rgba(0,210,91,0.2); border-radius: 12px; padding: 1.5rem;">
-                    <h4 style="color: #00d25b; font-family: 'Orbitron'; margin: 0 0 5px; letter-spacing: 1px; font-size: 0.9rem;"><i class="fas fa-bullhorn"></i> GLOBAL ANNOUNCEMENT</h4>
-                    <p style="color: #6c7293; font-size: 0.8rem; margin: 0 0 1rem;">Set a global notification banner across the store.</p>
-                    <textarea id="announcementInput" placeholder="Enter banner text..." style="width: 100%; height: 60px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; padding: 10px; margin-bottom: 10px; font-size: 0.85rem; resize: none;"></textarea>
-                    <button class="btn-primary" onclick="updateAnnouncement()" style="width: 100%;"><i class="fas fa-save"></i> UPDATE BANNER</button>
+                <div style="background: #f0fdf4; border: 2.5px solid #0f172a; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                    <div>
+                        <h4 style="color: #0f172a; font-family: 'Orbitron'; font-weight: 900; margin: 0 0 4px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-bullhorn" style="color: #16a34a;"></i> GLOBAL ANNOUNCEMENT
+                        </h4>
+                        <p style="color: #64748b; font-size: 0.8rem; font-weight: 600; margin: 0 0 10px;">Weka tangazo la duka litakalotokea juu ya kila ukurasa.</p>
+                        <textarea id="announcementInput" placeholder="Andika tangazo la duka hapa..." 
+                            style="width: 100%; height: 70px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; color: #0f172a; font-weight: 700; font-size: 0.85rem; padding: 10px 12px; resize: none; outline: none;"></textarea>
+                    </div>
+
+                    <button onclick="updateAnnouncement()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(22,163,74,0.25);">
+                        <i class="fas fa-save"></i> HIFADHI TANGAZO (LIVE)
+                    </button>
                 </div>
 
                 <!-- App Stats -->
-                <div style="background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 1.5rem;">
-                    <h4 style="color: #00f2ff; font-family: 'Orbitron'; margin: 0; letter-spacing: 1px; font-size: 0.9rem;">PWA APP ANALYTICS</h4>
-                    <p style="color: #6c7293; font-size: 0.8rem; margin: 5px 0 1.5rem;">Tracking Progressive Web App adoption.</p>
+                <div style="background: #f0f9ff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+                    <div>
+                        <h4 style="color: #0f172a; font-family: 'Orbitron'; font-weight: 900; margin: 0 0 4px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-mobile-alt" style="color: #0284c7;"></i> PWA APP ANALYTICS
+                        </h4>
+                        <p style="color: #64748b; font-size: 0.8rem; font-weight: 600; margin: 0 0 12px;">Idadi ya watu walio-install duka kama App.</p>
+                    </div>
                     
-                    <div style="text-align: center; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 10px;">
-                        <div style="font-size: 2.5rem; font-family: 'Orbitron'; color: #00f2ff;" id="settingsTotalInstalls">0</div>
-                        <div style="font-size: 0.7rem; color: #6c7293; text-transform: uppercase; margin-top: 5px;">Total App Installations</div>
+                    <div style="text-align: center; padding: 16px; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 12px;">
+                        <div style="font-size: 2.8rem; font-weight: 900; color: #0284c7; font-family: 'Orbitron';" id="settingsTotalInstalls">0</div>
+                        <div style="font-size: 0.72rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; text-transform: uppercase; margin-top: 4px;">TOTAL APP INSTALLATIONS</div>
                     </div>
                 </div>
 
-
-
-                <!-- Administrative Pulse -->
-                <div style="background: rgba(255,0,128,0.05); border: 1px solid rgba(255,0,128,0.2); border-radius: 12px; padding: 1.5rem; grid-column: span 2;">
-                    <h4 style="color: #ff0080; font-family: 'Orbitron'; margin: 0 0 5px; letter-spacing: 1px; font-size: 0.9rem;"><i class="fas fa-bolt"></i> ADMINISTRATIVE PULSE</h4>
-                    <p style="color: #6c7293; font-size: 0.8rem; margin: 0 0 1.5rem;">Quick shortcuts to core admin modules and utilities.</p>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-                        <button class="btn-filter" onclick="showView('messagesView')" style="padding: 1rem; border-radius: 12px; background: rgba(188, 19, 254, 0.1); border-color: rgba(188, 19, 254, 0.3); color: var(--secondary-color);">
-                            <i class="fas fa-bullhorn" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
+                <!-- Administrative Pulse & Quick Shortcuts -->
+                <div style="background: #f8fafc; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; grid-column: 1 / -1; box-shadow: 0 4px 12px rgba(15,23,42,0.05);">
+                    <h4 style="color: #0f172a; font-family: 'Orbitron'; font-weight: 900; margin: 0 0 4px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-bolt" style="color: #7c3aed;"></i> ADMINISTRATIVE PULSE & QUICK SHORTCUTS
+                    </h4>
+                    <p style="color: #64748b; font-size: 0.82rem; font-weight: 600; margin: 0 0 16px;">Vitufe vya mkato vya haraka kwenda kwenye sehemu kuu za utawala.</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px;">
+                        <button onclick="showView('messagesView')" style="padding: 14px; border-radius: 12px; background: #ffffff; border: 2.5px solid #0f172a; color: #7c3aed; font-family: 'Orbitron'; font-weight: 900; font-size: 0.85rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(15,23,42,0.05); transition: 0.2s;">
+                            <i class="fas fa-bullhorn" style="font-size: 1.6rem; color: #7c3aed;"></i>
                             Broadcast News
                         </button>
-                        <button class="btn-filter" onclick="showView('ordersView')" style="padding: 1rem; border-radius: 12px; background: rgba(0, 210, 91, 0.1); border-color: rgba(0, 210, 91, 0.3); color: #00d25b;">
-                            <i class="fas fa-shopping-cart" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
+                        <button onclick="showView('ordersView')" style="padding: 14px; border-radius: 12px; background: #ffffff; border: 2.5px solid #0f172a; color: #16a34a; font-family: 'Orbitron'; font-weight: 900; font-size: 0.85rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(15,23,42,0.05); transition: 0.2s;">
+                            <i class="fas fa-shopping-cart" style="font-size: 1.6rem; color: #16a34a;"></i>
                             Approve Orders
                         </button>
-                        <button class="btn-filter" onclick="showView('allGamesView')" style="padding: 1rem; border-radius: 12px; background: rgba(0, 144, 231, 0.1); border-color: rgba(0, 144, 231, 0.3); color: #0090e7;">
-                            <i class="fas fa-gamepad" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
+                        <button onclick="showView('allGamesView')" style="padding: 14px; border-radius: 12px; background: #ffffff; border: 2.5px solid #0f172a; color: #0284c7; font-family: 'Orbitron'; font-weight: 900; font-size: 0.85rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(15,23,42,0.05); transition: 0.2s;">
+                            <i class="fas fa-gamepad" style="font-size: 1.6rem; color: #0284c7;"></i>
                             Manage Store
                         </button>
-                        <button class="btn-filter" onclick="refreshAllData()" style="padding: 1rem; border-radius: 12px; background: rgba(255, 255, 255, 0.05); color: #ccc; border: 1px solid rgba(255,255,255,0.1);">
-                            <i class="fas fa-sync-alt" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
+                        <button onclick="handleManualRefresh(this, refreshAllData, 'Data za Duka')" style="padding: 14px; border-radius: 12px; background: #0f172a; border: 2.5px solid #0f172a; color: #ffffff; font-family: 'Orbitron'; font-weight: 900; font-size: 0.85rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(15,23,42,0.2); transition: 0.2s;">
+                            <i class="fas fa-sync-alt" style="font-size: 1.6rem; color: #ffffff;"></i>
                             Refresh Core
                         </button>
                     </div>
                 </div>
+
             </div>
 
-            <div style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                <p style="color: #6c7293; font-size: 0.8rem; margin: 0;">
-                    <i class="fas fa-info-circle"></i> Tip: Use Global Discount during weekends or holidays to boost sales. Maintenance mode should only be used for critical updates.
-                </p>
+            <!-- Tip Banner -->
+            <div style="margin-top: 2rem; padding: 14px 18px; background: #fefce8; border: 2px solid #eab308; border-radius: 12px; display: flex; align-items: center; gap: 10px; color: #854d0e; font-weight: 700; font-size: 0.85rem;">
+                <i class="fas fa-lightbulb" style="font-size: 1.2rem; color: #ca8a04;"></i>
+                <span><strong>Dondoo ya Utawala:</strong> Tumia Global Discount wakati wa wikendi au siku za kuu ili kuongeza mauzo. Maintenance mode inatakiwa kutumika wakati wa matengenezo tu.</span>
             </div>
         </div>
     </section>
