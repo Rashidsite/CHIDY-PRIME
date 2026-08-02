@@ -3549,19 +3549,89 @@
         </section>
 
         <!-- ANALYTICS VIEW -->
+        <!-- ANALYTICS VIEW -->
         <section id="analyticsView" class="content view-section" style="display: none;">
-            <div class="admin-card">
-                <h3 class="card-title"><i class="fas fa-chart-line"></i> Platform Analytics</h3>
-                <p style="color: #6c7293; font-size: 0.9rem;">7-Day Traffic Overview & Performance Tracking</p>
-                <div class="analytics-grid" id="analyticsDataGrid">
-                    <!-- Loaded via JS -->
-                    <p style="grid-column: span 7; padding: 2rem; color: #6c7293;">Synchronizing with core network...</p>
+            <!-- Top Executive Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 14px;">
+                <div>
+                    <h3 style="margin: 0 0 4px 0; font-size: 1.4rem; font-weight: 900; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-chart-line" style="color: #7c3aed;"></i> Executive Analytics & Intelligence
+                    </h3>
+                    <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin: 0;">Takwimu za mauzo, mienendo ya wateja na utendaji wa mtandao real-time.</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-filter" onclick="loadAnalyticsView()" style="background: #0f172a; color: #ffffff; border: 2.5px solid #0f172a; padding: 9px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-sync-alt"></i> REFRESH ANALYTICS
+                    </button>
                 </div>
             </div>
-            
-            <div class="admin-card" style="margin-top: 2rem;">
-                <h3 class="card-title">Activity Insights</h3>
-                <p style="color: #6c7293;">Tracking visitor patterns from the Chidy Prime Storefront in real-time.</p>
+
+            <!-- Top 4 Executive Stat Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 2rem;">
+                <div class="pay-stat-card" style="border-left: 6px solid #4f46e5; border-radius: 14px; background: #ffffff; border: 2.5px solid #0f172a; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">TOTAL REVENUE</div>
+                        <div style="font-size: 1.45rem; font-family: 'Orbitron'; font-weight: 900; color: #4f46e5;" id="analyticsRevenue">TSh 0</div>
+                    </div>
+                    <i class="fas fa-wallet" style="font-size: 1.8rem; color: #4f46e5;"></i>
+                </div>
+                <div class="pay-stat-card" style="border-left: 6px solid #10b981; border-radius: 14px; background: #ffffff; border: 2.5px solid #0f172a; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">APPROVED ORDERS</div>
+                        <div style="font-size: 1.45rem; font-family: 'Orbitron'; font-weight: 900; color: #10b981;" id="analyticsApprovedOrders">0 Orders</div>
+                    </div>
+                    <i class="fas fa-shopping-bag" style="font-size: 1.8rem; color: #10b981;"></i>
+                </div>
+                <div class="pay-stat-card" style="border-left: 6px solid #d97706; border-radius: 14px; background: #ffffff; border: 2.5px solid #0f172a; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">REGISTERED CLIENTS</div>
+                        <div style="font-size: 1.45rem; font-family: 'Orbitron'; font-weight: 900; color: #d97706;" id="analyticsUsers">0 Users</div>
+                    </div>
+                    <i class="fas fa-users" style="font-size: 1.8rem; color: #d97706;"></i>
+                </div>
+                <div class="pay-stat-card" style="border-left: 6px solid #f43f5e; border-radius: 14px; background: #ffffff; border: 2.5px solid #0f172a; padding: 18px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                    <div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-bottom: 4px;">PAYMENT SUCCESS RATE</div>
+                        <div style="font-size: 1.45rem; font-family: 'Orbitron'; font-weight: 900; color: #f43f5e;" id="analyticsConversion">0%</div>
+                    </div>
+                    <i class="fas fa-chart-line" style="font-size: 1.8rem; color: #f43f5e;"></i>
+                </div>
+            </div>
+
+            <!-- 7-Day Revenue Trend Chart -->
+            <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; margin-bottom: 2rem; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 10px;">
+                    <h4 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-chart-area" style="color: #4f46e5;"></i> Mwenendo wa Mauzo (Siku 7 Zilizopita)
+                    </h4>
+                    <span style="background: #f1f5f9; color: #334155; border: 1.5px solid #0f172a; padding: 4px 12px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; font-family: 'Orbitron';">REAL-TIME CHART</span>
+                </div>
+                <div style="width: 100%; height: 280px; position: relative;">
+                    <canvas id="analytics7DayChartCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 2-Column Grid: Category Share & Top Selling Games -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                <!-- Category Distribution -->
+                <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; box-shadow: 0 6px 16px rgba(15,23,42,0.06); margin: 0;">
+                    <h4 style="margin: 0 0 1.2rem 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-pie-chart" style="color: #d97706;"></i> Mauzo kwa Makundi (Category Share)
+                    </h4>
+                    <div id="analyticsCategoryList" style="display: flex; flex-direction: column; gap: 14px;">
+                        <p style="color: #64748b; font-weight: 600;">Inapakia makundi...</p>
+                    </div>
+                </div>
+
+                <!-- Top Selling Games Ranking -->
+                <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; box-shadow: 0 6px 16px rgba(15,23,42,0.06); margin: 0;">
+                    <h4 style="margin: 0 0 1.2rem 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-trophy" style="color: #10b981;"></i> Top 5 Games Zinazoongoza Mauzo
+                    </h4>
+                    <div id="analyticsTopGamesList" style="display: flex; flex-direction: column; gap: 12px;">
+                        <p style="color: #64748b; font-weight: 600;">Inapakia taarifa za games...</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -6579,27 +6649,190 @@
         // ============================================================
         // ANALYTICS VIEW
         // ============================================================
+        let analyticsChartInstance = null;
+
         function loadAnalyticsView() {
-            const totalOrders = (allOrdersData || []).length;
-            const totalRevenue = (allOrdersData || [])
-                .filter(o => o.status === 'approved' || o.status === 'manual_approved')
-                .reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
-            
-            const totalGames = (allGamesData || []).length;
-            
-            const totalOrdersEl = document.getElementById('analyticsTotalOrders');
-            if (totalOrdersEl) totalOrdersEl.innerText = totalOrders.toLocaleString();
-            
-            const revEl = document.getElementById('analyticsTotalRevenue');
-            if (revEl) revEl.innerText = `TSh ${totalRevenue.toLocaleString()}`;
+            const orders = Array.isArray(allOrdersData) ? allOrdersData : [];
+            const users = Array.isArray(allUsersData) ? allUsersData : [];
+            const games = Array.isArray(allGamesData) ? allGamesData : [];
 
-            const gamesEl = document.getElementById('analyticsTotalGames');
-            if (gamesEl) gamesEl.innerText = totalGames.toLocaleString();
+            const approvedOrders = orders.filter(o => isApprovedStatus(o.status));
+            const totalRev = approvedOrders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+            const successRate = orders.length > 0 ? Math.round((approvedOrders.length / orders.length) * 100) : 100;
 
-            initSalesChart();
+            const revEl = document.getElementById("analyticsRevenue");
+            if (revEl) revEl.innerText = `TSh ${totalRev.toLocaleString("en-US")}`;
+
+            const ordEl = document.getElementById("analyticsApprovedOrders");
+            if (ordEl) ordEl.innerText = `${approvedOrders.length} Orders`;
+
+            const usrEl = document.getElementById("analyticsUsers");
+            if (usrEl) usrEl.innerText = `${users.length} Users`;
+
+            const convEl = document.getElementById("analyticsConversion");
+            if (convEl) convEl.innerText = `${successRate}% Success`;
+
+            // Render 7-Day Chart
+            render7DayAnalyticsChart(approvedOrders);
+
+            // Render Category Share
+            renderAnalyticsCategoryShare(approvedOrders);
+
+            // Render Top Selling Games
+            renderAnalyticsTopGames(approvedOrders, games);
         }
 
-        // Initialize admin dashboard
+        function render7DayAnalyticsChart(approvedOrders) {
+            const ctx = document.getElementById("analytics7DayChartCanvas");
+            if (!ctx) return;
+
+            const days = [];
+            const amounts = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dayStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+                const dayDateStr = getLocalDayStr(d);
+                
+                const dayTotal = approvedOrders
+                    .filter(o => getLocalDayStr(o.created_at) === dayDateStr)
+                    .reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+                
+                days.push(dayStr);
+                amounts.push(dayTotal);
+            }
+
+            if (analyticsChartInstance) {
+                analyticsChartInstance.destroy();
+            }
+
+            if (typeof Chart !== "undefined") {
+                analyticsChartInstance = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: "Mauzo (TSh)",
+                            data: amounts,
+                            borderColor: "#4f46e5",
+                            backgroundColor: "rgba(79, 70, 229, 0.12)",
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.35,
+                            pointBackgroundColor: "#0f172a",
+                            pointBorderColor: "#4f46e5",
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: "#0f172a",
+                                titleFont: { family: "Orbitron", size: 12, weight: "bold" },
+                                bodyFont: { family: "Orbitron", size: 13, weight: "bold" },
+                                callbacks: {
+                                    label: function(context) {
+                                        return " Mapato: TSh " + context.raw.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: "rgba(15, 23, 42, 0.06)" },
+                                ticks: { font: { weight: "700" }, color: "#64748b" }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { weight: "700" }, color: "#0f172a" }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderAnalyticsCategoryShare(approvedOrders) {
+            const container = document.getElementById("analyticsCategoryList");
+            if (!container) return;
+
+            const catCounts = {};
+            let totalCount = 0;
+            approvedOrders.forEach(o => {
+                const cat = (o.posts?.category || "Tanzania Games").toUpperCase();
+                catCounts[cat] = (catCounts[cat] || 0) + 1;
+                totalCount++;
+            });
+
+            const catEntries = Object.entries(catCounts).sort((a, b) => b[1] - a[1]);
+            if (catEntries.length === 0) {
+                container.innerHTML = '<p style="color:#64748b; font-weight:700;">Hauna data za kutosha za makundi.</p>';
+                return;
+            }
+
+            const colors = ["#4f46e5", "#10b981", "#d97706", "#f43f5e", "#0284c7"];
+            container.innerHTML = catEntries.slice(0, 5).map(([catName, count], idx) => {
+                const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+                const color = colors[idx % colors.length];
+                return `
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:800; color:#0f172a; margin-bottom:6px;">
+                            <span><i class="fas fa-folder" style="color:${color}; margin-right:6px;"></i> ${catName}</span>
+                            <span style="font-family:'Orbitron';">${count} Sales (${pct}%)</span>
+                        </div>
+                        <div style="width:100%; height:8px; background:#f1f5f9; border-radius:10px; overflow:hidden; border: 1px solid #cbd5e1;">
+                            <div style="width:${pct}%; height:100%; background:${color}; border-radius:10px; transition:width 0.4s ease;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function renderAnalyticsTopGames(approvedOrders, games) {
+            const container = document.getElementById("analyticsTopGamesList");
+            if (!container) return;
+
+            const gameStats = {};
+            approvedOrders.forEach(o => {
+                const title = o.posts?.title || "Game Item";
+                if (!gameStats[title]) {
+                    gameStats[title] = { count: 0, revenue: 0, category: o.posts?.category || "Game" };
+                }
+                gameStats[title].count += 1;
+                gameStats[title].revenue += (parseFloat(o.amount) || 0);
+            });
+
+            const topGames = Object.entries(gameStats)
+                .map(([title, stat]) => ({ title, ...stat }))
+                .sort((a, b) => b.count - a.count);
+
+            if (topGames.length === 0) {
+                container.innerHTML = '<p style="color:#64748b; font-weight:700;">Hauna oda za kutosha kupanga michezo bora.</p>';
+                return;
+            }
+
+            container.innerHTML = topGames.slice(0, 5).map((g, idx) => {
+                const rankBadges = ["🥇 #1", "🥈 #2", "🥉 #3", "#4", "#5"];
+                const badgeBg = idx === 0 ? "#fef3c7" : (idx === 1 ? "#f1f5f9" : (idx === 2 ? "#ffedd5" : "#f8fafc"));
+                const badgeFg = idx === 0 ? "#92400e" : (idx === 1 ? "#334155" : (idx === 2 ? "#c2410c" : "#475569"));
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1.5px solid #0f172a; padding:10px 14px; border-radius:12px; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                            <span style="background:${badgeBg}; color:${badgeFg}; border:1px solid #0f172a; padding:3px 8px; border-radius:6px; font-weight:900; font-family:'Orbitron'; font-size:0.75rem; flex-shrink:0;">${rankBadges[idx]}</span>
+                            <span style="font-weight:800; color:#0f172a; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${g.title}">${g.title}</span>
+                        </div>
+                        <div style="text-align:right; flex-shrink:0;">
+                            <div style="font-weight:900; color:#059669; font-family:'Orbitron'; font-size:0.85rem;">TSh ${g.revenue.toLocaleString()}</div>
+                            <div style="color:#64748b; font-size:0.72rem; font-weight:700;">${g.count} sales</div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
         fetchMaintenanceState();
         initSalesChart();
         fetch('/api/settings/announcement').then(r=>r.json()).then(d=>{ if(d.value && document.getElementById('announcementInput')) document.getElementById('announcementInput').value = d.value; });
