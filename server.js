@@ -3823,33 +3823,44 @@ app.post('/api/admin/grant-access', verifyAdmin, async (req, res) => {
     }
 
     try {
-        const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, '') : '';
+        let cleanPhone = phone ? String(phone).replace(/[^0-9]/g, '') : '';
         let targetVisitorId = parseInt(visitor_id) || 0;
 
-        // 1. Resolve or create visitor
-        if (targetVisitorId <= 0 && cleanPhone) {
+        if (targetVisitorId > 0 && !cleanPhone) {
+            const { data: vRec } = await supabase.from('visitors').select('phone').eq('id', targetVisitorId).single();
+            if (vRec && vRec.phone) cleanPhone = String(vRec.phone).replace(/[^0-9]/g, '');
+        }
+
+        const visitorIdsToGrant = new Set();
+        if (targetVisitorId > 0) visitorIdsToGrant.add(targetVisitorId);
+
+        if (cleanPhone) {
             const { data: matchedV } = await supabase.from('visitors').select('id, phone');
             if (matchedV && matchedV.length > 0) {
-                const found = matchedV.find(v => {
+                matchedV.forEach(v => {
                     const vp = String(v.phone || '').replace(/[^0-9]/g, '');
-                    return vp && (vp.endsWith(cleanPhone.slice(-9)) || cleanPhone.endsWith(vp.slice(-9)));
+                    if (vp && (cleanPhone.endsWith(vp.slice(-9)) || vp.endsWith(cleanPhone.slice(-9)))) {
+                        visitorIdsToGrant.add(v.id);
+                    }
                 });
-                if (found) targetVisitorId = found.id;
             }
-            if (targetVisitorId <= 0) {
+
+            if (visitorIdsToGrant.size === 0) {
                 const { data: newV } = await supabase.from('visitors').insert([{
                     name: 'Client ' + cleanPhone.slice(-4),
                     phone: cleanPhone
                 }]).select();
-                if (newV && newV[0]) targetVisitorId = newV[0].id;
+                if (newV && newV[0]) visitorIdsToGrant.add(newV[0].id);
             }
         }
 
-        if (targetVisitorId <= 0) {
+        if (visitorIdsToGrant.size === 0) {
             return res.status(400).json({ error: 'Imeshindwa kutambua au kutengeneza akaunti ya mteja.' });
         }
 
-        // 2. Fetch game details for duration & title
+        const primaryVisitorId = Array.from(visitorIdsToGrant)[0];
+
+        // Fetch game details for duration & title
         const { data: game, error: gErr } = await supabase.from('posts').select('*').eq('id', post_id).single();
         if (gErr || !game) {
             return res.status(404).json({ error: 'Game haijapatikana.' });
@@ -3862,41 +3873,49 @@ app.post('/api/admin/grant-access', verifyAdmin, async (req, res) => {
             expiresAt.setDate(expiresAt.getDate() + dDays);
         }
 
-        // 3. Upsert user_access
-        await supabase.from('user_access').upsert({
-            visitor_id: targetVisitorId,
-            post_id: game.id,
-            granted_at: new Date().toISOString(),
-            expires_at: expiresAt.toISOString()
-        }, { onConflict: 'visitor_id,post_id' });
-
-        // 4. Also mark any pending orders for this visitor & post as manual_approved
-        try {
-            await supabase.from('payment_orders')
-                .update({ status: 'manual_approved', updated_at: new Date().toISOString() })
-                .eq('post_id', game.id)
-                .or(`visitor_id.eq.${targetVisitorId},phone_number.eq.${cleanPhone}`);
-        } catch (_) {}
-
-        // 5. Send notification to buyer
-        try {
-            await supabase.from('notifications').insert({
-                visitor_id: targetVisitorId,
+        // Upsert user_access for ALL visitor IDs linked to this phone/user
+        for (const vId of visitorIdsToGrant) {
+            await supabase.from('user_access').upsert({
+                visitor_id: vId,
                 post_id: game.id,
-                title: 'Malipo Yamekubaliwa! 🎮',
-                message: `Admin amekufungulia game "${game.title}". Sasa unaweza kuanza kudownload.`,
-                type: 'success'
-            });
+                granted_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString()
+            }, { onConflict: 'visitor_id,post_id' });
+        }
+
+        // Insert fail-safe approved order in payment_orders
+        try {
+            await supabase.from('payment_orders').insert([{
+                visitor_id: primaryVisitorId,
+                post_id: game.id,
+                amount: game.price || 0,
+                phone_number: cleanPhone || String(primaryVisitorId),
+                status: 'manual_approved',
+                promo_used: 'MANUAL:' + Date.now()
+            }]);
         } catch (_) {}
 
-        // 6. Telegram alert
+        // Send notification
+        for (const vId of visitorIdsToGrant) {
+            try {
+                await supabase.from('notifications').insert({
+                    visitor_id: vId,
+                    post_id: game.id,
+                    title: 'Malipo Yamekubaliwa! 🎮',
+                    message: `Admin amekufungulia game "${game.title}". Sasa unaweza kuanza kudownload.`,
+                    type: 'success'
+                });
+            } catch (_) {}
+        }
+
+        // Telegram alert
         try {
-            sendTelegramAlert(`🔓 <b>ADMIN MANUALLY GRANTED ACCESS</b>\n<b>Game:</b> ${game.title}\n<b>Phone:</b> ${cleanPhone || targetVisitorId}\n<b>Duration:</b> ${dDays > 0 ? dDays + ' Days' : 'Lifetime'}`);
+            sendTelegramAlert(`🔓 <b>ADMIN MANUALLY GRANTED ACCESS</b>\n<b>Game:</b> ${game.title}\n<b>Phone:</b> ${cleanPhone || primaryVisitorId}\n<b>Duration:</b> ${dDays > 0 ? dDays + ' Days' : 'Lifetime'}`);
         } catch (_) {}
 
         res.json({
             success: true,
-            message: `Game "${game.title}" imefunguliwa kwa mteja (${cleanPhone || targetVisitorId}) kikamilifu!`
+            message: `Game "${game.title}" imefunguliwa kwa mteja (${cleanPhone || primaryVisitorId}) kikamilifu!`
         });
     } catch (err) {
         console.error('Grant access error:', err);
