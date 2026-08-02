@@ -1858,6 +1858,8 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                 if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
                     return true;
                 }
+                const orderAgeMs = Date.now() - new Date(o.created_at || 0).getTime();
+                if (orderAgeMs < 20 * 60 * 1000) return true;
                 return false;
             });
 
@@ -1870,7 +1872,8 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                     try {
                         const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
                         const pStatus = await pressopay.checkPaymentStatus(ref);
-                        if ((pStatus.status || '').toUpperCase() === 'COMPLETED') {
+                        const pStatUpper = String(pStatus.status || '').toUpperCase();
+                        if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatUpper)) {
                             isPaid = true;
                         }
                     } catch (ppErr) {
@@ -2717,7 +2720,7 @@ const verifyPaymentManual = async (req, res) => {
 app.get('/api/payments/verify-haraka/:visitor_id/:post_id', verifyPaymentManual);
 app.get('/api/payments/verify-zeno/:visitor_id/:post_id', verifyPaymentManual);
 
-// Admin: Auto-Verify Order via HarakaPay/ZenoPay
+// Admin: Auto-Verify Order via HarakaPay/ZenoPay/PressoPay
 app.post('/api/admin/orders/:id/verify', verifyAdmin, async (req, res) => {
     const { id } = req.params;
     try {
@@ -2725,14 +2728,26 @@ app.post('/api/admin/orders/:id/verify', verifyAdmin, async (req, res) => {
         if (error || !order) return res.status(404).json({ error: 'Oda haijapatikana' });
 
         const extOrderId = order.promo_used;
-        if (!extOrderId || (!extOrderId.startsWith('HP') && !extOrderId.startsWith('ZP'))) {
-            return res.json({ success: false, message: 'Hii sio oda ya HarakaPay au ZenoPay (STK Push).' });
+        if (!extOrderId || (!extOrderId.startsWith('HP') && !extOrderId.startsWith('ZP') && !extOrderId.startsWith('PP'))) {
+            return res.json({ success: false, message: 'Hii sio oda ya STK Push (HarakaPay/ZenoPay/PressoPay).' });
         }
 
         let isPaid = false;
         let statusMessage = 'Pending';
 
-        if (extOrderId.startsWith('HP')) {
+        if (extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+            const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+            try {
+                const pStatus = await pressopay.checkPaymentStatus(ref);
+                const pStatStr = String(pStatus.status || 'PENDING').toUpperCase();
+                statusMessage = pStatStr.toLowerCase();
+                if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatStr)) {
+                    isPaid = true;
+                }
+            } catch (pErr) {
+                statusMessage = 'pending';
+            }
+        } else if (extOrderId.startsWith('HP')) {
             const hRes = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
                 method: 'GET',
                 headers: { 'X-API-Key': HARAKAPAY_API_KEY }
