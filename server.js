@@ -3302,6 +3302,76 @@ app.delete('/api/admin/notifications/broadcast', verifyAdmin, async (req, res) =
 const ONESIGNAL_APP_ID   = process.env.ONESIGNAL_APP_ID   || '33092d7c-9dfb-4f8d-8927-a0192e678827';
 const ONESIGNAL_API_KEY  = process.env.ONESIGNAL_REST_API_KEY || '';
 
+// ─── Helper for sending requests to OneSignal REST API (supports v2 Key header & legacy Basic header)
+async function callOneSignalApi(endpoint, method = 'GET', body = null) {
+    if (!ONESIGNAL_API_KEY) {
+        return { success: false, error: 'OneSignal haijawekwa (missing ONESIGNAL_REST_API_KEY)' };
+    }
+    const cleanKey = ONESIGNAL_API_KEY.trim();
+    
+    let authHeaders = [];
+    if (cleanKey.startsWith('Key ') || cleanKey.startsWith('Basic ') || cleanKey.startsWith('Bearer ')) {
+        authHeaders.push(cleanKey);
+    } else if (cleanKey.startsWith('os_v2_')) {
+        authHeaders.push(`Key ${cleanKey}`);
+        authHeaders.push(`Basic ${cleanKey}`);
+    } else {
+        authHeaders.push(`Key ${cleanKey}`);
+        authHeaders.push(`Basic ${cleanKey}`);
+    }
+
+    const baseUrls = [
+        'https://api.onesignal.com',
+        'https://onesignal.com/api/v1'
+    ];
+
+    let lastError = '';
+    let lastStatus = 500;
+    let lastData = null;
+
+    for (const baseUrl of baseUrls) {
+        for (const authHeader of authHeaders) {
+            try {
+                const headers = { 'Authorization': authHeader };
+                if (body) {
+                    headers['Content-Type'] = 'application/json; charset=utf-8';
+                }
+
+                const res = await fetch(`${baseUrl}${endpoint}`, {
+                    method,
+                    headers,
+                    body: body ? JSON.stringify(body) : null,
+                    signal: AbortSignal.timeout(15000)
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && !data.errors) {
+                    return { success: true, status: res.status, data };
+                }
+
+                lastStatus = res.status;
+                lastData = data;
+                const errStr = data.errors
+                    ? (Array.isArray(data.errors) ? data.errors.join(', ') : JSON.stringify(data.errors))
+                    : `HTTP ${res.status}`;
+                lastError = errStr;
+
+                if (res.status !== 401 && res.status !== 403) {
+                    break;
+                }
+            } catch (err) {
+                lastError = err.message || 'Connection error';
+            }
+        }
+    }
+
+    if (lastStatus === 401 || (lastError && lastError.toLowerCase().includes('access denied'))) {
+        lastError = "OneSignal API Key Haisomi (Access Denied). Key iliyopo kwenye .env/Vercel siyo REST API Key halisi au imefutwa/kurotatiwa. Tafadhali ingia OneSignal Dashboard → Settings → Keys & IDs, tengeneza App REST API Key mpya, kisha weka hiyo key kwenye ONESIGNAL_REST_API_KEY.";
+    }
+
+    return { success: false, status: lastStatus, error: lastError, data: lastData };
+}
+
 // Health check / config status
 app.get('/api/admin/onesignal/status', verifyAdmin, async (req, res) => {
     const configured = !!ONESIGNAL_API_KEY;
@@ -3332,60 +3402,43 @@ async function sendOneSignalPushInternal(opts) {
     if (url)       payload.url = url;
     if (icon)      { payload.chrome_web_icon = icon; payload.large_icon = icon; }
     if (big_image) {
-        // Full-width image (Android big picture + web Chrome image)
         payload.big_picture       = big_image;
         payload.chrome_web_image  = big_image;
         payload.huawei_big_picture = big_image;
     }
     if (ttl && Number.isFinite(ttl) && ttl > 0) payload.ttl = Math.floor(ttl);
 
-    try {
-        const startTime = Date.now();
-        const osRes = await fetch('https://onesignal.com/api/v1/notifications', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json; charset=utf-8',
-                'Authorization': `Basic ${ONESIGNAL_API_KEY}`
-            },
-            body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(15000)
-        });
-        const data = await osRes.json().catch(() => ({}));
-        const responseTime = Date.now() - startTime;
+    const startTime = Date.now();
+    const result = await callOneSignalApi('/notifications', 'POST', payload);
+    const responseTime = Date.now() - startTime;
 
-        if (!osRes.ok || data.errors) {
-            const errMsg = data.errors
-                ? (Array.isArray(data.errors) ? data.errors.join(', ') : JSON.stringify(data.errors))
-                : `HTTP ${osRes.status}`;
-            console.error('[OneSignal] send failed:', errMsg);
-            return { success: false, error: errMsg, response: data, responseTime };
-        }
-
-        console.log(`[OneSignal] sent to ${data.recipients || 0} devices in ${responseTime}ms — ${title}`);
-
-        // Mirror to internal notifications table so it appears in-app
-        if (supabase) {
-            try {
-                await supabase.from('notifications').insert({ title, message, type: 'info' });
-            } catch (_) { /* non-fatal */ }
-        }
-
-        // Telegram alert (best-effort)
-        try {
-            sendTelegramAlert(`📣 <b>PUSH SENT</b>\n<b>Title:</b> ${title}\n<b>Msg:</b> ${message}\n<b>Recipients:</b> ${data.recipients || 0}`);
-        } catch (_) {}
-
-        return {
-            success: true,
-            id: data.id,
-            recipients: data.recipients || 0,
-            responseTime,
-            external_id: data.external_id || null
-        };
-    } catch (err) {
-        console.error('[OneSignal] request error:', err);
-        return { success: false, error: err.message };
+    if (!result.success) {
+        console.error('[OneSignal] send failed:', result.error);
+        return { success: false, error: result.error, response: result.data, responseTime };
     }
+
+    const data = result.data || {};
+    console.log(`[OneSignal] sent to ${data.recipients || 0} devices in ${responseTime}ms — ${title}`);
+
+    // Mirror to internal notifications table so it appears in-app
+    if (supabase) {
+        try {
+            await supabase.from('notifications').insert({ title, message, type: 'info' });
+        } catch (_) { /* non-fatal */ }
+    }
+
+    // Telegram alert (best-effort)
+    try {
+        sendTelegramAlert(`📣 <b>PUSH SENT</b>\n<b>Title:</b> ${title}\n<b>Msg:</b> ${message}\n<b>Recipients:</b> ${data.recipients || 0}`);
+    } catch (_) {}
+
+    return {
+        success: true,
+        id: data.id,
+        recipients: data.recipients || 0,
+        responseTime,
+        external_id: data.external_id || null
+    };
 }
 
 // Send a push notification NOW (all subscribers or a filtered segment).
@@ -3406,23 +3459,18 @@ app.get('/api/admin/onesignal/app', verifyAdmin, async (req, res) => {
     if (!ONESIGNAL_API_KEY) {
         return res.status(503).json({ success: false, error: 'OneSignal haijawekwa' });
     }
-    try {
-        const osRes = await fetch(`https://onesignal.com/api/v1/apps/${ONESIGNAL_APP_ID}`, {
-            headers: { 'Authorization': `Basic ${ONESIGNAL_API_KEY}` },
-            signal: AbortSignal.timeout(10000)
-        });
-        const data = await osRes.json().catch(() => ({}));
-        if (!osRes.ok) return res.status(osRes.status).json({ success: false, error: data.errors || 'Failed' });
-        res.json({
-            success: true,
-            name: data.name,
-            players: data.players,
-            messageable_players: data.messageable_players,
-            updated_at: data.updated_at
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+    const result = await callOneSignalApi(`/apps/${ONESIGNAL_APP_ID}`, 'GET');
+    if (!result.success) {
+        return res.status(result.status || 500).json({ success: false, error: result.error });
     }
+    const data = result.data || {};
+    res.json({
+        success: true,
+        name: data.name,
+        players: data.players,
+        messageable_players: data.messageable_players,
+        updated_at: data.updated_at
+    });
 });
 
 // ─── SCHEDULED PUSH NOTIFICATIONS ─────────────────────────────
