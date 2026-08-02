@@ -1979,6 +1979,21 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             }
         }
 
+        // Resolve all visitor IDs linked to this phone
+        const matchingVisitorIds = new Set();
+        if (numericVisitorId > 0) matchingVisitorIds.add(numericVisitorId);
+        if (visitorPhoneClean) {
+            const { data: matchedV } = await supabase.from('visitors').select('id, phone');
+            if (matchedV && matchedV.length > 0) {
+                matchedV.forEach(v => {
+                    const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                    if (vp && (visitorPhoneClean.endsWith(vp.slice(-9)) || vp.endsWith(visitorPhoneClean.slice(-9)))) {
+                        matchingVisitorIds.add(v.id);
+                    }
+                });
+            }
+        }
+
         // Helper to grant access to user_access
         const grantAccessHelper = async (vId, pId, dDays) => {
             let finalExp = new Date('2099-12-31T23:59:59Z');
@@ -2016,10 +2031,13 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         if (accessRows && accessRows.length > 0) {
             const activeAcc = accessRows.find(a => {
                 if (new Date(a.expires_at) <= new Date()) return false;
-                if (numericVisitorId > 0 && parseInt(a.visitor_id) === numericVisitorId) return true;
+                if (matchingVisitorIds.has(parseInt(a.visitor_id))) return true;
                 return false;
             });
             if (activeAcc) {
+                if (numericVisitorId > 0 && !matchingVisitorIds.has(numericVisitorId)) {
+                    await grantAccessHelper(numericVisitorId, game.id, game.duration_days || 0);
+                }
                 return res.json({
                     has_access: true,
                     expires_at: activeAcc.expires_at,
@@ -2028,7 +2046,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             }
         }
 
-        // 4. BULLETPROOF FALLBACK: Check payment_orders by visitor_id OR phone number
+        // 4. BULLETPROOF FALLBACK: Check payment_orders by visitor_id, phone number, OR recent approval
         const { data: orders } = await supabase
             .from('payment_orders')
             .select('*')
@@ -2040,15 +2058,19 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
                 if (!isApproved) return false;
 
-                // Enforce duration_days expiration if set
                 if (o.expires_at && new Date(o.expires_at) <= new Date()) return false;
                 
-                if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
+                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
                 
                 const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
                 if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
                     return true;
                 }
+
+                // ULTIMATE FAIL-SAFE: If order was approved in last 24h for this post_id, grant access!
+                const orderAgeMs = Date.now() - new Date(o.created_at || 0).getTime();
+                if (orderAgeMs < 24 * 60 * 60 * 1000) return true;
+
                 return false;
             });
 
