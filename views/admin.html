@@ -5396,7 +5396,14 @@
             currentActiveViewId = viewId;
 
             // Load data for specific views on navigation
-            if (viewId === 'dashboardView') refreshAllData();
+            if (viewId === 'dashboardView') {
+                refreshAllData();
+                setTimeout(() => {
+                    if (typeof drawRevenueChart === 'function') drawRevenueChart(allOrdersData);
+                    if (typeof drawCategoryChart === 'function') drawCategoryChart(allOrdersData);
+                    if (typeof initSalesChart === 'function') initSalesChart();
+                }, 200);
+            }
             else if (viewId === 'allGamesView') loadGames();
             else if (viewId === 'usersView') loadUsers();
             else if (viewId === 'ordersView') fetchOrders();
@@ -5561,13 +5568,38 @@
             const listEl = document.getElementById('categoryStatsList');
             if (listEl) {
                 listEl.innerHTML = labels.map((l, i) => `
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;margin-bottom:4px">
-                        <span style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#475569;font-weight:600;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-radius:8px;background:#f8fafc;border:1.5px solid #0f172a;margin-bottom:4px">
+                        <span style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#0f172a;font-weight:700;">
                             <span style="width:10px;height:10px;border-radius:3px;background:${palette[i%palette.length]};display:inline-block"></span>${l}
                         </span>
-                        <span style="font-size:0.8rem;font-weight:700;color:#0f172a">${data[i]}</span>
+                        <span style="font-size:0.82rem;font-weight:900;color:#0f172a;font-family:'Orbitron'">${data[i]}</span>
                     </div>
                 `).join('');
+            }
+
+            if (typeof Chart !== 'undefined') {
+                const ctx = canvas.getContext('2d');
+                if (_categoryChartInst) {
+                    try { _categoryChartInst.destroy(); } catch(e){}
+                }
+                _categoryChartInst = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: palette.slice(0, labels.length),
+                            borderWidth: 2.5,
+                            borderColor: '#0f172a'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        cutout: '68%'
+                    }
+                });
             }
         }
 
