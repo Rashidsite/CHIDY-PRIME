@@ -6393,19 +6393,35 @@
             populateGrantAccessGames();
         }
 
-        function populateGrantAccessGames() {
+        async function populateGrantAccessGames() {
             const sel = document.getElementById('grantAccessGameSelect');
             if (!sel) return;
             const currentVal = sel.value;
-            sel.innerHTML = '<option value="">-- Chagua Game --</option>';
-            if (Array.isArray(allGames)) {
-                allGames.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g.id;
-                    opt.textContent = `${g.title} (${g.price ? 'TSh ' + parseInt(g.price).toLocaleString() : 'BURE'})`;
-                    sel.appendChild(opt);
-                });
+
+            if (!Array.isArray(allGamesData) || allGamesData.length === 0) {
+                try {
+                    const res = await fetch('/api/admin/games', {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        allGamesData = Array.isArray(data) ? data : [];
+                    }
+                } catch (_) {}
             }
+
+            const gamesList = (Array.isArray(allGamesData) && allGamesData.length > 0)
+                ? allGamesData
+                : (typeof allGames !== 'undefined' && Array.isArray(allGames) ? allGames : []);
+
+            sel.innerHTML = '<option value="">-- Chagua Game --</option>';
+            gamesList.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = `${g.title} (${g.price ? 'TSh ' + parseInt(g.price).toLocaleString() : 'BURE'})`;
+                sel.appendChild(opt);
+            });
+
             if (currentVal) sel.value = currentVal;
         }
 
