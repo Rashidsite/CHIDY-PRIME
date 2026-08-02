@@ -3814,6 +3814,96 @@ app.post('/api/admin/access/extend', verifyAdmin, async (req, res) => {
     }
 });
 
+// Admin: Directly grant game access by phone number or visitor ID
+app.post('/api/admin/grant-access', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { phone, visitor_id, post_id, days } = req.body;
+    if ((!phone && !visitor_id) || !post_id) {
+        return res.status(400).json({ error: 'Ingiza namba ya simu au ID na uchague game.' });
+    }
+
+    try {
+        const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, '') : '';
+        let targetVisitorId = parseInt(visitor_id) || 0;
+
+        // 1. Resolve or create visitor
+        if (targetVisitorId <= 0 && cleanPhone) {
+            const { data: matchedV } = await supabase.from('visitors').select('id, phone');
+            if (matchedV && matchedV.length > 0) {
+                const found = matchedV.find(v => {
+                    const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                    return vp && (vp.endsWith(cleanPhone.slice(-9)) || cleanPhone.endsWith(vp.slice(-9)));
+                });
+                if (found) targetVisitorId = found.id;
+            }
+            if (targetVisitorId <= 0) {
+                const { data: newV } = await supabase.from('visitors').insert([{
+                    name: 'Client ' + cleanPhone.slice(-4),
+                    phone: cleanPhone
+                }]).select();
+                if (newV && newV[0]) targetVisitorId = newV[0].id;
+            }
+        }
+
+        if (targetVisitorId <= 0) {
+            return res.status(400).json({ error: 'Imeshindwa kutambua au kutengeneza akaunti ya mteja.' });
+        }
+
+        // 2. Fetch game details for duration & title
+        const { data: game, error: gErr } = await supabase.from('posts').select('*').eq('id', post_id).single();
+        if (gErr || !game) {
+            return res.status(404).json({ error: 'Game haijapatikana.' });
+        }
+
+        const dDays = days ? parseInt(days) : (game.duration_days || 0);
+        let expiresAt = new Date('2099-12-31T23:59:59Z');
+        if (dDays > 0) {
+            expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + dDays);
+        }
+
+        // 3. Upsert user_access
+        await supabase.from('user_access').upsert({
+            visitor_id: targetVisitorId,
+            post_id: game.id,
+            granted_at: new Date().toISOString(),
+            expires_at: expiresAt.toISOString()
+        }, { onConflict: 'visitor_id,post_id' });
+
+        // 4. Also mark any pending orders for this visitor & post as manual_approved
+        try {
+            await supabase.from('payment_orders')
+                .update({ status: 'manual_approved', updated_at: new Date().toISOString() })
+                .eq('post_id', game.id)
+                .or(`visitor_id.eq.${targetVisitorId},phone_number.eq.${cleanPhone}`);
+        } catch (_) {}
+
+        // 5. Send notification to buyer
+        try {
+            await supabase.from('notifications').insert({
+                visitor_id: targetVisitorId,
+                post_id: game.id,
+                title: 'Malipo Yamekubaliwa! 🎮',
+                message: `Admin amekufungulia game "${game.title}". Sasa unaweza kuanza kudownload.`,
+                type: 'success'
+            });
+        } catch (_) {}
+
+        // 6. Telegram alert
+        try {
+            sendTelegramAlert(`🔓 <b>ADMIN MANUALLY GRANTED ACCESS</b>\n<b>Game:</b> ${game.title}\n<b>Phone:</b> ${cleanPhone || targetVisitorId}\n<b>Duration:</b> ${dDays > 0 ? dDays + ' Days' : 'Lifetime'}`);
+        } catch (_) {}
+
+        res.json({
+            success: true,
+            message: `Game "${game.title}" imefunguliwa kwa mteja (${cleanPhone || targetVisitorId}) kikamilifu!`
+        });
+    } catch (err) {
+        console.error('Grant access error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Validate Promo Code
 app.post('/api/promo/validate', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });

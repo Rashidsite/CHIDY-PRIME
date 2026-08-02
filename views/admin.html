@@ -3736,6 +3736,31 @@
                 </div>
             </div>
 
+            <!-- MANUAL GAME ACCESS GRANT CARD -->
+            <div class="admin-card" style="background: linear-gradient(135deg, rgba(124,58,237,0.06), rgba(79,70,229,0.08)); border: 2.5px solid #0f172a; border-radius: 16px; padding: 20px; margin-bottom: 24px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
+                <h3 style="margin: 0 0 12px; font-size: 1.1rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-key" style="color: #7c3aed;"></i> Fungulia Mteja Game Moja kwa Moja (Manual Access Grant)
+                </h3>
+                <p style="color:#64748b; font-size:0.8rem; font-weight:600; margin:0 0 14px;">Ingiza namba ya simu ya mteja (mfano: 07XXXXXXXX au 2557...) na uchague game ili kumfungulia access instantly bila kusubiri malipo ya mtandaoni.</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end;">
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; font-weight: 800; color: #475569; margin-bottom: 6px;">NAMBA YA SIMU YA MTEJA:</label>
+                        <input type="tel" id="grantAccessPhone" placeholder="07XXXXXXXX au 2557..." style="width: 100%; background: #ffffff; border: 2px solid #0f172a; padding: 10px 14px; border-radius: 10px; font-weight: 700; font-size: 0.9rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; font-weight: 800; color: #475569; margin-bottom: 6px;">CHAGUA GAME YA KUMFUNGULIA:</label>
+                        <select id="grantAccessGameSelect" style="width: 100%; background: #ffffff; border: 2px solid #0f172a; padding: 10px 14px; border-radius: 10px; font-weight: 700; font-size: 0.88rem;">
+                            <option value="">-- Chagua Game --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button onclick="submitManualGrantAccess()" style="width: 100%; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 2px solid #0f172a; padding: 10px 20px; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 12px rgba(22,163,74,0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fas fa-check-circle"></i> FUNGULIA SASA
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="admin-card" style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 16px; padding: 22px; box-shadow: 0 6px 16px rgba(15,23,42,0.06);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 14px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
@@ -6348,7 +6373,9 @@
                         </div>
                     </td>
                     <td style="text-align:center;">
-                        <div style="display:inline-flex; gap:8px; justify-content:center; align-items:center;">
+                            <button onclick="openGrantAccessModal('${u.id}', '${(u.name || '').replace(/'/g, "\\'")}', '${u.phone || ''}')" style="background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#ffffff; border:1.5px solid #0f172a; padding:7px 12px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:0.75rem; font-family:'Orbitron'; cursor:pointer; box-shadow:0 2px 6px rgba(124,58,237,0.3); transition:0.2s;" title="Fungulia mteja huyu game">
+                                <i class="fas fa-gamepad" style="font-size:0.85rem;"></i> Fungulia Game
+                            </button>
                             <a href="https://wa.me/${phoneClean}" target="_blank" style="background:#16a34a; color:#ffffff; border:1.5px solid #0f172a; padding:7px 14px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:0.75rem; font-family:'Orbitron'; box-shadow:0 2px 6px rgba(22,163,74,0.25); transition:0.2s;">
                                 <i class="fab fa-whatsapp" style="font-size:0.9rem;"></i> WhatsApp
                             </a>
@@ -6363,6 +6390,70 @@
                 `;
                 tbody.appendChild(tr);
             });
+            populateGrantAccessGames();
+        }
+
+        function populateGrantAccessGames() {
+            const sel = document.getElementById('grantAccessGameSelect');
+            if (!sel) return;
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">-- Chagua Game --</option>';
+            if (Array.isArray(allGames)) {
+                allGames.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.textContent = `${g.title} (${g.price ? 'TSh ' + parseInt(g.price).toLocaleString() : 'BURE'})`;
+                    sel.appendChild(opt);
+                });
+            }
+            if (currentVal) sel.value = currentVal;
+        }
+
+        function openGrantAccessModal(visitorId, name, phone) {
+            const phoneInput = document.getElementById('grantAccessPhone');
+            if (phoneInput) phoneInput.value = phone || '';
+            populateGrantAccessGames();
+            const inputField = document.getElementById('grantAccessPhone');
+            if (inputField) inputField.focus();
+            showToast(`👇 Chagua Game ya kumfungulia ${name || phone}`);
+        }
+
+        async function submitManualGrantAccess() {
+            const phone = (document.getElementById('grantAccessPhone')?.value || '').trim();
+            const postId = document.getElementById('grantAccessGameSelect')?.value;
+
+            if (!phone || !postId) {
+                showToast('⚠️ Ingiza namba ya simu ya mteja na uchague game.');
+                return;
+            }
+
+            const confirmed = await showConfirmModal('FUNGULIA MTEJA GAME', `Uko tayari kumfungulia mteja (${phone}) access ya game hii moja kwa moja?`);
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch('/api/admin/grant-access', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+                    },
+                    body: JSON.stringify({ phone, post_id: postId })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    showToast('✅ ' + result.message);
+                    document.getElementById('grantAccessPhone').value = '';
+                    document.getElementById('grantAccessGameSelect').value = '';
+                    loadUsers();
+                    fetchOrders();
+                } else {
+                    showToast('⚠️ ' + (result.error || 'Imeshindwa kumfungulia mteja game.'));
+                }
+            } catch (err) {
+                console.error('Grant access error:', err);
+                showToast('⚠️ Hitilafu ya mtandao.');
+            }
         }
         // Custom confirm modal helper
         function showConfirmModal(title, text) {
