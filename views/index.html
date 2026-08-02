@@ -6669,9 +6669,31 @@
             const btn = document.getElementById('autoPayBtn');
             const game = allGames.find(g => g.id == postId);
             
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) return;
-            const visitor = JSON.parse(visitorStr);
+            
+            let visitorStr = localStorage.getItem('chidy_visitor');
+            let visitor = visitorStr ? JSON.parse(visitorStr) : null;
+
+            // Auto-register visitor if missing or has no valid ID
+            if (!visitor || !visitor.id) {
+                try {
+                    const regRes = await fetch('/api/signup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: 'Mteja ' + phone.slice(-4), phone: phone })
+                    });
+                    const regData = await regRes.json();
+                    if (regData.success && regData.visitor) {
+                        visitor = { name: regData.visitor.name, phone: regData.visitor.phone, id: regData.visitor.id };
+                        localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
+                    }
+                } catch(e) { console.warn('Auto-signup during payment fallback:', e); }
+            }
+
+            if (!visitor || !visitor.id) {
+                visitor = { id: Date.now(), phone: phone, name: 'Mteja ' + phone.slice(-4) };
+                localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
+            }
+
 
             if (!phone || phone.length < 10) {
                 alert('Tafadhali ingiza namba sahihi ya simu!');

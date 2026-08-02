@@ -2488,6 +2488,31 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
         console.error('[handleSuccessfulPayment] item.id is missing — aborting to prevent null post_id');
         return;
     }
+    
+    let resolvedVisitorId = parseInt(visitorId) || 0;
+    const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, '') : '';
+    
+    // Auto-resolve or create visitor if visitorId is missing/invalid
+    if (resolvedVisitorId <= 0 && cleanPhone) {
+        try {
+            const { data: matchedV } = await supabase.from('visitors').select('id, phone');
+            if (matchedV && matchedV.length > 0) {
+                const found = matchedV.find(v => {
+                    const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                    return vp && (vp.endsWith(cleanPhone.slice(-9)) || cleanPhone.endsWith(vp.slice(-9)));
+                });
+                if (found) resolvedVisitorId = found.id;
+            }
+            if (resolvedVisitorId <= 0) {
+                const { data: newV } = await supabase.from('visitors').insert([{
+                    name: 'Client ' + cleanPhone.slice(-4),
+                    phone: cleanPhone
+                }]).select();
+                if (newV && newV[0]) resolvedVisitorId = newV[0].id;
+            }
+        } catch(vErr) { console.error('Error resolving visitor in handleSuccessfulPayment:', vErr); }
+    }
+
     try {
         // 1. Update existing order or insert new one
         // IMPORTANT: always set post_id on update so the record is complete.
@@ -2525,7 +2550,7 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
         }
 
         await supabase.from('user_access').upsert({
-            visitor_id: visitorId,
+            visitor_id: resolvedVisitorId || visitorId,
             post_id: itemId,
             granted_at: new Date().toISOString(),
             expires_at: expiresAt.toISOString()
@@ -2967,6 +2992,21 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
                         }
                     });
                 }
+            }
+
+            // AUTO-CREATE visitor if no matching visitor existed yet
+            if (visitorIdsToGrant.size === 0 && targetPhones.length > 0) {
+                try {
+                    const cleanP = targetPhones[0];
+                    const { data: newV } = await supabase.from('visitors').insert([{
+                        name: 'Client ' + cleanP.slice(-4),
+                        phone: cleanP
+                    }]).select();
+                    if (newV && newV[0]) {
+                        visitorIdsToGrant.add(newV[0].id);
+                        await supabase.from('payment_orders').update({ visitor_id: newV[0].id }).eq('id', id);
+                    }
+                } catch(cErr) { console.error('Failed auto-creating visitor on admin approval:', cErr); }
             }
 
             // Grant access to all resolved visitor IDs
