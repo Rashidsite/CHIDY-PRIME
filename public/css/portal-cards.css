@@ -1390,3 +1390,18 @@ body.chidy-elite .close-detail:hover {
   color: #64748b;
   margin-left: auto;
 }
+
+/* ═════════════════════════════════════════════════════════
+   WHATSAPP OFFICIAL CHANNEL FOOTER BUTTON ANIMATION
+   ═════════════════════════════════════════════════════════ */
+.footer-wa-channel-btn {
+  animation: waChannelGlow 2.5s infinite alternate ease-in-out;
+}
+.footer-wa-channel-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.6) !important;
+}
+@keyframes waChannelGlow {
+  0% { box-shadow: 0 4px 18px rgba(37, 211, 102, 0.3); }
+  100% { box-shadow: 0 8px 30px rgba(37, 211, 102, 0.7), 0 0 15px rgba(37, 211, 102, 0.4) inset; }
+}

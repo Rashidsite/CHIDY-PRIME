@@ -4660,6 +4660,13 @@
                style="width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; color: #25d366; font-size: 1.1rem; text-decoration: none;">
                 <i class="fab fa-whatsapp"></i>
             </a>
+        <!-- WHATSAPP OFFICIAL CHANNEL BANNER -->
+        <div style="margin: 0 auto 1.6rem; max-width: 520px; width: 100%;">
+            <a href="https://whatsapp.com/channel/0029Vb7Bq4m8qIzuO7dF5W1q" target="_blank" class="footer-wa-channel-btn" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: #ffffff; padding: 14px 22px; border-radius: 16px; font-weight: 900; font-family: 'Orbitron', 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem; text-decoration: none; border: 2px solid #25d366; box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4); transition: transform 0.3s ease;">
+                <i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i>
+                <span>JIUNGE NA CHANNEL YETU YA WHATSAPP</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.9rem;"></i>
+            </a>
         </div>
 
         <!-- PAYMENT PARTNERS BADGES -->
@@ -4703,40 +4710,21 @@
     </footer>
 
     <!-- GAME DETAIL MODAL -->
-    <div class="detail-overlay" id="detailOverlay">
-        <div class="detail-card" id="detailCard">
-            <button class="close-detail" onclick="closeDetail()"><i class="fas fa-times"></i></button>
-        </div>
-    </div>
-
-    <!-- BOTTOM NAVIGATION BAR -->
-    <!-- MODERN BOTTOM NAVIGATION (4 BUTTONS) -->
-    <nav class="bottom-bar">
+       <!-- BOTTOM NAV BAR (3 Items) -->
+    <nav class="bottom-bar" style="display: grid; grid-template-columns: repeat(3, 1fr);">
         <div class="bottom-item active" onclick="showHome()">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </div>
-        
-        <!-- WhatsApp Channel with Integrated Pata Pesa -->
-        <div class="bottom-item wa-channel-btn" id="waChannelBtn" onclick="openWhatsAppMenu()">
-            <div class="wa-icon-wrap">
-                <i class="fab fa-whatsapp"></i>
-                <span class="wa-pulse-ring"></span>
-                <span class="wa-pulse-ring wa-pulse-ring-2"></span>
-                <div class="wa-pesa-badge">💰</div>
-            </div>
-            <span class="wa-label">WhatsApp</span>
+            <i class="fas fa-home" style="color: #38bdf8;"></i>
+            <span>HOME</span>
         </div>
         
         <div class="bottom-item" onclick="openVideoStore()">
-            <i class="fas fa-play-circle" style="color:var(--primary);"></i>
-            <span style="color:var(--primary); font-weight:bold;">Video</span>
+            <i class="fas fa-tv" style="color: #a855f7;"></i>
+            <span>LIVE TV / VIDEO</span>
         </div>
         
-        <!-- Profile with Settings Integration -->
         <div class="bottom-item" onclick="openProfileModal()" id="bottomProfileBtn">
-            <i class="fas fa-user-circle" style="color:#bc13fe;"></i>
-            <span style="color:#bc13fe; font-weight:bold;">Profile</span>
+            <i class="fas fa-user-circle" style="color: #4ade80;"></i>
+            <span>PROFILE</span>
         </div>
     </nav>
 
@@ -8776,24 +8764,89 @@ async function clearAllNotifications() {
             }
         }
 
-        function openVideoModal(videoId, title) {
+        function openVideoModal(videoSource, title) {
             const modal = document.getElementById('videoModalOverlay');
-            const iframe = document.getElementById('videoIframe');
+            const embedWrap = document.querySelector('.video-embed-wrap');
             const titleEl = document.getElementById('videoModalTitle');
             const linkEl = document.getElementById('videoYtLink');
             const subWidgetCont = document.getElementById('videoModalSubWidget');
             const originalSubWidget = document.getElementById('ytSubscribeBtn');
 
-            titleEl.textContent = title;
-            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
-            linkEl.href = `https://www.youtube.com/watch?v=${videoId}`;
-            
+            if (!embedWrap || !modal) return;
+            titleEl.textContent = title || 'Live TV / Video';
+
+            const rawSource = String(videoSource || '').trim();
+
+            // 1. YouTube Video ID or YouTube URL check
+            let ytId = null;
+            const ytPatterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+                /^[a-zA-Z0-9_-]{11}$/
+            ];
+            for (const pattern of ytPatterns) {
+                const match = rawSource.match(pattern);
+                if (match) {
+                    ytId = match[1] || match[0];
+                    break;
+                }
+            }
+
+            if (ytId) {
+                embedWrap.innerHTML = `
+                    <iframe id="videoIframe"
+                        src="https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&controls=1&playsinline=1"
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                `;
+                if (linkEl) {
+                    linkEl.href = `https://www.youtube.com/watch?v=${ytId}`;
+                    linkEl.style.display = 'flex';
+                    linkEl.innerHTML = `<i class="fab fa-youtube"></i> Tazama YouTube`;
+                }
+            } else if (rawSource.match(/\.(mp4|webm|m3u8|ogg)(\?.*)?$/i)) {
+                // Direct MP4 / HLS Video Stream / Live TV file
+                embedWrap.innerHTML = `
+                    <video src="${rawSource}" autoplay controls playsinline style="position:absolute; top:0; left:0; width:100%; height:100%; background:#000; object-fit:contain;">
+                        Browser yako haiafiki video hii.
+                    </video>
+                `;
+                if (linkEl) linkEl.style.display = 'none';
+            } else if (rawSource.startsWith('http://') || rawSource.startsWith('https://')) {
+                // General Embed / Live TV Stream Iframe URL
+                embedWrap.innerHTML = `
+                    <iframe src="${rawSource}"
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"
+                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                        allowfullscreen>
+                    </iframe>
+                `;
+                if (linkEl) {
+                    linkEl.href = rawSource;
+                    linkEl.style.display = 'flex';
+                    linkEl.innerHTML = `<i class="fas fa-external-link-alt"></i> Fungua Stream`;
+                }
+            } else {
+                // Fallback default iframe
+                embedWrap.innerHTML = `
+                    <iframe src="https://www.youtube.com/embed/${rawSource}?autoplay=1&rel=0&controls=1&playsinline=1"
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"
+                        allow="autoplay; fullscreen"
+                        allowfullscreen>
+                    </iframe>
+                `;
+                if (linkEl) linkEl.style.display = 'none';
+            }
+
             // Clone subscribe widget into modal if it exists
-            subWidgetCont.innerHTML = '';
-            if (originalSubWidget && originalSubWidget.hasAttribute('data-channelid')) {
-                const clone = originalSubWidget.cloneNode(true);
-                subWidgetCont.appendChild(clone);
-                if (window.gapi && window.gapi.ytsubscribe) window.gapi.ytsubscribe.go(subWidgetCont);
+            if (subWidgetCont) {
+                subWidgetCont.innerHTML = '';
+                if (originalSubWidget && originalSubWidget.hasAttribute('data-channelid')) {
+                    const clone = originalSubWidget.cloneNode(true);
+                    subWidgetCont.appendChild(clone);
+                    if (window.gapi && window.gapi.ytsubscribe) window.gapi.ytsubscribe.go(subWidgetCont);
+                }
             }
 
             modal.classList.add('show');
@@ -8801,12 +8854,10 @@ async function clearAllNotifications() {
         }
 
         // === YOUTUBE CLICK-TO-PLAY PLAYER ===
-        // Inabadilisha thumbnail kuwa iframe halisi wakati mtumiaji atabonyeza
         function loadYouTubePlayer(videoId) {
             const container = document.getElementById('yt-player-' + videoId);
             if (!container) return;
 
-            // Badilisha yaliyomo yote kuwa iframe ya kweli yenye autoplay
             container.innerHTML = `
                 <iframe 
                     src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&controls=1&playsinline=1" 
@@ -8815,19 +8866,17 @@ async function clearAllNotifications() {
                     allowfullscreen>
                 </iframe>
             `;
-            // Weka position:relative kwa ajili ya iframe absolute
             container.style.position = 'relative';
             container.style.cursor = 'default';
-            // Ondoa onclick ili isibonyezwe tena
             container.removeAttribute('onclick');
         }
 
         function closeVideoModal(e, force = false) {
-            if (force || e.target.id === 'videoModalOverlay') {
+            if (force || (e && e.target && e.target.id === 'videoModalOverlay')) {
                 const modal = document.getElementById('videoModalOverlay');
-                const iframe = document.getElementById('videoIframe');
-                modal.classList.remove('show');
-                iframe.src = ''; // Stop video playback immediately
+                const embedWrap = document.querySelector('.video-embed-wrap');
+                if (modal) modal.classList.remove('show');
+                if (embedWrap) embedWrap.innerHTML = ''; // Stop video & audio playback immediately
                 document.body.style.overflow = '';
             }
         }
