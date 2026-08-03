@@ -4270,18 +4270,18 @@
         </div>
     </div>
 
-    <div class="welcome-overlay" id="welcomeOverlay">
-        <div class="welcome-scan"></div>
-        <div class="welcome-particles" id="welcomeParticles"></div>
-        <div class="welcome-content" id="welcomeContent">
-            <div class="welcome-hero">
-                <img src="/brand-hero.png" alt="Chidy Prime" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="welcome-crown" style="display:none;">👑</div>
-            </div>
-            <div class="welcome-hello">KARIBU!</div>
-            <div class="welcome-name" id="welcomeUserName"></div>
-            <div class="welcome-msg">You are now part of the Chidy Prime family. Enjoy the best games!</div>
-            <div class="welcome-brand">— CHIDY PRIME —</div>
+    <!-- VIP WELCOME MODAL OVERLAY -->
+    <div class="welcome-overlay" id="welcomeOverlay" style="display:none; position:fixed; inset:0; background:rgba(8,12,24,0.95); backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px); z-index:999999; align-items:center; justify-content:center; padding:16px;">
+        <div class="welcome-card" id="welcomeContent" style="background:linear-gradient(145deg, #0b1120 0%, #151d32 50%, #0b1120 100%); border:2.5px solid #00f2ff; border-radius:28px; padding:32px 24px; text-align:center; max-width:440px; width:100%; box-shadow:0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(0,242,255,0.4); animation:popModalZoomIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <div style="font-size:3.5rem; margin-bottom:12px; filter:drop-shadow(0 0 15px rgba(255,180,0,0.6));">👑</div>
+            <div style="font-family:'Orbitron', sans-serif; font-size:0.8rem; font-weight:900; color:#ffea00; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">KARIBU SANA</div>
+            <div id="welcomeUserName" style="font-family:'Orbitron', sans-serif; font-size:1.6rem; font-weight:900; color:#00f2ff; text-shadow:0 0 15px rgba(0,242,255,0.6); margin-bottom:12px; word-break:break-word;"></div>
+            <p style="color:#e2e8f0; font-size:0.88rem; line-height:1.5; margin-bottom:20px; font-weight:600;">
+                Hongera sana! Sasa hivi wewe ni mwanachama rasmi wa <strong>Chidy Prime Gaming</strong>. Furahia games zote kali na speed ya ajabu! 🚀✨
+            </p>
+            <button onclick="dismissWelcomeModal()" style="width:100%; padding:14px; border-radius:14px; background:linear-gradient(135deg, #00f2ff 0%, #bc13fe 100%); color:#000000; font-family:'Orbitron', sans-serif; font-size:0.85rem; font-weight:900; border:none; cursor:pointer; box-shadow:0 0 20px rgba(0,242,255,0.4); letter-spacing:1px; transition:transform 0.2s;">
+                ANZA KUGAME 🎮
+            </button>
         </div>
     </div>
 
@@ -7537,35 +7537,31 @@
             }
         }
 
-        // Show welcome animation
+        // Show welcome animation popup
         function showWelcome(name) {
             const overlay = document.getElementById('welcomeOverlay');
-            const content = document.getElementById('welcomeContent');
-            document.getElementById('welcomeUserName').textContent = name.toUpperCase();
-            
-            overlay.classList.add('show');
-            createParticles();
-            
-            // Trigger content animation after a brief delay
+            const nameEl = document.getElementById('welcomeUserName');
+            if (nameEl) nameEl.textContent = (name || 'GAMER').toUpperCase();
+            if (overlay) {
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+            // Auto-close after 6 seconds
             setTimeout(() => {
-                content.classList.add('animate');
-            }, 300);
-            
-            // Auto-close after 4.5 seconds
-            setTimeout(() => {
-                overlay.style.transition = 'opacity 1s ease-out';
-                overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.classList.remove('show');
-                    overlay.style.opacity = '';
-                    overlay.style.transition = '';
-                    
-                    if (window.isMaintenanceMode) {
-                        document.getElementById('maintenanceOverlay').classList.add('show');
-                    }
-                }, 1000);
-            }, 4500);
+                dismissWelcomeModal();
+            }, 6000);
         }
+
+        function dismissWelcomeModal() {
+            const overlay = document.getElementById('welcomeOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        window.showWelcome = showWelcome;
+        window.showWelcomeSequence = showWelcome;
 
         // Close signup overlay (X button) — dismisses without registering.
         // A gentle warning is shown if the user was routed here by a locked
