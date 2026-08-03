@@ -3594,22 +3594,20 @@
         }
     </style>
 
-    <!-- SHRINK HERO SECTION ON MOBILE -->
-    <style>
-        @media (max-width: 768px) {
+    <!-- SHRINK HERO SECTION ON        @media (max-width: 768px) {
             .hero-section {
                 padding: 1.2rem 0.8rem 1rem !important;
-                background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%) !important;
-                border: 2.5px solid #0f172a !important;
+                background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1e1b4b 100%) !important;
+                border: 2.5px solid #1d4ed8 !important;
                 color: #ffffff !important;
             }
             .hero-badge {
                 margin-bottom: 0.5rem !important;
                 font-size: 0.6rem !important;
                 padding: 4px 12px !important;
-                background: rgba(124, 58, 237, 0.3) !important;
-                border: 1px solid #a78bfa !important;
-                color: #f3e8ff !important;
+                background: rgba(255, 255, 255, 0.2) !important;
+                border: 1px solid #ffffff !important;
+                color: #ffffff !important;
             }
             .hero-title {
                 font-size: 1.45rem !important;
@@ -3622,10 +3620,10 @@
                 font-size: 0.82rem !important;
                 margin-bottom: 0.8rem !important;
                 line-height: 1.5 !important;
-                color: #f8fafc !important;
-                font-weight: 700 !important;
+                color: #ffffff !important;
+                font-weight: 800 !important;
                 opacity: 1 !important;
-                text-shadow: 0 2px 8px rgba(0,0,0,0.9) !important;
+                text-shadow: 0 2px 8px rgba(0,0,0,0.8) !important;
             }
             .hero-stats {
                 display: flex !important;
@@ -3634,12 +3632,12 @@
                 gap: 0.6rem !important;
                 margin: 0.8rem auto 0.6rem !important;
                 padding: 10px 14px !important;
-                background: rgba(15, 23, 42, 0.8) !important;
-                border: 1.5px solid rgba(56, 189, 248, 0.3) !important;
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+                border: 2px solid #34d399 !important;
                 border-radius: 14px !important;
                 max-width: 380px !important;
                 width: 100% !important;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35) !important;
             }
             .hero-stats .stat-item {
                 flex: 1 !important;
@@ -3647,31 +3645,33 @@
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
+                background: rgba(0, 0, 0, 0.2) !important;
+                padding: 6px !important;
+                border-radius: 10px !important;
             }
             .hero-stats .stat-value {
                 font-size: 1.15rem !important;
                 font-weight: 900 !important;
                 font-family: 'Orbitron', 'Plus Jakarta Sans', sans-serif !important;
+                color: #ff3333 !important;
+                -webkit-text-fill-color: #ff3333 !important;
             }
-            .hero-stats .stat-item:nth-child(1) .stat-value {
-                color: #38bdf8 !important;
-                -webkit-text-fill-color: #38bdf8 !important;
-            }
-            .hero-stats .stat-item:nth-child(2) .stat-value {
-                color: #c084fc !important;
-                -webkit-text-fill-color: #c084fc !important;
-            }
+            .hero-stats .stat-item:nth-child(1) .stat-value,
+            .hero-stats .stat-item:nth-child(2) .stat-value,
             .hero-stats .stat-item:nth-child(3) .stat-value {
-                color: #4ade80 !important;
-                -webkit-text-fill-color: #4ade80 !important;
+                color: #ff3333 !important;
+                -webkit-text-fill-color: #ff3333 !important;
             }
             .hero-stats .stat-label {
                 font-size: 0.65rem !important;
-                font-weight: 800 !important;
-                color: #cbd5e1 !important;
+                font-weight: 900 !important;
+                color: #ff4d4d !important;
                 letter-spacing: 0.8px !important;
                 text-transform: uppercase !important;
                 margin-top: 2px !important;
+            }
+        }
+;
             }
             .hero-content {
                 margin-bottom: 1rem !important;
@@ -4482,41 +4482,42 @@
 
     <!-- HERO / SEARCH -->
     <!-- HERO / SEARCH -->
-    <section class="hero-section" style="padding: clamp(1.2rem, 3.5vw, 2.2rem) clamp(1rem, 4vw, 3rem); background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%); border-radius: 24px; border: 2.5px solid #0f172a; color: #ffffff; box-shadow: 0 15px 35px rgba(15,23,42,0.15); margin-bottom: 2rem; position: relative; overflow: hidden; text-align: center;">
+    <section class="hero-section" style="padding: clamp(1.2rem, 3.5vw, 2.2rem) clamp(1rem, 4vw, 3rem); background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1e1b4b 100%) !important; border-radius: 24px; border: 2.5px solid #1d4ed8 !important; color: #ffffff !important; box-shadow: 0 15px 35px rgba(30,58,138,0.3) !important; margin-bottom: 2rem; position: relative; overflow: hidden; text-align: center;">
         <!-- Ambient Neon Glow Orbs -->
-        <div style="position: absolute; top: -60px; left: -60px; width: 220px; height: 220px; background: rgba(124, 58, 237, 0.35); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
-        <div style="position: absolute; bottom: -60px; right: -60px; width: 220px; height: 220px; background: rgba(37, 99, 235, 0.35); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
+        <div style="position: absolute; top: -60px; left: -60px; width: 220px; height: 220px; background: rgba(59, 130, 246, 0.4); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
+        <div style="position: absolute; bottom: -60px; right: -60px; width: 220px; height: 220px; background: rgba(168, 85, 247, 0.4); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
 
         <div class="hero-content" style="margin-bottom: 1.4rem; position: relative; z-index: 2;">
-            <div class="hero-badge" style="margin-bottom: 0.8rem; padding: 6px 16px; font-size:0.7rem; font-weight:800; font-family:'Orbitron'; background: rgba(124,58,237,0.25); border: 1.5px solid #7c3aed; color: #a78bfa; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px;">
+            <div class="hero-badge" style="margin-bottom: 0.8rem; padding: 6px 16px; font-size:0.7rem; font-weight:800; font-family:'Orbitron'; background: rgba(255,255,255,0.2) !important; border: 1.5px solid #ffffff !important; color: #ffffff !important; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px;">
                 <i class="fas fa-bolt" style="color: #fbbf24;"></i> ULTIMATE GAMING EXPERIENCE
             </div>
-            <h1 class="hero-title" style="font-size: clamp(1.5rem, 4.5vw, 2.4rem); font-weight: 900; margin-bottom: 0.6rem; letter-spacing: -0.5px; font-family: 'Orbitron', sans-serif; color: #ffffff; text-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-                Elevate Your <span style="background: linear-gradient(135deg, #38bdf8, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-style: normal;">Gaming Realm</span>
+            <h1 class="hero-title" style="font-size: clamp(1.5rem, 4.5vw, 2.4rem); font-weight: 900; margin-bottom: 0.6rem; letter-spacing: -0.5px; font-family: 'Orbitron', sans-serif; color: #ffffff !important; text-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                Elevate Your <span style="color: #93c5fd !important; font-style: normal; -webkit-text-fill-color: #93c5fd !important;">Gaming Realm</span>
             </h1>
-            <p style="font-size: clamp(0.85rem, 2vw, 1rem); color: #e2e8f0; font-weight: 600; max-width: 620px; margin: 0.6rem auto 1.4rem; line-height: 1.6; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; text-shadow: 0 2px 10px rgba(0,0,0,0.4);">
+            <p style="font-size: clamp(0.88rem, 2vw, 1.05rem); color: #ffffff !important; font-weight: 800 !important; max-width: 620px; margin: 0.6rem auto 1.4rem; line-height: 1.6; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; text-shadow: 0 2px 10px rgba(0,0,0,0.6); opacity: 1 !important;">
                 Gundua na pakua michezo mikali inayotamba zaidi Tanzania. Pata updates za kwanza na ufurahie speed ya ajabu!
             </p>
 
-            <div class="hero-stats" style="margin-top: 1.2rem; gap: clamp(1rem, 4vw, 2rem); display: flex; justify-content: center; flex-wrap: wrap;">
-                <div class="stat-item" style="background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.18); backdrop-filter: blur(8px); padding: 8px 18px; border-radius: 12px;">
-                    <span class="stat-value" style="font-size:1.1rem; font-weight:900; color:#38bdf8; font-family:'Orbitron';">500+</span>
-                    <span class="stat-label" style="font-size:0.7rem; color:#cbd5e1; font-weight:700; font-family:'Orbitron'; margin-left:4px;">GAMES</span>
+            <!-- STATS CONTAINER BOX (GREEN BACKGROUND WITH RED NUMBERS & LABELS) -->
+            <div class="hero-stats" style="margin-top: 1.2rem; gap: clamp(0.8rem, 3vw, 1.5rem); display: flex; justify-content: center; flex-wrap: wrap; background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; border: 2.5px solid #34d399 !important; padding: 12px 20px !important; border-radius: 18px !important; max-width: 520px; margin: 1.2rem auto 0; box-shadow: 0 8px 25px rgba(16,185,129,0.35);">
+                <div class="stat-item" style="background: rgba(0,0,0,0.25) !important; border: 1.5px solid rgba(255,255,255,0.25) !important; backdrop-filter: blur(8px); padding: 8px 18px; border-radius: 12px;">
+                    <span class="stat-value" style="font-size:1.15rem; font-weight:900; color:#ff3333 !important; -webkit-text-fill-color:#ff3333 !important; font-family:'Orbitron';">500+</span>
+                    <span class="stat-label" style="font-size:0.72rem; color:#ff4d4d !important; font-weight:900 !important; font-family:'Orbitron'; margin-left:4px;">GAMES</span>
                 </div>
-                <div class="stat-item" style="background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.18); backdrop-filter: blur(8px); padding: 8px 18px; border-radius: 12px;">
-                    <span class="stat-value" style="font-size:1.1rem; font-weight:900; color:#a855f7; font-family:'Orbitron';">10K+</span>
-                    <span class="stat-label" style="font-size:0.7rem; color:#cbd5e1; font-weight:700; font-family:'Orbitron'; margin-left:4px;">PLAYERS</span>
+                <div class="stat-item" style="background: rgba(0,0,0,0.25) !important; border: 1.5px solid rgba(255,255,255,0.25) !important; backdrop-filter: blur(8px); padding: 8px 18px; border-radius: 12px;">
+                    <span class="stat-value" style="font-size:1.15rem; font-weight:900; color:#ff3333 !important; -webkit-text-fill-color:#ff3333 !important; font-family:'Orbitron';">10K+</span>
+                    <span class="stat-label" style="font-size:0.72rem; color:#ff4d4d !important; font-weight:900 !important; font-family:'Orbitron'; margin-left:4px;">PLAYERS</span>
                 </div>
-                <div class="stat-item" style="background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.18); backdrop-filter: blur(8px); padding: 8px 18px; border-radius: 12px;">
-                    <span class="stat-value" style="font-size:1.1rem; font-weight:900; color:#4ade80; font-family:'Orbitron';">24/7</span>
-                    <span class="stat-label" style="font-size:0.7rem; color:#cbd5e1; font-weight:700; font-family:'Orbitron'; margin-left:4px;">SUPPORT</span>
+                <div class="stat-item" style="background: rgba(0,0,0,0.25) !important; border: 1.5px solid rgba(255,255,255,0.25) !important; backdrop-filter: blur(8px); padding: 8px 18px; border-radius: 12px;">
+                    <span class="stat-value" style="font-size:1.15rem; font-weight:900; color:#ff3333 !important; -webkit-text-fill-color:#ff3333 !important; font-family:'Orbitron';">24/7</span>
+                    <span class="stat-label" style="font-size:0.72rem; color:#ff4d4d !important; font-weight:900 !important; font-family:'Orbitron'; margin-left:4px;">SUPPORT</span>
                 </div>
             </div>
         </div>
         
         <div class="hero-search" style="position: relative; max-width: 600px; margin: 0 auto; z-index: 10;">
-            <i class="fas fa-search search-icon" style="color: #7c3aed; font-size: 1.1rem;"></i>
-            <input type="text" id="searchInput" placeholder="Tafuta game unalolitaka..." data-i18n="search_placeholder" autocomplete="off" style="width:100%; padding:14px 18px 14px 46px; background:#ffffff; border:2.5px solid #0f172a; border-radius:14px; font-weight:800; font-size:0.92rem; color:#0f172a; outline:none; box-shadow:0 8px 20px rgba(0,0,0,0.15);">
+            <i class="fas fa-search search-icon" style="color: #1d4ed8; font-size: 1.1rem;"></i>
+            <input type="text" id="searchInput" placeholder="Tafuta game unalolitaka..." data-i18n="search_placeholder" autocomplete="off" style="width:100%; padding:14px 18px 14px 46px; background:#ffffff !important; border:2.5px solid #0f172a !important; border-radius:14px; font-weight:800; font-size:0.92rem; color:#0f172a !important; outline:none; box-shadow:0 8px 20px rgba(0,0,0,0.15);">
             <div id="liveSearchDropdown" class="live-search-dropdown" style="display: none;"></div>
         </div>
     </section>
@@ -4710,7 +4711,13 @@
     </footer>
 
     <!-- GAME DETAIL MODAL -->
-       <!-- BOTTOM NAV BAR (3 Items) -->
+    <div class="detail-overlay" id="detailOverlay">
+        <div class="detail-card" id="detailCard">
+            <button class="close-detail" onclick="closeDetail()"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAV BAR (3 Items) -->
     <nav class="bottom-bar" style="display: grid; grid-template-columns: repeat(3, 1fr);">
         <div class="bottom-item active" onclick="showHome()">
             <i class="fas fa-home" style="color: #38bdf8;"></i>
