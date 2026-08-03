@@ -4770,7 +4770,7 @@
     </div>
 
     <!-- BOTTOM NAV BAR (3 Items) -->
-    <nav class="bottom-bar" style="display: grid; grid-template-columns: repeat(3, 1fr);">
+    <nav class="bottom-bar" style="display: grid; grid-template-columns: repeat(3, 1fr); z-index: 10005 !important;">
         <div class="bottom-item active" onclick="showHome()">
             <i class="fas fa-home" style="color: #38bdf8;"></i>
             <span>HOME</span>
@@ -4789,7 +4789,7 @@
 
     <!-- ===== PROFILE MODAL ===== -->
     <!-- ===== PROFILE FULL PAGE (EXACT USER MOCKUP DESIGN) ===== -->
-    <div id="profileModalOverlay" style="display:none; position:fixed; inset:0; background:#f8fafc !important; z-index:10000; overflow-y:auto; overflow-x:hidden; color:#0f172a !important;">
+    <div id="profileModalOverlay" style="display:none; position:fixed; inset:0; background:#f8fafc !important; z-index:9999; overflow-y:auto; overflow-x:hidden; color:#0f172a !important; padding-bottom:90px !important;">
         <style>
             #profileModalOverlay {
                 scrollbar-width: none;
@@ -4817,11 +4817,11 @@
             
             <!-- Top bar -->
             <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px 0; position:relative; z-index:2;">
-                <button onclick="closeProfileModal()" style="background:none; border:none; color:#ffffff; font-size:1.1rem; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:6px; font-family:'Plus Jakarta Sans', sans-serif;">
-                    <i class="fas fa-chevron-left"></i> iOS
+                <button onclick="closeProfileModal()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:#ffffff; width:38px; height:38px; border-radius:12px; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;" aria-label="Rudi">
+                    <i class="fas fa-arrow-left"></i>
                 </button>
                 <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.15rem; font-weight:900; color:#ffffff; letter-spacing:1px; text-transform:uppercase;">PROFILE YANGU</div>
-                <div style="width:40px;"></div>
+                <div style="width:38px;"></div>
             </div>
 
             <!-- Avatar + User Info -->
@@ -4833,9 +4833,9 @@
                     <div style="position:absolute; bottom:4px; right:4px; width:20px; height:20px; background:#00ff73; border-radius:50%; border:3px solid #0d1b3e; box-shadow:0 0 10px rgba(0,255,115,0.8);"></div>
                 </div>
                 <!-- Name -->
-                <div id="profileModalName" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.35rem; font-weight:900; color:#ffffff !important; margin-bottom:3px; text-align:center;">Rashid Salum</div>
+                <div id="profileModalName" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.35rem; font-weight:900; color:#00ff73 !important; text-shadow:0 0 12px rgba(0,255,115,0.5); margin-bottom:3px; text-align:center;">User</div>
                 <!-- Phone -->
-                <div id="profileModalPhone" style="font-size:0.82rem; color:#94a3b8 !important; margin-bottom:10px; font-weight:700;">+255671662727</div>
+                <div id="profileModalPhone" style="font-size:0.82rem; color:#94a3b8 !important; margin-bottom:10px; font-weight:700;">--</div>
                 <!-- Level Badge -->
                 <div id="profileModalLevel" style="background:#1e293b; color:#ffffff; font-family:'Orbitron', sans-serif; font-size:0.65rem; font-weight:800; padding:6px 20px; border-radius:20px; letter-spacing:1.5px; text-transform:uppercase;">ROOKIE GAMER</div>
             </div>
