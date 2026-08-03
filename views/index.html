@@ -6297,10 +6297,10 @@
         // ===== RENDER SINGLE CARD =====
         function renderCard(game) {
             const isDiscounted = game.global_discount && game.global_discount > 0 && game.original_price > 0 && game.original_price > game.price;
-            const originalPriceLabel = isDiscounted ? `<s style="color: #ff3366; font-size: 0.7rem; margin-right: 5px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : '';
-            const priceLabel = game.price > 0 ? `${originalPriceLabel}TSh ${parseInt(game.price).toLocaleString()}` : 'FREE ACCESS';
+            const originalPriceLabel = isDiscounted ? `<s style="color: #fda4af; font-size: 0.68rem; margin-right: 4px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : '';
+            const priceLabel = game.price > 0 ? `${originalPriceLabel}TSh ${parseInt(game.price).toLocaleString()}` : 'BURE / FREE';
+            const isPaid = game.price > 0;
             
-            const priceClass = game.price > 0 ? '' : 'free';
             const discountBadge = isDiscounted ? `<div style="position: absolute; top: 10px; right: 10px; background: #ff3366; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; z-index: 10; box-shadow: 0 2px 10px rgba(255,51,102,0.4); border: 1px solid rgba(255,255,255,0.2);">-${game.global_discount}%</div>` : '';
             const category = game.category ? game.category.toUpperCase() : 'HOT POST';
 
@@ -6319,6 +6319,10 @@
                     </div>
                     <div class="card-info">
                         <div class="card-title">${game.title}</div>
+                        <div class="card-price-btn ${isPaid ? 'paid-btn' : 'free-btn'}">
+                            <span class="price-btn-text">${priceLabel}</span>
+                            <i class="fas ${isPaid ? 'fa-shopping-bag' : 'fa-download'} price-btn-icon"></i>
+                        </div>
                     </div>
                 </div>
             `;

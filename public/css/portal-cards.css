@@ -766,6 +766,57 @@ body.chidy-elite .games-grid .game-card .card-title {
   overflow: hidden;
 }
 
+/* Card Price Button */
+body.chidy-elite .games-grid .game-card .card-price-btn,
+.game-card .card-price-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-family: 'Orbitron', 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  border: 1.5px solid transparent;
+  box-sizing: border-box;
+}
+body.chidy-elite .games-grid .game-card .card-price-btn.paid-btn,
+.game-card .card-price-btn.paid-btn {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+body.chidy-elite .games-grid .game-card .card-price-btn.free-btn,
+.game-card .card-price-btn.free-btn {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: #ffffff !important;
+  border-color: #22c55e !important;
+}
+body.chidy-elite .games-grid .game-card:hover .card-price-btn.paid-btn,
+.game-card:hover .card-price-btn.paid-btn {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+}
+body.chidy-elite .games-grid .game-card:hover .card-price-btn.free-btn,
+.game-card:hover .card-price-btn.free-btn {
+  background: linear-gradient(135deg, #15803d, #166534) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35) !important;
+}
+.price-btn-icon {
+  font-size: 0.82rem;
+  transition: transform 0.2s ease;
+  color: #ffffff !important;
+}
+.game-card:hover .price-btn-icon {
+  transform: scale(1.18);
+}
+
 /* ═════════════════════════════════════════════════════════
    SIGNUP MODAL — text readability on white card
    The original modal was designed for a dark theme:
