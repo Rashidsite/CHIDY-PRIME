@@ -3699,11 +3699,15 @@
                 </div>
 
                 <!-- LIVE NETWORK FEED -->
-                <div class="admin-card" style="margin-bottom: 0; padding: 22px 26px; border-radius: 16px; border: 2px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+                <div class="admin-card" style="margin-bottom: 0; padding: 22px 26px; border-radius: 16px; border: 2px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.04); display: flex; flex-direction: column;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
                         <h3 class="card-title" style="margin: 0; color:#0f172a; font-weight:700;"><i class="fas fa-broadcast-tower" style="color: #7c3aed;"></i> Live Network Feed</h3>
-                        <span style="font-size: 0.75rem; color: #15803d; font-weight:700; background:#dcfce7; padding:4px 10px; border-radius:6px; border:1px solid #bbf7d0; display:inline-flex; align-items:center; gap:6px;">
-                    <div style="text-align: center; color: #64748b; padding: 2rem;">Connecting to stream...</div>
+                        <span style="font-size: 0.72rem; color: #15803d; font-weight:800; background:#dcfce7; padding:4px 10px; border-radius:6px; border:1px solid #bbf7d0; display:inline-flex; align-items:center; gap:5px;">
+                            <i class="fas fa-circle" style="font-size: 7px; animation: livePulse 1.5s infinite;"></i> LIVE STREAM
+                        </span>
+                    </div>
+                    <div id="liveNetworkFeed" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                        <div style="text-align: center; color: #64748b; padding: 2rem; font-size: 0.82rem; font-weight: 600;"><i class="fas fa-spinner fa-spin"></i> Inaunganisha na Live Feed...</div>
                     </div>
                 </div>
         </section>
@@ -7081,6 +7085,55 @@
                 });
             } else {
                 drawNativeBarChart(canvas, days, displayAmounts);
+            }
+
+            if (typeof updateLiveNetworkFeed === 'function') {
+                try { updateLiveNetworkFeed(); } catch(e){}
+            }
+        }
+
+        function updateLiveNetworkFeed() {
+            const feedContainer = document.getElementById('liveNetworkFeed');
+            if (!feedContainer) return;
+
+            const items = [];
+
+            if (Array.isArray(allOrdersData) && allOrdersData.length > 0) {
+                allOrdersData.slice(0, 5).forEach(order => {
+                    const isApproved = order.status === 'approved' || order.status === 'manual_approved';
+                    const statusBg = isApproved ? '#dcfce7' : '#fef3c7';
+                    const statusColor = isApproved ? '#15803d' : '#d97706';
+                    const statusIcon = isApproved ? 'fa-check-circle' : 'fa-clock';
+                    const statusText = isApproved ? 'AMELIPA' : 'INASUBIRI';
+
+                    items.push(`
+                        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                                <div style="width: 34px; height: 34px; border-radius: 9px; background: rgba(124,58,237,0.1); border: 1.5px solid #7c3aed; display: flex; align-items: center; justify-content: center; color: #7c3aed; font-size: 0.95rem; flex-shrink: 0;">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div style="overflow: hidden;">
+                                    <div style="font-weight: 800; color: #0f172a; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${order.title || order.game_title || 'Game Order'}</div>
+                                    <div style="font-size: 0.72rem; color: #64748b; font-weight: 700;">${order.phone_number || order.user_phone || 'Mteja'} • TSh ${parseInt(order.amount || 0).toLocaleString()}</div>
+                                </div>
+                            </div>
+                            <span style="font-size: 0.68rem; font-weight: 800; background: ${statusBg}; color: ${statusColor}; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; gap: 4px;">
+                                <i class="fas ${statusIcon}"></i> ${statusText}
+                            </span>
+                        </div>
+                    `);
+                });
+            }
+
+            if (items.length === 0) {
+                feedContainer.innerHTML = `
+                    <div style="text-align: center; color: #64748b; padding: 1.5rem; font-size: 0.82rem; font-weight: 600;">
+                        <i class="fas fa-wifi" style="font-size: 1.4rem; color: #94a3b8; display: block; margin-bottom: 6px;"></i>
+                        Live Network Stream ipo active. Hakuna muamala mpya kwa sasa.
+                    </div>
+                `;
+            } else {
+                feedContainer.innerHTML = items.join('');
             }
         }
 
