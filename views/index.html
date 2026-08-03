@@ -5057,22 +5057,39 @@
         .payment-card-custom::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
         .payment-card-custom::-webkit-scrollbar-thumb { background: rgba(0,242,255,0.4); border-radius: 10px; }
 
-        /* PREMIUM PAYMENT MODAL STYLES */
+        /* PREMIUM PAYMENT MODAL STYLES (CHIDY PRIME EXCLUSIVE) */
+        .payment-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(8, 12, 24, 0.92) !important;
+            backdrop-filter: blur(22px) !important;
+            -webkit-backdrop-filter: blur(22px) !important;
+            z-index: 99999 !important;
+            display: none;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 1rem !important;
+            overflow-y: auto !important;
+        }
+
         .payment-modal-card {
-            background: rgba(10, 10, 15, 0.95) !important;
+            background: linear-gradient(145deg, #0b1120 0%, #151d32 50%, #0b1120 100%) !important;
             backdrop-filter: blur(25px) !important;
             -webkit-backdrop-filter: blur(25px) !important;
-            border: 1px solid rgba(0, 242, 255, 0.3) !important;
-            border-radius: 28px !important;
-            width: 94%;
-            max-width: 420px;
-            padding: 35px 28px !important;
-            position: relative;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0, 242, 255, 0.15) !important;
+            border: 2px solid #00f2ff !important;
+            border-radius: 26px !important;
+            width: 100% !important;
+            max-width: 440px !important;
+            padding: 32px 26px !important;
+            position: relative !important;
+            margin: auto !important;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 242, 255, 0.3) !important;
             animation: paySlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            color: #fff !important;
-            max-height: 92vh;
-            overflow-y: auto;
+            color: #ffffff !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
         }
 
         .payment-step {
@@ -5097,17 +5114,17 @@
         }
 
         .status-verifying {
-            background: rgba(255, 180, 0, 0.1);
+            background: rgba(255, 180, 0, 0.15);
             color: #ffb400;
-            border: 2px solid rgba(255, 180, 0, 0.3);
-            box-shadow: 0 0 25px rgba(255, 180, 0, 0.25);
+            border: 2.5px solid #ffb400;
+            box-shadow: 0 0 30px rgba(255, 180, 0, 0.4);
         }
 
         .status-success {
-            background: rgba(0, 210, 91, 0.1);
+            background: rgba(0, 210, 91, 0.15);
             color: #00d25b;
-            border: 2px solid rgba(0, 210, 91, 0.3);
-            box-shadow: 0 0 25px rgba(0, 210, 91, 0.25);
+            border: 2.5px solid #00d25b;
+            box-shadow: 0 0 30px rgba(0, 210, 91, 0.4);
         }
 
         .status-spin-custom {
@@ -5120,159 +5137,180 @@
         }
 
         .payment-status-title {
-            font-family: 'Orbitron';
-            font-size: 1.4rem;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 12px;
-            letter-spacing: 1px;
-            background: linear-gradient(135deg, #fff, #aaa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: 'Orbitron', sans-serif !important;
+            font-size: 1.45rem !important;
+            font-weight: 900 !important;
+            text-align: left !important;
+            margin-bottom: 22px !important;
+            letter-spacing: 0.5px !important;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #ffffff 0%, #00f2ff 60%, #bc13fe 100%) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
         }
 
         .payment-status-msg {
-            color: #a0a0c8;
+            color: #cbd5e1 !important;
             text-align: center;
             font-size: 0.95rem;
             line-height: 1.6;
             margin-bottom: 30px;
+            font-weight: 600;
         }
 
         .premium-payment-label {
-            display: block;
-            font-size: 0.75rem;
-            color: #888;
-            margin-bottom: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Orbitron';
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            font-size: 0.74rem !important;
+            color: #38bdf8 !important;
+            margin-bottom: 8px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.2px !important;
+            font-family: 'Orbitron', sans-serif !important;
         }
 
         .premium-payment-display {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 14px 16px;
-            font-size: 0.95rem;
-            color: #fff;
-            font-weight: 600;
-            margin-bottom: 20px;
+            background: #0f172a !important;
+            border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+            border-radius: 14px !important;
+            padding: 14px 16px !important;
+            font-size: 0.95rem !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            margin-bottom: 18px !important;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5) !important;
         }
 
         .premium-payment-input {
-            width: 100%;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-            transition: all 0.3s;
-            margin-bottom: 5px;
+            width: 100% !important;
+            padding: 15px 16px !important;
+            background: #0f172a !important;
+            border: 2px solid #38bdf8 !important;
+            border-radius: 14px !important;
+            color: #ffffff !important;
+            font-size: 1.05rem !important;
+            font-weight: 800 !important;
+            font-family: 'Plus Jakarta Sans', monospace !important;
+            outline: none !important;
+            transition: all 0.3s ease !important;
+            margin-bottom: 6px !important;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.5) !important;
         }
 
         .premium-payment-input:focus {
-            border-color: var(--primary);
-            background: rgba(0, 242, 255, 0.05);
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+            border-color: #00f2ff !important;
+            background: #0b1329 !important;
+            box-shadow: 0 0 22px rgba(0, 242, 255, 0.45) !important;
+        }
+
+        .premium-payment-input::placeholder {
+            color: #64748b !important;
+            font-weight: 600 !important;
         }
 
         .payment-btn-premium {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            border-radius: 14px;
-            color: #fff;
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-family: 'Orbitron';
-            margin-top: 10px;
+            width: 100% !important;
+            padding: 18px !important;
+            background: linear-gradient(135deg, #00f2ff 0%, #7c3aed 50%, #bc13fe 100%) !important;
+            border: none !important;
+            border-radius: 16px !important;
+            color: #ffffff !important;
+            font-weight: 900 !important;
+            font-size: 1.05rem !important;
+            cursor: pointer !important;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 12px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 2px !important;
+            font-family: 'Orbitron', sans-serif !important;
+            margin-top: 14px !important;
+            box-shadow: 0 10px 30px rgba(0, 242, 255, 0.4), 0 0 20px rgba(188, 19, 254, 0.3) !important;
         }
 
         .payment-btn-premium:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 15px 30px rgba(0, 242, 255, 0.3);
-            filter: brightness(1.2);
+            transform: translateY(-3px) scale(1.02) !important;
+            box-shadow: 0 15px 35px rgba(0, 242, 255, 0.6), 0 0 30px rgba(188, 19, 254, 0.5) !important;
+            filter: brightness(1.2) !important;
         }
 
         .payment-btn-premium:active {
-            transform: translateY(-1px) scale(0.98);
+            transform: translateY(-1px) scale(0.98) !important;
         }
 
         .payment-btn-premium:disabled {
-            background: #333;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-            filter: grayscale(1);
+            background: #334155 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+            filter: grayscale(1) !important;
         }
     </style>
     <div class="payment-overlay" id="paymentOverlay" style="display:none !important; visibility:hidden;" hidden>
         <div id="payModalCard" class="payment-modal-card">
             <!-- Close Button -->
-            <button onclick="closePayment()" style="
-                position: absolute; top: 20px; right: 20px;
-                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
-                font-size: 1.2rem; color: #888; cursor: pointer; 
-                width: 35px; height: 35px; border-radius: 50%;
+            <button onclick="closePayment()" aria-label="Close" style="
+                position: absolute; top: 18px; right: 18px;
+                background: #0f172a; border: 1.5px solid #38bdf8; 
+                font-size: 1.1rem; color: #ffffff; cursor: pointer; 
+                width: 36px; height: 36px; border-radius: 50%;
                 display: flex; align-items: center; justify-content: center;
-                transition: 0.3s; z-index: 10;
-            " onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.3)'" 
-               onmouseout="this.style.color='#888';this.style.borderColor='rgba(255,255,255,0.1)'">×</button>
+                transition: all 0.25s ease; z-index: 10;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            " onmouseover="this.style.borderColor='#00f2ff';this.style.transform='scale(1.1)'" 
+               onmouseout="this.style.borderColor='#38bdf8';this.style.transform='scale(1)'">✕</button>
 
             <!-- STEP 1: INPUT FORM -->
             <div id="payment-step-input" class="payment-step active">
-                <h2 class="payment-status-title" style="text-align: left; margin-bottom: 25px;">Nunua Game Sasa</h2>
+                <h2 class="payment-status-title" style="text-align: left; margin-bottom: 22px;">Nunua Game Sasa</h2>
                 
-                <div style="margin-bottom: 20px;">
-                    <label class="premium-payment-label">Bidhaa</label>
+                <div style="margin-bottom: 18px;">
+                    <label class="premium-payment-label"><i class="fas fa-gamepad" style="color: #00f2ff;"></i> BIDHAA</label>
                     <div id="payContentName" class="premium-payment-display">—</div>
                 </div>
 
-                <div style="margin-bottom: 20px;">
-                    <label class="premium-payment-label">Kiasi</label>
-                    <div id="payAmount" class="premium-payment-display" style="color: var(--primary); font-family: 'Orbitron'; font-size: 1.1rem;">—</div>
+                <div style="margin-bottom: 18px;">
+                    <label class="premium-payment-label"><i class="fas fa-tag" style="color: #bc13fe;"></i> KIASI</label>
+                    <div id="payAmount" class="premium-payment-display" style="color: #00f2ff !important; font-family: 'Orbitron', sans-serif; font-size: 1.25rem !important; font-weight: 900 !important; text-shadow: 0 0 12px rgba(0,242,255,0.4); display: flex; align-items: center; justify-content: space-between;">—</div>
                 </div>
 
-                <div style="margin-bottom: 25px;">
-                    <label class="premium-payment-label">📱 Namba ya Malipo</label>
+                <div style="margin-bottom: 20px;">
+                    <label class="premium-payment-label"><i class="fas fa-mobile-alt" style="color: #4ade80;"></i> NAMBA YA MALIPO</label>
                     <input
                         type="tel"
                         id="autoPayPhone"
                         class="premium-payment-input"
-                        placeholder="07XXXXXXXX"
+                        placeholder="07XXXXXXXX au 06XXXXXXXX"
                         inputmode="numeric"
                     >
-                    <p style="font-size:0.7rem; color:#666; margin-top:8px; letter-spacing: 0.5px;">M-PESA · TIGO PESA · AIRTEL MONEY · HALOPESA</p>
+                    <div style="display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+                        <span style="background: #e11d48; color: #ffffff; padding: 3px 8px; border-radius: 6px; font-weight: 900; font-size: 0.65rem; font-family: 'Orbitron';">M-PESA</span>
+                        <span style="background: #0284c7; color: #ffffff; padding: 3px 8px; border-radius: 6px; font-weight: 900; font-size: 0.65rem; font-family: 'Orbitron';">TIGO PESA</span>
+                        <span style="background: #dc2626; color: #ffffff; padding: 3px 8px; border-radius: 6px; font-weight: 900; font-size: 0.65rem; font-family: 'Orbitron';">AIRTEL MONEY</span>
+                        <span style="background: #ea580c; color: #ffffff; padding: 3px 8px; border-radius: 6px; font-weight: 900; font-size: 0.65rem; font-family: 'Orbitron';">HALOPESA</span>
+                    </div>
                 </div>
 
-                <div style="margin-bottom: 25px;">
-                    <label class="premium-payment-label">Promo Code (Optional)</label>
+                <div style="margin-bottom: 22px;">
+                    <label class="premium-payment-label"><i class="fas fa-gift" style="color: #fbbf24;"></i> PROMO CODE (OPTIONAL)</label>
                     <div style="display:flex; gap:10px;">
                         <input type="text" id="promoCodeInput" placeholder="Ingiza Code" class="premium-payment-input" style="margin-bottom: 0; flex: 1;">
                         <button onclick="applyPromoCode()" style="
-                            padding: 0 20px; border-radius: 14px; border: 1px solid var(--primary);
-                            background: rgba(0,242,255,0.1); color: var(--primary); font-size: 0.75rem;
-                            font-weight: 800; cursor: pointer; font-family: 'Orbitron';
-                        ">Weka</button>
+                            padding: 0 22px; border-radius: 14px; border: none;
+                            background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); color: #ffffff; font-size: 0.8rem;
+                            font-weight: 900; cursor: pointer; font-family: 'Orbitron', sans-serif;
+                            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); transition: transform 0.2s ease;
+                        " onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">Weka</button>
                     </div>
-                    <div id="promoMessage" style="font-size:0.75rem; margin-top:8px; font-weight: 600;"></div>
+                    <div id="promoMessage" style="font-size:0.75rem; margin-top:8px; font-weight: 700;"></div>
                 </div>
 
                 <button id="autoPayBtn" onclick="payWithHarakaPay()" class="payment-btn-premium">
-                    <i class="fas fa-bolt"></i> <span>Nunua Sasa</span>
+                    <i class="fas fa-bolt"></i> <span>NUNUA SASA</span>
                 </button>
             </div>
 
