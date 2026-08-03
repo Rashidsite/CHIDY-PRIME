@@ -587,40 +587,50 @@
             letter-spacing: 2.5px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
-            animation: brandNeonWave 3s ease-in-out infinite alternate;
+            animation: brandPulseMotion 3s ease-in-out infinite alternate;
         }
 
-        .brand-chidy {
-            color: #ffffff !important;
-            text-shadow: 0 0 12px rgba(255, 255, 255, 0.4), 0 0 20px rgba(0, 242, 255, 0.5);
-            font-weight: 900;
-            letter-spacing: 2.5px;
-        }
-
+        .brand-chidy,
         .brand-prime {
-            background: linear-gradient(135deg, #00f2ff 0%, #a855f7 50%, #bc13fe 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.6));
             font-weight: 900;
             letter-spacing: 2.5px;
+            animation: logoDynamicColorCycle 6s infinite ease-in-out;
+            background: none !important;
+            -webkit-background-clip: initial !important;
         }
 
-        @keyframes brandNeonWave {
-            0% {
-                transform: scale(1);
-                filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.4));
+        @keyframes logoDynamicColorCycle {
+            0%, 100% {
+                color: #2563eb !important; /* Blue */
+                -webkit-text-fill-color: #2563eb !important;
+                text-shadow: 0 0 14px rgba(37, 99, 235, 0.5);
+            }
+            25% {
+                color: #ef4444 !important; /* Red */
+                -webkit-text-fill-color: #ef4444 !important;
+                text-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
             }
             50% {
-                transform: scale(1.03);
-                filter: drop-shadow(0 0 18px rgba(188, 19, 254, 0.7));
+                color: #0f172a !important; /* Black / Dark Navy */
+                -webkit-text-fill-color: #0f172a !important;
+                text-shadow: 0 0 14px rgba(15, 23, 42, 0.4);
             }
-            100% {
+            75% {
+                color: #eab308 !important; /* Yellow */
+                -webkit-text-fill-color: #eab308 !important;
+                text-shadow: 0 0 14px rgba(234, 179, 8, 0.5);
+            }
+        }
+
+        @keyframes brandPulseMotion {
+            0%, 100% {
                 transform: scale(1);
-                filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.6));
+            }
+            50% {
+                transform: scale(1.04) translateY(-1px);
             }
         }
 
@@ -3525,7 +3535,7 @@
             }
             
             /* Simplify heavy animations on mobile */
-            .startup-logo, .brand-prime, .notif-badge {
+            .startup-logo, .notif-badge {
                 animation: none !important;
                 filter: none !important;
             }
