@@ -4788,8 +4788,8 @@
     </nav>
 
     <!-- ===== PROFILE MODAL ===== -->
-    <!-- ===== PROFILE FULL PAGE (ULTRA-PREMIUM GAMING AESTHETIC) ===== -->
-    <div id="profileModalOverlay" style="display:none; position:fixed; inset:0; background:linear-gradient(145deg, #080c18 0%, #0f172a 50%, #080c18 100%) !important; z-index:10000; overflow-y:auto; overflow-x:hidden; color:#ffffff !important;">
+    <!-- ===== PROFILE FULL PAGE (EXACT USER MOCKUP DESIGN) ===== -->
+    <div id="profileModalOverlay" style="display:none; position:fixed; inset:0; background:#f8fafc !important; z-index:10000; overflow-y:auto; overflow-x:hidden; color:#0f172a !important;">
         <style>
             #profileModalOverlay {
                 scrollbar-width: none;
@@ -4797,115 +4797,110 @@
             #profileModalOverlay::-webkit-scrollbar { display: none; }
 
             @keyframes profileSlideIn {
-                from { opacity:0; transform:translateY(30px); }
+                from { opacity:0; transform:translateY(20px); }
                 to   { opacity:1; transform:translateY(0); }
-            }
-            @keyframes avatarPulse {
-                0%,100% { box-shadow: 0 0 0 0 rgba(0,242,255,0.4), 0 0 35px rgba(0,242,255,0.5); }
-                50%     { box-shadow: 0 0 0 14px rgba(0,242,255,0), 0 0 55px rgba(188,19,254,0.6); }
             }
             .profile-action-btn {
                 display:flex; flex-direction:column; align-items:center; justify-content:center;
                 gap:8px; padding:16px 10px; border-radius:18px; cursor:pointer;
-                transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); border:1.5px solid; font-family:'Orbitron', sans-serif;
-                font-size:0.68rem; font-weight:900; letter-spacing:0.8px; text-transform:uppercase;
-                text-decoration:none; background:none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                transition:all 0.25s ease; border:2px solid #0f172a; font-family:'Plus Jakarta Sans', sans-serif;
+                font-size:0.72rem; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;
+                text-decoration:none; background:#ffffff; color:#0f172a; box-shadow:0 4px 12px rgba(0,0,0,0.06);
                 touch-action: manipulation;
             }
-            .profile-action-btn:hover, .profile-action-btn:active { transform:translateY(-3px) scale(1.03); filter: brightness(1.2); }
-            .profile-action-btn i { font-size:1.4rem; }
+            .profile-action-btn:active { transform:scale(0.95); }
+            .profile-action-btn i { font-size:1.5rem; color:#0f172a; }
         </style>
 
-        <!-- Top Hero Banner -->
-        <div style="position:relative; background:linear-gradient(135deg, #0b1120 0%, #151d32 50%, #0b1120 100%); padding:0; overflow:hidden; border-bottom:2px solid rgba(0,242,255,0.3);">
-            <!-- Animated bg orbs -->
-            <div style="position:absolute; top:-60px; left:-60px; width:260px; height:260px; background:radial-gradient(circle, rgba(0,242,255,0.2) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
-            <div style="position:absolute; bottom:-80px; right:-40px; width:300px; height:300px; background:radial-gradient(circle, rgba(188,19,254,0.2) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+        <!-- Top Blue Header Banner -->
+        <div style="position:relative; background:linear-gradient(180deg, #0d1b3e 0%, #060e22 100%); padding:0 0 24px; overflow:hidden; border-bottom-left-radius:30px; border-bottom-right-radius:30px; box-shadow:0 10px 25px rgba(13,27,62,0.3);">
             
             <!-- Top bar -->
             <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px 0; position:relative; z-index:2;">
-                <button onclick="closeProfileModal()" style="background:#0f172a; border:1.5px solid #38bdf8; color:#fff; width:40px; height:40px; border-radius:14px; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(10px); box-shadow:0 4px 15px rgba(0,0,0,0.4);">
-                    <i class="fas fa-arrow-left"></i>
+                <button onclick="closeProfileModal()" style="background:none; border:none; color:#ffffff; font-size:1.1rem; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:6px; font-family:'Plus Jakarta Sans', sans-serif;">
+                    <i class="fas fa-chevron-left"></i> iOS
                 </button>
-                <div style="font-family:'Orbitron', sans-serif; font-size:1.05rem; font-weight:900; background:linear-gradient(135deg,#ffffff 0%,#00f2ff 50%,#bc13fe 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:2px; text-transform:uppercase;">PROFILE YANGU</div>
+                <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.15rem; font-weight:900; color:#ffffff; letter-spacing:1px; text-transform:uppercase;">PROFILE YANGU</div>
                 <div style="width:40px;"></div>
             </div>
 
             <!-- Avatar + User Info -->
-            <div style="display:flex; flex-direction:column; align-items:center; padding:24px 18px 28px; position:relative; z-index:2; animation:profileSlideIn 0.5s ease;">
+            <div style="display:flex; flex-direction:column; align-items:center; padding:20px 18px 0; position:relative; z-index:2; animation:profileSlideIn 0.4s ease;">
                 <!-- Avatar Circle -->
-                <div style="position:relative; margin-bottom:16px;">
-                    <div id="profileModalAvatar" style="width:92px; height:92px; background:linear-gradient(135deg,#00f2ff,#7c3aed,#bc13fe); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Orbitron', sans-serif; font-size:2.4rem; font-weight:900; color:#ffffff; animation:avatarPulse 3s infinite; border:3px solid #00f2ff; text-shadow:0 0 10px rgba(0,0,0,0.5);">U</div>
+                <div style="position:relative; margin-bottom:14px;">
+                    <div id="profileModalAvatar" style="width:90px; height:90px; background:#162a52; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans', sans-serif; font-size:2.5rem; font-weight:900; color:#ffffff; border:2.5px solid #ffffff; box-shadow:0 0 20px rgba(255,255,255,0.2);">R</div>
                     <!-- Online dot -->
-                    <div style="position:absolute; bottom:4px; right:4px; width:20px; height:20px; background:#00ff73; border-radius:50%; border:3px solid #0b1120; box-shadow:0 0 12px rgba(0,255,115,0.8);"></div>
+                    <div style="position:absolute; bottom:4px; right:4px; width:20px; height:20px; background:#00ff73; border-radius:50%; border:3px solid #0d1b3e; box-shadow:0 0 10px rgba(0,255,115,0.8);"></div>
                 </div>
                 <!-- Name -->
-                <div id="profileModalName" style="font-family:'Orbitron', sans-serif; font-size:1.3rem; font-weight:900; color:#ffffff !important; letter-spacing:1px; margin-bottom:4px; text-align:center; text-shadow:0 0 15px rgba(0,242,255,0.4);">User</div>
+                <div id="profileModalName" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.35rem; font-weight:900; color:#ffffff !important; margin-bottom:3px; text-align:center;">Rashid Salum</div>
                 <!-- Phone -->
-                <div id="profileModalPhone" style="font-size:0.8rem; color:#94a3b8 !important; margin-bottom:10px; font-weight:700;">--</div>
+                <div id="profileModalPhone" style="font-size:0.82rem; color:#94a3b8 !important; margin-bottom:10px; font-weight:700;">+255671662727</div>
                 <!-- Level Badge -->
-                <div id="profileModalLevel" style="background:linear-gradient(135deg,rgba(0,242,255,0.25),rgba(188,19,254,0.25)); border:1.5px solid #00f2ff; color:#00f2ff; font-family:'Orbitron', sans-serif; font-size:0.68rem; font-weight:900; padding:6px 20px; border-radius:20px; letter-spacing:2px; text-transform:uppercase; box-shadow:0 0 15px rgba(0,242,255,0.3);">PRO GAMER VIP 👑</div>
+                <div id="profileModalLevel" style="background:#1e293b; color:#ffffff; font-family:'Orbitron', sans-serif; font-size:0.65rem; font-weight:800; padding:6px 20px; border-radius:20px; letter-spacing:1.5px; text-transform:uppercase;">ROOKIE GAMER</div>
             </div>
+        </div>
 
-            <!-- Stats Counter Bar (3 Columns) -->
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:0 16px 20px; max-width:500px; margin:0 auto; position:relative; z-index:2;">
-                <div style="background:#0f172a; border:1.5px solid rgba(56,189,248,0.4); border-radius:16px; padding:14px 8px; text-align:center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
-                    <div id="profileModalGames" style="font-family:'Orbitron', sans-serif; font-size:1.4rem; font-weight:900; color:#00f2ff; text-shadow:0 0 10px rgba(0,242,255,0.4);">0</div>
-                    <div style="font-size:0.62rem; color:#38bdf8; letter-spacing:1px; font-weight:900; margin-top:2px; font-family:'Orbitron';">GAMES</div>
+        <!-- Metric Stat Cards (GAMES, POINTS, MEMBER) -->
+        <div style="max-width:500px; margin:-20px auto 0; padding:0 16px; position:relative; z-index:10;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                <div style="background:#ffffff; border:2px solid #0f172a; border-radius:18px; padding:14px 8px; text-align:center; box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+                    <div id="profileModalGames" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.6rem; font-weight:900; color:#0f172a;">0</div>
+                    <div style="font-size:0.7rem; color:#0f172a; letter-spacing:0.8px; font-weight:900; margin-top:2px; font-family:'Plus Jakarta Sans';">GAMES</div>
                 </div>
-                <div style="background:#0f172a; border:1.5px solid rgba(188,19,254,0.4); border-radius:16px; padding:14px 8px; text-align:center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
-                    <div id="profileModalPoints" style="font-family:'Orbitron', sans-serif; font-size:1.4rem; font-weight:900; color:#bc13fe; text-shadow:0 0 10px rgba(188,19,254,0.4);">0</div>
-                    <div style="font-size:0.62rem; color:#c084fc; letter-spacing:1px; font-weight:900; margin-top:2px; font-family:'Orbitron';">POINTS</div>
+                <div style="background:#ffffff; border:2px solid #0f172a; border-radius:18px; padding:14px 8px; text-align:center; box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+                    <div id="profileModalPoints" style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.6rem; font-weight:900; color:#0f172a;">0</div>
+                    <div style="font-size:0.7rem; color:#0f172a; letter-spacing:0.8px; font-weight:900; margin-top:2px; font-family:'Plus Jakarta Sans';">POINTS</div>
                 </div>
-                <div style="background:#0f172a; border:1.5px solid rgba(255,180,0,0.4); border-radius:16px; padding:14px 8px; text-align:center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
-                    <div style="font-family:'Orbitron', sans-serif; font-size:1.4rem; font-weight:900; color:#ffb400; text-shadow:0 0 10px rgba(255,180,0,0.4);">⭐</div>
-                    <div style="font-size:0.62rem; color:#fbbf24; letter-spacing:1px; font-weight:900; margin-top:2px; font-family:'Orbitron';">MEMBER</div>
+                <div style="background:#ffffff; border:2px solid #0f172a; border-radius:18px; padding:14px 8px; text-align:center; box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+                    <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:1.6rem; font-weight:900; color:#1e3a8a;"><i class="fas fa-star" style="color:#1e3a8a;"></i></div>
+                    <div style="font-size:0.7rem; color:#0f172a; letter-spacing:0.8px; font-weight:900; margin-top:2px; font-family:'Plus Jakarta Sans';">MEMBER</div>
                 </div>
             </div>
         </div>
 
         <!-- Body Content -->
-        <div style="padding:22px 16px 100px; max-width:500px; margin:0 auto;">
+        <div style="padding:24px 16px 100px; max-width:500px; margin:0 auto;">
 
-            <!-- Quick Actions Grid (MENYU HARAKA) -->
-            <div style="font-family:'Orbitron', sans-serif; font-size:0.75rem; font-weight:900; color:#38bdf8; letter-spacing:2px; margin-bottom:14px; padding:0 2px; text-transform:uppercase;">MENYU HARAKA</div>
+            <!-- Quick Actions Grid (MENU HARAKA) -->
+            <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.95rem; font-weight:900; color:#0f172a; letter-spacing:0.5px; margin-bottom:14px; padding:0 2px; text-transform:uppercase;">MENU HARAKA</div>
             <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:28px;">
-                <button class="profile-action-btn" onclick="openMyGames();" style="color:#00f2ff; border-color:#00f2ff; background:linear-gradient(135deg, rgba(0,242,255,0.18), rgba(0,242,255,0.05));">
-                    <i class="fas fa-gamepad" style="color:#00f2ff;"></i>
-                    <span>Library</span>
+                <button class="profile-action-btn" onclick="openMyGames();">
+                    <i class="fas fa-gamepad"></i>
+                    <span>LIBRARY</span>
                 </button>
-                <button class="profile-action-btn" onclick="openOrderHistory();" style="color:#bc13fe; border-color:#bc13fe; background:linear-gradient(135deg, rgba(188,19,254,0.18), rgba(188,19,254,0.05));">
-                    <i class="fas fa-history" style="color:#bc13fe;"></i>
-                    <span>Orders</span>
+                <button class="profile-action-btn" onclick="openOrderHistory();">
+                    <i class="fas fa-history"></i>
+                    <span>ORDERS</span>
                 </button>
-                <button class="profile-action-btn" onclick="openAffiliateModal();" style="color:#00d25b; border-color:#00d25b; background:linear-gradient(135deg, rgba(0,210,91,0.18), rgba(0,210,91,0.05));">
-                    <i class="fas fa-money-bill-wave" style="color:#00d25b;"></i>
-                    <span>Pata Pesa</span>
+                <button class="profile-action-btn" onclick="openAffiliateModal();">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>PATA PESA</span>
                 </button>
-                <a class="profile-action-btn" href="javascript:void(0)" onclick="openWhatsAppSupport();" style="color:#ffb400; border-color:#ffb400; background:linear-gradient(135deg, rgba(255,180,0,0.18), rgba(255,180,0,0.05));">
-                    <i class="fas fa-headset" style="color:#ffb400;"></i>
-                    <span>Msaada</span>
+                <a class="profile-action-btn" href="javascript:void(0)" onclick="openWhatsAppSupport();">
+                    <i class="fas fa-headset"></i>
+                    <span>MSAADA</span>
                 </a>
             </div>
 
-            <!-- Leaderboard (TOP 3 WINNERS ONLY) -->
+            <!-- Leaderboard (TOP 3 WINNERS) -->
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding:0 2px;">
-                <div style="font-family:'Orbitron', sans-serif; font-size:0.75rem; font-weight:900; color:#ffb400; letter-spacing:2px; text-transform:uppercase;">🏆 TOP 3 WINNERS</div>
-                <span style="font-size:0.65rem; color:#94a3b8; font-weight:700;">Washindi Bora</span>
+                <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.95rem; font-weight:900; color:#0f172a; letter-spacing:0.5px; text-transform:uppercase;">TOP 3 WINNERS</div>
+                <span style="font-size:0.8rem; color:#38bdf8; font-weight:700;">Washindi Bora</span>
             </div>
-            <div style="margin-bottom:26px;">
+            <div style="margin-bottom:28px;">
                 <div id="profileLeaderboardList">
-                    <div style="text-align:center; padding:30px 20px; color:#94a3b8; font-size:0.8rem; font-weight:700;">
-                        <i class="fas fa-spinner fa-spin" style="font-size:1.6rem; margin-bottom:10px; display:block; color:#ffb400;"></i>
+                    <div style="text-align:center; padding:30px 20px; color:#64748b; font-size:0.85rem; font-weight:700;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:1.6rem; margin-bottom:10px; display:block; color:#0d1b3e;"></i>
                         Inapakia washindi 3 bora...
                     </div>
                 </div>
             </div>
 
-            <!-- Danger Zone -->
-            <div style="font-family:'Orbitron', sans-serif; font-size:0.75rem; font-weight:900; color:#ef4444; letter-spacing:2px; margin-bottom:14px; padding:0 2px; text-transform:uppercase;">AKAUNTI</div>
-            <button onclick="quickLogout();" style="width:100%; background:linear-gradient(135deg, #dc2626 0%, #ef4444 100%); border:none; border-radius:16px; padding:16px; color:#ffffff; font-size:0.85rem; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'Orbitron', sans-serif; letter-spacing:1.5px; box-shadow:0 8px 25px rgba(220,38,38,0.4); transition:all 0.3s ease;">
-                <i class="fas fa-sign-out-alt"></i> LOGOUT / TOKA
+            <!-- Account Logout Button -->
+            <div style="font-family:'Plus Jakarta Sans', sans-serif; font-size:0.85rem; font-weight:900; color:#dc2626; letter-spacing:0.5px; margin-bottom:12px; padding:0 2px; text-transform:uppercase;">AKAUNTI</div>
+            <button onclick="quickLogout();" style="width:100%; background:linear-gradient(135deg, #dc2626 0%, #ef4444 100%); border:none; border-radius:18px; padding:16px; color:#ffffff; font-size:0.9rem; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-family:'Plus Jakarta Sans', sans-serif; letter-spacing:1px; box-shadow:0 8px 25px rgba(220,38,38,0.3); transition:all 0.3s ease;">
+                <i class="fas fa-sign-out-alt"></i> LOGOUT
             </button>
         </div>
     </div>
@@ -8049,35 +8044,34 @@
                         return;
                     }
 
-                    // Display strictly Top 3 Winners
+                    // Display strictly Top 3 Winners matching user mockup
                     const top3 = data.slice(0, 3);
                     const medals = ['🥇', '🥈', '🥉'];
                     const titles = ['#1 MSHINDAJI BORA 👑', '#2 MSHINDAJI WA PILI 🥈', '#3 MSHINDAJI WA TATU 🥉'];
-                    const colors = ['#ffb400', '#38bdf8', '#fb923c'];
-                    const borders = ['#ffb400', '#38bdf8', '#fb923c'];
-                    const bgGradients = [
-                        'linear-gradient(135deg, rgba(255,180,0,0.18), rgba(255,180,0,0.05))',
-                        'linear-gradient(135deg, rgba(56,189,248,0.18), rgba(56,189,248,0.05))',
-                        'linear-gradient(135deg, rgba(251,146,60,0.18), rgba(251,146,60,0.05))'
-                    ];
 
                     list.innerHTML = top3.map((user, index) => {
-                        const color = colors[index];
-                        const border = borders[index];
-                        const bg = bgGradients[index];
-                        const title = titles[index];
+                        const isFirst = index === 0;
+                        const cardBg = isFirst ? 'background: #0d1b3e; color: #ffffff; border: none;' : 'background: #ffffff; color: #0f172a; border: 1.5px solid #e2e8f0;';
+                        const nameColor = isFirst ? '#ffffff' : '#0f172a';
+                        const subColor = isFirst ? '#cbd5e1' : '#64748b';
+                        const badgeStyle = isFirst ? 'background: #ffffff; color: #0d1b3e;' : 'background: #0d1b3e; color: #ffffff;';
                         const medal = medals[index];
+                        const title = titles[index];
 
                         return `
-                            <div class="profile-lb-row" style="background:${bg}; border:1.5px solid ${border}; border-radius:16px; margin-bottom:10px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                                <div style="display:flex; align-items:center; gap:12px;">
-                                    <div style="font-size:1.6rem; line-height:1;">${medal}</div>
+                            <div class="profile-lb-row" style="${cardBg} border-radius:18px; margin-bottom:12px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="width:42px; height:42px; border-radius:50%; background:${isFirst ? '#d97706' : (index === 1 ? '#94a3b8' : '#d97706')}; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+                                        ${medal}
+                                    </div>
                                     <div>
-                                        <div style="font-weight:900; font-size:0.92rem; color:${color}; font-family:'Plus Jakarta Sans', sans-serif;">${user.name}</div>
-                                        <div style="font-size:0.62rem; color:${color}; font-family:'Orbitron'; font-weight:800; opacity:0.9; margin-top:2px;">${title}</div>
+                                        <div style="font-weight:900; font-size:1rem; color:${nameColor}; font-family:'Plus Jakarta Sans', sans-serif;">${user.name}</div>
+                                        <div style="font-size:0.72rem; color:${subColor}; font-weight:700; margin-top:2px;">${title}</div>
                                     </div>
                                 </div>
-                                <div style="font-size:0.7rem; padding:5px 12px; background:#0f172a; color:${color}; border:1.5px solid ${border}; border-radius:10px; font-weight:900; font-family:'Orbitron';">${user.purchases} GAMES</div>
+                                <div style="font-size:0.72rem; padding:6px 16px; ${badgeStyle} border-radius:20px; font-weight:900; font-family:'Orbitron', sans-serif; letter-spacing:0.5px;">
+                                    ${user.purchases} GAMES
+                                </div>
                             </div>
                         `;
                     }).join('');
