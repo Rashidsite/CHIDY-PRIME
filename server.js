@@ -1343,6 +1343,48 @@ app.delete('/api/categories/:id', verifyAdmin, async (req, res) => {
     res.json({ success: true });
 });
 
+// PUT - update a category name and/or order
+app.put('/api/categories/:id', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { id } = req.params;
+    const { name, display_order } = req.body;
+
+    const updateData = {};
+    if (name && name.trim()) updateData.name = name.trim().toUpperCase();
+    if (display_order !== undefined && display_order !== null && display_order !== '') {
+        updateData.display_order = parseInt(display_order, 10);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: 'Hakuna maelezo ya kubadilisha yaliyotumwa' });
+    }
+
+    try {
+        if (updateData.name) {
+            const { data: oldCat } = await supabase.from('categories').select('name').eq('id', id).single();
+            if (oldCat && oldCat.name && oldCat.name !== updateData.name) {
+                await supabase.from('games').update({ category: updateData.name }).eq('category', oldCat.name);
+            }
+        }
+
+        const { data, error } = await supabase
+            .from('categories')
+            .update(updateData)
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            if (error.code === '23505') return res.status(409).json({ error: 'Category zenye jina hili tayari ipo' });
+            return res.status(500).json({ error: error.message });
+        }
+
+        invalidateCategoriesCache();
+        res.json({ success: true, category: data[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // PATCH - bulk update categories order and visibility
 app.patch('/api/categories/order', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });

@@ -155,11 +155,81 @@
                             <div style="font-size: 0.72rem; color: #64748b; font-weight: 700;">Order: #${cat.display_order || cat.id}</div>
                         </div>
                     </div>
-                    <button onclick="deleteCategory('${cat.id}', '${cat.name.replace(/'/g, "\\'")}')" style="padding: 7px 14px; font-size: 0.76rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 8px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(239,68,68,0.25); flex-shrink: 0;">
-                        <i class="fas fa-trash-alt"></i> FUTA
-                    </button>
+                    <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                        <button onclick="openEditCategoryModal('${cat.id}', '${cat.name.replace(/'/g, "\\'")}', ${cat.display_order || 0})" style="padding: 7px 12px; font-size: 0.76rem; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 8px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+                            <i class="fas fa-edit"></i> BADILISHA
+                        </button>
+                        <button onclick="deleteCategory('${cat.id}', '${cat.name.replace(/'/g, "\\'")}')" style="padding: 7px 12px; font-size: 0.76rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: #ffffff; border: 1.5px solid #0f172a; border-radius: 8px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; display: flex; align-items: gap: 5px; box-shadow: 0 2px 6px rgba(239,68,68,0.25);">
+                            <i class="fas fa-trash-alt"></i> FUTA
+                        </button>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        function openEditCategoryModal(id, name, order) {
+            document.getElementById('editCatId').value = id;
+            document.getElementById('editCatNameInput').value = name;
+            document.getElementById('editCatOrderInput').value = order || 1;
+            const msg = document.getElementById('editCatMsg');
+            if (msg) msg.style.display = 'none';
+            const modal = document.getElementById('editCategoryModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeEditCategoryModal() {
+            const modal = document.getElementById('editCategoryModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function saveCategoryEdit() {
+            const id = document.getElementById('editCatId').value;
+            const name = document.getElementById('editCatNameInput').value.trim();
+            const order = document.getElementById('editCatOrderInput').value;
+            const msg = document.getElementById('editCatMsg');
+
+            if (!name) {
+                if (msg) {
+                    msg.style.display = 'block';
+                    msg.style.color = '#ef4444';
+                    msg.innerText = '⚠️ Tafadhali andika jina la category!';
+                }
+                return;
+            }
+
+            try {
+                if (msg) {
+                    msg.style.display = 'block';
+                    msg.style.color = '#2563eb';
+                    msg.innerText = '⏳ Inahifadhi mabadiliko...';
+                }
+
+                const res = await fetch(`/api/categories/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                    },
+                    body: JSON.stringify({ name, display_order: parseInt(order, 10) })
+                });
+
+                const result = await res.json();
+                if (res.ok && result.success) {
+                    closeEditCategoryModal();
+                    showToast(`✅ Category "${result.category.name}" imebadilishwa kikamilifu!`);
+                    await loadCategories();
+                } else {
+                    if (msg) {
+                        msg.style.color = '#ef4444';
+                        msg.innerText = `❌ Hitilafu: ${result.error || 'Imeshindwa kubadilisha category'}`;
+                    }
+                }
+            } catch (err) {
+                if (msg) {
+                    msg.style.color = '#ef4444';
+                    msg.innerText = `❌ Hitilafu ya mtandao: ${err.message}`;
+                }
+            }
         }
 
         async function addCategory() {
@@ -248,6 +318,12 @@
 
             try {
                 container.innerHTML = '<div style="color: #64748b; font-weight:700; font-size: 0.9rem; grid-column: 1/-1; text-align:center; padding:1.5rem;"><i class="fas fa-spinner fa-spin"></i> Inapakia portal thumbnails...</div>';
+                
+                if (!allCategories || !allCategories.length) {
+                    const catRes = await fetch('/api/categories?t=' + Date.now());
+                    if (catRes.ok) allCategories = await catRes.json();
+                }
+
                 const res = await fetch('/api/settings/portal_thumbnails?t=' + Date.now());
                 let thumbs = {};
                 if (res.ok) {
@@ -257,42 +333,42 @@
                     }
                 }
 
-                const platforms = [
-                    { key: 'android', label: 'Android Games Portal', icon: 'fab fa-android', color: '#16a34a', bg: '#f0fdf4' },
-                    { key: 'ios', label: 'iOS / iPhone Games Portal', icon: 'fab fa-apple', color: '#0284c7', bg: '#f0f9ff' },
-                    { key: 'pc', label: 'PC / Computer Games Portal', icon: 'fas fa-desktop', color: '#9333ea', bg: '#faf5ff' }
-                ];
+                const list = Array.isArray(allCategories) && allCategories.length > 0
+                    ? allCategories.map(c => c.name)
+                    : ['GAMES MPYA ZA MABASI', 'TANZANIA GAMES', 'MALEO BUS MODE TZ', 'WORLD GAMES', 'FAVORITE GAMES', 'FOOTBALL GAMES'];
 
-                container.innerHTML = platforms.map(p => {
-                    const imgUrl = thumbs[p.key] || '';
+                container.innerHTML = list.map(catName => {
+                    const safeKey = String(catName || '').replace(/[^a-zA-Z0-9]/g, '_');
+                    const imgUrl = thumbs[catName] || thumbs[catName.toLowerCase()] || thumbs[safeKey] || '';
+                    const escCat = catName.replace(/'/g, "\\'");
                     return `
-                        <div style="background: ${p.bg}; border: 2.5px solid #0f172a; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; gap: 14px;">
+                        <div style="background: #ffffff; border: 2.5px solid #0f172a; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); display: flex; flex-direction: column; gap: 14px;">
                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <span style="font-weight: 900; color: #0f172a; font-family: 'Orbitron'; font-size: 0.88rem; display: flex; align-items: center; gap: 8px;">
-                                    <i class="${p.icon}" style="color: ${p.color}; font-size: 1.1rem;"></i> ${p.label}
+                                    <i class="fas fa-folder" style="color: #7c3aed; font-size: 1.1rem;"></i> ${catName}
                                 </span>
-                                <span style="font-size: 0.68rem; font-family: 'Orbitron'; font-weight: 800; background: #0f172a; color: #ffffff; padding: 3px 8px; border-radius: 6px;">${p.key.toUpperCase()}</span>
+                                <span style="font-size: 0.68rem; font-family: 'Orbitron'; font-weight: 800; background: #0f172a; color: #ffffff; padding: 3px 8px; border-radius: 6px;">PORTAL CARD</span>
                             </div>
 
                             <!-- Live Image Preview Box -->
-                            <div id="preview_box_${p.key}" style="width: 100%; height: 130px; border-radius: 10px; border: 2px solid #0f172a; background: #ffffff; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
-                                ${imgUrl ? `<img src="${imgUrl}" id="preview_img_${p.key}" style="width:100%; height:100%; object-fit:cover;" />` : `<span id="preview_placeholder_${p.key}" style="font-size:0.78rem; font-weight:700; color:#64748b; text-align:center;"><i class="fas fa-image" style="font-size:1.6rem; display:block; margin-bottom:4px; color:#94a3b8;"></i> Hakuna picha iliyochaguliwa</span>`}
+                            <div id="preview_box_${safeKey}" style="width: 100%; height: 130px; border-radius: 10px; border: 2px solid #0f172a; background: #f8fafc; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
+                                ${imgUrl ? `<img src="${imgUrl}" id="preview_img_${safeKey}" style="width:100%; height:100%; object-fit:cover;" />` : `<span id="preview_placeholder_${safeKey}" style="font-size:0.78rem; font-weight:700; color:#64748b; text-align:center;"><i class="fas fa-image" style="font-size:1.6rem; display:block; margin-bottom:4px; color:#94a3b8;"></i> Hakuna picha iliyochaguliwa</span>`}
                             </div>
 
                             <!-- File Upload Button (Direct Gallery Picker) -->
-                            <button onclick="document.getElementById('thumb_file_${p.key}').click()" id="btn_upload_${p.key}" style="padding: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(124,58,237,0.25);">
+                            <button onclick="document.getElementById('thumb_file_${safeKey}').click()" id="btn_upload_${safeKey}" style="padding: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(124,58,237,0.25);">
                                 <i class="fas fa-camera"></i> CHAGUA PICHA (GALLERY)
                             </button>
-                            <input type="file" id="thumb_file_${p.key}" accept="image/*" style="display: none;" onchange="uploadPortalThumbFile(event, '${p.key}')" />
+                            <input type="file" id="thumb_file_${safeKey}" accept="image/*" style="display: none;" onchange="uploadPortalThumbFile(event, '${escCat}', '${safeKey}')" />
 
                             <!-- URL Input Alternative -->
                             <div style="display: flex; flex-direction: column; gap: 6px;">
                                 <label style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Au weka link ya picha (URL):</label>
-                                <input type="text" id="thumb_input_${p.key}" value="${imgUrl}" placeholder="https://..." 
-                                    style="width: 100%; padding: 10px 12px; background: #ffffff; border: 2px solid #0f172a; border-radius: 9px; color: #0f172a; font-weight: 700; font-size: 0.82rem; outline: none;" />
+                                <input type="text" id="thumb_input_${safeKey}" value="${imgUrl}" placeholder="https://..." 
+                                    style="width: 100%; padding: 10px 12px; background: #ffffff; border: 2px solid #0f172a; border-radius: 99px; color: #0f172a; font-weight: 700; font-size: 0.82rem; outline: none; border-radius: 9px;" />
                             </div>
 
-                            <button onclick="savePortalThumb('${p.key}')" style="padding: 10px; background: #0f172a; color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(15,23,42,0.2);">
+                            <button onclick="savePortalThumb('${escCat}', '${safeKey}')" style="padding: 10px; background: #0f172a; color: #ffffff; border: 2px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 10px rgba(15,23,42,0.2);">
                                 <i class="fas fa-save"></i> HIFADHI PICHA
                             </button>
                         </div>
@@ -304,11 +380,11 @@
             }
         }
 
-        async function uploadPortalThumbFile(event, key) {
+        async function uploadPortalThumbFile(event, catName, safeKey) {
             const file = event.target.files[0];
             if (!file) return;
 
-            const btn = document.getElementById(`btn_upload_${key}`);
+            const btn = document.getElementById(`btn_upload_${safeKey}`);
             const originalHtml = btn ? btn.innerHTML : '';
             if (btn) {
                 btn.disabled = true;
@@ -329,24 +405,22 @@
                         },
                         body: JSON.stringify({
                             image: base64Image,
-                            fileName: `portal_${key}_${file.name}`
+                            fileName: `portal_${safeKey}_${file.name}`
                         })
                     });
 
                     const data = await res.json();
                     if (data.success && data.url) {
-                        const input = document.getElementById(`thumb_input_${key}`);
+                        const input = document.getElementById(`thumb_input_${safeKey}`);
                         if (input) input.value = data.url;
 
-                        // Update Live Preview Box
-                        const box = document.getElementById(`preview_box_${key}`);
+                        const box = document.getElementById(`preview_box_${safeKey}`);
                         if (box) {
-                            box.innerHTML = `<img src="${data.url}" id="preview_img_${key}" style="width:100%; height:100%; object-fit:cover;" />`;
+                            box.innerHTML = `<img src="${data.url}" id="preview_img_${safeKey}" style="width:100%; height:100%; object-fit:cover;" />`;
                         }
 
-                        // Auto save
-                        await savePortalThumb(key);
-                        showToast(`✅ Picha imepakiwa na kuhifadhiwa kikamilifu!`);
+                        await savePortalThumb(catName, safeKey);
+                        showToast(`✅ Picha ya "${catName}" imepakiwa na kuhifadhiwa!`);
                     } else {
                         showToast(`❌ Imeshindwa kupakia: ${data.error || 'Unknown error'}`);
                     }
@@ -366,13 +440,13 @@
             }
         }
 
-        async function savePortalThumb(key) {
-            const input = document.getElementById(`thumb_input_${key}`);
+        async function savePortalThumb(catName, safeKey) {
+            const input = document.getElementById(`thumb_input_${safeKey}`);
             if (!input) return;
 
             try {
-                showToast(`⏳ Inahifadhi picha...`);
-                const getRes = await fetch('/api/settings/portal_thumbnails');
+                showToast(`⏳ Inahifadhi picha ya "${catName}"...`);
+                const getRes = await fetch('/api/settings/portal_thumbnails?t=' + Date.now());
                 let existing = {};
                 if (getRes.ok) {
                     const data = await getRes.json();
@@ -381,7 +455,8 @@
                     }
                 }
 
-                existing[key] = input.value.trim();
+                const url = input.value.trim();
+                existing[catName] = url;
 
                 const res = await fetch('/api/admin/settings/portal_thumbnails', {
                     method: 'POST',
@@ -392,17 +467,24 @@
                     body: JSON.stringify({ value: JSON.stringify(existing) })
                 });
 
-                if (res.ok) {
-                    showToast(`✅ Picha imehifadhiwa kwa ${key.toUpperCase()}!`);
+                // Sync to portal_thumbs
+                fetch('/api/admin/settings/portal_thumbs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                    },
+                    body: JSON.stringify({ value: JSON.stringify(existing) })
+                }).catch(() => {});
 
-                    // Update Live Preview Box
-                    const box = document.getElementById(`preview_box_${key}`);
-                    const url = input.value.trim();
+                if (res.ok) {
+                    showToast(`✅ Picha imehifadhiwa kwa category "${catName}"!`);
+                    const box = document.getElementById(`preview_box_${safeKey}`);
                     if (box && url) {
-                        box.innerHTML = `<img src="${url}" id="preview_img_${key}" style="width:100%; height:100%; object-fit:cover;" />`;
+                        box.innerHTML = `<img src="${url}" id="preview_img_${safeKey}" style="width:100%; height:100%; object-fit:cover;" />`;
                     }
                 } else {
-                    showToast(`❌ Failure saving thumbnail`);
+                    showToast(`❌ Imeshindwa kuhifadhi picha`);
                 }
             } catch (err) {
                 showToast(`❌ Error: ${err.message}`);
@@ -4944,6 +5026,51 @@
             <div id="userDetailContent">
                 <!-- Loaded dynamically -->
                 <p style="text-align: center; color: #6c7293; padding: 2rem;">Loading identity profile...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT CATEGORY MODAL -->
+    <div id="editCategoryModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15,23,42,0.7); z-index: 9999; backdrop-filter: blur(4px);">
+        <div class="modal-content" style="max-width: 500px; width: 92%; background: #ffffff; border: 2.5px solid #0f172a; border-radius: 20px; padding: 24px; color: #0f172a; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+            <i class="fas fa-times close-modal" onclick="closeEditCategoryModal()" style="position: absolute; top: 18px; right: 20px; font-size: 1.2rem; cursor: pointer; color: #64748b;"></i>
+            
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.2rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px;">
+                <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(124,58,237,0.1); border: 2px solid #7c3aed; display: flex; align-items: center; justify-content: center; color: #7c3aed; font-size: 1.2rem;">
+                    <i class="fas fa-edit"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-family: 'Orbitron'; font-size: 1.1rem; font-weight: 900; color: #0f172a;">BADILISHA CATEGORY</h3>
+                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b; font-weight: 600;">Hariri jina au mpangilio (Order) wa Category</p>
+                </div>
+            </div>
+
+            <input type="hidden" id="editCatId" />
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                    <label style="display: block; font-size: 0.78rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; margin-bottom: 6px;">JINA LA CATEGORY (CATEGORY NAME):</label>
+                    <input type="text" id="editCatNameInput" placeholder="Mfano: GAMES MPYA ZA MABASI" 
+                        style="width: 100%; padding: 12px 14px; background: #f8fafc; border: 2px solid #0f172a; border-radius: 10px; font-weight: 800; font-size: 0.9rem; outline: none; text-transform: uppercase;" />
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.78rem; font-weight: 800; color: #0f172a; font-family: 'Orbitron'; margin-bottom: 6px;">NAMBA YA UTARATIBU (ORDER NUMBER):</label>
+                    <input type="number" id="editCatOrderInput" min="1" placeholder="1" 
+                        style="width: 100%; padding: 12px 14px; background: #f8fafc; border: 2px solid #0f172a; border-radius: 10px; font-weight: 800; font-size: 0.9rem; outline: none;" />
+                    <span style="font-size: 0.72rem; color: #64748b; font-weight: 600; margin-top: 4px; display: block;">Namba ndogo (mfano 1, 2) itaonekana mwanzo kabisa kwenye ukurasa wa mbele.</span>
+                </div>
+
+                <p id="editCatMsg" style="font-size: 0.82rem; font-weight: 800; margin: 0; display: none;"></p>
+
+                <div style="display: flex; gap: 12px; margin-top: 8px;">
+                    <button onclick="closeEditCategoryModal()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #475569; border: 2px solid #0f172a; border-radius: 10px; font-weight: 800; font-family: 'Orbitron'; cursor: pointer;">
+                        GHAIRI (CANCEL)
+                    </button>
+                    <button onclick="saveCategoryEdit()" style="flex: 1.5; padding: 12px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #ffffff; border: 2.5px solid #0f172a; border-radius: 10px; font-weight: 900; font-family: 'Orbitron'; cursor: pointer; box-shadow: 0 4px 12px rgba(124,58,237,0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fas fa-save"></i> HIFADHI MABADILIKO
+                    </button>
+                </div>
             </div>
         </div>
     </div>

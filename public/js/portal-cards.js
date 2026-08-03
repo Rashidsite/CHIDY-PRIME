@@ -37,18 +37,21 @@
     function pickThumb(category, games) {
         try {
             const cache = JSON.parse(localStorage.getItem(THUMB_STORAGE) || '{}');
+            const safeKey = String(category || '').replace(/[^a-zA-Z0-9]/g, '_');
             if (cache[category]) return cache[category];
+            if (cache[category.toUpperCase()]) return cache[category.toUpperCase()];
+            if (cache[safeKey]) return cache[safeKey];
         } catch (_) {}
         const first = (games || []).find(g => g.image_url || g.poster_url || g.image);
         if (first) return first.image_url || first.poster_url || first.image;
         return '';
     }
 
-    // Fetch admin-uploaded thumbnails once per page load. On success, update the
-    // cache and re-render the portal if the home view is showing.
     function refreshThumbsFromServer() {
-        fetch('/api/settings/portal_thumbs', { credentials: 'same-origin' })
-            .then(r => (r.ok ? r.json() : null))
+        const fetchEndpoint = (url) => fetch(url, { credentials: 'same-origin' }).then(r => (r.ok ? r.json() : null));
+
+        fetchEndpoint('/api/settings/portal_thumbnails')
+            .then(raw => raw || fetchEndpoint('/api/settings/portal_thumbs'))
             .then(raw => {
                 if (!raw) return;
                 let val = raw.value;
