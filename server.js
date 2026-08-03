@@ -1972,6 +1972,37 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
 };
 
 // Check if a visitor has active access to a game
+const formatGameLinks = (game) => {
+    if (!game) return [];
+    let rawLinks = game.links;
+    let list = [];
+    if (Array.isArray(rawLinks)) {
+        list = rawLinks.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+    } else if (typeof rawLinks === 'string' && rawLinks.trim()) {
+        try {
+            const parsed = JSON.parse(rawLinks);
+            if (Array.isArray(parsed)) {
+                list = parsed.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+            } else if (typeof parsed === 'object' && parsed !== null && parsed.url) {
+                list = [parsed];
+            } else {
+                list = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+            }
+        } catch (e) {
+            list = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+        }
+    }
+
+    if (list.length === 0) {
+        const directUrl = game.download_url || game.link || game.file_url || game.url;
+        if (directUrl && typeof directUrl === 'string' && directUrl.trim()) {
+            list = [{ name: 'DOWNLOAD GAME', url: directUrl.trim() }];
+        }
+    }
+
+    return list.filter(l => l && l.url && typeof l.url === 'string' && l.url.trim().length > 0);
+};
+
 app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
     const { visitor_id, post_id } = req.params;
     const phoneQuery = req.query.phone || '';
@@ -1995,18 +2026,20 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         // 1. Fetch game details to check price & links
         const { data: game, error: gameErr } = await supabase
             .from('posts')
-            .select('id, price, links, duration_days, title')
+            .select('id, price, links, download_url, link, file_url, url, duration_days, title')
             .or(`id.eq.${post_id},id.eq.${parseInt(post_id) || 0}`)
             .single();
 
         if (gameErr || !game) return res.status(404).json({ error: 'Game not found' });
+
+        const formattedLinks = formatGameLinks(game);
 
         // 2. Free game check
         if (game.price <= 0) {
             return res.json({ 
                 has_access: true, 
                 expires_at: '2099-12-31T23:59:59Z',
-                links: game.links || []
+                links: formattedLinks
             });
         }
 
@@ -2083,7 +2116,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 return res.json({
                     has_access: true,
                     expires_at: activeAcc.expires_at,
-                    links: game.links || []
+                    links: formattedLinks
                 });
             }
         }
@@ -2121,7 +2154,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 return res.json({
                     has_access: true,
                     expires_at: expIso,
-                    links: game.links || []
+                    links: formattedLinks
                 });
             }
         }

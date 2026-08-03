@@ -6430,6 +6430,35 @@
             updateDetailAccess(id, visitor, game);
         }
 
+        function parseDownloadLinks(rawLinks, gameObj) {
+            let result = [];
+            if (Array.isArray(rawLinks)) {
+                result = rawLinks.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+            } else if (typeof rawLinks === 'string' && rawLinks.trim()) {
+                try {
+                    const parsed = JSON.parse(rawLinks);
+                    if (Array.isArray(parsed)) {
+                        result = parsed.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+                    } else if (typeof parsed === 'object' && parsed !== null && parsed.url) {
+                        result = [parsed];
+                    } else {
+                        result = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+                    }
+                } catch (e) {
+                    result = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+                }
+            }
+
+            if (result.length === 0 && gameObj) {
+                const directUrl = gameObj.download_url || gameObj.link || gameObj.file_url || gameObj.url;
+                if (directUrl && typeof directUrl === 'string' && directUrl.trim()) {
+                    result = [{ name: 'DOWNLOAD GAME', url: directUrl.trim() }];
+                }
+            }
+
+            return result.filter(l => l && l.url && typeof l.url === 'string' && l.url.trim().length > 0);
+        }
+
         async function updateDetailAccess(id, visitor, game) {
             const container = document.getElementById("detailAccessContainer");
             if (!container) return;
@@ -6504,7 +6533,28 @@
                             const isPermanent = expiryDate.getFullYear() >= 2099;
                             const formattedExpiry = isPermanent ? 'MAISHA YOTE (KUDUMU)' : expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
                             const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-                            const activeLinks = accessData.links || [];
+
+                            const activeLinks = (accessData.links && accessData.links.length > 0)
+                                ? parseDownloadLinks(accessData.links, game)
+                                : parseDownloadLinks(game.links, game);
+
+                            let linksButtonsHtml = '';
+                            if (activeLinks.length === 0) {
+                                linksButtonsHtml = `
+                                    <div style="background: rgba(37, 99, 235, 0.15); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px; margin-top: 12px; text-align: center;">
+                                        <p style="color: #60a5fa; font-weight: 700; font-size: 0.85rem; margin: 0 0 10px 0;"><i class="fas fa-check-circle"></i> Unaruhusiwa kudownload! Mfumo unaunganisha link:</p>
+                                        <a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(game.title)}" target="_blank" class="dl-btn" style="justify-content: center; background: linear-gradient(135deg, #25d366, #128c7e); color: #ffffff; border: 1.5px solid #22c55e; font-weight: 900; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
+                                            <i class="fab fa-whatsapp"></i> CHUKUA GAME WHATSAPP
+                                        </a>
+                                    </div>
+                                `;
+                            } else {
+                                linksButtonsHtml = `
+                                    <div class="detail-links" style="margin-top: 12px;">
+                                        ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #00d25b, #059669); color: #ffffff; border: 1.5px solid #0f172a; font-family: 'Orbitron'; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || "DOWNLOAD GAME"}</a>`).join('')}
+                                    </div>
+                                `;
+                            }
 
                             accessHtml = `
                                 <div style="background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05)); border: 1.5px solid #00d25b; border-radius: 12px; padding: 14px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(0,210,91,0.2);">
@@ -6518,9 +6568,7 @@
                                         ${(hasDuration && !isPermanent) ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
                                     </p>
                                 </div>
-                                <div class="detail-links">
-                                    ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #00d25b, #059669); color: #ffffff; border: 1.5px solid #0f172a; font-family: 'Orbitron'; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || "DOWNLOAD GAME"}</a>`).join('')}
-                                </div>
+                                ${linksButtonsHtml}
                             `;
                             if (container.innerHTML !== accessHtml) {
                                 container.innerHTML = accessHtml;
@@ -6567,12 +6615,31 @@
                                     </button>
                                 `;
                             } else {
-                                const freeLinks = (game.links && Array.isArray(game.links) && game.links.length > 0) ? game.links : (accessData.links || []);
+                                const freeLinks = (accessData.links && accessData.links.length > 0)
+                                    ? parseDownloadLinks(accessData.links, game)
+                                    : parseDownloadLinks(game.links, game);
+
+                                let freeLinksHtml = '';
+                                if (freeLinks.length === 0) {
+                                    freeLinksHtml = `
+                                        <div style="background: rgba(37, 99, 235, 0.12); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px; text-align: center; margin-top: 10px;">
+                                            <p style="color: #60a5fa; font-weight: 700; font-size: 0.85rem; margin: 0 0 10px 0;"><i class="fas fa-gift"></i> Game Hii ni BURE! Bofya hapa kuomba faili:</p>
+                                            <a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(game.title)}" target="_blank" class="dl-btn" style="justify-content: center; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #22c55e; font-weight: 900; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);">
+                                                <i class="fab fa-whatsapp"></i> PAKUA NA WHATSAPP (BURE)
+                                            </a>
+                                        </div>
+                                    `;
+                                } else {
+                                    freeLinksHtml = `
+                                        <div class="detail-links">
+                                            ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #22c55e; font-family: 'Orbitron'; font-weight: 900; box-shadow: 0 4px 15px rgba(22,163,74,0.4); text-transform: uppercase;"><i class="fas fa-download"></i> ${l.name || "FREE DOWNLOAD"}</a>`).join('')}
+                                        </div>
+                                    `;
+                                }
+
                                 accessHtml = `
-                                    ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                    <div class="detail-links">
-                                        ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn"><i class="fas fa-download"></i> ${l.name || "Download"}</a>`).join('')}
-                                    </div>
+                                    ${game.youtube_url ? `<div class="detail-links" style="margin-bottom:10px;"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                                    ${freeLinksHtml}
                                 `;
                             }
                             container.innerHTML = accessHtml;
