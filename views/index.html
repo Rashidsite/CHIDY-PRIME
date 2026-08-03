@@ -7376,6 +7376,11 @@
         }
 
         function showHome() {
+            const profOverlay = document.getElementById('profileModalOverlay');
+            if (profOverlay) profOverlay.style.display = 'none';
+            if (typeof closeCategoryPopup === 'function') closeCategoryPopup(null, true);
+            document.body.style.overflow = '';
+
             currentCategory = null;
             document.getElementById('searchInput').value = '';
 
@@ -7752,8 +7757,12 @@
 
         // ===== OPEN VIDEO STORE =====
         function openVideoStore() {
-            // Switch page mode — CSS in premium.css handles the actual
-            // hide/show so the video page is a truly standalone view.
+            const profOverlay = document.getElementById('profileModalOverlay');
+            if (profOverlay) profOverlay.style.display = 'none';
+            if (typeof closeCategoryPopup === 'function') closeCategoryPopup(null, true);
+            document.body.style.overflow = '';
+
+            // Switch page mode
             document.body.classList.remove('mode-home');
             document.body.classList.add('mode-videos');
 
@@ -7773,7 +7782,7 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
-            setActiveBottom(2);
+            setActiveBottom(1);
         }
 
 
@@ -8132,7 +8141,7 @@
             const overlay = document.getElementById('profileModalOverlay');
             if (overlay) overlay.style.display = 'none';
             document.body.style.overflow = '';
-            setActiveBottom(0);
+            showHome();
         }
 
         function quickLogout() {
