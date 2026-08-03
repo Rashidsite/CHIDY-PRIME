@@ -581,23 +581,47 @@
         }
 
         .brand {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(1.1rem, 3vw, 1.6rem);
+            font-family: 'Orbitron', 'Plus Jakarta Sans', sans-serif;
+            font-size: clamp(1.35rem, 5.2vw, 2.2rem);
             font-weight: 900;
-            letter-spacing: 3px;
+            letter-spacing: 2.5px;
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: brandNeonWave 3s ease-in-out infinite alternate;
         }
 
         .brand-chidy {
-            color: #fff;
+            color: #ffffff !important;
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.4), 0 0 20px rgba(0, 242, 255, 0.5);
+            font-weight: 900;
+            letter-spacing: 2.5px;
         }
 
         .brand-prime {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, #00f2ff 0%, #a855f7 50%, #bc13fe 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.6));
+            font-weight: 900;
+            letter-spacing: 2.5px;
+        }
+
+        @keyframes brandNeonWave {
+            0% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.4));
+            }
+            50% {
+                transform: scale(1.03);
+                filter: drop-shadow(0 0 18px rgba(188, 19, 254, 0.7));
+            }
+            100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.6));
+            }
         }
 
         .header-actions {
@@ -2187,22 +2211,18 @@
             }
 
             .header {
-                height: 50px;
-                padding: 0 10px;
+                height: 56px;
+                padding: 0 12px;
             }
 
             .brand {
-                font-size: 0.95rem;
-                letter-spacing: 2px;
+                font-size: clamp(1.2rem, 5.2vw, 1.6rem) !important;
+                letter-spacing: 2px !important;
+                font-weight: 900 !important;
             }
 
             .user-actions {
-                gap: 6px;
-            }
-
-            .lang-toggle-btn {
-                padding: 4px 8px;
-                font-size: 0.65rem;
+                gap: 8px;
             }
 
             .notif-bell-btn {
@@ -4342,19 +4362,14 @@
 
     <!-- HEADER -->
     <header class="header" id="header">
-        <div class="brand">
+        <div class="brand" onclick="scrollToTop()">
             <span class="brand-chidy">CHIDY</span>
             <span class="brand-prime">PRIME</span>
         </div>
         <div class="user-actions">
-            <!-- Language Toggle Button -->
-            <button class="lang-toggle-btn" id="headerLangBtn" onclick="toggleLanguage()" style="display: flex; padding: 5px 10px; gap: 4px;">
-                <span id="langBtnText">🇹🇿</span>
-            </button>
-            
             <!-- PWA Install Button -->
-            <button id="headerInstallBtn" onclick="installPWA()" style="display: flex; background: linear-gradient(135deg, #00f2ff, #bc13fe); border: none; border-radius: 20px; padding: 5px 10px; color: #000; font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 800; cursor: pointer; box-shadow: 0 0 12px rgba(0, 242, 255, 0.35); animation: installPulse 2s infinite; white-space: nowrap; align-items: center; gap: 4px;">
-                <i class="fas fa-download" style="font-size:0.65rem;"></i> INSTALL
+            <button id="headerInstallBtn" onclick="installPWA()" style="display: flex; background: linear-gradient(135deg, #00f2ff, #bc13fe); border: none; border-radius: 20px; padding: 6px 12px; color: #000; font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 800; cursor: pointer; box-shadow: 0 0 14px rgba(0, 242, 255, 0.4); animation: installPulse 2s infinite; white-space: nowrap; align-items: center; gap: 5px;">
+                <i class="fas fa-download" style="font-size:0.7rem;"></i> INSTALL
             </button>
             <!-- Bell -->
             <div class="notif-bell-btn" id="notifBell" onclick="toggleNotifDropdown()" title="Notifications">
