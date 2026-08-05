@@ -7056,19 +7056,7 @@
                     body: checkoutBody
                 });
                 let result = await response.json().catch(() => ({}));
-
-                const looksMisconfigured = response.status === 503
-                    || (result && result.status === 'failed' && /haijawekwa|not configured|missing API/i.test(result.message || ''));
-                if (!response.ok || looksMisconfigured) {
-                    console.warn('[Payment] PressoPay unavailable, falling back to HarakaPay:', result && result.message);
-                    response = await fetch('/api/payments/harakapay-checkout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: checkoutBody
-                    });
-                    result = await response.json().catch(() => ({}));
-                }
-                console.log('Payment Checkout Result:', result);
+                console.log('PressoPay Checkout Result:', result);
 
                 if (result.status === 'success' || result.success === true) {
                     switchPaymentStep('verifying');
@@ -9062,24 +9050,12 @@ async function clearAllNotifications() {
                     name: visitor.name || 'Chidy Customer'
                 });
 
-                // PressoPay first, HarakaPay fallback (same shape).
                 let res = await fetch('/api/payments/pressopay-video-checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: videoCheckoutBody
                 });
                 let data = await res.json().catch(() => ({}));
-                const looksMisconfigured = res.status === 503
-                    || (data && data.status === 'failed' && /haijawekwa|not configured|missing API/i.test(data.message || ''));
-                if (!res.ok || looksMisconfigured) {
-                    console.warn('[Payment] PressoPay video unavailable, falling back to HarakaPay:', data && data.message);
-                    res = await fetch('/api/payments/harakapay-video-checkout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: videoCheckoutBody
-                    });
-                    data = await res.json().catch(() => ({}));
-                }
  
                 if (data.status === 'success' || data.message === 'success' || data.success === true) {
                     document.getElementById('vidPayForm').style.display = 'none';
