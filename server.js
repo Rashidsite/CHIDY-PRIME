@@ -2105,16 +2105,22 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
         const { data: pending } = await pendingQuery;
 
         if (pending && pending.length > 0) {
+            // FIXED: ONLY match by visitor_id OR phone — NOT by age alone (prevents cross-user false matches)
             const matchedPending = pending.filter(o => {
                 if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
                 const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
-                if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
+                if (visitorPhoneClean && oPhoneClean && oPhoneClean.length >= 9 &&
+                    (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
                     return true;
                 }
-                const orderAgeMs = Date.now() - new Date(o.created_at || 0).getTime();
-                if (orderAgeMs < 20 * 60 * 1000) return true;
+                // Also match by merchantReference (CHIDY-{postId}-{visitorId}-{ts})
+                const ref = String(o.promo_used || '');
+                if (numericVisitorId > 0 && ref.includes(`-${numericVisitorId}-`)) return true;
                 return false;
             });
+
+            // Track if ANY matched order is pending (for pending_order flag)
+            let hasPendingMatch = matchedPending.length > 0;
 
             for (const order of matchedPending) {
                 const extOrderId = order.promo_used;
@@ -2126,11 +2132,12 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                         const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
                         const pStatus = await pressopay.checkPaymentStatus(ref);
                         const pStatUpper = String(pStatus.status || '').toUpperCase();
+                        console.log(`[Fail-safe] PressoPay check ${ref} → ${pStatUpper}`);
                         if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatUpper)) {
                             isPaid = true;
                         }
                     } catch (ppErr) {
-                        console.warn('PressoPay check error:', ppErr.message);
+                        console.warn('[Fail-safe] PressoPay check error:', ppErr.message);
                     }
                 } else if (extOrderId.startsWith('HP')) {
                     const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
@@ -2138,6 +2145,7 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                         headers: { 'X-API-Key': HARAKAPAY_API_KEY }
                     }).then(r => r.json()).catch(() => ({}));
                     const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
+                    console.log(`[Fail-safe] HarakaPay check ${extOrderId} → ${hStatus}`);
                     if (hStatus === 'completed' || hStatus === 'success') {
                         isPaid = true;
                     }
@@ -2157,7 +2165,7 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                 }
 
                 if (isPaid) {
-                    console.log(`[Fail-safe] Pending order ${extOrderId} paid! Auto approving...`);
+                    console.log(`[Fail-safe] ✅ Pending order ${extOrderId} PAID! Auto-granting access...`);
                     const itemToGrant = game || { id: targetPostId };
                     await handleSuccessfulPayment(parseInt(order.visitor_id || visitorId), itemToGrant, order.amount, order.phone_number, extOrderId, false);
                     await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
@@ -2177,10 +2185,16 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                     };
                 }
             }
+
+            // Has matched pending orders but none are paid yet → signal frontend to keep waiting
+            if (hasPendingMatch) {
+                return { has_access: false, pending_order: true };
+            }
         }
     } catch (checkErr) {
         console.error('checkAndApprovePendingOrder error:', checkErr);
     }
+    return null;
 };
 
 // Check if a visitor has active access to a game
@@ -2373,10 +2387,37 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             }
         }
 
-        // 5. Fail-safe pending order check & live gateway verify
-        const approvedAccess = await checkAndApprovePendingOrder(visitor_id, game.id, game, visitorPhoneClean);
-        if (approvedAccess) {
-            return res.json(approvedAccess);
+        // 5. Check if user has any pending_order (without live gateway verify — too slow on every poll)
+        // Only do live gateway verify every 5th call via X-Poll-Count header
+        const pollCount = parseInt(req.headers['x-poll-count'] || '0', 10);
+        const doLiveCheck = pollCount === 0 || pollCount % 5 === 0;
+
+        if (doLiveCheck) {
+            const approvedAccess = await checkAndApprovePendingOrder(visitor_id, game.id, game, visitorPhoneClean);
+            if (approvedAccess) {
+                return res.json(approvedAccess);
+            }
+        } else {
+            // Fast path: just check if there's any pending order for this user
+            const numericVisitorId = parseInt(visitor_id) || 0;
+            const { data: fastPending } = await supabase
+                .from('payment_orders')
+                .select('id, visitor_id, phone_number, status')
+                .eq('post_id', game.id)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (fastPending && fastPending.length > 0) {
+                const hasPending = fastPending.some(o => {
+                    if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
+                    const oPhoneClean = String(o.phone_number || '').replace(/[^0-9]/g, '');
+                    if (visitorPhoneClean && oPhoneClean && oPhoneClean.length >= 9 &&
+                        (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) return true;
+                    return false;
+                });
+                if (hasPending) return res.json({ has_access: false, pending_order: true });
+            }
         }
 
         return res.json({ has_access: false, pending_order: false });
