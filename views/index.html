@@ -5557,13 +5557,15 @@
                 <div class="payment-status-icon status-success">
                     <i class="fas fa-check"></i>
                 </div>
-                <h2 class="payment-status-title">Malipo Yamefanikiwa!</h2>
-                <p class="payment-status-msg">
-                    Hongera! Malipo yako yamehakikiwa kikamilifu.<br>
-                    Sasa unaweza kuanza kufurahia game lako.
+                <h2 class="payment-status-title">Malipo Yamefanikiwa! 🎉</h2>
+                <p class="payment-status-msg" style="margin-bottom:12px;">
+                    Hongera! Access yako imefunguliwa.<br>
+                    Bonyeza kitufe hapa chini kupakua game lako sasa hivi.
                 </p>
-                <button id="paymentContinueBtn" class="payment-btn-premium">
-                    <i class="fas fa-play"></i> <span>Endelea</span>
+                <!-- Download links injected here after successful payment -->
+                <div id="successDownloadLinks" style="margin-bottom:14px;"></div>
+                <button id="paymentContinueBtn" class="payment-btn-premium" style="background:rgba(0,242,255,0.1);border:1px solid var(--primary);color:var(--primary);font-size:0.82rem;padding:10px;">
+                    <i class="fas fa-times"></i> <span>Funga</span>
                 </button>
             </div>
             <input type="hidden" id="payPostId">
@@ -7124,6 +7126,43 @@
                                 window.activePollInterval = null;
                                 if (window.manualVerifyTimeout) { clearTimeout(window.manualVerifyTimeout); window.manualVerifyTimeout = null; }
                                 switchPaymentStep('success');
+
+                                // Inject download links directly into success modal
+                                const dlContainer = document.getElementById('successDownloadLinks');
+                                if (dlContainer) {
+                                    const rawLinks = (access.links && access.links.length > 0) ? access.links : (game ? parseDownloadLinks(game.links, game) : []);
+                                    if (rawLinks && rawLinks.length > 0) {
+                                        dlContainer.innerHTML = rawLinks.map(l => `
+                                            <a href="${l.url || l}" target="_blank" style="
+                                                display:flex; align-items:center; gap:10px; width:100%;
+                                                padding:14px 16px; margin-bottom:8px; border-radius:12px;
+                                                background:linear-gradient(135deg,#00d25b,#059669);
+                                                color:#fff; text-decoration:none; font-family:'Orbitron';
+                                                font-weight:900; font-size:0.82rem; letter-spacing:0.5px;
+                                                box-shadow:0 4px 15px rgba(0,210,91,0.35);
+                                                text-transform:uppercase;
+                                            ">
+                                                <i class="fas fa-download" style="font-size:1.1rem;"></i>
+                                                ${l.name || 'DOWNLOAD GAME'}
+                                            </a>
+                                        `).join('');
+                                    } else {
+                                        dlContainer.innerHTML = `
+                                            <a href="https://wa.me/255677066929?text=Habari%20Admin%20nimetoa%20malipo%20naomba%20link%20ya%20game" target="_blank" style="
+                                                display:flex; align-items:center; gap:10px; width:100%;
+                                                padding:14px 16px; margin-bottom:8px; border-radius:12px;
+                                                background:linear-gradient(135deg,#25d366,#128c7e);
+                                                color:#fff; text-decoration:none; font-family:'Orbitron';
+                                                font-weight:900; font-size:0.82rem;
+                                                box-shadow:0 4px 15px rgba(37,211,102,0.35);
+                                            ">
+                                                <i class="fab fa-whatsapp" style="font-size:1.2rem;"></i>
+                                                CHUKUA LINK - WHATSAPP ADMIN
+                                            </a>
+                                        `;
+                                    }
+                                }
+
                                 document.getElementById('paymentContinueBtn').onclick = () => {
                                     closePayment();
                                     openDetail(postId);
