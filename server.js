@@ -2319,7 +2319,77 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             return finalExp.toISOString();
         };
 
-        // 3. Direct check in user_access
+        // 3. PRIORITY CHECK: Is there a recent PENDING order (last 15 min) waiting for PIN entry on phone?
+        const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+        const { data: recentPending } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('post_id', game.id)
+            .eq('status', 'pending')
+            .gt('created_at', fifteenMinsAgo)
+            .order('created_at', { ascending: false });
+
+        if (recentPending && recentPending.length > 0) {
+            const matchedPending = recentPending.find(o => {
+                if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
+                const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (visitorPhoneClean && oPhoneClean && oPhoneClean.length >= 9 &&
+                    (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
+                    return true;
+                }
+                const ref = String(o.promo_used || '');
+                if (numericVisitorId > 0 && ref.includes(`-${numericVisitorId}-`)) return true;
+                return false;
+            });
+
+            if (matchedPending) {
+                const extOrderId = matchedPending.promo_used;
+                let isPaid = false;
+
+                if (extOrderId && extOrderId.startsWith('PP') && pressopay.isConfigured()) {
+                    try {
+                        const ref = extOrderId.startsWith('PP:') ? extOrderId.slice(3) : extOrderId.slice(2);
+                        const pStatus = await pressopay.checkPaymentStatus(ref);
+                        const pStatUpper = String(pStatus.status || '').toUpperCase();
+                        console.log(`[Check-Access Live] PressoPay status check ${ref} -> ${pStatUpper}`);
+                        if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatUpper)) {
+                            isPaid = true;
+                        }
+                    } catch (ppErr) {
+                        console.warn('[Check-Access Live] PressoPay check error:', ppErr.message);
+                    }
+                } else if (extOrderId && extOrderId.startsWith('HP')) {
+                    const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
+                        method: 'GET',
+                        headers: { 'X-API-Key': HARAKAPAY_API_KEY }
+                    }).then(r => r.json()).catch(() => ({}));
+                    const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
+                    if (hStatus === 'completed' || hStatus === 'success') isPaid = true;
+                }
+
+                if (isPaid) {
+                    console.log(`[Check-Access Live] ✅ Order ${extOrderId} confirmed PAID! Granting access...`);
+                    await handleSuccessfulPayment(numericVisitorId > 0 ? numericVisitorId : matchedPending.visitor_id, game, matchedPending.amount, matchedPending.phone_number, extOrderId, false);
+                    await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', matchedPending.id);
+
+                    const expIso = await grantAccessHelper(numericVisitorId > 0 ? numericVisitorId : matchedPending.visitor_id, game.id, game.duration_days || 0);
+                    return res.json({
+                        has_access: true,
+                        expires_at: expIso,
+                        links: formattedLinks
+                    });
+                } else {
+                    // Transaction is STILL PENDING — waiting for PIN input on mobile!
+                    return res.json({
+                        has_access: false,
+                        pending_order: true,
+                        message: 'Ingiza PIN kwenye simu yako kukamilisha malipo'
+                    });
+                }
+            }
+        }
+
+        // 4. Direct check in user_access (Only if NO active pending order is waiting for PIN)
         const { data: accessRows } = await supabase
             .from('user_access')
             .select('*')
@@ -2343,7 +2413,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             }
         }
 
-        // 4. BULLETPROOF FALLBACK: Check payment_orders by visitor_id, phone number, OR recent approval
+        // 5. Check payment_orders for past approved orders
         const { data: orders } = await supabase
             .from('payment_orders')
             .select('*')
@@ -2354,16 +2424,12 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             const approvedOrder = orders.find(o => {
                 const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
                 if (!isApproved) return false;
-
                 if (o.expires_at && new Date(o.expires_at) <= new Date()) return false;
-                
                 if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
-                
                 const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
                 if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
                     return true;
                 }
-
                 return false;
             });
 
@@ -2374,39 +2440,6 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                     expires_at: expIso,
                     links: formattedLinks
                 });
-            }
-        }
-
-        // 5. Check if user has any pending_order (without live gateway verify — too slow on every poll)
-        // Only do live gateway verify every 5th call via X-Poll-Count header
-        const pollCount = parseInt(req.headers['x-poll-count'] || '0', 10);
-        const doLiveCheck = pollCount === 0 || pollCount % 5 === 0;
-
-        if (doLiveCheck) {
-            const approvedAccess = await checkAndApprovePendingOrder(visitor_id, game.id, game, visitorPhoneClean);
-            if (approvedAccess) {
-                return res.json(approvedAccess);
-            }
-        } else {
-            // Fast path: just check if there's any pending order for this user
-            const numericVisitorId = parseInt(visitor_id) || 0;
-            const { data: fastPending } = await supabase
-                .from('payment_orders')
-                .select('id, visitor_id, phone_number, status')
-                .eq('post_id', game.id)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false })
-                .limit(5);
-
-            if (fastPending && fastPending.length > 0) {
-                const hasPending = fastPending.some(o => {
-                    if (numericVisitorId > 0 && parseInt(o.visitor_id) === numericVisitorId) return true;
-                    const oPhoneClean = String(o.phone_number || '').replace(/[^0-9]/g, '');
-                    if (visitorPhoneClean && oPhoneClean && oPhoneClean.length >= 9 &&
-                        (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) return true;
-                    return false;
-                });
-                if (hasPending) return res.json({ has_access: false, pending_order: true });
             }
         }
 
