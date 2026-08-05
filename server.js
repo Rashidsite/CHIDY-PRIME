@@ -1409,88 +1409,285 @@ app.patch('/api/categories/order', verifyAdmin, async (req, res) => {
 // VIDEO ENDPOINTS
 // ============================================
 
-// GET all published videos (public storefront)
+// GET all published videos & Live TV (public storefront)
 app.get('/api/videos', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    const { data, error } = await supabase
-        .from('videos')
-        .select('*')
-        .eq('is_published', true)
-        .order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data || []);
+    try {
+        const { data: vData } = await supabase
+            .from('videos')
+            .select('*')
+            .eq('is_published', true)
+            .order('created_at', { ascending: false });
+
+        const { data: pData } = await supabase
+            .from('posts')
+            .select('*')
+            .in('category', ['VIDEO', 'LIVE_TV', 'YOUTUBE', 'Live TV', 'Video'])
+            .eq('status', 'published')
+            .order('created_at', { ascending: false });
+
+        const combined = [];
+        const seenIds = new Set();
+
+        (vData || []).forEach(v => {
+            seenIds.add(String(v.id));
+            combined.push({
+                ...v,
+                category: v.category || 'VIDEO',
+                type: (v.category === 'LIVE_TV' || v.category === 'Live TV') ? 'live_tv' : 'video'
+            });
+        });
+
+        (pData || []).forEach(p => {
+            if (!seenIds.has(String(p.id))) {
+                const catUpper = (p.category || 'VIDEO').toUpperCase();
+                const extractVideoId = (url) => {
+                    if (!url) return null;
+                    const patterns = [
+                        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+                        /^[a-zA-Z0-9_-]{11}$/
+                    ];
+                    for (const pat of patterns) {
+                        const m = url.match(pat);
+                        if (m) return m[1] || m[0];
+                    }
+                    return null;
+                };
+                const vidId = extractVideoId(p.youtube_url) || p.youtube_url || p.id;
+                combined.push({
+                    id: p.id,
+                    title: p.title,
+                    youtube_url: p.youtube_url,
+                    video_id: vidId,
+                    description: p.description,
+                    is_published: p.status === 'published',
+                    price: p.price || 0,
+                    duration_days: p.duration_days || 0,
+                    category: catUpper === 'LIVE_TV' ? 'LIVE_TV' : 'VIDEO',
+                    type: catUpper === 'LIVE_TV' ? 'live_tv' : 'video',
+                    created_at: p.created_at
+                });
+            }
+        });
+
+        combined.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        res.json(combined);
+    } catch (err) {
+        console.error('Error fetching videos:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// GET all videos (admin — includes unpublished)
+// GET all videos & Live TV (admin — includes unpublished)
 app.get('/api/admin/videos', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    const { data, error } = await supabase
-        .from('videos')
-        .select('*')
-        .order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data || []);
+    try {
+        const { data: vData } = await supabase
+            .from('videos')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        const { data: pData } = await supabase
+            .from('posts')
+            .select('*')
+            .in('category', ['VIDEO', 'LIVE_TV', 'YOUTUBE', 'Live TV', 'Video'])
+            .order('created_at', { ascending: false });
+
+        const combined = [];
+        const seenIds = new Set();
+
+        (vData || []).forEach(v => {
+            seenIds.add(String(v.id));
+            combined.push({
+                ...v,
+                category: v.category || 'VIDEO',
+                type: (v.category === 'LIVE_TV' || v.category === 'Live TV') ? 'live_tv' : 'video'
+            });
+        });
+
+        (pData || []).forEach(p => {
+            if (!seenIds.has(String(p.id))) {
+                const catUpper = (p.category || 'VIDEO').toUpperCase();
+                const extractVideoId = (url) => {
+                    if (!url) return null;
+                    const patterns = [
+                        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+                        /^[a-zA-Z0-9_-]{11}$/
+                    ];
+                    for (const pat of patterns) {
+                        const m = url.match(pat);
+                        if (m) return m[1] || m[0];
+                    }
+                    return null;
+                };
+                const vidId = extractVideoId(p.youtube_url) || p.youtube_url || p.id;
+                combined.push({
+                    id: p.id,
+                    title: p.title,
+                    youtube_url: p.youtube_url,
+                    video_id: vidId,
+                    description: p.description,
+                    is_published: p.status === 'published',
+                    price: p.price || 0,
+                    duration_days: p.duration_days || 0,
+                    category: catUpper === 'LIVE_TV' ? 'LIVE_TV' : 'VIDEO',
+                    type: catUpper === 'LIVE_TV' ? 'live_tv' : 'video',
+                    created_at: p.created_at
+                });
+            }
+        });
+
+        combined.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        res.json(combined);
+    } catch (err) {
+        console.error('Error fetching admin videos:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// POST - add new video
+// POST - add new video / Live TV post
 app.post('/api/admin/videos', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-    const { title, youtube_url, description, is_published, price, duration_days } = req.body;
-    if (!title || !youtube_url) return res.status(400).json({ error: 'Title na YouTube URL zinahitajika' });
+    const { title, youtube_url, description, is_published, price, duration_days, category: postCategory, type } = req.body;
+    if (!title || !youtube_url) return res.status(400).json({ error: 'Kichwa (Title) na Link/URL vinahitajika' });
+
+    const finalCategory = (type === 'live_tv' || postCategory === 'LIVE_TV') ? 'LIVE_TV' : 'VIDEO';
 
     // Extract YouTube video ID from various URL formats
     const extractVideoId = (url) => {
+        if (!url) return null;
         const patterns = [
-            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-            /youtube\.com\/shorts\/([^&\n?#]+)/
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+            /^[a-zA-Z0-9_-]{11}$/
         ];
         for (const p of patterns) {
             const match = url.match(p);
-            if (match) return match[1];
+            if (match) return match[1] || match[0];
         }
         return null;
     };
 
-    const video_id = extractVideoId(youtube_url);
-    if (!video_id) return res.status(400).json({ error: 'YouTube URL si sahihi. Tuma link kamili ya YouTube.' });
+    const video_id = extractVideoId(youtube_url) || youtube_url.trim();
 
-    const { data, error } = await supabase
-        .from('videos')
-        .insert([{ 
-            title: title.trim(), 
-            youtube_url: youtube_url.trim(),
-            video_id,
-            description: description ? description.trim() : null,
-            is_published: is_published !== false,
-            price: parseInt(price) || 0,
-            duration_days: parseInt(duration_days) || 0
-        }])
-        .select();
+    // 1. First try inserting into 'videos' table
+    let savedRecord = null;
+    try {
+        const { data, error } = await supabase
+            .from('videos')
+            .insert([{ 
+                title: title.trim(), 
+                youtube_url: youtube_url.trim(),
+                video_id,
+                description: description ? description.trim() : null,
+                is_published: is_published !== false,
+                price: parseInt(price) || 0,
+                duration_days: parseInt(duration_days) || 0,
+                category: finalCategory
+            }])
+            .select();
 
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ success: true, video: data[0] });
+        if (!error && data && data[0]) {
+            savedRecord = { ...data[0], category: finalCategory };
+        }
+    } catch (e) {
+        console.warn('videos table insert attempt threw exception:', e.message);
+    }
+
+    // 2. Fallback to 'posts' table if 'videos' table insertion failed or violated RLS
+    if (!savedRecord) {
+        try {
+            const postRow = {
+                title: title.trim(),
+                youtube_url: youtube_url.trim(),
+                description: description ? description.trim() : null,
+                price: parseInt(price) || 0,
+                duration_days: parseInt(duration_days) || 0,
+                category: finalCategory,
+                status: is_published !== false ? 'published' : 'draft',
+                rating: 5,
+                image_url: video_id.length === 11 ? `https://img.youtube.com/vi/${video_id}/hqdefault.jpg` : ''
+            };
+            const { data: pData, error: pErr } = await supabase.from('posts').insert([postRow]).select();
+            if (pErr) return res.status(500).json({ error: pErr.message });
+            if (pData && pData[0]) {
+                const p = pData[0];
+                savedRecord = {
+                    id: p.id,
+                    title: p.title,
+                    youtube_url: p.youtube_url,
+                    video_id: extractVideoId(p.youtube_url) || p.youtube_url || p.id,
+                    description: p.description,
+                    is_published: p.status === 'published',
+                    price: p.price || 0,
+                    duration_days: p.duration_days || 0,
+                    category: finalCategory,
+                    created_at: p.created_at
+                };
+            }
+        } catch (postErr) {
+            return res.status(500).json({ error: postErr.message });
+        }
+    }
+
+    res.json({ success: true, video: savedRecord });
 });
 
-// PATCH - update video (publish/unpublish or edit)
+// PATCH - update video or Live TV
 app.patch('/api/admin/videos/:id', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { id } = req.params;
     const updates = req.body;
-    const { data, error } = await supabase
-        .from('videos')
-        .update(updates)
-        .eq('id', id)
-        .select();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ success: true, video: data[0] });
+
+    let updatedVideo = null;
+    try {
+        const { data, error } = await supabase
+            .from('videos')
+            .update(updates)
+            .eq('id', id)
+            .select();
+        if (!error && data && data[0]) {
+            updatedVideo = data[0];
+        }
+    } catch (_) {}
+
+    if (!updatedVideo) {
+        try {
+            const postUpdates = {};
+            if (updates.title !== undefined) postUpdates.title = updates.title;
+            if (updates.youtube_url !== undefined) postUpdates.youtube_url = updates.youtube_url;
+            if (updates.description !== undefined) postUpdates.description = updates.description;
+            if (updates.price !== undefined) postUpdates.price = updates.price;
+            if (updates.duration_days !== undefined) postUpdates.duration_days = updates.duration_days;
+            if (updates.is_published !== undefined) postUpdates.status = updates.is_published ? 'published' : 'draft';
+            if (updates.category !== undefined) postUpdates.category = updates.category;
+
+            const { data: pData } = await supabase.from('posts').update(postUpdates).eq('id', id).select();
+            if (pData && pData[0]) {
+                const p = pData[0];
+                updatedVideo = {
+                    id: p.id,
+                    title: p.title,
+                    youtube_url: p.youtube_url,
+                    video_id: p.youtube_url,
+                    description: p.description,
+                    is_published: p.status === 'published',
+                    price: p.price || 0,
+                    duration_days: p.duration_days || 0,
+                    category: p.category || 'VIDEO'
+                };
+            }
+        } catch (_) {}
+    }
+
+    res.json({ success: true, video: updatedVideo });
 });
 
-// DELETE - remove a video
+// DELETE - remove a video or Live TV post
 app.delete('/api/admin/videos/:id', verifyAdmin, async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { id } = req.params;
-    const { error } = await supabase.from('videos').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
+    try { await supabase.from('videos').delete().eq('id', id); } catch (_) {}
+    try { await supabase.from('posts').delete().eq('id', id); } catch (_) {}
     res.json({ success: true });
 });
 
@@ -1504,12 +1701,24 @@ app.get('/api/check-video-access/:visitor_id/:video_id', async (req, res) => {
     const { visitor_id, video_id } = req.params;
 
     try {
-        // Get video details
-        const { data: video } = await supabase
+        // Get video details (check videos first, then posts)
+        let video = null;
+        const { data: vData } = await supabase
             .from('videos')
             .select('price, duration_days, title')
             .eq('id', video_id)
             .single();
+        
+        if (vData) {
+            video = vData;
+        } else {
+            const { data: pData } = await supabase
+                .from('posts')
+                .select('price, duration_days, title')
+                .eq('id', video_id)
+                .single();
+            if (pData) video = pData;
+        }
 
         if (!video) return res.status(404).json({ error: 'Video haijapatikana' });
 
@@ -2026,7 +2235,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         // 1. Fetch game details to check price & links
         const { data: game, error: gameErr } = await supabase
             .from('posts')
-            .select('id, price, links, download_url, link, file_url, url, duration_days, title')
+            .select('id, price, links, duration_days, title')
             .or(`id.eq.${post_id},id.eq.${parseInt(post_id) || 0}`)
             .single();
 
@@ -2232,7 +2441,7 @@ app.get('/api/user/orders/:visitor_id', async (req, res) => {
                 promo_used,
                 created_at,
                 post_id,
-                posts (id, title, image_url, links, download_url)
+                posts (id, title, image_url, links)
             `)
             .eq('visitor_id', vid)
             .order('created_at', { ascending: false })
@@ -2267,8 +2476,7 @@ app.get('/api/user/orders/:visitor_id', async (req, res) => {
                 id: o.posts.id,
                 title: o.posts.title,
                 image_url: o.posts.image_url,
-                links: o.posts.links,
-                download_url: o.posts.download_url
+                links: o.posts.links
             } : null,
             access_expires_at: activeMap[o.post_id] || null
         }));

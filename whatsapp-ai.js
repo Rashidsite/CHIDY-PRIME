@@ -166,21 +166,31 @@ function initWhatsAppAI(app, supabase) {
         try {
             if (db) {
                 const { data: games } = await db
-                    .from('games')
-                    .select('id, title, category, price, is_free, download_url, description')
+                    .from('posts')
+                    .select('id, title, category, price, links, description')
                     .eq('status', 'published')
                     .limit(60);
-                catalog = games || [];
+                catalog = (games || []).map(g => ({
+                    ...g,
+                    is_free: !g.price || Number(g.price) <= 0
+                }));
 
                 const digits = phone.replace(/\D/g, '').slice(-9);
                 if (digits.length >= 9) {
                     const { data: ord } = await db
                         .from('payment_orders')
-                        .select('order_id, phone_number, game_title, amount, status, download_url, created_at')
+                        .select('id, phone_number, amount, status, created_at, post_id, posts(title)')
                         .ilike('phone_number', `%${digits}%`)
                         .order('created_at', { ascending: false })
                         .limit(5);
-                    orders = ord || [];
+                    orders = (ord || []).map(o => ({
+                        order_id: o.id,
+                        phone_number: o.phone_number,
+                        game_title: o.posts?.title || 'Game',
+                        amount: o.amount,
+                        status: o.status,
+                        created_at: o.created_at
+                    }));
                 }
 
                 const { data: sData } = await db.from('site_settings').select('*');

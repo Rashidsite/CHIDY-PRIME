@@ -3148,29 +3148,38 @@
                 </div>
             </div>
 
-            <!-- Add Video Form Card -->
+            <!-- Add Video / Live TV Form Card -->
             <div class="admin-card" style="background:#ffffff; border:2.5px solid #0f172a; border-radius:16px; padding:24px; margin-bottom:2rem; box-shadow:0 6px 16px rgba(15,23,42,0.06);">
                 <h4 style="color:#0f172a; font-family:'Orbitron'; font-weight:900; font-size:0.95rem; margin:0 0 1rem; display:flex; align-items:center; gap:8px;">
-                    <i class="fas fa-plus-circle" style="color:#ef4444;"></i> ONGEZA VIDEO MPYA YA YOUTUBE
+                    <i class="fas fa-plus-circle" style="color:#ef4444;"></i> ONGEZA VIDEO YA YOUTUBE AU LIVE TV STREAM
                 </h4>
+                <div class="form-row" style="margin-bottom: 1rem;">
+                    <div class="form-group" style="flex:1;">
+                        <label style="color:#0f172a; font-weight:800; font-size:0.8rem;"><i class="fas fa-layer-group" style="color:#7c3aed;"></i> Aina ya Post (Category) *</label>
+                        <select id="newVideoType" style="background:#ffffff; border:2.5px solid #0f172a; border-radius:10px; color:#0f172a; font-weight:800; padding:11px; width:100%;" onchange="onVideoTypeChange(this.value)">
+                            <option value="video">🎬 YouTube Video / Tutorial</option>
+                            <option value="live_tv">🔴 Live TV Channel / Stream</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label style="color:#0f172a; font-weight:800; font-size:0.8rem;">Kichwa cha Video (Title) *</label>
+                        <label id="lblVideoTitle" style="color:#0f172a; font-weight:800; font-size:0.8rem;">Kichwa cha Video (Title) *</label>
                         <input type="text" id="newVideoTitle" placeholder="Mfano: FIFA 25 Gameplay Tanzania..." style="background:#ffffff; border:2.5px solid #0f172a; border-radius:10px; color:#0f172a; font-weight:700; padding:11px;">
                     </div>
                     <div class="form-group">
-                        <label style="color:#0f172a; font-weight:800; font-size:0.8rem;">YouTube Link *</label>
+                        <label id="lblVideoUrl" style="color:#0f172a; font-weight:800; font-size:0.8rem;">YouTube / Stream Link *</label>
                         <input type="url" id="newVideoUrl" placeholder="https://www.youtube.com/watch?v=..." style="background:#ffffff; border:2.5px solid #0f172a; border-radius:10px; color:#0f172a; font-weight:700; padding:11px;">
                     </div>
                 </div>
                 <div class="form-group">
                     <label style="color:#0f172a; font-weight:800; font-size:0.8rem;">Maelezo (Optional)</label>
-                    <textarea id="newVideoDesc" rows="2" placeholder="Maelezo mafupi ya video..." style="width:100%; background:#ffffff; border:2.5px solid #0f172a; padding:11px; border-radius:10px; color:#0f172a; font-weight:700; outline:none; resize:vertical;"></textarea>
+                    <textarea id="newVideoDesc" rows="2" placeholder="Maelezo mafupi ya video au station info..." style="width:100%; background:#ffffff; border:2.5px solid #0f172a; padding:11px; border-radius:10px; color:#0f172a; font-weight:700; outline:none; resize:vertical;"></textarea>
                 </div>
                 <!-- PRICE & DURATION -->
                 <div class="form-row" style="margin-bottom:1rem;">
                     <div class="form-group">
-                        <label style="color:#0f172a; font-weight:800; font-size:0.8rem;"><i class="fas fa-lock" style="color:#ef4444;"></i> Bei ya Kuona Video (TSh) <span style="color:#64748b; font-size:0.75rem;">(0 = Bure)</span></label>
+                        <label style="color:#0f172a; font-weight:800; font-size:0.8rem;"><i class="fas fa-lock" style="color:#ef4444;"></i> Bei ya Kuangalia (TSh) <span style="color:#64748b; font-size:0.75rem;">(0 = Bure)</span></label>
                         <input type="number" id="newVideoPrice" placeholder="Mfano: 2000" min="0" style="background:#ffffff; border:2.5px solid #0f172a; border-radius:10px; color:#0f172a; font-weight:800; padding:11px;">
                     </div>
                     <div class="form-group">
@@ -3180,7 +3189,7 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
                     <button onclick="addVideo()" id="addVideoBtnAdmin" style="padding:12px 28px; background:linear-gradient(135deg,#ef4444,#dc2626); border:2.5px solid #0f172a; border-radius:10px; color:#fff; font-family:'Orbitron'; font-size:0.85rem; font-weight:900; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(239,68,68,0.3);">
-                        <i class="fab fa-youtube"></i> WEKA VIDEO KUTOKA YOUTUBE
+                        <i class="fas fa-play-circle"></i> WEKA POST
                     </button>
                     <div id="addVideoMsg" style="font-size:0.85rem; font-weight:800;"></div>
                 </div>
@@ -8832,34 +8841,68 @@
         }
 
         // ============================================
-        // VIDEOS MANAGEMENT
+        // VIDEOS & LIVE TV MANAGEMENT
         // ============================================
+        function onVideoTypeChange(val) {
+            const lblTitle = document.getElementById('lblVideoTitle');
+            const lblUrl = document.getElementById('lblVideoUrl');
+            const inputTitle = document.getElementById('newVideoTitle');
+            const inputUrl = document.getElementById('newVideoUrl');
+            if (!lblTitle || !lblUrl) return;
+            if (val === 'live_tv') {
+                lblTitle.innerHTML = '🔴 Kichwa cha Live TV / Channel Name *';
+                inputTitle.placeholder = 'Mfano: DSTV SUPERSPORT 3 LIVE, AZAM TWO...';
+                lblUrl.innerHTML = '🔴 YouTube Live / Stream / Embed Link *';
+                inputUrl.placeholder = 'https://www.youtube.com/watch?v=... au Link ya Live Stream';
+            } else {
+                lblTitle.innerHTML = '🎬 Kichwa cha Video (Title) *';
+                inputTitle.placeholder = 'Mfano: FIFA 25 Gameplay Tanzania...';
+                lblUrl.innerHTML = '🎬 YouTube Link *';
+                inputUrl.placeholder = 'https://www.youtube.com/watch?v=...';
+            }
+        }
+
         async function loadAdminVideos() {
             const grid = document.getElementById('adminVideosGrid');
             const badge = document.getElementById('videosCountBadge');
-            grid.innerHTML = `<div style="color:#64748b;font-weight:700;font-size:0.9rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fas fa-spinner fa-spin"></i> Inapakia videos...</div>`;
+            grid.innerHTML = `<div style="color:#64748b;font-weight:700;font-size:0.9rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fas fa-spinner fa-spin"></i> Inapakia videos na Live TV...</div>`;
             try {
                 const res = await fetch('/api/admin/videos', {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
                 });
                 const videos = await res.json();
-                badge.textContent = `${videos.length} Video${videos.length !== 1 ? 's' : ''}`;
+                badge.textContent = `${videos.length} Post${videos.length !== 1 ? 's' : ''}`;
                 if (!videos.length) {
-                    grid.innerHTML = `<div style="color:#64748b;font-weight:700;font-size:0.9rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fab fa-youtube" style="font-size:3rem;display:block;margin-bottom:14px;color:#ef4444;opacity:0.5;"></i>Bado hujaweka video yoyote.<br><small style="font-size:0.8rem;color:#94a3b8;">Tumia fomu hapo juu kuongeza video ya YouTube!</small></div>`;
+                    grid.innerHTML = `<div style="color:#64748b;font-weight:700;font-size:0.9rem;text-align:center;padding:3rem;grid-column:1/-1;"><i class="fab fa-youtube" style="font-size:3rem;display:block;margin-bottom:14px;color:#ef4444;opacity:0.5;"></i>Bado hujaweka video au Live TV yoyote.<br><small style="font-size:0.8rem;color:#94a3b8;">Tumia fomu hapo juu kuongeza video au Live TV channel!</small></div>`;
                     return;
                 }
-                grid.innerHTML = videos.map(v => `
+                grid.innerHTML = videos.map(v => {
+                    const isLiveTv = (v.category === 'LIVE_TV' || v.type === 'live_tv');
+                    const catBadge = isLiveTv ? 
+                        `<span style="background:#ef4444; color:#fff; font-size:0.65rem; font-weight:900; padding:2px 8px; border-radius:10px; font-family:'Orbitron';"><i class="fas fa-satellite-dish"></i> LIVE TV</span>` : 
+                        `<span style="background:#0284c7; color:#fff; font-size:0.65rem; font-weight:900; padding:2px 8px; border-radius:10px; font-family:'Orbitron';"><i class="fab fa-youtube"></i> VIDEO</span>`;
+
+                    const thumbUrl = v.video_id && v.video_id.length === 11 ? 
+                        `https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg` : 
+                        'https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=400&q=80';
+
+                    return `
                     <div class="video-admin-card" id="vcard-${v.id}" style="border:2px solid #1e293b; border-radius:12px; overflow:hidden; background:#0f172a;">
-                        <img class="video-admin-thumb" 
-                             src="https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg" 
-                             alt="${v.title}" 
-                             onerror="this.src='https://img.youtube.com/vi/${v.video_id}/default.jpg'">
+                        <div style="position:relative;">
+                            <img class="video-admin-thumb" 
+                                 src="${thumbUrl}" 
+                                 alt="${v.title}" 
+                                 onerror="this.src='https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=400&q=80'">
+                            <div style="position:absolute; top:8px; left:8px; display:flex; gap:6px;">
+                                ${catBadge}
+                            </div>
+                        </div>
                         <span class="vid-status-badge ${v.is_published ? 'pub' : 'draft'}">${v.is_published ? '✅ LIVE' : '⏸ DRAFT'}</span>
                         <div class="video-admin-info" style="padding:12px;">
                             <div class="video-admin-title" title="${v.title}" style="font-weight:800; color:#f8fafc; font-size:0.95rem; margin-bottom:4px;">${v.title}</div>
                             ${v.description ? `<div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.description}</div>` : ''}
                             <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
-                                <div style="font-size:0.68rem;color:#64748b;font-weight:700;">${new Date(v.created_at).toLocaleDateString('sw-TZ', {day:'2-digit',month:'short',year:'numeric'})}</div>
+                                <div style="font-size:0.68rem;color:#64748b;font-weight:700;">${new Date(v.created_at || Date.now()).toLocaleDateString('sw-TZ', {day:'2-digit',month:'short',year:'numeric'})}</div>
                                 ${v.price > 0 ? `<span style="font-size:0.68rem;font-weight:900;font-family:'Orbitron', sans-serif;background:#0f172a;color:#fff;padding:2px 8px;border-radius:8px;border:1px solid #334155;">TSh ${Number(v.price).toLocaleString()}</span>` : `<span style="font-size:0.68rem;font-weight:900;font-family:'Orbitron', sans-serif;background:#16a34a;color:#fff;padding:2px 8px;border-radius:8px;">BURE</span>`}
                             </div>
                             <div class="video-admin-actions">
@@ -8874,14 +8917,15 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
             } catch(e) {
                 grid.innerHTML = `<div style="color:#ef4444;font-weight:800;text-align:center;padding:2rem;grid-column:1/-1;">⚠️ Hitilafu: ${e.message}</div>`;
             }
         }
 
         async function addVideo() {
+            const type = document.getElementById('newVideoType') ? document.getElementById('newVideoType').value : 'video';
             const title = document.getElementById('newVideoTitle').value.trim();
             const url = document.getElementById('newVideoUrl').value.trim();
             const desc = document.getElementById('newVideoDesc').value.trim();
@@ -8890,24 +8934,59 @@
             const msgEl = document.getElementById('addVideoMsg');
             const btn = document.getElementById('addVideoBtnAdmin');
 
-            if (!title || !url) { msgEl.innerHTML = '<span style="color:#ff3333;">⚠️ Jaza Title na YouTube URL</span>'; return; }
+            // Better validation messaging
+            if (!title) { 
+                msgEl.innerHTML = '<span style="color:#ff3333;">⚠️ Jaza Kichwa (Title) cha post</span>'; 
+                return; 
+            }
+            if (!url) { 
+                msgEl.innerHTML = '<span style="color:#ff3333;">⚠️ Jaza Link / URL ya Video au Stream</span>'; 
+                return; 
+            }
 
+            // Check admin token
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                msgEl.innerHTML = '<span style="color:#ff3333;">⚠️ Session expired. Login tena.</span>';
+                return;
+            }
+
+            console.log('🎬 Starting content upload:', { type, title, url, price, duration_days });
+            
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Inaweka...';
-            msgEl.innerHTML = '';
+            msgEl.innerHTML = '<span style="color:#0ea5e9;">📤 Inaweka post...</span>';
 
             try {
-                const res = await fetch('/api/admin/videos', {
+                const response = await fetch('/api/admin/videos', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ title, youtube_url: url, description: desc, is_published: true, price, duration_days })
+                    body: JSON.stringify({ 
+                        type, 
+                        category: type === 'live_tv' ? 'LIVE_TV' : 'VIDEO',
+                        title, 
+                        youtube_url: url, 
+                        description: desc, 
+                        is_published: true, 
+                        price, 
+                        duration_days 
+                    })
                 });
-                const result = await res.json();
+                
+                console.log('🌐 Server response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('📊 Server result:', result);
+                
                 if (result.success) {
-                    msgEl.innerHTML = '<span style="color:#00d25b;">✅ Video imewekwa!</span>';
+                    msgEl.innerHTML = '<span style="color:#00d25b;">✅ Imewasilishwa kikamilifu!</span>';
                     document.getElementById('newVideoTitle').value = '';
                     document.getElementById('newVideoUrl').value = '';
                     document.getElementById('newVideoDesc').value = '';
@@ -8915,13 +8994,16 @@
                     document.getElementById('newVideoDuration').value = '';
                     loadAdminVideos();
                 } else {
-                    msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${result.error}</span>`;
+                    msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${result.error || 'Unknown error'}</span>`;
+                    console.error('❌ Server error:', result.error);
                 }
             } catch(e) {
+                console.error('💥 Upload error:', e);
                 msgEl.innerHTML = `<span style="color:#ff3333;">❌ ${e.message}</span>`;
             }
+            
             btn.disabled = false;
-            btn.innerHTML = '<i class="fab fa-youtube"></i> WEKA VIDEO';
+            btn.innerHTML = '<i class="fas fa-play-circle"></i> WEKA POST';
         }
 
         async function toggleVideoPublish(id, isCurrentlyPublished) {

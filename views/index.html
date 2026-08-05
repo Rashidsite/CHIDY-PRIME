@@ -4584,15 +4584,16 @@
         </div>
     </div>
 
-    <!-- ===== VIDEO SECTION ===== -->
+    <!-- ===== VIDEO & LIVE TV SECTION ===== -->
     <section class="video-section" id="videoSection" style="display:none;">
-        <div class="video-section-header">
-            <div class="video-section-title">
-                <i class="fab fa-youtube" style="color:#ff0000; font-size:1.1rem;"></i>
-                CHIDY PRIME TV
-                <span style="background:rgba(255,0,0,0.12); border:1px solid rgba(255,0,0,0.3); color:#ff6666; font-size:0.65rem; padding:3px 10px; border-radius:20px; font-family:'Poppins'; font-weight:600; letter-spacing:1px;" id="videoCount">0</span>
+        <div class="video-section-header" style="flex-wrap:wrap; gap:12px;">
+            <div class="video-section-title" style="display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-tv" style="color:#ef4444; font-size:1.3rem;"></i>
+                <span>CHIDY PRIME TV & LIVE STREAMS</span>
+                <span style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; font-size:0.68rem; padding:3px 12px; border-radius:20px; font-family:'Orbitron'; font-weight:800; letter-spacing:1px;" id="videoCount">0</span>
             </div>
-            <!-- YouTube Subscribe Button -->
+
+            <!-- YouTube Subscribe Widget -->
             <div class="yt-subscribe-widget" id="ytSubscribeWidget" style="display:none;">
                 <script src="https://apis.google.com/js/platform.js"></script>
                 <div class="g-ytsubscribe" 
@@ -4602,6 +4603,19 @@
                      data-theme="dark">
                 </div>
             </div>
+        </div>
+
+        <!-- Filter Tabs (Zote, Live TV, Videos) -->
+        <div class="video-filter-tabs" style="display:flex; gap:10px; margin: 15px 0; overflow-x:auto; padding-bottom:5px;">
+            <button class="v-tab active" id="vtab-all" onclick="filterVideoCategory('all')" style="padding:8px 18px; border-radius:20px; background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff; border:1.5px solid #334155; font-family:'Orbitron'; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-layer-group"></i> ZOTE
+            </button>
+            <button class="v-tab" id="vtab-live_tv" onclick="filterVideoCategory('live_tv')" style="padding:8px 18px; border-radius:20px; background:rgba(15,23,42,0.6); color:#cbd5e1; border:1.5px solid #334155; font-family:'Orbitron'; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                <span style="width:8px; height:8px; background:#ef4444; border-radius:50%; display:inline-block; box-shadow:0 0 8px #ef4444; animation:pulse 1.5s infinite;"></span> LIVE TV
+            </button>
+            <button class="v-tab" id="vtab-video" onclick="filterVideoCategory('video')" style="padding:8px 18px; border-radius:20px; background:rgba(15,23,42,0.6); color:#cbd5e1; border:1.5px solid #334155; font-family:'Orbitron'; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                <i class="fab fa-youtube" style="color:#ef4444;"></i> VIDEOS
+            </button>
         </div>
 
         <!-- Video Grid -->
@@ -4617,8 +4631,8 @@
             </div>
         </div>
         <div class="video-section-empty" id="videoSectionEmpty">
-            <i class="fab fa-youtube" style="font-size:2.5rem; display:block; margin-bottom:10px; opacity:0.2;"></i>
-            Videos hazijawekwa bado
+            <i class="fas fa-tv" style="font-size:2.5rem; display:block; margin-bottom:10px; opacity:0.2;"></i>
+            Bado hakuna Videos au Live TV zilizowekwa
         </div>
     </section>
 
@@ -6705,12 +6719,41 @@
             const hasPricedContent = game.price && parseInt(game.price) > 0;
             const isFree = !hasPricedContent;
 
+            // FREE GAME FAST-PATH: Render download buttons immediately!
+            if (isFree) {
+                const freeLinks = parseDownloadLinks(game.links, game);
+                let freeLinksHtml = '';
+                if (freeLinks.length === 0) {
+                    freeLinksHtml = `
+                        <div style="background: rgba(37, 99, 235, 0.12); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px; text-align: center; margin-top: 10px;">
+                            <p style="color: #60a5fa; font-weight: 700; font-size: 0.85rem; margin: 0 0 10px 0;"><i class="fas fa-gift"></i> Game Hii ni BURE! Bofya hapa kuomba faili:</p>
+                            <a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(game.title)}" target="_blank" class="dl-btn" style="justify-content: center; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #22c55e; font-weight: 900; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);">
+                                <i class="fab fa-whatsapp"></i> PAKUA NA WHATSAPP (BURE)
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    freeLinksHtml = `
+                        <div class="detail-links">
+                            ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #22c55e; font-family: 'Orbitron'; font-weight: 900; box-shadow: 0 4px 15px rgba(22,163,74,0.4); text-transform: uppercase;"><i class="fas fa-download"></i> ${l.name || "FREE DOWNLOAD"}</a>`).join('')}
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = `
+                    ${game.youtube_url ? `<div class="detail-links" style="margin-bottom:10px;"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                    ${freeLinksHtml}
+                `;
+                container.classList.remove('access-loading-shimmer');
+                return;
+            }
+
             async function fetchAccessOnce(timeoutMs) {
                 const ac = new AbortController();
                 const timer = setTimeout(() => ac.abort(), timeoutMs);
                 try {
                     const vId = visitor && visitor.id ? visitor.id : 0;
-                    const phoneQ = visitor && visitor.phone ? '&phone=' + encodeURIComponent(visitor.phone) : '';
+                    const phoneQ = (visitor && visitor.phone) ? '&phone=' + encodeURIComponent(visitor.phone) : '';
                     const deviceFp = getDeviceFingerprint();
                     const r = await fetch(`/api/check-access/${vId}/${game.id}?t=${Date.now()}${phoneQ}&device_fp=${encodeURIComponent(deviceFp)}`, { signal: ac.signal });
                     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -6721,194 +6764,149 @@
             const renderAccess = async () => {
                 let accessHtml = "";
                 try {
-                    if (visitor && visitor.id) {
-                        let accessData;
-                        try {
-                            accessData = await fetchAccessOnce(5000);
-                        } catch (firstErr) {
-                            console.warn('[access-check] retrying...', firstErr);
-                            accessData = await fetchAccessOnce(7000);
+                    const vId = visitor && visitor.id ? visitor.id : 0;
+                    let accessData;
+                    try {
+                        accessData = await fetchAccessOnce(5000);
+                    } catch (firstErr) {
+                        console.warn('[access-check] retrying...', firstErr);
+                        accessData = await fetchAccessOnce(7000);
+                    }
+
+                    if (accessData && accessData.device_blocked) {
+                        if (window.detailAccessTimer) {
+                            clearInterval(window.detailAccessTimer);
+                            window.detailAccessTimer = null;
+                        }
+                        accessHtml = `
+                            <div style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); border: 2px solid #ef4444; border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(239,68,68,0.2);">
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                    <i class="fas fa-mobile-alt" style="color:#ef4444; font-size:1.6rem;"></i>
+                                    <i class="fas fa-lock" style="color:#ef4444; font-size:1.3rem;"></i>
+                                    <span style="color:#ef4444; font-weight:900; font-size:1rem; font-family:'Orbitron';">SIMU HII HAIJARUHUSIWA (DEVICE LOCK)</span>
+                                </div>
+                                <p style="color:#cbd5e1; font-size:0.84rem; margin:0 0 14px 0; line-height:1.6;">
+                                    Akaunti hii imesajiliwa na inatumika kwenye simu nyingine. Ili kuzuia usambazaji wa akaunti na wizi wa maudhui, hutarusiwa kupakua games kwenye simu hii. Kama umebadilisha simu mpya, wasiliana na Admin ku-reset akaunti yako.
+                                </p>
+                                <a href="https://wa.me/255677066929?text=Habari%20Admin%20naomba%20ku-reset%20device%20lock%20ya%20akaunti%20yangu" target="_blank" style="background:#16a34a; color:#ffffff; border:1.5px solid #0f172a; padding:10px 18px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:800; font-family:'Orbitron'; font-size:0.8rem; box-shadow:0 4px 12px rgba(22,163,74,0.3);">
+                                    <i class="fab fa-whatsapp"></i> WASILIANA NA ADMIN KU-RESET SIMU
+                                </a>
+                            </div>
+                        `;
+                        container.innerHTML = accessHtml;
+                        container.classList.remove('access-loading-shimmer');
+                        return;
+                    }
+
+                    if (accessData && accessData.has_access) {
+                        if (window.detailAccessTimer) {
+                            clearInterval(window.detailAccessTimer);
+                            window.detailAccessTimer = null;
                         }
 
-                        
-                        if (accessData.device_blocked) {
-                            if (window.detailAccessTimer) {
-                                clearInterval(window.detailAccessTimer);
-                                window.detailAccessTimer = null;
-                            }
-                            accessHtml = `
-                                <div style="background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); border: 2px solid #ef4444; border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(239,68,68,0.2);">
-                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                                        <i class="fas fa-mobile-alt" style="color:#ef4444; font-size:1.6rem;"></i>
-                                        <i class="fas fa-lock" style="color:#ef4444; font-size:1.3rem;"></i>
-                                        <span style="color:#ef4444; font-weight:900; font-size:1rem; font-family:'Orbitron';">SIMU HII HAIJARUHUSIWA (DEVICE LOCK)</span>
-                                    </div>
-                                    <p style="color:#cbd5e1; font-size:0.84rem; margin:0 0 14px 0; line-height:1.6;">
-                                        Akaunti hii imesajiliwa na inatumika kwenye simu nyingine. Ili kuzuia usambazaji wa akaunti na wizi wa maudhui, hutarusiwa kupakua games kwenye simu hii. Kama umebadilisha simu mpya, wasiliana na Admin ku-reset akaunti yako.
-                                    </p>
-                                    <a href="https://wa.me/255677066929?text=Habari%20Admin%20naomba%20ku-reset%20device%20lock%20ya%20akaunti%20yangu" target="_blank" style="background:#16a34a; color:#ffffff; border:1.5px solid #0f172a; padding:10px 18px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:800; font-family:'Orbitron'; font-size:0.8rem; box-shadow:0 4px 12px rgba(22,163,74,0.3);">
-                                        <i class="fab fa-whatsapp"></i> WASILIANA NA ADMIN KU-RESET SIMU
+                        const expiryDate = new Date(accessData.expires_at);
+                        const isPermanent = expiryDate.getFullYear() >= 2099;
+                        const formattedExpiry = isPermanent ? 'MAISHA YOTE (KUDUMU)' : expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+
+                        const activeLinks = (accessData.links && accessData.links.length > 0)
+                            ? parseDownloadLinks(accessData.links, game)
+                            : parseDownloadLinks(game.links, game);
+
+                        let linksButtonsHtml = '';
+                        if (activeLinks.length === 0) {
+                            linksButtonsHtml = `
+                                <div style="background: rgba(37, 99, 235, 0.15); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px; margin-top: 12px; text-align: center;">
+                                    <p style="color: #60a5fa; font-weight: 700; font-size: 0.85rem; margin: 0 0 10px 0;"><i class="fas fa-check-circle"></i> Unaruhusiwa kudownload! Mfumo unaunganisha link:</p>
+                                    <a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(game.title)}" target="_blank" class="dl-btn" style="justify-content: center; background: linear-gradient(135deg, #25d366, #128c7e); color: #ffffff; border: 1.5px solid #22c55e; font-weight: 900; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
+                                        <i class="fab fa-whatsapp"></i> CHUKUA GAME WHATSAPP
                                     </a>
                                 </div>
                             `;
-                            container.innerHTML = accessHtml;
-                            container.classList.remove('access-loading-shimmer');
-                            return;
-                        }
-
-                        if (accessData.has_access) {
-                            if (window.detailAccessTimer) {
-                                clearInterval(window.detailAccessTimer);
-                                window.detailAccessTimer = null;
-                            }
-
-                            const expiryDate = new Date(accessData.expires_at);
-                            const isPermanent = expiryDate.getFullYear() >= 2099;
-                            const formattedExpiry = isPermanent ? 'MAISHA YOTE (KUDUMU)' : expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
-                            const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-
-                            const activeLinks = (accessData.links && accessData.links.length > 0)
-                                ? parseDownloadLinks(accessData.links, game)
-                                : parseDownloadLinks(game.links, game);
-
-                            let linksButtonsHtml = '';
-                            if (activeLinks.length === 0) {
-                                linksButtonsHtml = `
-                                    <div style="background: rgba(37, 99, 235, 0.15); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px; margin-top: 12px; text-align: center;">
-                                        <p style="color: #60a5fa; font-weight: 700; font-size: 0.85rem; margin: 0 0 10px 0;"><i class="fas fa-check-circle"></i> Unaruhusiwa kudownload! Mfumo unaunganisha link:</p>
-                                        <a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(game.title)}" target="_blank" class="dl-btn" style="justify-content: center; background: linear-gradient(135deg, #25d366, #128c7e); color: #ffffff; border: 1.5px solid #22c55e; font-weight: 900; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
-                                            <i class="fab fa-whatsapp"></i> CHUKUA GAME WHATSAPP
-                                        </a>
-                                    </div>
-                                `;
-                            } else {
-                                linksButtonsHtml = `
-                                    <div class="detail-links" style="margin-top: 12px;">
-                                        ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #00d25b, #059669); color: #ffffff; border: 1.5px solid #0f172a; font-family: 'Orbitron'; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || "DOWNLOAD GAME"}</a>`).join('')}
-                                    </div>
-                                `;
-                            }
-
-                            accessHtml = `
-                                <div style="background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05)); border: 1.5px solid #00d25b; border-radius: 12px; padding: 14px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(0,210,91,0.2);">
-                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                                        <i class="fas fa-check-circle" style="color:#00d25b;font-size:1.2rem;"></i>
-                                        <span style="color:#00d25b;font-weight:900;font-size:0.95rem;font-family:'Orbitron';">ACCESS ACTIVE — UNARUHUSIWA KUDOWNLOAD</span>
-                                    </div>
-                                    <p style="color:#a0a0b0;font-size:0.82rem;margin:0;">
-                                        <i class="fas fa-calendar-alt" style="color:#ffb400;"></i> 
-                                        Muda wako unaisha: <strong style="color:#fff;">${formattedExpiry}</strong> 
-                                        ${(hasDuration && !isPermanent) ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
-                                    </p>
-                                </div>
-                                ${linksButtonsHtml}
-                            `;
-                            if (container.innerHTML !== accessHtml) {
-                                container.innerHTML = accessHtml;
-                                container.classList.remove('access-loading-shimmer');
-                                if (typeof triggerCelebration === "function") triggerCelebration();
-                            }
-                            return;
-                        } else if (accessData.pending_order) {
-                            accessHtml = `
-                                <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1.5px solid #ffab00; border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
-                                    <i class="fas fa-spinner fa-spin" style="font-size:1.8rem; color:#ffab00; margin-bottom:8px; display:block;"></i>
-                                    <h4 style="color:#ffab00; margin:0 0 4px 0; font-family:'Orbitron';">MALIPO YAKO YANA-SYNC LIVE...</h4>
-                                    <p style="color:#a0a0b0; font-size:0.8rem; margin:0;">Umeshafanya malipo. Mfumo unathibitisha na utafungua game kiotomatiki sasa hivi.</p>
-                                </div>
-                            `;
-                            container.innerHTML = accessHtml;
-                            container.classList.remove('access-loading-shimmer');
-                        } else if (accessData.expired) {
-                            accessHtml = `
-                                <div style="background: linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,51,51,0.05)); border: 1px solid rgba(255,51,51,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                                        <i class="fas fa-exclamation-triangle" style="color:#ff3333;font-size:1.1rem;"></i>
-                                        <span style="color:#ff3333;font-weight:700;font-size:0.9rem;">MUDA WAKO UMEISHA</span>
-                                    </div>
-                                    <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
-                                </div>
-                                ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,51,51,0.5);animation:pulse-glow-red 2s infinite;">
-                                    <i class="fas fa-bolt"></i> LIPA SASA (Kama Muda Umeisha)
-                                </button>
-                            `;
-                            container.innerHTML = accessHtml;
-                            container.classList.remove('access-loading-shimmer');
                         } else {
-                            // NO ACCESS
-                            if (hasPricedContent) {
-                                accessHtml = `
-                                    <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                        <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
-                                    </div>
-                                    ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                    <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
-                                        <i class="fas fa-bolt"></i> LIPA SASA (${(game.global_discount && game.global_discount > 0 && game.original_price > game.price) ? `<s style="opacity:0.7; margin-right:4px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : ''}TSh ${parseInt(game.price).toLocaleString()})
-                                    </button>
-                                `;
-                            } else {
-                                const freeLinks = (accessData.links && accessData.links.length > 0)
-                                    ? parseDownloadLinks(accessData.links, game)
-                                    : parseDownloadLinks(game.links, game);
+                            linksButtonsHtml = `
+                                <div class="detail-links" style="margin-top: 12px;">
+                                    ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #00d25b, #059669); color: #ffffff; border: 1.5px solid #0f172a; font-family: 'Orbitron'; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || "DOWNLOAD GAME"}</a>`).join('')}
+                                </div>
+                            `;
+                        }
 
-                                let freeLinksHtml = '';
-                                if (freeLinks.length === 0) {
-                                    freeLinksHtml = `
-                                        <div style="background: rgba(37, 99, 235, 0.12); border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px; text-align: center; margin-top: 10px;">
-                                            <p style="color: #60a5fa; font-weight: 700; font-size: 0.85rem; margin: 0 0 10px 0;"><i class="fas fa-gift"></i> Game Hii ni BURE! Bofya hapa kuomba faili:</p>
-                                            <a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(game.title)}" target="_blank" class="dl-btn" style="justify-content: center; background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #22c55e; font-weight: 900; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);">
-                                                <i class="fab fa-whatsapp"></i> PAKUA NA WHATSAPP (BURE)
-                                            </a>
-                                        </div>
-                                    `;
-                                } else {
-                                    freeLinksHtml = `
-                                        <div class="detail-links">
-                                            ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #22c55e; font-family: 'Orbitron'; font-weight: 900; box-shadow: 0 4px 15px rgba(22,163,74,0.4); text-transform: uppercase;"><i class="fas fa-download"></i> ${l.name || "FREE DOWNLOAD"}</a>`).join('')}
-                                        </div>
-                                    `;
-                                }
-
-                                accessHtml = `
-                                    ${game.youtube_url ? `<div class="detail-links" style="margin-bottom:10px;"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                                    ${freeLinksHtml}
-                                `;
-                            }
+                        accessHtml = `
+                            <div style="background: linear-gradient(135deg, rgba(0,210,91,0.15), rgba(0,210,91,0.05)); border: 1.5px solid #00d25b; border-radius: 12px; padding: 14px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(0,210,91,0.2);">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                    <i class="fas fa-check-circle" style="color:#00d25b;font-size:1.2rem;"></i>
+                                    <span style="color:#00d25b;font-weight:900;font-size:0.95rem;font-family:'Orbitron';">ACCESS ACTIVE — UNARUHUSIWA KUDOWNLOAD</span>
+                                </div>
+                                <p style="color:#a0a0b0;font-size:0.82rem;margin:0;">
+                                    <i class="fas fa-calendar-alt" style="color:#ffb400;"></i> 
+                                    Muda wako unaisha: <strong style="color:#fff;">${formattedExpiry}</strong> 
+                                    ${(hasDuration && !isPermanent) ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}
+                                </p>
+                            </div>
+                            ${linksButtonsHtml}
+                        `;
+                        if (container.innerHTML !== accessHtml) {
                             container.innerHTML = accessHtml;
                             container.classList.remove('access-loading-shimmer');
+                            if (typeof triggerCelebration === "function") triggerCelebration();
                         }
-                    } else {
+                        return;
+                    } else if (accessData && accessData.pending_order) {
                         accessHtml = `
-                            <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
-                                <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-user-plus" style="color:var(--gold);"></i> Tafadhali jisajili kwanza ili kupata access ya kudownload.</p>
+                            <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1.5px solid #ffab00; border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:1.8rem; color:#ffab00; margin-bottom:8px; display:block;"></i>
+                                <h4 style="color:#ffab00; margin:0 0 4px 0; font-family:'Orbitron';">MALIPO YAKO YANA-SYNC LIVE...</h4>
+                                <p style="color:#a0a0b0; font-size:0.8rem; margin:0;">Umeshafanya malipo. Mfumo unathibitisha na utafungua game kiotomatiki sasa hivi.</p>
+                            </div>
+                        `;
+                        container.innerHTML = accessHtml;
+                        container.classList.remove('access-loading-shimmer');
+                    } else if (accessData && accessData.expired) {
+                        accessHtml = `
+                            <div style="background: linear-gradient(135deg, rgba(255,51,51,0.15), rgba(255,51,51,0.05)); border: 1px solid rgba(255,51,51,0.3); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                    <i class="fas fa-exclamation-triangle" style="color:#ff3333;font-size:1.1rem;"></i>
+                                    <span style="color:#ff3333;font-weight:700;font-size:0.9rem;">MUDA WAKO UMEISHA</span>
+                                </div>
+                                <p style="color:#a0a0b0;font-size:0.8rem;margin:0;">Muda wako wa siku ${game.duration_days} umeisha. Tafadhali fanya malipo/download upya kupata access mpya.</p>
                             </div>
                             ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
-                            <button class="dl-btn" onclick="openLogin()" style="width:100%;margin-top:10px;">JISAJILI SASA</button>
+                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,#ff3333,#990000);color:#fff;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,51,51,0.5);animation:pulse-glow-red 2s infinite;">
+                                <i class="fas fa-bolt"></i> LIPA SASA (Kama Muda Umeisha)
+                            </button>
+                        `;
+                        container.innerHTML = accessHtml;
+                        container.classList.remove('access-loading-shimmer');
+                    } else {
+                        // NO ACCESS — Show payment button
+                        accessHtml = `
+                            <div style="background: linear-gradient(135deg, rgba(255,180,0,0.1), rgba(255,180,0,0.05)); border: 1px solid rgba(255,180,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 15px;">
+                                <p style="color:#a0a0b0;font-size:0.85rem;margin:0;"><i class="fas fa-shopping-cart" style="color:var(--gold);"></i> Game hii ni ya kulipia. Lipia sasa kupata access ya siku <strong style="color:#fff;">${game.duration_days || 'Milele'}</strong>.</p>
+                            </div>
+                            ${game.youtube_url ? `<div class="detail-links"><a href="${game.youtube_url}" target="_blank" class="dl-btn youtube"><i class="fab fa-youtube"></i> Watch Trailer</a></div>` : ''}
+                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);animation:pulse-glow-gold 2s infinite;">
+                                <i class="fas fa-bolt"></i> LIPA SASA (${(game.global_discount && game.global_discount > 0 && game.original_price > game.price) ? `<s style="opacity:0.7; margin-right:4px;">TSh ${parseInt(game.original_price).toLocaleString()}</s>` : ''}TSh ${parseInt(game.price).toLocaleString()})
+                            </button>
                         `;
                         container.innerHTML = accessHtml;
                         container.classList.remove('access-loading-shimmer');
                     }
                 } catch (e) {
                     console.error("Access check failed:", e);
-                    if (hasPricedContent) {
-                        accessHtml = `
-                            <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);">
-                                <i class="fas fa-bolt"></i> LIPA SASA (TSh ${parseInt(game.price).toLocaleString()})
-                            </button>
-                        `;
-                        container.innerHTML = accessHtml;
-                        container.classList.remove('access-loading-shimmer');
-                    }
+                    accessHtml = `
+                        <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="width:100%;padding:14px;font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--gold),#ff8c00);color:#000;border:none;border-radius:12px;cursor:pointer;margin-top:10px;letter-spacing:1.5px;box-shadow:0 0 15px rgba(255,180,0,0.5);">
+                            <i class="fas fa-bolt"></i> LIPA SASA (TSh ${parseInt(game.price).toLocaleString()})
+                        </button>
+                    `;
+                    container.innerHTML = accessHtml;
+                    container.classList.remove('access-loading-shimmer');
                 }
             };
 
             await renderAccess();
 
             // Live auto-polling every 3 seconds while modal is open
-            if (visitor && visitor.id) {
-                window.detailAccessTimer = setInterval(renderAccess, 3000);
-            }
+            window.detailAccessTimer = setInterval(renderAccess, 3000);
         }
         // Initiate payment flow
         async function initiatePayment(postId) {
@@ -8866,46 +8864,17 @@ async function clearAllNotifications() {
         });
 
         // ============================================
-        // VIDEO SECTION LOGIC
+        // VIDEO & LIVE TV SECTION LOGIC
         // ============================================
+        let _allVideosData = [];
+        let _activeVideoFilter = 'all';
+
         async function loadVideos() {
             try {
-                // Fetch videos
+                // Fetch videos & live TV posts
                 const res = await fetch('/api/videos');
-                const videos = await res.json();
-                
-                const section = document.getElementById('videoSection');
-                const grid = document.getElementById('videoGrid');
-                const emptyMsg = document.getElementById('videoSectionEmpty');
-                const countBadge = document.getElementById('videoCount');
-
-                // Removed auto-show to keep it hidden until 'Video' tab is clicked
-
-                if (!videos || videos.length === 0) {
-                    grid.style.display = 'none';
-                    emptyMsg.style.display = 'block';
-                    countBadge.textContent = '0';
-                } else {
-                    grid.style.display = 'grid';
-                    emptyMsg.style.display = 'none';
-                    countBadge.textContent = videos.length;
-                    grid.innerHTML = videos.map(v => {
-                        const isPaid = v.price && v.price > 0;
-                        const durLabel = isPaid ? (v.duration_days > 0 ? `${v.duration_days} Siku` : 'Kudumu') : '';
-                        return `
-                        <div class="video-card" onclick="openVideoAccess('${v.id}', '${v.video_id}', '${v.title.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', ${v.price || 0}, ${v.duration_days || 0})">
-                            <div class="video-thumb-wrap">
-                                <img class="video-thumb" loading="lazy" src="https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg" alt="${v.title}">
-                                <div class="video-play-btn"><div class="play-icon"><i class="fas ${isPaid ? 'fa-lock' : 'fa-play'}"></i></div></div>
-                                ${isPaid ? `<div class="video-price-badge">TSh ${parseInt(v.price).toLocaleString()}</div>` : '<div class="video-price-badge" style="background:rgba(0,200,83,0.85);">BURE</div>'}
-                            </div>
-                            <div class="video-card-info">
-                                <div class="video-card-title">${v.title}</div>
-                                ${isPaid ? `<div style="font-size:0.7rem; color:#ff9800; margin-top:4px;"><i class="fas fa-calendar-alt"></i> ${durLabel}</div>` : ''}
-                            </div>
-                        </div>`;
-                    }).join('');
-                }
+                _allVideosData = await res.json();
+                renderVideoGrid();
 
                 // Fetch and render Subscribe widget if Channel ID exists
                 const setRes = await fetch('/api/settings/youtube_channel_id');
@@ -8913,16 +8882,91 @@ async function clearAllNotifications() {
                 if (setData && setData.value) {
                     const subWidget = document.getElementById('ytSubscribeWidget');
                     const btn = document.getElementById('ytSubscribeBtn');
-                    btn.setAttribute('data-channelid', setData.value);
-                    subWidget.style.display = 'flex';
-                    // Re-render Google script if platform.js has loaded
-                    if (window.gapi && window.gapi.ytsubscribe) {
-                        window.gapi.ytsubscribe.go();
+                    if (btn && subWidget) {
+                        btn.setAttribute('data-channelid', setData.value);
+                        subWidget.style.display = 'flex';
+                        if (window.gapi && window.gapi.ytsubscribe) {
+                            window.gapi.ytsubscribe.go();
+                        }
                     }
                 }
             } catch (error) {
                 console.error("Error loading videos:", error);
-                document.getElementById('videoGrid').innerHTML = '<div style="color:var(--text-dim);grid-column:1/-1;text-align:center;padding:2rem;">Failed to load videos</div>';
+                document.getElementById('videoGrid').innerHTML = '<div style="color:var(--text-dim);grid-column:1/-1;text-align:center;padding:2rem;">Hitilafu katika kupakia videos</div>';
+            }
+        }
+
+        function filterVideoCategory(type) {
+            _activeVideoFilter = type;
+            document.querySelectorAll('.v-tab').forEach(b => {
+                b.style.background = 'rgba(15,23,42,0.6)';
+                b.style.color = '#cbd5e1';
+                b.style.borderColor = '#334155';
+            });
+            const activeBtn = document.getElementById(`vtab-${type}`);
+            if (activeBtn) {
+                activeBtn.style.background = 'linear-gradient(135deg,#0f172a,#1e293b)';
+                activeBtn.style.color = '#ffffff';
+                activeBtn.style.borderColor = '#38bdf8';
+            }
+            renderVideoGrid();
+        }
+
+        function renderVideoGrid() {
+            const grid = document.getElementById('videoGrid');
+            const emptyMsg = document.getElementById('videoSectionEmpty');
+            const countBadge = document.getElementById('videoCount');
+
+            if (!grid || !emptyMsg) return;
+
+            let filtered = _allVideosData || [];
+            if (_activeVideoFilter === 'live_tv') {
+                filtered = filtered.filter(v => (v.category === 'LIVE_TV' || v.type === 'live_tv'));
+            } else if (_activeVideoFilter === 'video') {
+                filtered = filtered.filter(v => (v.category !== 'LIVE_TV' && v.type !== 'live_tv'));
+            }
+
+            if (!filtered || filtered.length === 0) {
+                grid.style.display = 'none';
+                emptyMsg.style.display = 'block';
+                if (countBadge) countBadge.textContent = '0';
+            } else {
+                grid.style.display = 'grid';
+                emptyMsg.style.display = 'none';
+                if (countBadge) countBadge.textContent = filtered.length;
+                grid.innerHTML = filtered.map(v => {
+                    const isPaid = v.price && v.price > 0;
+                    const isLiveTv = (v.category === 'LIVE_TV' || v.type === 'live_tv');
+                    const durLabel = isPaid ? (v.duration_days > 0 ? `${v.duration_days} Siku` : 'Kudumu') : '';
+                    
+                    const thumbUrl = (v.video_id && v.video_id.length === 11) ? 
+                        `https://img.youtube.com/vi/${v.video_id}/mqdefault.jpg` : 
+                        'https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=400&q=80';
+
+                    const badgeHtml = isLiveTv ? 
+                        `<div style="position:absolute; top:8px; left:8px; background:rgba(239,68,68,0.95); color:#fff; font-size:0.62rem; font-weight:900; padding:3px 8px; border-radius:8px; font-family:'Orbitron'; display:flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(239,68,68,0.5); z-index:3;">
+                            <span style="width:6px; height:6px; background:#fff; border-radius:50%; display:inline-block;"></span> LIVE TV
+                        </div>` : 
+                        `<div style="position:absolute; top:8px; left:8px; background:rgba(2,132,199,0.95); color:#fff; font-size:0.62rem; font-weight:900; padding:3px 8px; border-radius:8px; font-family:'Orbitron'; display:flex; align-items:center; gap:5px; z-index:3;">
+                            <i class="fab fa-youtube"></i> VIDEO
+                        </div>`;
+
+                    const videoSrc = v.video_id || v.youtube_url || v.id;
+
+                    return `
+                    <div class="video-card" onclick="openVideoAccess('${v.id}', '${videoSrc.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${v.title.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', ${v.price || 0}, ${v.duration_days || 0})">
+                        <div class="video-thumb-wrap" style="position:relative;">
+                            ${badgeHtml}
+                            <img class="video-thumb" loading="lazy" src="${thumbUrl}" alt="${v.title}" onerror="this.src='https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=400&q=80'">
+                            <div class="video-play-btn"><div class="play-icon"><i class="fas ${isPaid ? 'fa-lock' : 'fa-play'}"></i></div></div>
+                            ${isPaid ? `<div class="video-price-badge">TSh ${parseInt(v.price).toLocaleString()}</div>` : '<div class="video-price-badge" style="background:rgba(0,200,83,0.85);">BURE</div>'}
+                        </div>
+                        <div class="video-card-info">
+                            <div class="video-card-title">${v.title}</div>
+                            ${isPaid ? `<div style="font-size:0.7rem; color:#ff9800; margin-top:4px;"><i class="fas fa-calendar-alt"></i> ${durLabel}</div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
             }
         }
 
