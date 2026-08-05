@@ -7133,22 +7133,61 @@
                             if (access.has_access) {
                                 clearInterval(window.activePollInterval);
                                 window.activePollInterval = null;
+                                if (window.detailAccessTimer) { clearInterval(window.detailAccessTimer); window.detailAccessTimer = null; }
                                 if (window.manualVerifyTimeout) { clearTimeout(window.manualVerifyTimeout); window.manualVerifyTimeout = null; }
-                                switchPaymentStep('success');
 
-                                document.getElementById('paymentContinueBtn').onclick = () => {
-                                    closePayment();
-                                    openDetail(postId);
-                                };
                                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f2ff', '#bc13fe', '#00d25b'] });
-                                
-                                setTimeout(() => {
-                                    const successStep = document.getElementById('payment-step-success');
-                                    if (successStep && successStep.classList.contains('active')) {
-                                        closePayment();
-                                        openDetail(postId);
+
+                                // --- DIRECT INJECTION: build download buttons from the links we already have ---
+                                const injectDownloadButtons = () => {
+                                    const currentGame = allGames.find(g => g.id == postId);
+                                    const accessLinks = (access.links && access.links.length > 0)
+                                        ? access.links
+                                        : (currentGame ? parseDownloadLinks(currentGame.links, currentGame) : []);
+
+                                    const expiryDate = access.expires_at ? new Date(access.expires_at) : null;
+                                    const isPermanent = expiryDate && expiryDate.getFullYear() >= 2099;
+                                    const formattedExpiry = expiryDate
+                                        ? (isPermanent ? 'MAISHA YOTE (KUDUMU)' : expiryDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' }))
+                                        : '';
+                                    const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+
+                                    let linksHtml = '';
+                                    if (accessLinks.length === 0) {
+                                        linksHtml = `<a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(currentGame ? currentGame.title : '')}" target="_blank" class="dl-btn" style="justify-content:center;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:1.5px solid #22c55e;font-weight:900;box-shadow:0 4px 15px rgba(37,211,102,0.3);"><i class="fab fa-whatsapp"></i> CHUKUA GAME WHATSAPP</a>`;
+                                    } else {
+                                        linksHtml = `<div class="detail-links" style="margin-top:12px;">${accessLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background:linear-gradient(135deg,#00d25b,#059669);color:#fff;border:1.5px solid #0f172a;font-family:'Orbitron';font-weight:800;text-transform:uppercase;box-shadow:0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || 'DOWNLOAD GAME'}</a>`).join('')}</div>`;
                                     }
-                                }, 3500);
+
+                                    const accessHtml = `
+                                        <div style="background:linear-gradient(135deg,rgba(0,210,91,0.15),rgba(0,210,91,0.05));border:1.5px solid #00d25b;border-radius:12px;padding:14px;margin-bottom:15px;box-shadow:0 0 15px rgba(0,210,91,0.2);">
+                                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                                <i class="fas fa-check-circle" style="color:#00d25b;font-size:1.2rem;"></i>
+                                                <span style="color:#00d25b;font-weight:900;font-size:0.95rem;font-family:'Orbitron';">MALIPO YAMETHIBITISHWA! — DOWNLOAD SASA</span>
+                                            </div>
+                                            ${formattedExpiry ? `<p style="color:#a0a0b0;font-size:0.82rem;margin:0;"><i class="fas fa-calendar-alt" style="color:#ffb400;"></i> Muda wako unaisha: <strong style="color:#fff;">${formattedExpiry}</strong> ${(!isPermanent && daysLeft > 0) ? `<span style="color:${daysLeft <= 2 ? '#ff3333' : '#00f2ff'};">(Siku ${daysLeft} zimebaki)</span>` : ''}</p>` : ''}
+                                        </div>
+                                        ${linksHtml}
+                                    `;
+
+                                    const container = document.getElementById('detailAccessContainer');
+                                    if (container) {
+                                        container.innerHTML = accessHtml;
+                                        container.classList.remove('access-loading-shimmer');
+                                    }
+                                };
+
+                                // Close payment modal and inject buttons directly
+                                closePayment();
+                                injectDownloadButtons();
+
+                                // Also ensure detail overlay is open/visible
+                                const detailOverlay = document.getElementById('detailOverlay');
+                                if (!detailOverlay || !detailOverlay.classList.contains('show')) {
+                                    openDetail(postId);
+                                    // Re-inject after openDetail rebuilds the card
+                                    setTimeout(injectDownloadButtons, 600);
+                                }
                                 return;
                             }
 
