@@ -6855,8 +6855,16 @@
                         accessHtml = `
                             <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1.5px solid #ffab00; border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
                                 <i class="fas fa-spinner fa-spin" style="font-size:1.8rem; color:#ffab00; margin-bottom:8px; display:block;"></i>
-                                <h4 style="color:#ffab00; margin:0 0 4px 0; font-family:'Orbitron';">MALIPO YAKO YANA-SYNC LIVE...</h4>
-                                <p style="color:#a0a0b0; font-size:0.8rem; margin:0;">Umeshafanya malipo. Mfumo unathibitisha na utafungua game kiotomatiki sasa hivi.</p>
+                                <h4 style="color:#ffab00; margin:0 0 4px 0; font-family:'Orbitron'; font-size:1rem;">MALIPO YAKO YANA-SYNC LIVE...</h4>
+                                <p style="color:#a0a0b0; font-size:0.8rem; margin:0 0 14px 0;">Kama umeshaweka PIN kwenye simu, subiri sekunde chache mfumo unafungua game kiotomatiki.</p>
+                                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+                                    <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="flex:1; min-width:140px; padding:12px; font-size:0.85rem; font-weight:900; background:linear-gradient(135deg,var(--gold),#ff8c00); color:#000; border:none; border-radius:10px; cursor:pointer; letter-spacing:1px; box-shadow:0 0 10px rgba(255,180,0,0.4);">
+                                        <i class="fas fa-bolt"></i> LIPA TENA UPYA
+                                    </button>
+                                    <button class="dl-btn" onclick="cancelPendingOrder('${game.id}', '${visitor ? visitor.id : 0}')" style="flex:1; min-width:120px; padding:12px; font-size:0.85rem; font-weight:800; background:rgba(255,255,255,0.08); color:#ff5555; border:1px solid rgba(255,85,85,0.3); border-radius:10px; cursor:pointer;">
+                                        <i class="fas fa-times-circle"></i> GHAIRI MALIPO
+                                    </button>
+                                </div>
                             </div>
                         `;
                         container.innerHTML = accessHtml;
@@ -6909,6 +6917,22 @@
             window.detailAccessTimer = setInterval(renderAccess, 3000);
         }
         // Initiate payment flow
+        async function cancelPendingOrder(postId, visitorId) {
+            try {
+                await fetch('/api/payments/cancel-pending', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visitor_id: visitorId, post_id: postId })
+                });
+            } catch(e) {}
+            const game = allGames.find(g => g.id == postId);
+            let visitorStr = localStorage.getItem('chidy_visitor');
+            let visitor = visitorStr ? JSON.parse(visitorStr) : null;
+            if (game && visitor) {
+                updateDetailAccess(postId, visitor, game);
+            }
+        }
+
         async function initiatePayment(postId) {
             const game = allGames.find(g => g.id == postId);
             if (!game) return;

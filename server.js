@@ -1797,7 +1797,7 @@ async function _harakaVideoCheckout({ req, formattedPhone, amount, videoTitle, v
     return { status: data.success ? 'success' : 'failed', message: data.message || (data.success ? 'success' : 'failed'), order_id: data.order_id || null, provider: 'harakapay' };
 }
 
-// PressoPay Main Video Checkout
+// PressoPay Main Video Checkout (with automatic HarakaPay failover)
 const initiateVideoCheckout = async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { amount, phone, videoTitle, visitorId, videoId, email, name } = req.body;
@@ -1843,11 +1843,13 @@ const initiateVideoCheckout = async (req, res) => {
             console.log('[PressoPay Video] SUCCESS — order:', extOrderId);
             return res.json({ status: 'success', message: 'Angalia simu yako kukamilisha malipo', order_id: extOrderId, checkout_url: result.checkoutUrl || null, provider: 'pressopay' });
         } catch (ppErr) {
-            console.error('[PressoPay Video] Error:', ppErr.message);
-            return res.status(400).json({ status: 'failed', message: ppErr.message || 'PressoPay error' });
+            console.error('[PressoPay Video] Error, failing over to HarakaPay:', ppErr.message);
+            const hRes = await _harakaVideoCheckout({ req, formattedPhone, amount, videoTitle, visitorId: parseInt(visitorId, 10), videoId, name });
+            return res.json(hRes);
         }
     } else {
-        return res.status(500).json({ status: 'failed', message: 'PressoPay haijawekwa kwenye mfumo' });
+        const hRes = await _harakaVideoCheckout({ req, formattedPhone, amount, videoTitle, visitorId: parseInt(visitorId, 10), videoId, name });
+        return res.json(hRes);
     }
 };
 
@@ -2319,14 +2321,14 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             return finalExp.toISOString();
         };
 
-        // 3. PRIORITY CHECK: Is there a recent PENDING order (last 15 min) waiting for PIN entry on phone?
-        const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+        // 3. PRIORITY CHECK: Is there a recent PENDING order (last 60s) waiting for PIN entry on phone?
+        const sixtySecsAgo = new Date(Date.now() - 60 * 1000).toISOString();
         const { data: recentPending } = await supabase
             .from('payment_orders')
             .select('*')
             .eq('post_id', game.id)
             .eq('status', 'pending')
-            .gt('created_at', fifteenMinsAgo)
+            .gt('created_at', sixtySecsAgo)
             .order('created_at', { ascending: false });
 
         if (recentPending && recentPending.length > 0) {
@@ -2345,6 +2347,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             if (matchedPending) {
                 const extOrderId = matchedPending.promo_used;
                 let isPaid = false;
+                let isTerminated = false;
 
                 if (extOrderId && extOrderId.startsWith('PP') && pressopay.isConfigured()) {
                     try {
@@ -2354,9 +2357,12 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         console.log(`[Check-Access Live] PressoPay status check ${ref} -> ${pStatUpper}`);
                         if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatUpper)) {
                             isPaid = true;
+                        } else if (['FAILED', 'CANCELLED', 'EXPIRED', 'DECLINED'].includes(pStatUpper)) {
+                            await supabase.from('payment_orders').update({ status: 'failed' }).eq('id', matchedPending.id);
+                            isTerminated = true;
                         }
                     } catch (ppErr) {
-                        console.warn('[Check-Access Live] PressoPay check error:', ppErr.message);
+                        console.warn('[Check-Access Live] PressoPay check warning:', ppErr.message);
                     }
                 } else if (extOrderId && extOrderId.startsWith('HP')) {
                     const hCheck = await fetch(`https://harakapay.net/api/v1/status/${extOrderId}`, {
@@ -2364,7 +2370,12 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         headers: { 'X-API-Key': HARAKAPAY_API_KEY }
                     }).then(r => r.json()).catch(() => ({}));
                     const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
-                    if (hStatus === 'completed' || hStatus === 'success') isPaid = true;
+                    if (hStatus === 'completed' || hStatus === 'success') {
+                        isPaid = true;
+                    } else if (['failed', 'cancelled', 'expired', 'declined'].includes(hStatus)) {
+                        await supabase.from('payment_orders').update({ status: 'failed' }).eq('id', matchedPending.id);
+                        isTerminated = true;
+                    }
                 }
 
                 if (isPaid) {
@@ -2378,13 +2389,15 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         expires_at: expIso,
                         links: formattedLinks
                     });
-                } else {
-                    // Transaction is STILL PENDING — waiting for PIN input on mobile!
-                    return res.json({
-                        has_access: false,
-                        pending_order: true,
-                        message: 'Ingiza PIN kwenye simu yako kukamilisha malipo'
-                    });
+                } else if (!isTerminated) {
+                    const orderAgeSeconds = (Date.now() - new Date(matchedPending.created_at).getTime()) / 1000;
+                    if (orderAgeSeconds <= 45) {
+                        return res.json({
+                            has_access: false,
+                            pending_order: true,
+                            message: 'Ingiza PIN kwenye simu yako kukamilisha malipo'
+                        });
+                    }
                 }
             }
         }
@@ -2661,7 +2674,7 @@ async function _harakaGameCheckout({ req, formattedPhone, amount, gameTitle, vis
     return { status: data.success ? 'success' : 'failed', message: data.message || (data.success ? 'success' : 'failed'), order_id: data.order_id || null, provider: 'harakapay' };
 }
 
-// Main Game Checkout — PressoPay
+// Main Game Checkout — PressoPay (with automatic HarakaPay failover)
 const initiateGameCheckout = async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     const { amount, phone, gameTitle, visitorId, postId, email, name, promo_used } = req.body;
@@ -2706,11 +2719,13 @@ const initiateGameCheckout = async (req, res) => {
             console.log('[PressoPay Game] SUCCESS — order:', extOrderId);
             return res.json({ status: 'success', message: 'Angalia simu yako kukamilisha malipo', order_id: extOrderId, checkout_url: result.checkoutUrl || null, provider: 'pressopay' });
         } catch (ppErr) {
-            console.error('[PressoPay Game] Error:', ppErr.message);
-            return res.status(400).json({ status: 'failed', message: ppErr.message || 'PressoPay payment error' });
+            console.error('[PressoPay Game] Error, failing over to HarakaPay:', ppErr.message);
+            const hRes = await _harakaGameCheckout({ req, formattedPhone, amount, gameTitle, visitorId: parseInt(visitorId, 10), postId, promo_used, name });
+            return res.json(hRes);
         }
     } else {
-        return res.status(500).json({ status: 'failed', message: 'PressoPay haijawekwa kwenye mfumo' });
+        const hRes = await _harakaGameCheckout({ req, formattedPhone, amount, gameTitle, visitorId: parseInt(visitorId, 10), postId, promo_used, name });
+        return res.json(hRes);
     }
 };
 
@@ -2718,6 +2733,26 @@ const initiateGameCheckout = async (req, res) => {
 app.post('/api/payments/pressopay-checkout',  initiateGameCheckout);
 app.post('/api/payments/harakapay-checkout',  initiateGameCheckout);
 app.post('/api/payments/zenopay-checkout',    initiateGameCheckout);
+
+// CANCEL PENDING ORDER ENDPOINT
+app.post('/api/payments/cancel-pending', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { visitor_id, post_id } = req.body;
+    const vid = parseInt(visitor_id, 10);
+    if (!vid || !post_id) return res.status(400).json({ error: 'Missing params' });
+
+    try {
+        await supabase
+            .from('payment_orders')
+            .update({ status: 'cancelled' })
+            .eq('visitor_id', vid)
+            .eq('post_id', post_id)
+            .eq('status', 'pending');
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // NOTE: pressopay-video-checkout is now handled by initiateVideoCheckout above (with automatic failover).
 // The route is already registered there. This comment replaces the old standalone function.
