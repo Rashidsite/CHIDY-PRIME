@@ -2858,12 +2858,23 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
             expiresAt.setDate(expiresAt.getDate() + dDays);
         }
 
-        await supabase.from('user_access').upsert({
-            visitor_id: resolvedVisitorId || visitorId,
-            post_id: itemId,
-            granted_at: new Date().toISOString(),
-            expires_at: expiresAt.toISOString()
-        }, { onConflict: 'visitor_id,post_id' });
+        console.log(`[handleSuccessfulPayment] Granting access → visitor=${resolvedVisitorId || visitorId}, post=${itemId}, expires=${expiresAt.toISOString()}`);
+        try {
+            await supabase.from('user_access').delete().eq('visitor_id', resolvedVisitorId || visitorId).eq('post_id', itemId);
+            const { error: uaErr } = await supabase.from('user_access').insert({
+                visitor_id: resolvedVisitorId || visitorId,
+                post_id: itemId,
+                granted_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString()
+            });
+            if (uaErr) {
+                console.error('[handleSuccessfulPayment] ❌ user_access insert failed:', uaErr.message);
+            } else {
+                console.log(`[handleSuccessfulPayment] ✅ user_access record created for visitor=${resolvedVisitorId || visitorId}, post=${itemId}`);
+            }
+        } catch (uaEx) {
+            console.error('[handleSuccessfulPayment] ❌ Exception writing user_access:', uaEx.message);
+        }
 
         // --- REFERRAL COMMISSION LOGIC ---
         try {
@@ -3305,10 +3316,30 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
         if (status === 'approved' || status === 'manual_approved') {
             const { post_id, visitor_id, phone_number, gift_phone, is_gift } = order;
             
-            const { data: game } = await supabase.from('posts').select('id, title, duration_days').or(`id.eq.${post_id},id.eq.${parseInt(post_id) || 0}`).single();
+            console.log(`[ADMIN APPROVE] Order #${id} → status=${status}, post_id=${post_id}, visitor_id=${visitor_id}, phone=${phone_number}`);
+
+            // ── Toboa game kwa usalama (angalia posts kwanza, kisha videos) ──
+            const numericPostId = parseInt(post_id) || 0;
+            let game = null;
+            if (numericPostId > 0) {
+                const { data: gFromPosts } = await supabase.from('posts').select('id, title, duration_days').eq('id', numericPostId).single();
+                game = gFromPosts || null;
+            }
+            // Kama haipo kwenye posts, angalia videos
+            if (!game && numericPostId > 0) {
+                const { data: gFromVideos } = await supabase.from('videos').select('id, title, duration_days').eq('id', numericPostId).single();
+                game = gFromVideos || null;
+            }
+
+            if (!game) {
+                console.error(`[ADMIN APPROVE] ❌ CRITICAL: Game/Video with post_id=${post_id} NOT FOUND. Access cannot be granted!`);
+            } else {
+                console.log(`[ADMIN APPROVE] ✅ Found item: "${game.title}" (id=${game.id})`);
+            }
+
             const dDays = game ? (game.duration_days || 0) : 0;
             const gTitle = game ? game.title : 'Game';
-            const realPostId = game ? game.id : post_id;
+            const realPostId = game ? game.id : numericPostId;
             
             let finalExpiresAt = new Date('2099-12-31T23:59:59Z');
             if (dDays > 0) {
@@ -3319,7 +3350,7 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
             const targetPhones = [phone_number, gift_phone].filter(Boolean).map(p => String(p).replace(/[^0-9]/g, ''));
             
             const visitorIdsToGrant = new Set();
-            if (visitor_id) visitorIdsToGrant.add(parseInt(visitor_id));
+            if (visitor_id && parseInt(visitor_id) > 0) visitorIdsToGrant.add(parseInt(visitor_id));
 
             if (targetPhones.length > 0) {
                 const { data: matchedVisitors } = await supabase.from('visitors').select('id, phone');
@@ -3333,10 +3364,13 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
                 }
             }
 
+            console.log(`[ADMIN APPROVE] Visitor IDs to grant: ${[...visitorIdsToGrant].join(', ')} | targetPhones: ${targetPhones.join(', ')}`);
+
             // AUTO-CREATE visitor if no matching visitor existed yet
             if (visitorIdsToGrant.size === 0 && targetPhones.length > 0) {
                 try {
                     const cleanP = targetPhones[0];
+                    console.log(`[ADMIN APPROVE] No visitor found. Auto-creating visitor for phone: ${cleanP}`);
                     const { data: newV } = await supabase.from('visitors').insert([{
                         name: 'Client ' + cleanP.slice(-4),
                         phone: cleanP
@@ -3344,47 +3378,181 @@ app.post('/api/admin/orders/:id/status', verifyAdmin, async (req, res) => {
                     if (newV && newV[0]) {
                         visitorIdsToGrant.add(newV[0].id);
                         await supabase.from('payment_orders').update({ visitor_id: newV[0].id }).eq('id', id);
+                        console.log(`[ADMIN APPROVE] ✅ Auto-created visitor id=${newV[0].id}`);
                     }
                 } catch(cErr) { console.error('Failed auto-creating visitor on admin approval:', cErr); }
             }
 
+            if (visitorIdsToGrant.size === 0) {
+                console.error(`[ADMIN APPROVE] ❌ No visitor IDs resolved! Access NOT granted for order #${id}`);
+            }
+
             // Grant access to all resolved visitor IDs
             for (const vId of visitorIdsToGrant) {
+                if (!realPostId || realPostId <= 0) {
+                    console.error(`[ADMIN APPROVE] ❌ Cannot grant access: realPostId is invalid (${realPostId}) for visitor ${vId}`);
+                    continue;
+                }
                 try {
-                    await supabase.from('user_access').upsert({
+                    // Try DELETE + INSERT for maximum reliability (upsert can silently fail without proper constraint)
+                    await supabase.from('user_access').delete().eq('visitor_id', vId).eq('post_id', realPostId);
+                    const { error: insertErr } = await supabase.from('user_access').insert({
                         visitor_id: vId,
                         post_id: realPostId,
                         granted_at: new Date().toISOString(),
                         expires_at: finalExpiresAt.toISOString()
                     });
+                    if (insertErr) {
+                        console.error(`[ADMIN APPROVE] ❌ user_access INSERT failed for visitor=${vId}, post=${realPostId}:`, insertErr.message);
+                    } else {
+                        console.log(`[ADMIN APPROVE] ✅ Access granted → visitor=${vId}, post=${realPostId}, expires=${finalExpiresAt.toISOString()}`);
+                    }
                 } catch (e) {
-                    try {
-                        await supabase.from('user_access').delete().eq('visitor_id', vId).eq('post_id', realPostId);
-                        await supabase.from('user_access').insert({
-                            visitor_id: vId,
-                            post_id: realPostId,
-                            granted_at: new Date().toISOString(),
-                            expires_at: finalExpiresAt.toISOString()
-                        });
-                    } catch (e2) {}
+                    console.error(`[ADMIN APPROVE] ❌ Exception granting access for vId=${vId}:`, e.message);
                 }
             }
 
-            // Send notification
-            await supabase.from('notifications').insert({
-                visitor_id: visitor_id,
-                post_id: realPostId,
-                title: is_gift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
-                message: is_gift 
-                    ? `Oda yako ya zawadi ya "${gTitle}" kwa namba ${gift_phone} imekubaliwa.` 
-                    : `Malipo yako ya game "${gTitle}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
-                type: 'success'
-            });
+            // Send notification (non-fatal)
+            try {
+                await supabase.from('notifications').insert({
+                    visitor_id: visitor_id,
+                    post_id: realPostId,
+                    title: is_gift ? 'Zawadi Imetumwa! 🎁' : 'Malipo Yamekubaliwa! ✅',
+                    message: is_gift 
+                        ? `Oda yako ya zawadi ya "${gTitle}" kwa namba ${gift_phone} imekubaliwa.` 
+                        : `Malipo yako ya game "${gTitle}" yamehakikiwa. Sasa unaweza kuanza kudownload.`,
+                    type: 'success'
+                });
+            } catch (notifErr) {
+                console.warn('[ADMIN APPROVE] Notification insert failed (non-fatal):', notifErr.message);
+            }
         }
         
         res.json({ success: true, order });
     } catch (err) {
         console.error(`[ERROR] Status Update Error: ${err.message}`);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============================================
+// ADMIN: FORCE GRANT ACCESS (Bypass order flow)
+// Tumia hii kama admin approve haifanyi kazi
+// ============================================
+app.post('/api/admin/force-grant', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    
+    const { visitor_id, post_id, phone_number } = req.body;
+    
+    if (!post_id) return res.status(400).json({ error: 'post_id inahitajika' });
+    
+    try {
+        const numericPostId = parseInt(post_id);
+        if (!numericPostId || numericPostId <= 0) {
+            return res.status(400).json({ error: `post_id si sahihi: "${post_id}"` });
+        }
+
+        // Pata game info
+        let item = null;
+        const { data: fromPosts } = await supabase.from('posts').select('id, title, duration_days').eq('id', numericPostId).single();
+        item = fromPosts;
+        if (!item) {
+            const { data: fromVideos } = await supabase.from('videos').select('id, title, duration_days').eq('id', numericPostId).single();
+            item = fromVideos;
+        }
+        
+        if (!item) {
+            return res.status(404).json({ error: `Game/Video yenye id=${numericPostId} haijapatikana kwenye database` });
+        }
+
+        // Tatua visitor IDs zote
+        const visitorIdsToGrant = new Set();
+        if (visitor_id && parseInt(visitor_id) > 0) visitorIdsToGrant.add(parseInt(visitor_id));
+        
+        const cleanPhone = phone_number ? String(phone_number).replace(/[^0-9]/g, '') : '';
+        if (cleanPhone) {
+            const { data: allVisitors } = await supabase.from('visitors').select('id, phone');
+            (allVisitors || []).forEach(v => {
+                const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                if (vp && (cleanPhone.endsWith(vp.slice(-9)) || vp.endsWith(cleanPhone.slice(-9)))) {
+                    visitorIdsToGrant.add(v.id);
+                }
+            });
+        }
+
+        if (visitorIdsToGrant.size === 0) {
+            return res.status(400).json({ error: 'Hakuna visitor iliyopatikana. Weka visitor_id au phone_number sahihi.' });
+        }
+
+        const dDays = item.duration_days || 0;
+        let expiresAt = new Date('2099-12-31T23:59:59Z');
+        if (dDays > 0) { expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + dDays); }
+
+        const results = [];
+        for (const vId of visitorIdsToGrant) {
+            await supabase.from('user_access').delete().eq('visitor_id', vId).eq('post_id', numericPostId);
+            const { error: insertErr } = await supabase.from('user_access').insert({
+                visitor_id: vId,
+                post_id: numericPostId,
+                granted_at: new Date().toISOString(),
+                expires_at: expiresAt.toISOString()
+            });
+            if (insertErr) {
+                results.push({ visitor_id: vId, success: false, error: insertErr.message });
+                console.error(`[FORCE-GRANT] ❌ Failed for visitor=${vId}:`, insertErr.message);
+            } else {
+                results.push({ visitor_id: vId, success: true });
+                console.log(`[FORCE-GRANT] ✅ Granted access → visitor=${vId}, post=${numericPostId}`);
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            game: item.title,
+            visitors_granted: results.filter(r => r.success).length,
+            results 
+        });
+    } catch (err) {
+        console.error('[FORCE-GRANT] Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ADMIN: Diagnostic - Check user access status
+app.get('/api/admin/check-user-access', verifyAdmin, async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+    const { phone, post_id } = req.query;
+    
+    try {
+        const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, '') : '';
+        const results = { phone_lookup: null, visitors: [], orders: [], user_access: [] };
+        
+        if (cleanPhone) {
+            const { data: visitors } = await supabase.from('visitors').select('id, name, phone');
+            results.visitors = (visitors || []).filter(v => {
+                const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                return vp && (cleanPhone.endsWith(vp.slice(-9)) || vp.endsWith(cleanPhone.slice(-9)));
+            });
+        }
+
+        const visitorIds = results.visitors.map(v => v.id);
+        if (visitorIds.length > 0) {
+            const { data: orders } = await supabase.from('payment_orders').select('*').in('visitor_id', visitorIds).order('created_at', { ascending: false });
+            results.orders = orders || [];
+            const { data: accesses } = await supabase.from('user_access').select('*').in('visitor_id', visitorIds);
+            results.user_access = accesses || [];
+        }
+        
+        if (post_id) {
+            const numPid = parseInt(post_id);
+            const { data: gameOrders } = await supabase.from('payment_orders').select('*').eq('post_id', numPid).order('created_at', { ascending: false });
+            const { data: gameAccess } = await supabase.from('user_access').select('*').eq('post_id', numPid);
+            results.orders_for_post = gameOrders || [];
+            results.access_for_post = gameAccess || [];
+        }
+        
+        res.json(results);
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
