@@ -2283,6 +2283,8 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             if (vProfile && vProfile.phone) {
                 visitorPhoneClean = String(vProfile.phone).replace(/[^0-9]/g, '');
             }
+        } else if (numericVisitorId > 0 && visitorPhoneClean) {
+            supabase.from('visitors').upsert({ id: numericVisitorId, phone: visitorPhoneClean, updated_at: new Date().toISOString() }, { onConflict: 'id' }).then().catch(() => {});
         }
 
         // Resolve all visitor IDs linked to this phone
@@ -2307,16 +2309,48 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 finalExp = new Date();
                 finalExp.setDate(finalExp.getDate() + dDays);
             }
-            try {
-                await supabase.from('user_access').delete().eq('visitor_id', parseInt(vId)).eq('post_id', pId);
-                await supabase.from('user_access').insert({
-                    visitor_id: parseInt(vId),
-                    post_id: pId,
-                    granted_at: new Date().toISOString(),
-                    expires_at: finalExp.toISOString()
+            
+            const targetIds = new Set();
+            if (matchingVisitorIds && matchingVisitorIds.size > 0) {
+                matchingVisitorIds.forEach(id => {
+                    const numId = parseInt(id);
+                    if (numId > 0 && numId < 2147483647) targetIds.add(numId);
                 });
-            } catch (e) {
-                console.error('[grantAccessHelper] error:', e.message);
+            }
+
+            if (vId && parseInt(vId) > 0) {
+                const numericId = parseInt(vId);
+                if (numericId < 2147483647) {
+                    const { data: vExists } = await supabase.from('visitors').select('id').eq('id', numericId).single();
+                    if (vExists) targetIds.add(numericId);
+                }
+            }
+
+            if (targetIds.size === 0 && visitorPhoneClean) {
+                const { data: matchedByPhone } = await supabase.from('visitors').select('id, phone');
+                if (matchedByPhone && matchedByPhone.length > 0) {
+                    matchedByPhone.forEach(v => {
+                        const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                        if (vp && (visitorPhoneClean.endsWith(vp.slice(-9)) || vp.endsWith(visitorPhoneClean.slice(-9)))) {
+                            targetIds.add(v.id);
+                        }
+                    });
+                }
+            }
+
+            for (const validId of targetIds) {
+                try {
+                    await supabase.from('user_access').delete().eq('visitor_id', validId).eq('post_id', pId);
+                    await supabase.from('user_access').insert({
+                        visitor_id: validId,
+                        post_id: pId,
+                        granted_at: new Date().toISOString(),
+                        expires_at: finalExp.toISOString()
+                    });
+                    console.log(`[grantAccessHelper] Access successfully granted for visitor_id: ${validId}, post_id: ${pId}`);
+                } catch (e) {
+                    console.error('[grantAccessHelper] error for visitor ' + validId + ':', e.message);
+                }
             }
             return finalExp.toISOString();
         };

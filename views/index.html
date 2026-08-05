@@ -6752,8 +6752,16 @@
                 const ac = new AbortController();
                 const timer = setTimeout(() => ac.abort(), timeoutMs);
                 try {
-                    const vId = visitor && visitor.id ? visitor.id : 0;
-                    const phoneQ = (visitor && visitor.phone) ? '&phone=' + encodeURIComponent(visitor.phone) : '';
+                    let latestVisitor = null;
+                    try {
+                        const vStr = localStorage.getItem('chidy_visitor');
+                        if (vStr) latestVisitor = JSON.parse(vStr);
+                    } catch(_) {}
+                    const activeVisitor = latestVisitor || (typeof visitor !== 'undefined' ? visitor : {}) || {};
+                    const vId = activeVisitor.id || 0;
+                    const lastPhone = localStorage.getItem('chidy_last_phone') || '';
+                    const phone = activeVisitor.phone || lastPhone || '';
+                    const phoneQ = phone ? '&phone=' + encodeURIComponent(phone) : '';
                     const deviceFp = getDeviceFingerprint();
                     const r = await fetch(`/api/check-access/${vId}/${game.id}?t=${Date.now()}${phoneQ}&device_fp=${encodeURIComponent(deviceFp)}`, { signal: ac.signal });
                     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -7046,9 +7054,12 @@
                 localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
             }
             // CRITICAL: Always update visitor.phone with current payment phone so polling can match orders
-            if (phone && visitor.phone !== phone) {
-                visitor.phone = phone;
-                localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
+            if (phone) {
+                localStorage.setItem('chidy_last_phone', phone);
+                if (!visitor || visitor.phone !== phone) {
+                    visitor.phone = phone;
+                    localStorage.setItem('chidy_visitor', JSON.stringify(visitor));
+                }
             }
 
             if (!phone || phone.length < 10) {
@@ -7204,8 +7215,10 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI ACCESS...';
 
             try {
-                // First check /api/check-access
-                const checkRes = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}`);
+                // First check /api/check-access with phone fallback
+                const phone = (visitor && visitor.phone) ? visitor.phone : (localStorage.getItem('chidy_last_phone') || '');
+                const phoneQ = phone ? '&phone=' + encodeURIComponent(phone) : '';
+                const checkRes = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}`);
                 const checkData = await checkRes.json();
                 
                 if (checkData && checkData.has_access) {
