@@ -2095,12 +2095,14 @@ app.post('/api/promo/validate', async (req, res) => {
 const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhoneClean = '') => {
     try {
         const numericVisitorId = parseInt(visitorId) || 0;
-        const { data: pending } = await supabase
-            .from('payment_orders')
-            .select('*')
-            .or(`post_id.eq.${postId},post_id.eq.${game.id}`)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
+        const targetPostId = game && game.id ? game.id : postId;
+        
+        let pendingQuery = supabase.from('payment_orders').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+        if (targetPostId) {
+            pendingQuery = pendingQuery.eq('post_id', targetPostId);
+        }
+        
+        const { data: pending } = await pendingQuery;
 
         if (pending && pending.length > 0) {
             const matchedPending = pending.filter(o => {
@@ -2155,11 +2157,12 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                 }
 
                 if (isPaid) {
-                    console.log(`Fail-safe: Pending order ${extOrderId} paid! Auto approving...`);
-                    await handleSuccessfulPayment(parseInt(order.visitor_id || visitorId), game, order.amount, order.phone_number, extOrderId, false);
+                    console.log(`[Fail-safe] Pending order ${extOrderId} paid! Auto approving...`);
+                    const itemToGrant = game || { id: targetPostId };
+                    await handleSuccessfulPayment(parseInt(order.visitor_id || visitorId), itemToGrant, order.amount, order.phone_number, extOrderId, false);
                     await supabase.from('payment_orders').update({ status: 'approved' }).eq('id', order.id);
 
-                    const dDays = game.duration_days || 0;
+                    const dDays = game ? (game.duration_days || 0) : 0;
                     let expiresAt = '2099-12-31T23:59:59Z';
                     if (dDays > 0) {
                         const expDate = new Date();
@@ -2170,7 +2173,7 @@ const checkAndApprovePendingOrder = async (visitorId, postId, game, visitorPhone
                     return { 
                         has_access: true, 
                         expires_at: expiresAt,
-                        links: game.links || []
+                        links: game ? (game.links || []) : []
                     };
                 }
             }
@@ -2232,14 +2235,29 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
     
     try {
-        // 1. Fetch game details to check price & links
-        const { data: game, error: gameErr } = await supabase
-            .from('posts')
-            .select('id, price, links, duration_days, title')
-            .or(`id.eq.${post_id},id.eq.${parseInt(post_id) || 0}`)
-            .single();
+        // 1. Fetch game/item details safely without string/integer UUID type crashes
+        const isPureNum = /^\d+$/.test(String(post_id).trim());
+        let game = null;
+        if (isPureNum) {
+            const { data } = await supabase.from('posts').select('id, price, links, duration_days, title').or(`id.eq.${post_id},id.eq.${parseInt(post_id)}`).single();
+            game = data;
+        } else {
+            const { data } = await supabase.from('posts').select('id, price, links, duration_days, title').eq('id', String(post_id).trim()).single();
+            game = data;
+        }
 
-        if (gameErr || !game) return res.status(404).json({ error: 'Game not found' });
+        if (!game) {
+            // Fallback: Check videos table
+            if (isPureNum) {
+                const { data } = await supabase.from('videos').select('id, price, links, duration_days, title').or(`id.eq.${post_id},id.eq.${parseInt(post_id)}`).single();
+                game = data;
+            } else {
+                const { data } = await supabase.from('videos').select('id, price, links, duration_days, title').eq('id', String(post_id).trim()).single();
+                game = data;
+            }
+        }
+
+        if (!game) return res.status(404).json({ error: 'Game/Content not found' });
 
         const formattedLinks = formatGameLinks(game);
 
@@ -2251,8 +2269,6 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 links: formattedLinks
             });
         }
-
-        const numericVisitorId = parseInt(visitor_id) || 0;
 
         // Fetch visitor profile for phone matching
         let visitorPhoneClean = phoneQuery ? String(phoneQuery).replace(/[^0-9]/g, '') : '';
@@ -2286,22 +2302,15 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 finalExp.setDate(finalExp.getDate() + dDays);
             }
             try {
-                await supabase.from('user_access').upsert({
+                await supabase.from('user_access').delete().eq('visitor_id', parseInt(vId)).eq('post_id', pId);
+                await supabase.from('user_access').insert({
                     visitor_id: parseInt(vId),
                     post_id: pId,
                     granted_at: new Date().toISOString(),
                     expires_at: finalExp.toISOString()
                 });
             } catch (e) {
-                try {
-                    await supabase.from('user_access').delete().eq('visitor_id', parseInt(vId)).eq('post_id', pId);
-                    await supabase.from('user_access').insert({
-                        visitor_id: parseInt(vId),
-                        post_id: pId,
-                        granted_at: new Date().toISOString(),
-                        expires_at: finalExp.toISOString()
-                    });
-                } catch (e2) {}
+                console.error('[grantAccessHelper] error:', e.message);
             }
             return finalExp.toISOString();
         };
@@ -2310,7 +2319,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         const { data: accessRows } = await supabase
             .from('user_access')
             .select('*')
-            .or(`post_id.eq.${post_id},post_id.eq.${game.id}`);
+            .eq('post_id', game.id);
 
         if (accessRows && accessRows.length > 0) {
             const activeAcc = accessRows.find(a => {
@@ -2334,7 +2343,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
         const { data: orders } = await supabase
             .from('payment_orders')
             .select('*')
-            .or(`post_id.eq.${post_id},post_id.eq.${game.id}`)
+            .eq('post_id', game.id)
             .order('created_at', { ascending: false });
 
         if (orders && orders.length > 0) {
@@ -2350,10 +2359,6 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                 if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
                     return true;
                 }
-
-                // ULTIMATE FAIL-SAFE: If order was approved in last 24h for this post_id, grant access!
-                const orderAgeMs = Date.now() - new Date(o.created_at || 0).getTime();
-                if (orderAgeMs < 24 * 60 * 60 * 1000) return true;
 
                 return false;
             });
