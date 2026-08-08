@@ -2355,14 +2355,68 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             return finalExp.toISOString();
         };
 
-        // 3. PRIORITY CHECK: Is there a recent PENDING order (last 60s) waiting for PIN entry on phone?
-        const sixtySecsAgo = new Date(Date.now() - 60 * 1000).toISOString();
+        // 3. FIRST CHECK: Direct check in user_access (If Admin approved or access was already granted)
+        const { data: accessRows } = await supabase
+            .from('user_access')
+            .select('*')
+            .eq('post_id', game.id);
+
+        if (accessRows && accessRows.length > 0) {
+            const activeAcc = accessRows.find(a => {
+                if (new Date(a.expires_at) <= new Date()) return false;
+                if (matchingVisitorIds.has(parseInt(a.visitor_id))) return true;
+                return false;
+            });
+            if (activeAcc) {
+                if (numericVisitorId > 0 && !matchingVisitorIds.has(numericVisitorId)) {
+                    await grantAccessHelper(numericVisitorId, game.id, game.duration_days || 0);
+                }
+                return res.json({
+                    has_access: true,
+                    expires_at: activeAcc.expires_at,
+                    links: formattedLinks
+                });
+            }
+        }
+
+        // 4. SECOND CHECK: Check payment_orders for past or manually approved orders
+        const { data: orders } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('post_id', game.id)
+            .order('created_at', { ascending: false });
+
+        if (orders && orders.length > 0) {
+            const approvedOrder = orders.find(o => {
+                const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
+                if (!isApproved) return false;
+                if (o.expires_at && new Date(o.expires_at) <= new Date()) return false;
+                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
+                const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
+                    return true;
+                }
+                return false;
+            });
+
+            if (approvedOrder) {
+                const expIso = await grantAccessHelper(numericVisitorId > 0 ? numericVisitorId : approvedOrder.visitor_id, game.id, game.duration_days || 0);
+                return res.json({
+                    has_access: true,
+                    expires_at: expIso,
+                    links: formattedLinks
+                });
+            }
+        }
+
+        // 5. THIRD CHECK: Is there a recent PENDING order (last 10 mins) waiting for PIN entry on phone?
+        const tenMinsAgo = new Date(Date.now() - 600 * 1000).toISOString();
         const { data: recentPending } = await supabase
             .from('payment_orders')
             .select('*')
             .eq('post_id', game.id)
             .eq('status', 'pending')
-            .gt('created_at', sixtySecsAgo)
+            .gt('created_at', tenMinsAgo)
             .order('created_at', { ascending: false });
 
         if (recentPending && recentPending.length > 0) {
@@ -2392,7 +2446,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatUpper)) {
                             isPaid = true;
                         } else if (['FAILED', 'CANCELLED', 'EXPIRED', 'DECLINED'].includes(pStatUpper)) {
-                            await supabase.from('payment_orders').update({ status: 'failed' }).eq('id', matchedPending.id);
+                            await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', matchedPending.id);
                             isTerminated = true;
                         }
                     } catch (ppErr) {
@@ -2403,11 +2457,11 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         method: 'GET',
                         headers: { 'X-API-Key': HARAKAPAY_API_KEY }
                     }).then(r => r.json()).catch(() => ({}));
-                    const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
-                    if (hStatus === 'completed' || hStatus === 'success') {
+                    const hStatus = (hCheck.payment && hCheck.payment.status || hCheck.status || '').toLowerCase();
+                    if (hStatus === 'completed' || hStatus === 'success' || hStatus === 'paid') {
                         isPaid = true;
-                    } else if (['failed', 'cancelled', 'expired', 'declined'].includes(hStatus)) {
-                        await supabase.from('payment_orders').update({ status: 'failed' }).eq('id', matchedPending.id);
+                    } else if (['failed', 'cancelled', 'expired', 'declined', 'rejected'].includes(hStatus)) {
+                        await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', matchedPending.id);
                         isTerminated = true;
                     }
                 }
@@ -2425,7 +2479,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                     });
                 } else if (!isTerminated) {
                     const orderAgeSeconds = (Date.now() - new Date(matchedPending.created_at).getTime()) / 1000;
-                    if (orderAgeSeconds <= 45) {
+                    if (orderAgeSeconds <= 600) {
                         return res.json({
                             has_access: false,
                             pending_order: true,
@@ -2433,60 +2487,6 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         });
                     }
                 }
-            }
-        }
-
-        // 4. Direct check in user_access (Only if NO active pending order is waiting for PIN)
-        const { data: accessRows } = await supabase
-            .from('user_access')
-            .select('*')
-            .eq('post_id', game.id);
-
-        if (accessRows && accessRows.length > 0) {
-            const activeAcc = accessRows.find(a => {
-                if (new Date(a.expires_at) <= new Date()) return false;
-                if (matchingVisitorIds.has(parseInt(a.visitor_id))) return true;
-                return false;
-            });
-            if (activeAcc) {
-                if (numericVisitorId > 0 && !matchingVisitorIds.has(numericVisitorId)) {
-                    await grantAccessHelper(numericVisitorId, game.id, game.duration_days || 0);
-                }
-                return res.json({
-                    has_access: true,
-                    expires_at: activeAcc.expires_at,
-                    links: formattedLinks
-                });
-            }
-        }
-
-        // 5. Check payment_orders for past approved orders
-        const { data: orders } = await supabase
-            .from('payment_orders')
-            .select('*')
-            .eq('post_id', game.id)
-            .order('created_at', { ascending: false });
-
-        if (orders && orders.length > 0) {
-            const approvedOrder = orders.find(o => {
-                const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
-                if (!isApproved) return false;
-                if (o.expires_at && new Date(o.expires_at) <= new Date()) return false;
-                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
-                const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
-                if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
-                    return true;
-                }
-                return false;
-            });
-
-            if (approvedOrder) {
-                const expIso = await grantAccessHelper(numericVisitorId > 0 ? numericVisitorId : approvedOrder.visitor_id, game.id, game.duration_days || 0);
-                return res.json({
-                    has_access: true,
-                    expires_at: expIso,
-                    links: formattedLinks
-                });
             }
         }
 
