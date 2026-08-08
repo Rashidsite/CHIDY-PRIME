@@ -5543,7 +5543,7 @@
                     </div>
                 </div>
                 <!-- Manual Verify Button (Hidden initially) -->
-                <button id="manual-verify-btn" onclick="manualVerifyPayment()" style="
+                <button id="manual-verify-btn" onclick="manualVerifyPayment(window.currentPaymentPostId || (document.getElementById('payPostId') ? document.getElementById('payPostId').value : null))" style="
                     display:none; width: 100%; margin-top: 20px; padding: 12px;
                     border-radius: 12px; border: 1px solid var(--primary);
                     background: rgba(0,242,255,0.1); color: var(--primary);
@@ -7248,7 +7248,7 @@
 
         async function manualVerifyPayment(postIdParam) {
             const payPostIdEl = document.getElementById('payPostId');
-            const postId = postIdParam || (payPostIdEl ? payPostIdEl.value : null);
+            const postId = postIdParam || (payPostIdEl ? payPostIdEl.value : null) || window.currentPaymentPostId;
             if (!postId) return;
 
             const btn = document.getElementById('manual-verify-btn');
@@ -7271,28 +7271,18 @@
                 if (checkData && checkData.has_access) {
                     closePayment();
                     openDetail(postId);
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#00f2ff', '#bc13fe', '#00d25b']
-                    });
+                    if (typeof triggerCelebration === "function") triggerCelebration();
                     return;
                 }
 
-                // Secondary check HarakaPay / PressoPay endpoints
-                const res = await fetch(`/api/payments/verify/${visitor.id}/${postId}`);
+                // Secondary check HarakaPay / PressoPay / Manual endpoints
+                const res = await fetch(`/api/payments/verify/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}`);
                 const data = await res.json();
                 
                 if (data.success) {
                     closePayment();
                     openDetail(postId);
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#00f2ff', '#bc13fe', '#00d25b']
-                    });
+                    if (typeof triggerCelebration === "function") triggerCelebration();
                 } else {
                     alert(data.message || 'Malipo bado yanathibitishwa na mtandao. Kama umeweka PIN kwenye simu yako, subiri sekunde 5 kisha ubonyeze tena HAKIKI.');
                     if (btn) {
