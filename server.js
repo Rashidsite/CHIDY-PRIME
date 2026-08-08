@@ -2283,7 +2283,19 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             if (vProfile && vProfile.phone) {
                 visitorPhoneClean = String(vProfile.phone).replace(/[^0-9]/g, '');
             }
-        } else if (numericVisitorId > 0 && visitorPhoneClean) {
+            if (!visitorPhoneClean) {
+                const { data: vOrder } = await supabase.from('payment_orders')
+                    .select('phone_number, gift_phone')
+                    .eq('visitor_id', numericVisitorId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                if (vOrder && vOrder.length > 0) {
+                    const rawP = vOrder[0].phone_number || vOrder[0].gift_phone;
+                    if (rawP) visitorPhoneClean = String(rawP).replace(/[^0-9]/g, '');
+                }
+            }
+        }
+        if (numericVisitorId > 0 && visitorPhoneClean) {
             supabase.from('visitors').upsert({ id: numericVisitorId, phone: visitorPhoneClean, updated_at: new Date().toISOString() }, { onConflict: 'id' }).then().catch(() => {});
         }
 
@@ -2977,22 +2989,42 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
             expiresAt.setDate(expiresAt.getDate() + dDays);
         }
 
-        console.log(`[handleSuccessfulPayment] Granting access → visitor=${resolvedVisitorId || visitorId}, post=${itemId}, expires=${expiresAt.toISOString()}`);
-        try {
-            await supabase.from('user_access').delete().eq('visitor_id', resolvedVisitorId || visitorId).eq('post_id', itemId);
-            const { error: uaErr } = await supabase.from('user_access').insert({
-                visitor_id: resolvedVisitorId || visitorId,
-                post_id: itemId,
-                granted_at: new Date().toISOString(),
-                expires_at: expiresAt.toISOString()
-            });
-            if (uaErr) {
-                console.error('[handleSuccessfulPayment] ❌ user_access insert failed:', uaErr.message);
-            } else {
-                console.log(`[handleSuccessfulPayment] ✅ user_access record created for visitor=${resolvedVisitorId || visitorId}, post=${itemId}`);
+        const allVisitorIdsToGrant = new Set();
+        if (parseInt(visitorId) > 0) allVisitorIdsToGrant.add(parseInt(visitorId));
+        if (parseInt(resolvedVisitorId) > 0) allVisitorIdsToGrant.add(parseInt(resolvedVisitorId));
+
+        if (cleanPhone) {
+            try {
+                const { data: matchedV } = await supabase.from('visitors').select('id, phone');
+                if (matchedV && matchedV.length > 0) {
+                    matchedV.forEach(v => {
+                        const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                        if (vp && (cleanPhone.endsWith(vp.slice(-9)) || vp.endsWith(cleanPhone.slice(-9)))) {
+                            allVisitorIdsToGrant.add(v.id);
+                        }
+                    });
+                }
+            } catch(e) {}
+        }
+
+        console.log(`[handleSuccessfulPayment] Granting access to ${allVisitorIdsToGrant.size} visitor IDs → post=${itemId}, expires=${expiresAt.toISOString()}`);
+        for (const vIdToGrant of allVisitorIdsToGrant) {
+            try {
+                await supabase.from('user_access').delete().eq('visitor_id', vIdToGrant).eq('post_id', itemId);
+                const { error: uaErr } = await supabase.from('user_access').insert({
+                    visitor_id: vIdToGrant,
+                    post_id: itemId,
+                    granted_at: new Date().toISOString(),
+                    expires_at: expiresAt.toISOString()
+                });
+                if (uaErr) {
+                    console.error(`[handleSuccessfulPayment] ❌ user_access insert failed for visitor=${vIdToGrant}:`, uaErr.message);
+                } else {
+                    console.log(`[handleSuccessfulPayment] ✅ user_access record created for visitor=${vIdToGrant}, post=${itemId}`);
+                }
+            } catch (uaEx) {
+                console.error(`[handleSuccessfulPayment] ❌ Exception writing user_access for visitor=${vIdToGrant}:`, uaEx.message);
             }
-        } catch (uaEx) {
-            console.error('[handleSuccessfulPayment] ❌ Exception writing user_access:', uaEx.message);
         }
 
         // --- REFERRAL COMMISSION LOGIC ---
