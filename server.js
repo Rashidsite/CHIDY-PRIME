@@ -3084,40 +3084,75 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
 
 const verifyPaymentManual = async (req, res) => {
     const { visitor_id, post_id } = req.params;
+    const numericVisitorId = parseInt(visitor_id) || 0;
     try {
-        // 1. Check if order is ALREADY approved!
-        const { data: alreadyApproved } = await supabase
-            .from('payment_orders')
-            .select('*')
-            .eq('visitor_id', parseInt(visitor_id))
-            .eq('post_id', post_id)
-            .in('status', ['approved', 'manual_approved', 'completed', 'success'])
-            .limit(1);
-
-        if (alreadyApproved && alreadyApproved.length > 0) {
-            const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
-            if (game) {
-                await handleSuccessfulPayment(parseInt(visitor_id), game, alreadyApproved[0].amount, alreadyApproved[0].phone_number, alreadyApproved[0].promo_used, false);
-            }
-            return res.json({ success: true, message: 'Malipo yamehakikiwa na yamekamilika!' });
+        let cleanPhone = req.query.phone ? String(req.query.phone).replace(/[^0-9]/g, '') : '';
+        if (numericVisitorId > 0 && !cleanPhone) {
+            const { data: vProfile } = await supabase.from('visitors').select('phone').eq('id', numericVisitorId).single();
+            if (vProfile && vProfile.phone) cleanPhone = String(vProfile.phone).replace(/[^0-9]/g, '');
         }
 
-        const { data: pending } = await supabase
+        const matchingVisitorIds = new Set();
+        if (numericVisitorId > 0) matchingVisitorIds.add(numericVisitorId);
+        if (cleanPhone) {
+            const { data: matchedV } = await supabase.from('visitors').select('id, phone');
+            if (matchedV && matchedV.length > 0) {
+                matchedV.forEach(v => {
+                    const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                    if (vp && (cleanPhone.endsWith(vp.slice(-9)) || vp.endsWith(cleanPhone.slice(-9)))) {
+                        matchingVisitorIds.add(v.id);
+                    }
+                });
+            }
+        }
+
+        // 1. Check if order is ALREADY approved (by visitor_id OR phone match)!
+        const { data: allApproved } = await supabase
             .from('payment_orders')
             .select('*')
-            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', post_id)
+            .in('status', ['approved', 'manual_approved', 'completed', 'success', 'paid']);
+
+        if (allApproved && allApproved.length > 0) {
+            const matchedApproved = allApproved.find(o => {
+                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
+                const oPhone = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (cleanPhone && oPhone && (cleanPhone.endsWith(oPhone.slice(-9)) || oPhone.endsWith(cleanPhone.slice(-9)))) return true;
+                return false;
+            });
+
+            if (matchedApproved) {
+                const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
+                if (game) {
+                    await handleSuccessfulPayment(numericVisitorId > 0 ? numericVisitorId : matchedApproved.visitor_id, game, matchedApproved.amount, matchedApproved.phone_number, matchedApproved.promo_used, false);
+                }
+                return res.json({ success: true, message: 'Malipo yamehakikiwa na yamekamilika!' });
+            }
+        }
+
+        // 2. Check pending orders
+        const { data: allPending } = await supabase
+            .from('payment_orders')
+            .select('*')
             .eq('post_id', post_id)
             .eq('status', 'pending')
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .order('created_at', { ascending: false });
 
-        if (!pending || pending.length === 0) {
+        let order = null;
+        if (allPending && allPending.length > 0) {
+            order = allPending.find(o => {
+                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
+                const oPhone = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (cleanPhone && oPhone && (cleanPhone.endsWith(oPhone.slice(-9)) || oPhone.endsWith(cleanPhone.slice(-9)))) return true;
+                return false;
+            });
+        }
+
+        if (!order) {
             return res.json({ success: false, message: 'Hakuna malipo yanayosubiri.' });
         }
 
-        const order = pending[0];
         const extOrderId = order.promo_used;
-
         if (!extOrderId) {
              return res.json({ success: false, message: 'Hii ni oda ya manual, tafadhali wasiliana na admin.' });
         }
@@ -3166,13 +3201,13 @@ const verifyPaymentManual = async (req, res) => {
             // Try posts first
             const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
             if (game) {
-                await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, extOrderId, false);
+                await handleSuccessfulPayment(numericVisitorId > 0 ? numericVisitorId : order.visitor_id, game, order.amount, order.phone_number, extOrderId, false);
                 return res.json({ success: true });
             } else {
                 // Try videos
                 const { data: video } = await supabase.from('videos').select('*').eq('id', post_id).single();
                 if (video) {
-                    await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, extOrderId, true);
+                    await handleSuccessfulPayment(numericVisitorId > 0 ? numericVisitorId : order.visitor_id, video, order.amount, order.phone_number, extOrderId, true);
                     return res.json({ success: true });
                 }
             }
