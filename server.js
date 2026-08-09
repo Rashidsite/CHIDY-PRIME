@@ -2195,26 +2195,33 @@ const formatGameLinks = (game) => {
     let rawLinks = game.links;
     let list = [];
     if (Array.isArray(rawLinks)) {
-        list = rawLinks.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+        list = rawLinks.map(l => typeof l === 'string' ? { name: '', url: l } : l);
     } else if (typeof rawLinks === 'string' && rawLinks.trim()) {
         try {
             const parsed = JSON.parse(rawLinks);
             if (Array.isArray(parsed)) {
-                list = parsed.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+                list = parsed.map(l => typeof l === 'string' ? { name: '', url: l } : l);
             } else if (typeof parsed === 'object' && parsed !== null && parsed.url) {
                 list = [parsed];
             } else {
-                list = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+                list = [{ name: '', url: rawLinks.trim() }];
             }
         } catch (e) {
-            list = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+            list = [{ name: '', url: rawLinks.trim() }];
         }
     }
 
     if (list.length === 0) {
         const directUrl = game.download_url || game.link || game.file_url || game.url;
         if (directUrl && typeof directUrl === 'string' && directUrl.trim()) {
-            list = [{ name: 'DOWNLOAD GAME', url: directUrl.trim() }];
+            list = [{ name: '', url: directUrl.trim() }];
+        }
+    }
+
+    if (game && (game.bios_url || game.bios)) {
+        const biosUrl = String(game.bios_url || game.bios || '').trim();
+        if (biosUrl && !list.some(l => (l.name && String(l.name).toUpperCase().includes('BIOS')) || l.url === biosUrl)) {
+            list.unshift({ name: 'BIOS', url: biosUrl });
         }
     }
 
@@ -2283,7 +2290,19 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             if (vProfile && vProfile.phone) {
                 visitorPhoneClean = String(vProfile.phone).replace(/[^0-9]/g, '');
             }
-        } else if (numericVisitorId > 0 && visitorPhoneClean) {
+            if (!visitorPhoneClean) {
+                const { data: vOrder } = await supabase.from('payment_orders')
+                    .select('phone_number, gift_phone')
+                    .eq('visitor_id', numericVisitorId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                if (vOrder && vOrder.length > 0) {
+                    const rawP = vOrder[0].phone_number || vOrder[0].gift_phone;
+                    if (rawP) visitorPhoneClean = String(rawP).replace(/[^0-9]/g, '');
+                }
+            }
+        }
+        if (numericVisitorId > 0 && visitorPhoneClean) {
             supabase.from('visitors').upsert({ id: numericVisitorId, phone: visitorPhoneClean, updated_at: new Date().toISOString() }, { onConflict: 'id' }).then().catch(() => {});
         }
 
@@ -2355,14 +2374,68 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
             return finalExp.toISOString();
         };
 
-        // 3. PRIORITY CHECK: Is there a recent PENDING order (last 60s) waiting for PIN entry on phone?
-        const sixtySecsAgo = new Date(Date.now() - 60 * 1000).toISOString();
+        // 3. FIRST CHECK: Direct check in user_access (If Admin approved or access was already granted)
+        const { data: accessRows } = await supabase
+            .from('user_access')
+            .select('*')
+            .eq('post_id', game.id);
+
+        if (accessRows && accessRows.length > 0) {
+            const activeAcc = accessRows.find(a => {
+                if (new Date(a.expires_at) <= new Date()) return false;
+                if (matchingVisitorIds.has(parseInt(a.visitor_id))) return true;
+                return false;
+            });
+            if (activeAcc) {
+                if (numericVisitorId > 0 && !matchingVisitorIds.has(numericVisitorId)) {
+                    await grantAccessHelper(numericVisitorId, game.id, game.duration_days || 0);
+                }
+                return res.json({
+                    has_access: true,
+                    expires_at: activeAcc.expires_at,
+                    links: formattedLinks
+                });
+            }
+        }
+
+        // 4. SECOND CHECK: Check payment_orders for past or manually approved orders
+        const { data: orders } = await supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('post_id', game.id)
+            .order('created_at', { ascending: false });
+
+        if (orders && orders.length > 0) {
+            const approvedOrder = orders.find(o => {
+                const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
+                if (!isApproved) return false;
+                if (o.expires_at && new Date(o.expires_at) <= new Date()) return false;
+                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
+                const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
+                    return true;
+                }
+                return false;
+            });
+
+            if (approvedOrder) {
+                const expIso = await grantAccessHelper(numericVisitorId > 0 ? numericVisitorId : approvedOrder.visitor_id, game.id, game.duration_days || 0);
+                return res.json({
+                    has_access: true,
+                    expires_at: expIso,
+                    links: formattedLinks
+                });
+            }
+        }
+
+        // 5. THIRD CHECK: Is there a recent PENDING order (last 10 mins) waiting for PIN entry on phone?
+        const tenMinsAgo = new Date(Date.now() - 600 * 1000).toISOString();
         const { data: recentPending } = await supabase
             .from('payment_orders')
             .select('*')
             .eq('post_id', game.id)
             .eq('status', 'pending')
-            .gt('created_at', sixtySecsAgo)
+            .gt('created_at', tenMinsAgo)
             .order('created_at', { ascending: false });
 
         if (recentPending && recentPending.length > 0) {
@@ -2392,7 +2465,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         if (['COMPLETED', 'SUCCESS', 'PAID', 'SETTLED', 'OK'].includes(pStatUpper)) {
                             isPaid = true;
                         } else if (['FAILED', 'CANCELLED', 'EXPIRED', 'DECLINED'].includes(pStatUpper)) {
-                            await supabase.from('payment_orders').update({ status: 'failed' }).eq('id', matchedPending.id);
+                            await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', matchedPending.id);
                             isTerminated = true;
                         }
                     } catch (ppErr) {
@@ -2403,11 +2476,11 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         method: 'GET',
                         headers: { 'X-API-Key': HARAKAPAY_API_KEY }
                     }).then(r => r.json()).catch(() => ({}));
-                    const hStatus = (hCheck.payment && hCheck.payment.status || '').toLowerCase();
-                    if (hStatus === 'completed' || hStatus === 'success') {
+                    const hStatus = (hCheck.payment && hCheck.payment.status || hCheck.status || '').toLowerCase();
+                    if (hStatus === 'completed' || hStatus === 'success' || hStatus === 'paid') {
                         isPaid = true;
-                    } else if (['failed', 'cancelled', 'expired', 'declined'].includes(hStatus)) {
-                        await supabase.from('payment_orders').update({ status: 'failed' }).eq('id', matchedPending.id);
+                    } else if (['failed', 'cancelled', 'expired', 'declined', 'rejected'].includes(hStatus)) {
+                        await supabase.from('payment_orders').update({ status: 'rejected' }).eq('id', matchedPending.id);
                         isTerminated = true;
                     }
                 }
@@ -2425,7 +2498,7 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                     });
                 } else if (!isTerminated) {
                     const orderAgeSeconds = (Date.now() - new Date(matchedPending.created_at).getTime()) / 1000;
-                    if (orderAgeSeconds <= 45) {
+                    if (orderAgeSeconds <= 600) {
                         return res.json({
                             has_access: false,
                             pending_order: true,
@@ -2433,60 +2506,6 @@ app.get('/api/check-access/:visitor_id/:post_id', async (req, res) => {
                         });
                     }
                 }
-            }
-        }
-
-        // 4. Direct check in user_access (Only if NO active pending order is waiting for PIN)
-        const { data: accessRows } = await supabase
-            .from('user_access')
-            .select('*')
-            .eq('post_id', game.id);
-
-        if (accessRows && accessRows.length > 0) {
-            const activeAcc = accessRows.find(a => {
-                if (new Date(a.expires_at) <= new Date()) return false;
-                if (matchingVisitorIds.has(parseInt(a.visitor_id))) return true;
-                return false;
-            });
-            if (activeAcc) {
-                if (numericVisitorId > 0 && !matchingVisitorIds.has(numericVisitorId)) {
-                    await grantAccessHelper(numericVisitorId, game.id, game.duration_days || 0);
-                }
-                return res.json({
-                    has_access: true,
-                    expires_at: activeAcc.expires_at,
-                    links: formattedLinks
-                });
-            }
-        }
-
-        // 5. Check payment_orders for past approved orders
-        const { data: orders } = await supabase
-            .from('payment_orders')
-            .select('*')
-            .eq('post_id', game.id)
-            .order('created_at', { ascending: false });
-
-        if (orders && orders.length > 0) {
-            const approvedOrder = orders.find(o => {
-                const isApproved = ['approved', 'manual_approved', 'completed', 'success', 'paid'].includes(String(o.status || '').toLowerCase());
-                if (!isApproved) return false;
-                if (o.expires_at && new Date(o.expires_at) <= new Date()) return false;
-                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
-                const oPhoneClean = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
-                if (visitorPhoneClean && oPhoneClean && (visitorPhoneClean.endsWith(oPhoneClean.slice(-9)) || oPhoneClean.endsWith(visitorPhoneClean.slice(-9)))) {
-                    return true;
-                }
-                return false;
-            });
-
-            if (approvedOrder) {
-                const expIso = await grantAccessHelper(numericVisitorId > 0 ? numericVisitorId : approvedOrder.visitor_id, game.id, game.duration_days || 0);
-                return res.json({
-                    has_access: true,
-                    expires_at: expIso,
-                    links: formattedLinks
-                });
             }
         }
 
@@ -2977,22 +2996,42 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
             expiresAt.setDate(expiresAt.getDate() + dDays);
         }
 
-        console.log(`[handleSuccessfulPayment] Granting access → visitor=${resolvedVisitorId || visitorId}, post=${itemId}, expires=${expiresAt.toISOString()}`);
-        try {
-            await supabase.from('user_access').delete().eq('visitor_id', resolvedVisitorId || visitorId).eq('post_id', itemId);
-            const { error: uaErr } = await supabase.from('user_access').insert({
-                visitor_id: resolvedVisitorId || visitorId,
-                post_id: itemId,
-                granted_at: new Date().toISOString(),
-                expires_at: expiresAt.toISOString()
-            });
-            if (uaErr) {
-                console.error('[handleSuccessfulPayment] ❌ user_access insert failed:', uaErr.message);
-            } else {
-                console.log(`[handleSuccessfulPayment] ✅ user_access record created for visitor=${resolvedVisitorId || visitorId}, post=${itemId}`);
+        const allVisitorIdsToGrant = new Set();
+        if (parseInt(visitorId) > 0) allVisitorIdsToGrant.add(parseInt(visitorId));
+        if (parseInt(resolvedVisitorId) > 0) allVisitorIdsToGrant.add(parseInt(resolvedVisitorId));
+
+        if (cleanPhone) {
+            try {
+                const { data: matchedV } = await supabase.from('visitors').select('id, phone');
+                if (matchedV && matchedV.length > 0) {
+                    matchedV.forEach(v => {
+                        const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                        if (vp && (cleanPhone.endsWith(vp.slice(-9)) || vp.endsWith(cleanPhone.slice(-9)))) {
+                            allVisitorIdsToGrant.add(v.id);
+                        }
+                    });
+                }
+            } catch(e) {}
+        }
+
+        console.log(`[handleSuccessfulPayment] Granting access to ${allVisitorIdsToGrant.size} visitor IDs → post=${itemId}, expires=${expiresAt.toISOString()}`);
+        for (const vIdToGrant of allVisitorIdsToGrant) {
+            try {
+                await supabase.from('user_access').delete().eq('visitor_id', vIdToGrant).eq('post_id', itemId);
+                const { error: uaErr } = await supabase.from('user_access').insert({
+                    visitor_id: vIdToGrant,
+                    post_id: itemId,
+                    granted_at: new Date().toISOString(),
+                    expires_at: expiresAt.toISOString()
+                });
+                if (uaErr) {
+                    console.error(`[handleSuccessfulPayment] ❌ user_access insert failed for visitor=${vIdToGrant}:`, uaErr.message);
+                } else {
+                    console.log(`[handleSuccessfulPayment] ✅ user_access record created for visitor=${vIdToGrant}, post=${itemId}`);
+                }
+            } catch (uaEx) {
+                console.error(`[handleSuccessfulPayment] ❌ Exception writing user_access for visitor=${vIdToGrant}:`, uaEx.message);
             }
-        } catch (uaEx) {
-            console.error('[handleSuccessfulPayment] ❌ Exception writing user_access:', uaEx.message);
         }
 
         // --- REFERRAL COMMISSION LOGIC ---
@@ -3052,40 +3091,75 @@ async function handleSuccessfulPayment(visitorId, item, amount, phone, zenoOrder
 
 const verifyPaymentManual = async (req, res) => {
     const { visitor_id, post_id } = req.params;
+    const numericVisitorId = parseInt(visitor_id) || 0;
     try {
-        // 1. Check if order is ALREADY approved!
-        const { data: alreadyApproved } = await supabase
-            .from('payment_orders')
-            .select('*')
-            .eq('visitor_id', parseInt(visitor_id))
-            .eq('post_id', post_id)
-            .in('status', ['approved', 'manual_approved', 'completed', 'success'])
-            .limit(1);
-
-        if (alreadyApproved && alreadyApproved.length > 0) {
-            const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
-            if (game) {
-                await handleSuccessfulPayment(parseInt(visitor_id), game, alreadyApproved[0].amount, alreadyApproved[0].phone_number, alreadyApproved[0].promo_used, false);
-            }
-            return res.json({ success: true, message: 'Malipo yamehakikiwa na yamekamilika!' });
+        let cleanPhone = req.query.phone ? String(req.query.phone).replace(/[^0-9]/g, '') : '';
+        if (numericVisitorId > 0 && !cleanPhone) {
+            const { data: vProfile } = await supabase.from('visitors').select('phone').eq('id', numericVisitorId).single();
+            if (vProfile && vProfile.phone) cleanPhone = String(vProfile.phone).replace(/[^0-9]/g, '');
         }
 
-        const { data: pending } = await supabase
+        const matchingVisitorIds = new Set();
+        if (numericVisitorId > 0) matchingVisitorIds.add(numericVisitorId);
+        if (cleanPhone) {
+            const { data: matchedV } = await supabase.from('visitors').select('id, phone');
+            if (matchedV && matchedV.length > 0) {
+                matchedV.forEach(v => {
+                    const vp = String(v.phone || '').replace(/[^0-9]/g, '');
+                    if (vp && (cleanPhone.endsWith(vp.slice(-9)) || vp.endsWith(cleanPhone.slice(-9)))) {
+                        matchingVisitorIds.add(v.id);
+                    }
+                });
+            }
+        }
+
+        // 1. Check if order is ALREADY approved (by visitor_id OR phone match)!
+        const { data: allApproved } = await supabase
             .from('payment_orders')
             .select('*')
-            .eq('visitor_id', parseInt(visitor_id))
+            .eq('post_id', post_id)
+            .in('status', ['approved', 'manual_approved', 'completed', 'success', 'paid']);
+
+        if (allApproved && allApproved.length > 0) {
+            const matchedApproved = allApproved.find(o => {
+                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
+                const oPhone = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (cleanPhone && oPhone && (cleanPhone.endsWith(oPhone.slice(-9)) || oPhone.endsWith(cleanPhone.slice(-9)))) return true;
+                return false;
+            });
+
+            if (matchedApproved) {
+                const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
+                if (game) {
+                    await handleSuccessfulPayment(numericVisitorId > 0 ? numericVisitorId : matchedApproved.visitor_id, game, matchedApproved.amount, matchedApproved.phone_number, matchedApproved.promo_used, false);
+                }
+                return res.json({ success: true, message: 'Malipo yamehakikiwa na yamekamilika!' });
+            }
+        }
+
+        // 2. Check pending orders
+        const { data: allPending } = await supabase
+            .from('payment_orders')
+            .select('*')
             .eq('post_id', post_id)
             .eq('status', 'pending')
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .order('created_at', { ascending: false });
 
-        if (!pending || pending.length === 0) {
+        let order = null;
+        if (allPending && allPending.length > 0) {
+            order = allPending.find(o => {
+                if (matchingVisitorIds.has(parseInt(o.visitor_id))) return true;
+                const oPhone = String(o.phone_number || o.gift_phone || '').replace(/[^0-9]/g, '');
+                if (cleanPhone && oPhone && (cleanPhone.endsWith(oPhone.slice(-9)) || oPhone.endsWith(cleanPhone.slice(-9)))) return true;
+                return false;
+            });
+        }
+
+        if (!order) {
             return res.json({ success: false, message: 'Hakuna malipo yanayosubiri.' });
         }
 
-        const order = pending[0];
         const extOrderId = order.promo_used;
-
         if (!extOrderId) {
              return res.json({ success: false, message: 'Hii ni oda ya manual, tafadhali wasiliana na admin.' });
         }
@@ -3134,13 +3208,13 @@ const verifyPaymentManual = async (req, res) => {
             // Try posts first
             const { data: game } = await supabase.from('posts').select('*').eq('id', post_id).single();
             if (game) {
-                await handleSuccessfulPayment(parseInt(visitor_id), game, order.amount, order.phone_number, extOrderId, false);
+                await handleSuccessfulPayment(numericVisitorId > 0 ? numericVisitorId : order.visitor_id, game, order.amount, order.phone_number, extOrderId, false);
                 return res.json({ success: true });
             } else {
                 // Try videos
                 const { data: video } = await supabase.from('videos').select('*').eq('id', post_id).single();
                 if (video) {
-                    await handleSuccessfulPayment(parseInt(visitor_id), video, order.amount, order.phone_number, extOrderId, true);
+                    await handleSuccessfulPayment(numericVisitorId > 0 ? numericVisitorId : order.visitor_id, video, order.amount, order.phone_number, extOrderId, true);
                     return res.json({ success: true });
                 }
             }

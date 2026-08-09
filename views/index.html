@@ -5543,7 +5543,7 @@
                     </div>
                 </div>
                 <!-- Manual Verify Button (Hidden initially) -->
-                <button id="manual-verify-btn" onclick="manualVerifyPayment()" style="
+                <button id="manual-verify-btn" onclick="manualVerifyPayment(window.currentPaymentPostId || (document.getElementById('payPostId') ? document.getElementById('payPostId').value : null))" style="
                     display:none; width: 100%; margin-top: 20px; padding: 12px;
                     border-radius: 12px; border: 1px solid var(--primary);
                     background: rgba(0,242,255,0.1); color: var(--primary);
@@ -6677,22 +6677,58 @@
             updateDetailAccess(id, visitor, game);
         }
 
+        function renderLinkButtons(links, isFree = false) {
+            const formatted = (links || []).map(l => typeof l === 'string' ? { name: '', url: l } : l);
+            if (formatted.length === 0) return '';
+            return `
+                <div class="detail-links" style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                    ${formatted.map((l, index) => {
+                        const rawName = (l.name || '').trim();
+                        const nameStr = rawName.toUpperCase();
+                        const urlStr = String(l.url || '').toLowerCase();
+                        const isBios = nameStr.includes('BIOS') || urlStr.includes('bios');
+                        
+                        // Use exact custom name entered in Admin panel
+                        const displayTitle = rawName || (isBios ? 'BIOS' : (formatted.length > 1 ? `DOWNLOAD LINK ${index + 1}` : (isFree ? 'FREE DOWNLOAD' : 'DOWNLOAD GAME')));
+                        
+                        if (isBios) {
+                            return `
+                                <a href="${l.url}" target="_blank" class="dl-btn bios-btn" style="width:100%; box-sizing:border-box; justify-content:center; background:linear-gradient(135deg,#2563eb,#7c3aed); color:#ffffff; border:1.5px solid #60a5fa; font-family:'Orbitron'; font-weight:900; letter-spacing:1px; text-transform:uppercase; box-shadow:0 4px 20px rgba(37,99,235,0.4); border-radius:12px; padding:14px; text-decoration:none; display:flex; align-items:center; gap:10px; font-size:0.95rem; transition:transform 0.2s;">
+                                    <i class="fas fa-microchip" style="font-size:1.1rem; color:#93c5fd;"></i> ${displayTitle}
+                                </a>
+                            `;
+                        }
+                        
+                        const btnGradient = isFree ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'linear-gradient(135deg, #00d25b, #059669)';
+                        const btnBorder = '1.5px solid #22c55e';
+                        const btnShadow = isFree ? '0 4px 15px rgba(22,163,74,0.4)' : '0 4px 20px rgba(0,210,91,0.35)';
+                        
+                        return `
+                            <a href="${l.url}" target="_blank" class="dl-btn" style="width:100%; box-sizing:border-box; justify-content:center; background:${btnGradient}; color:#ffffff; border:${btnBorder}; font-family:'Orbitron'; font-weight:900; letter-spacing:1px; text-transform:uppercase; box-shadow:${btnShadow}; border-radius:12px; padding:14px; text-decoration:none; display:flex; align-items:center; gap:10px; font-size:0.95rem; transition:transform 0.2s;">
+                                <i class="fas fa-download" style="font-size:1.1rem;"></i> ${displayTitle}
+                            </a>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
         function parseDownloadLinks(rawLinks, gameObj) {
             let result = [];
             if (Array.isArray(rawLinks)) {
-                result = rawLinks.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+                result = rawLinks.map(l => typeof l === 'string' ? { name: '', url: l } : l);
             } else if (typeof rawLinks === 'string' && rawLinks.trim()) {
                 try {
                     const parsed = JSON.parse(rawLinks);
                     if (Array.isArray(parsed)) {
-                        result = parsed.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+                        result = parsed.map(l => typeof l === 'string' ? { name: '', url: l } : l);
                     } else if (typeof parsed === 'object' && parsed !== null && parsed.url) {
                         result = [parsed];
                     } else {
-                        result = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+                        result = [{ name: '', url: rawLinks.trim() }];
                     }
                 } catch (e) {
-                    result = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+                    result = [{ name: '', url: rawLinks.trim() }];
                 }
             }
 
@@ -6700,6 +6736,13 @@
                 const directUrl = gameObj.download_url || gameObj.link || gameObj.file_url || gameObj.url;
                 if (directUrl && typeof directUrl === 'string' && directUrl.trim()) {
                     result = [{ name: 'DOWNLOAD GAME', url: directUrl.trim() }];
+                }
+            }
+
+            if (gameObj && (gameObj.bios_url || gameObj.bios)) {
+                const biosUrl = String(gameObj.bios_url || gameObj.bios || '').trim();
+                if (biosUrl && !result.some(l => (l.name && String(l.name).toUpperCase().includes('BIOS')) || l.url === biosUrl)) {
+                    result.unshift({ name: 'BIOS', url: biosUrl });
                 }
             }
 
@@ -6733,11 +6776,7 @@
                         </div>
                     `;
                 } else {
-                    freeLinksHtml = `
-                        <div class="detail-links">
-                            ${freeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; border: 1.5px solid #22c55e; font-family: 'Orbitron'; font-weight: 900; box-shadow: 0 4px 15px rgba(22,163,74,0.4); text-transform: uppercase;"><i class="fas fa-download"></i> ${l.name || "FREE DOWNLOAD"}</a>`).join('')}
-                        </div>
-                    `;
+                    freeLinksHtml = renderLinkButtons(freeLinks, true);
                 }
 
                 container.innerHTML = `
@@ -6832,11 +6871,7 @@
                                 </div>
                             `;
                         } else {
-                            linksButtonsHtml = `
-                                <div class="detail-links" style="margin-top: 12px;">
-                                    ${activeLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background: linear-gradient(135deg, #00d25b, #059669); color: #ffffff; border: 1.5px solid #0f172a; font-family: 'Orbitron'; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || "DOWNLOAD GAME"}</a>`).join('')}
-                                </div>
-                            `;
+                            linksButtonsHtml = renderLinkButtons(activeLinks, false);
                         }
 
                         accessHtml = `
@@ -6863,13 +6898,16 @@
                         accessHtml = `
                             <div style="background: linear-gradient(135deg, rgba(255,171,0,0.15), rgba(255,171,0,0.05)); border: 1.5px solid #ffab00; border-radius: 12px; padding: 16px; margin-bottom: 15px; text-align:center;">
                                 <i class="fas fa-spinner fa-spin" style="font-size:1.8rem; color:#ffab00; margin-bottom:8px; display:block;"></i>
-                                <h4 style="color:#ffab00; margin:0 0 4px 0; font-family:'Orbitron'; font-size:1rem;">MALIPO YAKO YANA-SYNC LIVE...</h4>
-                                <p style="color:#a0a0b0; font-size:0.8rem; margin:0 0 14px 0;">Kama umeshaweka PIN kwenye simu, subiri sekunde chache mfumo unafungua game kiotomatiki.</p>
+                                <h4 style="color:#ffab00; margin:0 0 4px 0; font-family:'Orbitron'; font-size:1rem;">TUNASUBIRI UTHIBITISHO WA PIN YAKO...</h4>
+                                <p style="color:#a0a0b0; font-size:0.82rem; margin:0 0 12px 0;">Kama umeshaweka PIN kwenye simu yako, mfumo unafungua game kiotomatiki au bonyeza kitufe cha kijani hapa chini:</p>
+                                <button class="dl-btn" onclick="manualVerifyPayment('${game.id}')" style="width:100%; padding:13px; font-size:0.88rem; font-weight:900; background:linear-gradient(135deg,#00d25b,#059669); color:#fff; border:1.5px solid #0f172a; border-radius:10px; cursor:pointer; font-family:'Orbitron'; box-shadow:0 4px 15px rgba(0,210,91,0.4); margin-bottom:10px; text-transform:uppercase;">
+                                    <i class="fas fa-check-circle"></i> UMESHAWEKA PIN? BONYEZA HAPA KU-UNLOCK GAME
+                                </button>
                                 <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-                                    <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="flex:1; min-width:140px; padding:12px; font-size:0.85rem; font-weight:900; background:linear-gradient(135deg,var(--gold),#ff8c00); color:#000; border:none; border-radius:10px; cursor:pointer; letter-spacing:1px; box-shadow:0 0 10px rgba(255,180,0,0.4);">
+                                    <button class="dl-btn" onclick="initiatePayment('${game.id}')" style="flex:1; min-width:140px; padding:10px; font-size:0.78rem; font-weight:800; background:rgba(255,255,255,0.06); color:#ffb400; border:1px solid rgba(255,180,0,0.3); border-radius:8px; cursor:pointer;">
                                         <i class="fas fa-bolt"></i> LIPA TENA UPYA
                                     </button>
-                                    <button class="dl-btn" onclick="cancelPendingOrder('${game.id}', '${visitor ? visitor.id : 0}')" style="flex:1; min-width:120px; padding:12px; font-size:0.85rem; font-weight:800; background:rgba(255,255,255,0.08); color:#ff5555; border:1px solid rgba(255,85,85,0.3); border-radius:10px; cursor:pointer;">
+                                    <button class="dl-btn" onclick="cancelPendingOrder('${game.id}', '${visitor ? visitor.id : 0}')" style="flex:1; min-width:120px; padding:10px; font-size:0.78rem; font-weight:800; background:rgba(255,255,255,0.06); color:#ff5555; border:1px solid rgba(255,85,85,0.3); border-radius:8px; cursor:pointer;">
                                         <i class="fas fa-times-circle"></i> GHAIRI MALIPO
                                     </button>
                                 </div>
@@ -7156,7 +7194,7 @@
                                     if (accessLinks.length === 0) {
                                         linksHtml = `<a href="https://wa.me/255655361060?text=Habari%20Admin%20naomba%20link%20ya%20game%20la%20${encodeURIComponent(currentGame ? currentGame.title : '')}" target="_blank" class="dl-btn" style="justify-content:center;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:1.5px solid #22c55e;font-weight:900;box-shadow:0 4px 15px rgba(37,211,102,0.3);"><i class="fab fa-whatsapp"></i> CHUKUA GAME WHATSAPP</a>`;
                                     } else {
-                                        linksHtml = `<div class="detail-links" style="margin-top:12px;">${accessLinks.map(l => `<a href="${l.url}" target="_blank" class="dl-btn" style="background:linear-gradient(135deg,#00d25b,#059669);color:#fff;border:1.5px solid #0f172a;font-family:'Orbitron';font-weight:800;text-transform:uppercase;box-shadow:0 4px 15px rgba(0,210,91,0.3);"><i class="fas fa-download"></i> ${l.name || 'DOWNLOAD GAME'}</a>`).join('')}</div>`;
+                                        linksHtml = renderLinkButtons(accessLinks, false);
                                     }
 
                                     const accessHtml = `
@@ -7243,63 +7281,56 @@
             if (mvBtn) mvBtn.style.display = 'none';
         }
 
-        async function manualVerifyPayment() {
-            const btn = document.getElementById('manual-verify-btn');
-            const postId = document.getElementById('payPostId').value;
-            const visitorStr = localStorage.getItem('chidy_visitor');
-            if (!visitorStr) return;
-            const visitor = JSON.parse(visitorStr);
+        async function manualVerifyPayment(postIdParam) {
+            const payPostIdEl = document.getElementById('payPostId');
+            const postId = postIdParam || (payPostIdEl ? payPostIdEl.value : null) || window.currentPaymentPostId;
+            if (!postId) return;
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI ACCESS...';
+            const btn = document.getElementById('manual-verify-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INAHAKIKI ACCESS...';
+            }
+
+            const visitorStr = localStorage.getItem('chidy_visitor');
+            let visitor = visitorStr ? JSON.parse(visitorStr) : { id: 0 };
 
             try {
                 // First check /api/check-access with phone fallback
                 const phone = (visitor && visitor.phone) ? visitor.phone : (localStorage.getItem('chidy_last_phone') || '');
                 const phoneQ = phone ? '&phone=' + encodeURIComponent(phone) : '';
-                const checkRes = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}`);
+                const deviceFp = getDeviceFingerprint();
+                const checkRes = await fetch(`/api/check-access/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}&device_fp=${encodeURIComponent(deviceFp)}`);
                 const checkData = await checkRes.json();
                 
                 if (checkData && checkData.has_access) {
-                    switchPaymentStep('success');
-                    document.getElementById('paymentContinueBtn').onclick = () => {
-                        closePayment();
-                        openDetail(postId);
-                    };
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#00f2ff', '#bc13fe', '#00d25b']
-                    });
+                    closePayment();
+                    openDetail(postId);
+                    if (typeof triggerCelebration === "function") triggerCelebration();
                     return;
                 }
 
-                // Secondary check HarakaPay / PressoPay endpoints
-                const res = await fetch(`/api/payments/verify/${visitor.id}/${postId}`);
+                // Secondary check HarakaPay / PressoPay / Manual endpoints
+                const res = await fetch(`/api/payments/verify/${visitor.id}/${postId}?t=${Date.now()}${phoneQ}`);
                 const data = await res.json();
                 
                 if (data.success) {
-                    switchPaymentStep('success');
-                    document.getElementById('paymentContinueBtn').onclick = () => {
-                        closePayment();
-                        openDetail(postId);
-                    };
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#00f2ff', '#bc13fe', '#00d25b']
-                    });
+                    closePayment();
+                    openDetail(postId);
+                    if (typeof triggerCelebration === "function") triggerCelebration();
                 } else {
-                    alert(data.message || 'Malipo bado yanathibitishwa na mtandao. Kama umeweka PIN au admin ame-approve oda yako, bonyeza tena sekunde chache zikipita.');
-                    btn.disabled = false;
-                    btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+                    alert(data.message || 'Malipo bado yanathibitishwa na mtandao. Kama umeweka PIN kwenye simu yako, subiri sekunde 5 kisha ubonyeze tena HAKIKI.');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+                    }
                 }
             } catch (err) {
                 alert('Tatizo la mtandao. Jaribu tena.');
-                btn.disabled = false;
-                btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+                }
             }
         }
         function buildDirectLinks(game, links) {
