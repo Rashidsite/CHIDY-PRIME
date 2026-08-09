@@ -2195,26 +2195,33 @@ const formatGameLinks = (game) => {
     let rawLinks = game.links;
     let list = [];
     if (Array.isArray(rawLinks)) {
-        list = rawLinks.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+        list = rawLinks.map(l => typeof l === 'string' ? { name: '', url: l } : l);
     } else if (typeof rawLinks === 'string' && rawLinks.trim()) {
         try {
             const parsed = JSON.parse(rawLinks);
             if (Array.isArray(parsed)) {
-                list = parsed.map(l => typeof l === 'string' ? { name: 'DOWNLOAD GAME', url: l } : l);
+                list = parsed.map(l => typeof l === 'string' ? { name: '', url: l } : l);
             } else if (typeof parsed === 'object' && parsed !== null && parsed.url) {
                 list = [parsed];
             } else {
-                list = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+                list = [{ name: '', url: rawLinks.trim() }];
             }
         } catch (e) {
-            list = [{ name: 'DOWNLOAD GAME', url: rawLinks.trim() }];
+            list = [{ name: '', url: rawLinks.trim() }];
         }
     }
 
     if (list.length === 0) {
         const directUrl = game.download_url || game.link || game.file_url || game.url;
         if (directUrl && typeof directUrl === 'string' && directUrl.trim()) {
-            list = [{ name: 'DOWNLOAD GAME', url: directUrl.trim() }];
+            list = [{ name: '', url: directUrl.trim() }];
+        }
+    }
+
+    if (game && (game.bios_url || game.bios)) {
+        const biosUrl = String(game.bios_url || game.bios || '').trim();
+        if (biosUrl && !list.some(l => (l.name && String(l.name).toUpperCase().includes('BIOS')) || l.url === biosUrl)) {
+            list.unshift({ name: 'BIOS', url: biosUrl });
         }
     }
 
