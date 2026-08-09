@@ -5542,14 +5542,20 @@
                         <span>Usifunge popup hii mpaka malipo yakamilike.</span>
                     </div>
                 </div>
-                <!-- Manual Verify Button (Hidden initially) -->
+                <!-- Manual Verify Button (ALWAYS VISIBLE so user can unlock immediately after PIN) -->
                 <button id="manual-verify-btn" onclick="manualVerifyPayment(window.currentPaymentPostId || (document.getElementById('payPostId') ? document.getElementById('payPostId').value : null))" style="
-                    display:none; width: 100%; margin-top: 20px; padding: 12px;
-                    border-radius: 12px; border: 1px solid var(--primary);
-                    background: rgba(0,242,255,0.1); color: var(--primary);
-                    font-family: 'Orbitron'; font-size: 0.8rem; font-weight: 700;
-                    cursor: pointer; transition: 0.3s;
-                ">BADO SIJAPATA ACCESS? HAKIKI HAPA</button>
+                    display: block; width: 100%; margin-top: 15px; padding: 14px;
+                    border-radius: 12px; border: 1.5px solid #22c55e;
+                    background: linear-gradient(135deg, #00d25b, #059669); color: #ffffff;
+                    font-family: 'Orbitron'; font-size: 0.88rem; font-weight: 900;
+                    cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,210,91,0.4);
+                    text-transform: uppercase;
+                ">
+                    <i class="fas fa-check-circle"></i> UMESHAWEKA PIN? HAKIKI & UNLOCK GAME SASA
+                </button>
+                <a id="admin-whatsapp-btn" href="https://wa.me/255655361060?text=Habari%20Admin%20Nimeshalipia%20game%20naomba%20ku-unlock" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; padding:12px; background:rgba(37,211,102,0.12); border:1px solid #25d366; color:#25d366; border-radius:12px; text-decoration:none; font-size:0.82rem; font-weight:800; font-family:'Orbitron';">
+                    <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> WASILIANA NA ADMIN WHATSAPP AKU-UNLOCK
+                </a>
             </div>
 
             <!-- STEP 3: SUCCESS -->
@@ -7322,14 +7328,14 @@
                     alert(data.message || 'Malipo bado yanathibitishwa na mtandao. Kama umeweka PIN kwenye simu yako, subiri sekunde 5 kisha ubonyeze tena HAKIKI.');
                     if (btn) {
                         btn.disabled = false;
-                        btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+                        btn.innerHTML = '<i class="fas fa-check-circle"></i> UMESHAWEKA PIN? HAKIKI & UNLOCK GAME SASA';
                     }
                 }
             } catch (err) {
                 alert('Tatizo la mtandao. Jaribu tena.');
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerText = 'BADO SIJAPATA ACCESS? HAKIKI HAPA';
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> UMESHAWEKA PIN? HAKIKI & UNLOCK GAME SASA';
                 }
             }
         }
