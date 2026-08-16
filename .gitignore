@@ -9,4 +9,7 @@ admin-fix.js
 admin-backup.html
 temp_matches.txt
 temp_script.js
-
+.next/
+.env.local
+.env.*.local
+tsconfig.tsbuildinfo

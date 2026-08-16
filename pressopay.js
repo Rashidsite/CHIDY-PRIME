@@ -5,8 +5,8 @@
 
 const { createHmac, randomUUID } = require('crypto');
 
-const PRESSOPAY_KEY    = process.env.PRESSOPAY_API_KEY    || 'pk_MvvvZrQ4DNtxcqCO';
-const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || 'sk_NQHA8svPNoQr00XXJJ4hP5QGdRjEQvxWOd04xPyZhvM';
+const PRESSOPAY_KEY    = process.env.PRESSOPAY_API_KEY    || 'pk_IlU-qGhdV5H-sGj7';
+const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || 'sk_Z-H-BqAmcxOwKOFqaBfSgYsZT9KMBgYDpHeEQHKJT-w';
 const PRESSOPAY_BASE   = process.env.PRESSOPAY_BASE_URL   || 'https://pressopay.com';
 
 // ══════════════════════════════════════════════════════════
@@ -73,22 +73,28 @@ async function createCheckout(params) {
     const response = await fetch(PRESSOPAY_BASE + path, {
         method: 'POST',
         headers: {
+            'User-Agent':            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept':                'application/json',
             'content-type':          'application/json',
             'idempotency-key':       idempotencyKey,
             'X-Pressso-Key':         PRESSOPAY_KEY,
             'X-Pressso-Timestamp':   timestamp,
             'X-Pressso-Nonce':       nonce,
-            'X-Pressso-Signature':   signature
+            'X-Pressso-Signature':   signature,
+            'X-Presso-Key':          PRESSOPAY_KEY,
+            'X-Presso-Timestamp':    timestamp,
+            'X-Presso-Nonce':        nonce,
+            'X-Presso-Signature':    signature
         },
         body,
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(5000)
     });
 
     const responseTime = Date.now() - startTime;
 
     if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
-        throw new Error(`PressoPay checkout failed: ${response.status} - ${errorText}`);
+        throw new Error(`PressoPay checkout failed: ${response.status} - ${errorText.substring(0, 150)}`);
     }
 
     const data = await response.json();
@@ -121,18 +127,24 @@ async function checkPaymentStatus(reference) {
     const response = await fetch(PRESSOPAY_BASE + path, {
         method: 'GET',
         headers: {
+            'User-Agent':          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept':              'application/json',
             'X-Pressso-Key':       PRESSOPAY_KEY,
             'X-Pressso-Timestamp': timestamp,
             'X-Pressso-Nonce':     nonce,
-            'X-Pressso-Signature': signature
+            'X-Pressso-Signature': signature,
+            'X-Presso-Key':        PRESSOPAY_KEY,
+            'X-Presso-Timestamp':  timestamp,
+            'X-Presso-Nonce':      nonce,
+            'X-Presso-Signature':  signature
         },
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(5000)
     });
     const responseTime = Date.now() - startTime;
 
     if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
-        throw new Error(`Status check failed: ${response.status} - ${errorText}`);
+        throw new Error(`Status check failed: ${response.status} - ${errorText.substring(0, 150)}`);
     }
 
     const data = await response.json();
