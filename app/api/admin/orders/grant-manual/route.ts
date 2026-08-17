@@ -77,7 +77,6 @@ export async function POST(request: NextRequest) {
 
     let createdOrderRecord: any = null;
 
-    // 1. Insert into 'orders' table (if available)
     try {
       const { data: createdOrder, error: orderErr } = await supabase
         .from('orders')
@@ -115,7 +114,6 @@ export async function POST(request: NextRequest) {
       console.warn('[Grant Manual] orders table insert bypassed:', e?.message);
     }
 
-    // 2. Insert into 'payment_orders' table (ensures it appears on current admin view)
     try {
       const { data: legacyOrder, error: legacyErr } = await supabase
         .from('payment_orders')
@@ -137,7 +135,31 @@ export async function POST(request: NextRequest) {
       console.warn('[Grant Manual] payment_orders insert warning:', e?.message);
     }
 
-    // 3. Insert into payment_transactions ledger
+    try {
+      await supabase.from('profiles').upsert(
+        {
+          phone_number: cleanPhone,
+          full_name: customerName,
+          role: 'user',
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'phone_number' }
+      );
+    } catch {}
+
+    try {
+      await supabase.from('xx_users').upsert(
+        {
+          phone: cleanPhone,
+          name: customerName,
+          role: 'user',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'phone' }
+      );
+    } catch {}
+
     try {
       await supabase.from('payment_transactions').insert({
         order_ref: orderNumber,
@@ -159,7 +181,6 @@ export async function POST(request: NextRequest) {
       console.warn('[Grant Manual] payment_transactions insert warning:', e?.message);
     }
 
-    // 4. Upsert into user_purchases
     try {
       await supabase.from('user_purchases').upsert(
         {
@@ -184,7 +205,6 @@ export async function POST(request: NextRequest) {
       console.warn('[Grant Manual] user_purchases upsert warning:', e?.message);
     }
 
-    // 5. Broadcast to realtime channels
     try {
       const channel = supabase.channel('storefront-sync');
       await channel.subscribe();

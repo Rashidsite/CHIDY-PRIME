@@ -102,25 +102,53 @@ export async function POST(request: Request) {
       console.warn('[Checkout] ⚠️ Primary order insert warning:', insertError.message);
     }
 
-    // 2. Insert into immutable payment_transactions ledger
-    await supabase.from('payment_transactions').insert({
-      order_ref: orderNumber,
-      phone_number: visitor_phone,
-      product_id: game_id,
-      amount: gamePrice,
-      currency: 'TZS',
-      gateway: gamePrice === 0 ? 'free' : 'pressopay',
-      status: gamePrice === 0 ? 'COMPLETED' : 'PENDING',
-      raw_request: {
-        customer_name,
-        visitor_phone,
-        game_id,
-        game_title: gameTitle,
-        amount: gamePrice,
-      },
-    });
+    // 2. Auto-register / Upsert Customer Profile into database
+    try {
+      await supabase.from('profiles').upsert(
+        {
+          phone_number: visitor_phone,
+          full_name: customer_name,
+          role: 'user',
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'phone_number' }
+      );
+    } catch {}
 
-    // 3. Fallback record into payment_orders for legacy views
+    try {
+      await supabase.from('xx_users').upsert(
+        {
+          phone: visitor_phone,
+          name: customer_name,
+          role: 'user',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'phone' }
+      );
+    } catch {}
+
+    // 3. Insert into immutable payment_transactions ledger
+    try {
+      await supabase.from('payment_transactions').insert({
+        order_ref: orderNumber,
+        phone_number: visitor_phone,
+        product_id: game_id,
+        amount: gamePrice,
+        currency: 'TZS',
+        gateway: gamePrice === 0 ? 'free' : 'pressopay',
+        status: gamePrice === 0 ? 'COMPLETED' : 'PENDING',
+        raw_request: {
+          customer_name,
+          visitor_phone,
+          game_id,
+          game_title: gameTitle,
+          amount: gamePrice,
+        },
+      });
+    } catch {}
+
+    // 4. Fallback record into payment_orders for legacy views
     try {
       await supabase.from('payment_orders').insert({
         visitor_id: Math.floor(Math.random() * 10000),
@@ -132,7 +160,7 @@ export async function POST(request: Request) {
       });
     } catch {}
 
-    // 4. Trigger Instant Telegram Admin Alert
+    // 5. Trigger Instant Telegram Admin Alert
     sendTelegramOrderNotification({
       order_number: orderNumber,
       visitor_phone,
@@ -143,7 +171,7 @@ export async function POST(request: Request) {
     }).catch((err) => console.warn('Telegram Notification Error:', err));
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 5. SMART GATEWAY ROUTING (Trigger STK Push)
+    // 6. SMART GATEWAY ROUTING (Trigger STK Push)
     // ──────────────────────────────────────────────────────────────────────────
     let resolvedGateway: 'pressopay' | 'harakapay' | 'free' = 'pressopay';
     let gatewayReference: string | undefined;
