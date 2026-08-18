@@ -10,17 +10,17 @@ function parseDurationDays(dur?: string): number {
   if (l.includes('30') || l.includes('month') || l.includes('mwezi')) return 30;
   if (l.includes('7') || l.includes('week') || l.includes('wiki')) return 7;
   if (l.includes('24') || l.includes('day') || l.includes('siku') || l.includes('1 day')) return 1;
-  if (l.includes('2 hour') || l.includes('2 hrs') || l.includes('masaa 2')) return 0.1;
+  if (l.includes('2 hour') || l.includes('2 hrs') || l.includes('masaa 2') || l.includes('2 hours')) return 2;
   const num = parseInt(dur.replace(/\D/g, ''), 10);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 0 : Math.round(num);
 }
 
 function formatDurationFromDays(days?: number): string {
-  if (!days || days === 0 || days >= 365) return 'Lifetime';
+  if (days === undefined || days === null || days === 0 || days >= 365) return 'Lifetime';
   if (days === 30) return '30 Days';
   if (days === 7) return '7 Days';
   if (days === 1) return '24 Hours';
-  if (days < 1) return '2 Hours';
+  if (days === 2) return '2 Hours';
   return `${days} Days`;
 }
 
