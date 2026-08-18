@@ -172,6 +172,7 @@ export default function FrontHubPage() {
 
       if (gamesData && gamesData.length > 0) {
         gamesData.forEach((g) => {
+          if (g.status === 'draft' || g.status === 'archived') return;
           combined.push({
             id: g.id,
             title: g.title,
@@ -183,6 +184,8 @@ export default function FrontHubPage() {
             tags: g.tags || ['Chidy Prime Mod', 'Tanzania'],
             status: g.status || 'published',
             download_url: g.download_url,
+            access_duration: g.access_duration || g.license_duration || 'Lifetime',
+            license_duration: g.license_duration || g.access_duration || 'Lifetime',
           });
         });
       }
@@ -190,6 +193,7 @@ export default function FrontHubPage() {
       if (postsData && postsData.length > 0) {
         const existingIds = new Set(combined.map((c) => c.id));
         postsData.forEach((p) => {
+          if (p.status === 'draft' || p.status === 'archived') return;
           if (!existingIds.has(p.id)) {
             combined.push({
               id: p.id,
@@ -202,6 +206,8 @@ export default function FrontHubPage() {
               tags: ['Chidy Prime Mod', 'Tanzania'],
               status: p.status || 'published',
               download_url: p.download_url,
+              access_duration: p.access_duration || p.license_duration || 'Lifetime',
+              license_duration: p.license_duration || p.access_duration || 'Lifetime',
             });
           }
         });

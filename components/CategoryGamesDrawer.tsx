@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, SlidersHorizontal, Star, AlertCircle, Zap } from 'lucide-react';
-import { GameProduct } from './GameCard';
+import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
 
 interface CategoryGamesDrawerProps {
@@ -146,10 +146,15 @@ export default function CategoryGamesDrawer({
                       {/* Detail Info */}
                       <div className="flex-1 flex flex-col justify-between min-w-0">
                         <div className="space-y-1.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="px-2 py-0.5 rounded bg-blue-600/10 text-blue-400 border border-blue-600/20 text-[9px] font-black uppercase tracking-wider">
-                              {game.category}
-                            </span>
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-2 py-0.5 rounded bg-blue-600/10 text-blue-400 border border-blue-600/20 text-[9px] font-black uppercase tracking-wider">
+                                {game.category}
+                              </span>
+                              <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-black uppercase tracking-wider">
+                                {formatPlanDuration(game.access_duration || game.license_duration, isFree)}
+                              </span>
+                            </div>
                             {game.rating && (
                               <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold">
                                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
