@@ -99,6 +99,17 @@ export default function AdminGamesPage() {
     fetchGames();
   }, []);
 
+  // Lock body scroll when modal is active to prevent background scrolling
+  useEffect(() => {
+    if (modalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow || 'unset';
+      };
+    }
+  }, [modalOpen]);
+
   const handleOpenAdd = () => {
     setEditingGame(null);
     setTitle('');
@@ -512,8 +523,13 @@ export default function AdminGamesPage() {
 
       {/* ── PROFESSIONAL MULTI-TAB PRODUCT MODAL ── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full relative shadow-2xl space-y-6 max-h-[92vh] flex flex-col justify-between">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[6px] flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div className="bg-slate-900/95 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-2xl w-full relative shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] space-y-6 max-h-[92vh] flex flex-col justify-between overscroll-contain">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 shrink-0">

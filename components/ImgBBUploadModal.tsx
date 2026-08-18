@@ -56,6 +56,16 @@ export default function ImgBBUploadModal({
     }
   };
 
+  React.useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow || 'unset';
+      };
+    }
+  }, [isOpen]);
+
   const handleCopy = () => {
     if (!uploadedUrl) return;
     navigator.clipboard.writeText(uploadedUrl);
@@ -75,8 +85,13 @@ export default function ImgBBUploadModal({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full relative shadow-glass space-y-4">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsOpen(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[6px] flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div className="bg-slate-900/95 border border-slate-700/80 rounded-3xl p-6 max-w-md w-full relative shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] space-y-4 overscroll-contain">
             
             <button
               onClick={() => setIsOpen(false)}
