@@ -100,7 +100,7 @@ export default function CategoryGrid({
       </div>
 
       {/* Category Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {(activeList ?? []).map((cat, idx) => {
           const catName = cat?.name || 'Category';
           const isSelected = (selectedCategory || '').toLowerCase() === catName.toLowerCase();
@@ -120,26 +120,26 @@ export default function CategoryGrid({
               } shadow-lg hover:border-blue-500/60 transition-all duration-300 cursor-pointer group touch-manipulation interactive-card`}
             >
               {/* Card Header: Title + Game Count */}
-              <div className="flex items-center justify-between p-3 bg-[#0F172A] border-b border-slate-800/80">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
-                    <Gamepad2 className="w-4 h-4 text-white" />
+              <div className="flex items-center justify-between p-2 sm:p-3 bg-[#0F172A] border-b border-slate-800/80">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                    <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-tight leading-snug truncate group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-tight leading-tight truncate group-hover:text-blue-400 transition-colors">
                       {catName}
                     </h3>
                     {cat?.description && (
-                      <p className="text-[10px] text-slate-400 font-medium line-clamp-1">
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium line-clamp-1 hidden sm:block">
                         {cat.description}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap bg-slate-900 text-blue-400 border border-slate-800">
-                    {cat?.game_count ?? 12} games
+                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                  <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black whitespace-nowrap bg-slate-900 text-blue-400 border border-slate-800">
+                    {cat?.game_count ?? 12}
                   </span>
                 </div>
               </div>
@@ -150,7 +150,7 @@ export default function CategoryGrid({
                   src={cat?.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
                   alt={catName}
                   fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   placeholder="blur"
                   blurDataURL={BLUR_DATA_URL}
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -159,12 +159,12 @@ export default function CategoryGrid({
               </div>
 
               {/* Card Footer: Action Button */}
-              <div className="p-3 bg-[#0F172A] border-t border-slate-800/80 flex items-center justify-between">
-                <span className="text-[11px] font-black uppercase text-blue-400 group-hover:text-blue-300 transition-colors flex items-center gap-1">
-                  <span>Fungua Kategoria</span>
-                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="p-2 sm:p-3 bg-[#0F172A] border-t border-slate-800/80 flex items-center justify-between">
+                <span className="text-[9px] sm:text-[11px] font-black uppercase text-blue-400 group-hover:text-blue-300 transition-colors flex items-center gap-1">
+                  <span>Fungua</span>
+                  <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-glow" />
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shadow-glow" />
               </div>
             </motion.div>
           );

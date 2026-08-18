@@ -81,7 +81,7 @@ interface HeroSlideshowProps {
 
 export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 5000, onCtaClick }: HeroSlideshowProps) {
   const router = useRouter();
-  const activeSlides = slides.length > 0 ? slides : DEFAULT_SLIDES;
+  const activeSlides = Array.isArray(slides) && slides.length > 0 ? slides : DEFAULT_SLIDES;
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -146,15 +146,13 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
   const ytId = isYouTube ? getYouTubeId(mediaInfo.video) : null;
 
   return (
-    <div className="relative w-full rounded-3xl overflow-hidden bg-[#0F172A] border border-slate-800 shadow-xl group">
+    <div className="relative w-full aspect-[16/10] min-h-[220px] max-h-[280px] md:min-h-[340px] md:max-h-none md:aspect-auto rounded-2xl md:rounded-3xl overflow-hidden bg-[#0F172A] border border-slate-800 shadow-xl group">
       
-      {/* ── SPLIT SHOWCASE: Picture on Right, Text on Solid Slate Panel on Left ── */}
-      <div className="grid grid-cols-1 md:grid-cols-12 min-h-[320px] sm:min-h-[340px]">
+      {/* ── DESKTOP SPLIT VIEW (md:grid) ── */}
+      <div className="hidden md:grid md:grid-cols-12 min-h-[340px]">
         
-        {/* ── LEFT: Text & Action Panel ── */}
-        <div className="md:col-span-5 p-6 sm:p-8 bg-[#0F172A] flex flex-col justify-center gap-3 z-10 border-b md:border-b-0 md:border-r border-slate-800">
-          
-          {/* Badge */}
+        {/* LEFT: Text & Action Panel */}
+        <div className="md:col-span-5 p-6 sm:p-8 bg-[#0F172A] flex flex-col justify-center gap-3 z-10 border-r border-slate-800">
           <AnimatePresence mode="wait">
             <motion.div
               key={`tag-${slide.id}`}
@@ -168,7 +166,6 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
             </motion.div>
           </AnimatePresence>
 
-          {/* Title */}
           <AnimatePresence mode="wait">
             <motion.h1
               key={`title-${slide.id}`}
@@ -182,7 +179,6 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
             </motion.h1>
           </AnimatePresence>
 
-          {/* Subtitle */}
           {slide.subtitle && (
             <AnimatePresence mode="wait">
               <motion.p
@@ -198,7 +194,6 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
             </AnimatePresence>
           )}
 
-          {/* CTA Action Button */}
           <div className="pt-2">
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -212,8 +207,8 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
           </div>
         </div>
 
-        {/* ── RIGHT: Image / Video Showcase Container ── */}
-        <div className="md:col-span-7 relative min-h-[220px] sm:min-h-[260px] md:min-h-full bg-slate-900 overflow-hidden">
+        {/* RIGHT: Image / Video Container */}
+        <div className="md:col-span-7 relative min-h-full bg-slate-900 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={slide.id}
@@ -245,42 +240,115 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
                   draggable={false}
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-60 md:hidden" />
             </motion.div>
           </AnimatePresence>
+        </div>
+      </div>
 
-          {/* Navigation Arrows */}
-          <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
-            <button
-              onClick={prevSlide}
-              className="w-9 h-9 rounded-full bg-slate-950/80 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="w-9 h-9 rounded-full bg-slate-950/80 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+      {/* ── MOBILE IMMERSIVE VIEW (md:hidden) ── */}
+      <div className="md:hidden absolute inset-0 w-full h-full">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide.id}
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0 w-full h-full"
+          >
+            <Image
+              src={mediaInfo.image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
+              alt={slide.title}
+              fill
+              priority={current === 0}
+              quality={95}
+              unoptimized={Boolean(mediaInfo.image && (mediaInfo.image.includes('ibb.co') || mediaInfo.image.includes('images.unsplash.com')))}
+              placeholder="blur"
+              blurDataURL={BLUR_DATA_URL}
+              sizes="100vw"
+              className="object-cover object-center w-full h-full"
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Clean Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B111E] via-[#0B111E]/75 to-transparent z-10" />
+
+        {/* Overlay Content */}
+        <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 z-20 flex flex-col justify-end gap-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-600/30 border border-blue-400/40 text-blue-300 text-[9px] font-black uppercase tracking-wider">
+              <Sparkles className="w-2.5 h-2.5 text-blue-300" />
+              <span>{slide.tag || 'GAME MPYA'}</span>
+            </span>
           </div>
 
-          {/* Slide Indicator Dots */}
-          <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5">
-            {activeSlides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={(e) => goToSlide(idx, e)}
-                className={`h-2 rounded-full transition-all cursor-pointer touch-manipulation ${
-                  idx === current ? 'w-6 bg-blue-500' : 'w-2 bg-slate-700/80 hover:bg-slate-500'
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
+          <h1 className="text-sm sm:text-base font-black text-white uppercase tracking-tight truncate leading-tight mt-0.5">
+            {slide.title}
+          </h1>
+
+          {slide.subtitle && (
+            <p className="text-[10px] text-slate-300 font-medium truncate leading-tight">
+              {slide.subtitle}
+            </p>
+          )}
+
+          <div className="pt-1.5 flex items-center justify-between">
+            <button
+              onClick={(e) => handleCtaClick(e, slide.cta_link)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-400 shadow-md transition-colors cursor-pointer touch-manipulation"
+            >
+              <Gamepad2 className="w-3.5 h-3.5 text-white" />
+              <span>{slide.cta_text || 'GAME MPYA ➔'}</span>
+            </button>
+
+            {/* Slide Dots on Mobile */}
+            <div className="flex items-center gap-1">
+              {(activeSlides ?? []).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => goToSlide(idx, e)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === current ? 'w-4 bg-blue-500' : 'w-1.5 bg-slate-600'
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Desktop Navigation Arrows */}
+      <div className="hidden md:flex absolute bottom-4 right-4 z-20 items-center gap-2">
+        <button
+          onClick={prevSlide}
+          className="w-9 h-9 rounded-full bg-slate-950/80 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="w-9 h-9 rounded-full bg-slate-950/80 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Desktop Slide Indicator Dots */}
+      <div className="hidden md:flex absolute bottom-4 left-4 z-20 items-center gap-1.5">
+        {(activeSlides ?? []).map((_, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => goToSlide(idx, e)}
+            className={`h-2 rounded-full transition-all cursor-pointer touch-manipulation ${
+              idx === current ? 'w-6 bg-blue-500' : 'w-2 bg-slate-700/80 hover:bg-slate-500'
+            }`}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
       </div>
     </div>
   );

@@ -650,7 +650,7 @@ export default function FrontHubPage() {
                 style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
               >
                 {(trendingGames ?? []).map((game, idx) => (
-                  <div key={game?.id || idx} className="game-card-item w-[210px] sm:w-[240px] md:w-[260px] shrink-0 snap-start">
+                  <div key={game?.id || idx} className="game-card-item w-[260px] sm:w-[280px] shrink-0 snap-start">
                     <GameCard
                       game={game}
                       onBuyNow={handleBuyNow}

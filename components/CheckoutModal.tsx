@@ -722,7 +722,21 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
               <div className="p-4 sm:p-5 rounded-2xl bg-[#080D18] border border-slate-800/80 space-y-3 text-left">
                 <div className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-2.5">
                   <span className="text-slate-400 font-bold uppercase text-[10px]">Mteja</span>
-                  <span className="text-white font-extrabold">{fullName || phone}</span>
+                  <span className="text-white font-extrabold font-mono text-xs">
+                    {(() => {
+                      const name = (fullName || '').trim();
+                      const rawPhone = cleanPhoneNumber(phone) || (typeof window !== 'undefined' ? localStorage.getItem('cpcg_user_phone') : '') || activeOrder?.phone_number || activeOrder?.phone || '';
+                      if (rawPhone) {
+                        const p = rawPhone.startsWith('255') ? '0' + rawPhone.slice(3) : rawPhone;
+                        const formattedPhone = p.length === 10 ? `${p.slice(0, 4)} ${p.slice(4, 7)} ${p.slice(7)}` : p;
+                        if (name && name !== `User-${rawPhone}`) {
+                          return `${name} (${formattedPhone})`;
+                        }
+                        return formattedPhone;
+                      }
+                      return name || 'Mteja';
+                    })()}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-2.5">

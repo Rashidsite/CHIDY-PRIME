@@ -188,7 +188,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
 
         <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
           <div className="min-w-0">
-            <span className="text-[8px] sm:text-[9px] uppercase font-black text-purple-400 tracking-wider block leading-none mb-1 truncate">
+            <span className="text-[9px] sm:text-[10px] uppercase font-black text-purple-400 tracking-wider block leading-none mb-1 whitespace-nowrap">
               {durationLabel}
             </span>
             {showUnlocked ? (

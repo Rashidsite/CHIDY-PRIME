@@ -86,7 +86,7 @@ export default function RootLayout({
             </div>
 
           {/* ── HIGH-TECH MODERN FOOTER ── */}
-          <footer className="relative z-20 border-t-2 border-emerald-500/40 bg-black text-white mt-20 pt-14 pb-8">
+          <footer className="relative z-30 border-t border-slate-800 bg-[#060911] text-white mt-20 pt-14 pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.9)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
               
               {/* ── COL 1: LOGO & BRAND ── */}
