@@ -22,6 +22,8 @@ export default function AdminSidebar() {
     { href: '/admin/games', label: 'Game Catalog (CRUD)', icon: Gamepad2 },
     { href: '/admin/orders', label: 'Orders & Transactions', icon: ShoppingBag },
     { href: '/admin/users', label: 'Users & Roles', icon: Users },
+    { href: '/admin/cms/categories', label: 'CMS Categories', icon: Sparkles },
+    { href: '/admin/cms/slides', label: 'CMS Hero Slides', icon: Store },
     { href: '/admin/settings', label: 'Store Settings', icon: Settings },
   ];
 
