@@ -70,6 +70,19 @@ export default function MobileBottomNav() {
           const isActive = pathname === item.url || (item.url.startsWith('#') && false);
           const isExternal = item.url.startsWith('http') || item.url.startsWith('//');
 
+          const handleClick = (e: React.MouseEvent) => {
+            if (item.url.includes('#catalog') || item.id === 'nav-all-games' || item.id === 'nav-categories') {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('cpcg_open_all_games', { detail: { category: 'ALL' } }));
+                const catalogEl = document.getElementById('catalog');
+                if (catalogEl) {
+                  e.preventDefault();
+                  catalogEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }
+            }
+          };
+
           const content = (
             <div className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-250 cursor-pointer touch-manipulation group">
               {/* Icon Container */}
@@ -124,6 +137,7 @@ export default function MobileBottomNav() {
             <Link
               key={item.id}
               href={item.url}
+              onClick={handleClick}
               className="flex-1 flex justify-center focus:outline-none"
             >
               {content}

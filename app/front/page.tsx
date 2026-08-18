@@ -666,11 +666,20 @@ export default function FrontHubPage() {
           )
         )}
 
-        {/* ── Main View (Grid or Search Results) ── */}
-        {searchQuery.trim().length > 0 ? (
-          /* Search results vault mode */
+        {/* ── Main View: Unified Master All Games Feed with Dynamic Category Pills ── */}
+        {loading ? (
+          <section className="space-y-6">
+            <div className="h-16 bg-slate-900 border border-slate-800 animate-pulse rounded-2xl" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <CategorySkeleton key={i} />
+              ))}
+            </div>
+          </section>
+        ) : (
           <GameCatalog
             games={games}
+            categories={categories}
             searchQuery={searchQuery}
             fixedCategory={null}
             onBuyNow={handleBuyNow}
@@ -679,35 +688,6 @@ export default function FrontHubPage() {
               setSearchQuery('');
             }}
           />
-        ) : (
-          /* Standard categories catalog mode */
-          loading ? (
-            <section className="space-y-6">
-              <div className="h-16 bg-black border-2 border-emerald-500/20 animate-pulse rounded-2xl" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <CategorySkeleton key={i} />
-                ))}
-              </div>
-            </section>
-          ) : (
-            <CategoryGrid
-              categories={categoryListWithCounts}
-              selectedCategory={selectedCategory}
-              isRegistered={isRegistered}
-              onRegisterClick={() => setShowRegisterModal(true)}
-              onSelectCategory={(catName) => {
-                setSelectedDrawerCategory(catName);
-                setCategoryDrawerOpen(true);
-                if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-                  const sectionEl = document.getElementById('category-vault-section');
-                  if (sectionEl) {
-                    sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }
-              }}
-            />
-          )
         )}
       </main>
 
