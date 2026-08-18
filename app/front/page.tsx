@@ -53,6 +53,7 @@ const INITIAL_FALLBACK_GAMES: GameProduct[] = [
 ];
 
 export default function FrontHubPage() {
+  const supabase = useMemo(() => createClient(), []);
   const [games, setGames] = useState<GameProduct[]>([]);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -152,8 +153,6 @@ export default function FrontHubPage() {
     setShowCelebration(true);
     setTimeout(() => setShowCelebration(false), 3000);
   };
-
-  const supabase = createClient();
 
   const loadStorefrontData = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
