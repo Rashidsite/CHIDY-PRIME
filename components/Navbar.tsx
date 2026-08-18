@@ -1,140 +1,440 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Gamepad2, 
   Search, 
-  ShoppingBag, 
   User, 
-  ShieldCheck, 
   Menu, 
   X, 
   LogOut,
   PackageCheck,
-  Sparkles
+  Smartphone,
+  ShieldCheck,
+  ArrowRight,
+  LogIn,
+  Download,
+  Phone
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { GameProduct } from './GameCard';
+import { formatCurrency } from '@/lib/utils';
+import { usePWA } from './PWAProvider';
+import { useAuth } from './AuthProvider';
+import LogoutConfirmModal from './LogoutConfirmModal';
+import InstallAppButton from './InstallAppButton';
 
 interface NavbarProps {
-  cartCount?: number;
-  onOpenCart?: () => void;
   onSearchChange?: (term: string) => void;
+  games?: GameProduct[];
 }
 
-export default function Navbar({ cartCount = 0, onOpenCart, onSearchChange }: NavbarProps) {
+export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [search, setSearch] = useState('');
-  const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  const { installApp } = usePWA();
+  const { user, profile, signOut: handleLogout } = useAuth();
+
+  // Floating dropdown states
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient();
 
+  // Ensure portal target (document.body) is available client-side
   useEffect(() => {
-    async function checkUser() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+    setMounted(true);
+  }, []);
 
-        if (profile?.role === 'admin') {
-          setIsAdmin(true);
-        }
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+
+
+  // Click outside to close search dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        desktopSearchRef.current && !desktopSearchRef.current.contains(event.target as Node) &&
+        mobileSearchRef.current && !mobileSearchRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
       }
     }
-    checkUser();
-  }, [supabase]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSearchChange) {
       onSearchChange(search);
     }
+    setShowDropdown(false);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setIsAdmin(false);
-    window.location.href = '/';
+
+
+  // Instant search results
+  const matchingGames = useMemo(() => {
+    if (search.trim().length < 2 || !games || games.length === 0) return [];
+    const query = search.toLowerCase().trim();
+    return games.filter(
+      (game) =>
+        game.title.toLowerCase().includes(query) ||
+        game.category?.toLowerCase().includes(query) ||
+        (game.description && game.description.toLowerCase().includes(query))
+    ).slice(0, 5);
+  }, [search, games]);
+
+  const handleKeyDown = (e: React.KeyboardEvent, results: GameProduct[]) => {
+    if (results.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % results.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + results.length) % results.length);
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && activeIndex < results.length) {
+        e.preventDefault();
+        router.push(`/games/${results[activeIndex].id}`);
+        setSearch('');
+        setShowDropdown(false);
+      }
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setActiveIndex(-1);
+    }
   };
+
+  const renderSearchDropdown = (results: GameProduct[], activeIdx: number) => {
+    if (results.length === 0) return null;
+    return (
+      <div className="absolute left-0 right-0 mt-2 z-50 rounded-2xl bg-slate-950 border border-slate-800 shadow-2xl p-2 space-y-1 pointer-events-auto">
+        <div className="px-3 py-1.5 border-b border-slate-800 flex items-center justify-between">
+          <span className="text-[10px] font-black uppercase text-blue-400 tracking-wider">Matokeo ya Haraka</span>
+          <span className="text-[9px] text-slate-500 font-bold">{results.length} games</span>
+        </div>
+        <div className="max-h-[280px] overflow-y-auto space-y-0.5 divide-y divide-slate-800/60">
+          {results.map((game, index) => {
+            const isSelected = index === activeIdx;
+            const isFree = game.price === 0;
+            return (
+              <div
+                key={game.id}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  router.push(`/games/${game.id}`);
+                  setSearch('');
+                  setShowDropdown(false);
+                }}
+                className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all pointer-events-auto ${
+                  isSelected ? 'bg-blue-600 text-white' : 'hover:bg-slate-900 text-white'
+                }`}
+              >
+                <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-slate-800 bg-slate-900">
+                  <Image
+                    src={game.cover_image}
+                    alt={game.title}
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-black truncate uppercase leading-tight text-white">
+                    {game.title}
+                  </h4>
+                  <span className="text-[9px] font-bold uppercase tracking-wider block mt-0.5 text-blue-400">
+                    {game.category}
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-black block leading-none text-blue-400">
+                    {isFree ? 'BURE' : formatCurrency(game.price)}
+                  </span>
+                  <span className="text-[8px] font-bold uppercase tracking-wide block mt-0.5 text-slate-400">
+                    {isFree ? 'DOWNLOAD' : 'BUY NOW'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || 'Mteja wa CHIDYPRIME';
+  const displayPhone = profile?.phone_number || user?.user_metadata?.phone_number || user?.phone || '';
+
+  // ─── PORTAL DRAWER JSX ──────────────────────────────────────────────────────
+  const drawerPortal = (
+    <AnimatePresence>
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[9999] md:hidden pointer-events-auto">
+          {/* Dark Semi-Transparent Backdrop — Single Tap Instant Close */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMobileOpen(false);
+            }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md cursor-pointer pointer-events-auto"
+          />
+
+          {/* Slide-over Drawer Panel */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+            className="fixed inset-y-0 right-0 z-[10000] w-full max-w-sm bg-slate-950 border-l border-slate-800 shadow-2xl h-full flex flex-col justify-between overflow-y-auto pointer-events-auto"
+          >
+            <div className="p-6 space-y-6 flex-1">
+
+              {/* 1. Drawer Header */}
+              <div className="flex items-center justify-between pb-5 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md">
+                    <Gamepad2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-tight">CHIDYPRIME <span className="text-blue-400">feat</span> CHIDYGAMING</h3>
+                    <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Digital Gaming & Mod Store</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMobileOpen(false);
+                  }}
+                  className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center hover:text-white hover:bg-slate-800 transition-all cursor-pointer pointer-events-auto"
+                  aria-label="Close navigation drawer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 2. Quick Search Bar */}
+              <div ref={mobileSearchRef} className="relative">
+                <form onSubmit={handleSearchSubmit} className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search games, simulator mods..."
+                    value={search}
+                    onFocus={() => setShowDropdown(true)}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setShowDropdown(true);
+                      setActiveIndex(-1);
+                      if (onSearchChange) onSearchChange(e.target.value);
+                    }}
+                    onKeyDown={(e) => handleKeyDown(e, matchingGames)}
+                    className="w-full bg-[#1E293B] border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 font-medium pointer-events-auto"
+                  />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                </form>
+                {showDropdown && renderSearchDropdown(matchingGames, activeIndex)}
+              </div>
+
+              {/* 3. Dynamic User Card Section */}
+              <div className="space-y-3 pt-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block px-1">
+                  AKAUNTI & UFIKIAJI
+                </span>
+
+                {(user || profile) ? (
+                  <div className="rounded-2xl p-4 space-y-4 border border-slate-800 bg-slate-900">
+                    {/* User Profile Info */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-blue-600/15 border border-blue-600/30 text-blue-400 flex items-center justify-center shrink-0">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-black text-white truncate uppercase">{displayName}</h4>
+                        {displayPhone && (
+                          <p className="text-xs text-blue-400 font-bold flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3" />
+                            {displayPhone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Navigation Actions */}
+                    <div className="space-y-2 pt-3 border-t border-slate-800 text-xs font-extrabold uppercase">
+                      <Link
+                        href="/profile"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileOpen(false);
+                        }}
+                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white hover:border-blue-600/50 hover:text-blue-400 transition-colors pointer-events-auto"
+                      >
+                        <span className="flex items-center gap-2.5">👤 Profile Yangu</span>
+                        <ArrowRight className="w-4 h-4 text-blue-400" />
+                      </Link>
+
+                      <Link
+                        href="/profile#vault"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileOpen(false);
+                        }}
+                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white hover:border-blue-600/50 hover:text-blue-400 transition-colors pointer-events-auto"
+                      >
+                        <span className="flex items-center gap-2.5">🎮 Games Zangu (Vault)</span>
+                        <ArrowRight className="w-4 h-4 text-blue-400" />
+                      </Link>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileOpen(false);
+                          setShowLogoutConfirm(true);
+                        }}
+                        className="flex items-center justify-between w-full p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer pointer-events-auto"
+                      >
+                        <span className="flex items-center gap-2.5">🚪 Toka (Logout)</span>
+                        <LogOut className="w-4 h-4 text-red-400" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Guest Login Button */
+                  <Link
+                    href="/auth/login"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMobileOpen(false);
+                    }}
+                    className="flex items-center justify-between p-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-wider transition-all shadow-md pointer-events-auto"
+                  >
+                    <div className="flex items-center gap-3">
+                      <LogIn className="w-5 h-5" />
+                      <span>🔑 INGIA / JISAJILI</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-white" />
+                  </Link>
+                )}
+              </div>
+
+              {/* 4. App Download Callout Card (Native PWA Component) */}
+              <div className="pt-2">
+                <InstallAppButton
+                  variant="drawer"
+                  onInstalledCallback={() => setMobileOpen(false)}
+                />
+              </div>
+
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-5 border-t border-slate-800 text-center text-[10px] text-slate-500 font-bold">
+              🔒 Verified Mobile Gaming Store • Dar es Salaam 🇹🇿
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
 
   return (
-    <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/80 border-b border-glass-border transition-all">
+    <header className="sticky top-0 z-40 w-full bg-slate-950/95 backdrop-blur-md border-b border-slate-800 transition-all shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-purple to-accent-cyan flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
-            <Gamepad2 className="w-6 h-6 text-white" />
+        <Link href="/front" className="flex items-center gap-3 group shrink-0 pointer-events-auto">
+          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md group-hover:bg-blue-500 transition-all">
+            <Gamepad2 className="w-5 h-5" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-brand-glow bg-clip-text text-transparent tracking-tight">
-            chidy<span className="text-accent-cyan">prime</span>
-          </span>
+
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 leading-none">
+              <span className="text-base font-black tracking-tight text-white uppercase">chidy<span className="text-blue-500">prime</span></span>
+              <span className="text-[10px] font-bold text-blue-400">×</span>
+              <span className="text-base font-black tracking-tight text-white uppercase">chidygaming</span>
+            </div>
+            <span className="text-[10px] text-blue-400 font-bold tracking-wider uppercase mt-0.5">
+              Digital Gaming & Mod Store
+            </span>
+          </div>
         </Link>
 
-        {/* Global Store Search */}
-        <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-md relative">
-          <input
-            type="text"
-            placeholder="Search games, mods, activation keys..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              if (onSearchChange) onSearchChange(e.target.value);
-            }}
-            className="w-full bg-slate-900/70 border border-slate-700/60 rounded-full pl-10 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-        </form>
+        {/* Global Store Search (Desktop) */}
+        <div ref={desktopSearchRef} className="hidden lg:block flex-1 max-w-xs relative pointer-events-auto">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <input
+              type="text"
+              placeholder="Search Maleo Bus Mods, PC Games..."
+              value={search}
+              onFocus={() => setShowDropdown(true)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setShowDropdown(true);
+                setActiveIndex(-1);
+                if (onSearchChange) onSearchChange(e.target.value);
+              }}
+              onKeyDown={(e) => handleKeyDown(e, matchingGames)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-sm"
+            />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+          </form>
+          {showDropdown && renderSearchDropdown(matchingGames, activeIndex)}
+        </div>
 
-        {/* Navigation Actions */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Action Controls (Desktop) */}
+        <div className="hidden lg:flex items-center gap-3 pointer-events-auto">
+          <InstallAppButton variant="navbar" />
+
           <Link 
             href="/orders" 
-            className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${pathname === '/orders' ? 'text-brand-glow' : 'text-slate-300 hover:text-white'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors pointer-events-auto touch-manipulation ${pathname === '/orders' ? 'text-blue-400 bg-blue-600/10 border border-blue-500/30' : 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800'}`}
           >
-            <PackageCheck className="w-4 h-4" />
-            <span>My Orders</span>
+            <PackageCheck className="w-3.5 h-3.5 text-blue-400" />
+            <span>🎮 GAMES ZANGU</span>
           </Link>
 
-          {isAdmin && (
-            <Link 
-              href="/admin/dashboard" 
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-accent-purple/20 text-accent-purple border border-accent-purple/30 hover:bg-accent-purple/30 transition-all"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Admin Panel</span>
-            </Link>
-          )}
-
-          {/* Cart Button */}
-          <button
-            onClick={onOpenCart}
-            className="relative p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-200 hover:text-white hover:bg-slate-800 transition-all"
-            aria-label="View Cart"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-brand-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-glow animate-pulse">
-                {cartCount}
-              </span>
-            )}
-          </button>
-
-          {/* Auth Button */}
-          {user ? (
+          {(user || profile) ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 max-w-[100px] truncate">{user.email}</span>
+              <Link
+                href="/profile"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-black uppercase hover:border-blue-500 transition-colors pointer-events-auto touch-manipulation"
+              >
+                <User className="w-3.5 h-3.5 text-blue-400" />
+                <span>Akaunti Yangu</span>
+              </Link>
               <button
-                onClick={handleLogout}
-                className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-all"
+                onClick={() => setShowLogoutConfirm(true)}
+                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-red-400 hover:bg-slate-900 transition-all cursor-pointer pointer-events-auto touch-manipulation"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />
@@ -143,103 +443,38 @@ export default function Navbar({ cartCount = 0, onOpenCart, onSearchChange }: Na
           ) : (
             <Link
               href="/auth/login"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-semibold hover:from-brand-500 hover:to-brand-600 shadow-glow transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-black uppercase tracking-wider hover:bg-blue-500 transition-colors shadow-md pointer-events-auto touch-manipulation"
             >
-              <User className="w-4 h-4" />
-              <span>Sign In</span>
+              <User className="w-3.5 h-3.5" />
+              <span>🔑 INGIA / JISAJILI</span>
             </Link>
           )}
         </div>
 
-        {/* Mobile menu toggle */}
-        <div className="flex md:hidden items-center gap-2">
+        {/* Mobile Hamburger Toggle Button — Visible ONLY on Mobile/Tablet (< 1024px) */}
+        <div className="flex lg:hidden items-center gap-2 pointer-events-auto">
           <button
-            onClick={onOpenCart}
-            className="relative p-2 rounded-lg bg-slate-800 text-slate-200"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMobileOpen(true);
+            }}
+            className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 hover:text-white transition-all cursor-pointer pointer-events-auto touch-manipulation"
+            aria-label="Open mobile navigation drawer"
           >
-            <ShoppingBag className="w-5 h-5" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-lg bg-slate-800 text-slate-200"
-          >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <Menu className="w-6 h-6 text-white" />
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-950/95 backdrop-blur-xl px-4 py-4 space-y-3">
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <input
-              type="text"
-              placeholder="Search games..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                if (onSearchChange) onSearchChange(e.target.value);
-              }}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500"
-            />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          </form>
+      {/* Render Mobile Drawer outside header via React Portal */}
+      {mounted && createPortal(drawerPortal, document.body)}
 
-          <div className="flex flex-col gap-2 pt-2">
-            <Link
-              href="/"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 text-sm font-medium"
-            >
-              <Gamepad2 className="w-4 h-4 text-brand-glow" />
-              <span>Storefront</span>
-            </Link>
-            <Link
-              href="/orders"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 text-sm font-medium"
-            >
-              <PackageCheck className="w-4 h-4 text-accent-cyan" />
-              <span>My Digital Orders</span>
-            </Link>
-
-            {isAdmin && (
-              <Link
-                href="/admin/dashboard"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-purple/20 text-accent-purple text-sm font-medium"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Admin Dashboard</span>
-              </Link>
-            )}
-
-            {user ? (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-red-400 hover:bg-slate-800 text-sm font-medium"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sign Out ({user.email})</span>
-              </button>
-            ) : (
-              <Link
-                href="/auth/login"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-semibold shadow-glow"
-              >
-                <User className="w-4 h-4" />
-                <span>Sign In / Register</span>
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogout}
+      />
     </header>
   );
 }

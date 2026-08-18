@@ -2,43 +2,50 @@
 
 import React, { useState, useMemo } from 'react';
 import GameCard, { GameProduct } from './GameCard';
-import { Filter, SlidersHorizontal, Search, Sparkles, Layers } from 'lucide-react';
+import { Search, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface GameCatalogProps {
   games: GameProduct[];
   categories?: string[];
   searchQuery?: string;
-  onAddToCart?: (game: GameProduct) => void;
   onBuyNow?: (game: GameProduct) => void;
+  onAddToCart?: (game: GameProduct) => void;
+  /** If provided, catalog is locked to this category (drill-down mode) */
+  fixedCategory?: string | null;
+  /** Called when user wants to go back to categories */
+  onBack?: () => void;
+  unlockedGameIds?: Set<string>;
   unlockedProductIds?: string[];
   isUnlocked?: (productId: string) => boolean;
 }
 
 export default function GameCatalog({
   games,
-  categories = ['ALL', 'MALEO BUS MODE TZ', 'MALEO MAP MODE TZ', 'PC Games', 'Mods', 'Action', 'Racing'],
   searchQuery = '',
-  onAddToCart,
   onBuyNow,
+  fixedCategory = null,
+  onBack,
+  unlockedGameIds = new Set(),
   unlockedProductIds = [],
   isUnlocked,
 }: GameCatalogProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [selectedTag, setSelectedTag] = useState<string>('');
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc' | 'rating'>('newest');
 
-  // Filter & Sort Logic
   const filteredGames = useMemo(() => {
     let result = [...games];
 
-    // Category filter
-    if (selectedCategory !== 'ALL') {
-      result = result.filter(
-        (g) => g.category?.toLowerCase() === selectedCategory.toLowerCase()
-      );
+    // Filter by fixed category if in drill-down mode
+    if (fixedCategory && fixedCategory !== 'ALL') {
+      const fc = fixedCategory.toLowerCase().replace(/s$/i, '').trim();
+      result = result.filter((g) => {
+        if (!g.category) return false;
+        const gc = g.category.toLowerCase().replace(/s$/i, '').trim();
+        return gc === fc || gc.includes(fc) || fc.includes(gc);
+      });
     }
 
-    // Search query filter
+    // Global search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -50,105 +57,122 @@ export default function GameCatalog({
       );
     }
 
-    // Tag filter
-    if (selectedTag) {
-      result = result.filter((g) => g.tags?.includes(selectedTag));
-    }
-
-    // Sorting
     result.sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price;
       if (sortBy === 'price-desc') return b.price - a.price;
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-      return b.id.localeCompare(a.id); // newest default
+      return b.id.localeCompare(a.id);
     });
 
     return result;
-  }, [games, selectedCategory, searchQuery, selectedTag, sortBy]);
+  }, [games, fixedCategory, searchQuery, sortBy]);
+
+  const checkUnlocked = (id: string) => {
+    if (unlockedGameIds && unlockedGameIds.has(id)) return true;
+    if (unlockedProductIds && unlockedProductIds.includes(id)) return true;
+    if (isUnlocked && isUnlocked(id)) return true;
+    return false;
+  };
 
   return (
-    <section id="catalog" className="w-full space-y-6">
-      
-      {/* Category Pills & Sorting Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-glass-border backdrop-blur-md">
+    <section id="catalog" className="w-full space-y-5">
+
+      {/* ── Header Bar ── */}
+      <div className="flex items-center justify-between gap-3 px-3 sm:px-5 py-3 sm:py-4 rounded-2xl bg-black border-2 border-emerald-500/60 backdrop-blur-2xl shadow-[0_0_20px_rgba(16,185,129,0.25)]">
         
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
-          <Layers className="w-4 h-4 text-brand-glow shrink-0 ml-1 hidden sm:block" />
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-brand-600 text-white shadow-glow'
-                  : 'bg-slate-800/70 text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Back button — only in drill-down mode */}
+          {onBack && (
+            <motion.button
+              whileHover={{ x: -3 }}
+              whileTap={{ scale: 0.92 }}
+              onClick={onBack}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0"
             >
-              {cat}
-            </button>
-          ))}
-        </div>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-black uppercase tracking-wider hidden sm:inline">Back</span>
+            </motion.button>
+          )}
 
-        {/* Sorting Dropdown */}
-        <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
-          <SlidersHorizontal className="w-4 h-4 text-slate-400" />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-slate-800 border border-slate-700/60 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500"
-          >
-            <option value="newest">Sort: Newest First</option>
-            <option value="price-asc">Sort: Price Low to High</option>
-            <option value="price-desc">Sort: Price High to Low</option>
-            <option value="rating">Sort: Top Rated</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Results Header */}
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-          <span>Digital Products & Games</span>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-glow border border-brand-500/30">
-            {filteredGames.length} available
-          </span>
-        </h2>
-      </div>
-
-      {/* Games Grid */}
-      {filteredGames.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredGames.map((game, idx) => (
-            <GameCard
-              key={game.id}
-              game={game}
-              index={idx}
-              isUnlocked={isUnlocked ? isUnlocked(game.id) : unlockedProductIds.includes(game.id)}
-              onBuyNow={onBuyNow}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center p-12 bg-slate-900/40 rounded-3xl border border-glass-border text-center">
-          <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 mb-3">
-            <Search className="w-6 h-6" />
+          {/* Title */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.8)] shrink-0" />
+            <h2 className="text-xs sm:text-base font-black text-white tracking-tight uppercase truncate">
+              {fixedCategory ? `${fixedCategory}` : 'Digital Games & Mods'}
+            </h2>
           </div>
-          <h3 className="text-lg font-bold text-white">No games found</h3>
-          <p className="text-sm text-slate-400 mt-1 max-w-sm">
-            Try adjusting your search query or switching category filters.
-          </p>
-          <button
-            onClick={() => {
-              setSelectedCategory('ALL');
-              setSelectedTag('');
-            }}
-            className="mt-4 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-500 transition-colors"
-          >
-            Reset Filters
-          </button>
         </div>
-      )}
+
+        {/* Right side: count + sort */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] sm:text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-black border border-emerald-500/40 uppercase tracking-wider whitespace-nowrap">
+            {filteredGames.length} items
+          </span>
+
+          {/* Sort dropdown */}
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400 shrink-0 hidden sm:block" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-black border border-emerald-500/40 rounded-xl px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs text-white font-black focus:outline-none focus:border-emerald-400 cursor-pointer"
+            >
+              <option value="newest">Newest</option>
+              <option value="price-asc">Price ↑</option>
+              <option value="price-desc">Price ↓</option>
+              <option value="rating">Top Rated</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Game Grid ── */}
+      <AnimatePresence mode="wait">
+        {filteredGames.length > 0 ? (
+          <motion.div
+            key={fixedCategory || 'all'}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+          >
+            {filteredGames.map((game, i) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                index={i}
+                onBuyNow={onBuyNow}
+                isUnlocked={checkUnlocked(game.id)}
+              />
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center p-12 bg-black/60 rounded-2xl border border-emerald-500/20 text-center"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4">
+              <Search className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-black text-white uppercase tracking-tight">No products found</h3>
+            <p className="text-xs text-slate-400 mt-1.5 max-w-xs">
+              No games available in this category yet. Check back soon!
+            </p>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-black text-xs font-black uppercase tracking-wider hover:bg-emerald-400 transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to Categories
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

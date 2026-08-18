@@ -62,3 +62,45 @@ export async function notifySuccessfulPayment(data: {
 
   return sendTelegramAlert(msg);
 }
+
+export async function notifyNewUserRegistration(
+  nameOrData: string | { phone: string; name?: string; total_users?: number },
+  maybePhone?: string,
+  maybeCount?: number
+): Promise<boolean> {
+  let name = 'Gamer';
+  let phone = '';
+  let total: number | undefined;
+
+  if (typeof nameOrData === 'object' && nameOrData !== null) {
+    name = nameOrData.name || 'Gamer';
+    phone = nameOrData.phone || '';
+    total = nameOrData.total_users;
+  } else {
+    name = String(nameOrData || 'Gamer');
+    phone = String(maybePhone || '');
+    total = maybeCount;
+  }
+
+  const msg = [
+    `👤 <b>NEW USER REGISTERED</b> ✨`,
+    `<b>Name:</b> ${name}`,
+    `<b>Phone:</b> <code>${phone}</code>`,
+    total ? `<b>Total Users:</b> ${total}` : '',
+  ].filter(Boolean).join('\n');
+
+  return sendTelegramAlert(msg);
+}
+
+export async function notifyCriticalSystemError(context: string, error: any): Promise<boolean> {
+  const errMsg = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
+  const msg = [
+    `⚠️ <b>SYSTEM ERROR DETECTED</b>`,
+    `<b>Context:</b> ${context}`,
+    `<b>Error:</b> <code>${errMsg}</code>`,
+    `<b>Time:</b> ${new Date().toISOString()}`,
+  ].join('\n');
+
+  return sendTelegramAlert(msg);
+}
+
