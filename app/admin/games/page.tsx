@@ -18,6 +18,7 @@ export default function AdminGamesPage() {
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('5000');
   const [category, setCategory] = useState('MALEO BUS MODE TZ');
+  const [accessDuration, setAccessDuration] = useState('Lifetime');
   const [description, setDescription] = useState('');
   const [coverImage, setCoverImage] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
@@ -51,6 +52,7 @@ export default function AdminGamesPage() {
     setTitle('');
     setPrice('5000');
     setCategory('MALEO BUS MODE TZ');
+    setAccessDuration('Lifetime');
     setDescription('');
     setCoverImage('https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg');
     setDownloadUrl('');
@@ -66,6 +68,7 @@ export default function AdminGamesPage() {
         title,
         price: Number(price),
         category,
+        access_duration: accessDuration,
         description,
         cover_image: coverImage,
         download_url: downloadUrl,
@@ -247,6 +250,21 @@ export default function AdminGamesPage() {
                     <option value="Action">Action</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-300 mb-1">Plan Duration (Muda wa Ufikiaji)</label>
+                <select
+                  value={accessDuration}
+                  onChange={(e) => setAccessDuration(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white font-semibold"
+                >
+                  <option value="Lifetime">♾️ Lifetime Access (Ufikiaji wa Maisha)</option>
+                  <option value="30 Days">⏳ 30 Days (Siku 30)</option>
+                  <option value="7 Days">⏳ 7 Days (Siku 7)</option>
+                  <option value="24 Hours">⏳ 24 Hours (Masaa 24)</option>
+                  <option value="2 Hours">⏳ 2 Hours (Masaa 2)</option>
+                </select>
               </div>
 
               <div>

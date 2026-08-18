@@ -10,6 +10,8 @@ export const GameSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
   rating: z.number().min(0).max(5).optional().default(4.8),
   download_url: z.string().url('Must be a valid download URL').optional().or(z.literal('')),
+  access_duration: z.string().optional().default('Lifetime'),
+  license_duration: z.string().optional(),
   is_featured: z.boolean().optional().default(false),
   is_hero: z.boolean().optional().default(false),
   status: z.enum(['published', 'draft', 'archived']).default('published'),
