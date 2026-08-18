@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Star, Zap, Crown, Download, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useCMSTheme } from './CMSThemeProvider';
 
 export interface GameProduct {
   id: string;
@@ -66,6 +67,7 @@ export function formatPlanDuration(duration?: string, isFree?: boolean): string 
 
 export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
   const [unlockedLocally, setUnlockedLocally] = React.useState(isUnlocked);
+  const { getButtonClass, animations } = useCMSTheme();
 
   React.useEffect(() => {
     setUnlockedLocally(isUnlocked);
@@ -120,7 +122,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3), ease: 'easeOut' }}
-      whileHover={{ y: -5 }}
+      whileHover={animations.card_hover_scale ? { y: -5 } : undefined}
       className={`group relative flex flex-col rounded-2xl overflow-hidden bg-[#0F172A] border ${
         showUnlocked ? 'border-emerald-500/50 hover:border-emerald-400' : 'border-slate-800/80 hover:border-blue-600/60'
       } shadow-xl transition-all duration-300 interactive-card game-card-accelerated`}
@@ -205,9 +207,9 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
           <motion.button
             whileTap={{ scale: 0.94 }}
             onClick={handleCardClick}
-            className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 transition-all ${
-              showUnlocked ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
-            } shadow-md cursor-pointer touch-manipulation whitespace-nowrap`}
+            className={`px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-[11px] shrink-0 transition-all ${
+              showUnlocked ? getButtonClass('download') : getButtonClass('buy')
+            } cursor-pointer touch-manipulation whitespace-nowrap`}
           >
             {buttonText}
           </motion.button>

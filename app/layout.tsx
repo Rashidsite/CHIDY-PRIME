@@ -17,7 +17,9 @@ import {
 
 import { PWAProvider } from '@/components/PWAProvider';
 import { AuthProvider } from '@/components/AuthProvider';
+import { CMSThemeProvider } from '@/components/CMSThemeProvider';
 import ContentProtectionGuard from '@/components/ContentProtectionGuard';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chidyprimetz.com'),
@@ -77,13 +79,15 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CHIDYPRIME" />
       </head>
-      <body className="min-h-screen flex flex-col justify-between bg-black text-foreground antialiased selection:bg-emerald-500 selection:text-black">
+      <body className="min-h-screen flex flex-col justify-between bg-black text-foreground antialiased selection:bg-emerald-500 selection:text-black pb-16 md:pb-0">
         <ContentProtectionGuard />
         <AuthProvider>
           <PWAProvider>
-            <div className="relative z-10 flex-1">
-              {children}
-            </div>
+            <CMSThemeProvider>
+              <div className="relative z-10 flex-1">
+                {children}
+              </div>
+              <MobileBottomNav />
 
           {/* ── HIGH-TECH MODERN FOOTER ── */}
           <footer className="relative z-30 border-t border-slate-800 bg-[#060911] text-white mt-20 pt-14 pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.9)]">
@@ -213,6 +217,7 @@ export default function RootLayout({
               </div>
             </div>
           </footer>
+          </CMSThemeProvider>
         </PWAProvider>
         </AuthProvider>
       </body>

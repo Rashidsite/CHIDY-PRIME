@@ -11,7 +11,8 @@ import {
   Settings, 
   Store, 
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Palette
 } from 'lucide-react';
 
 export default function AdminSidebar() {
@@ -19,6 +20,7 @@ export default function AdminSidebar() {
 
   const links = [
     { href: '/admin/dashboard', label: 'Analytics Dashboard', icon: LayoutDashboard },
+    { href: '/admin/cms/ui', label: '🎨 UI & CMS Controls', icon: Palette },
     { href: '/admin/games', label: 'Game Catalog (CRUD)', icon: Gamepad2 },
     { href: '/admin/orders', label: 'Orders & Transactions', icon: ShoppingBag },
     { href: '/admin/users', label: 'Users & Roles', icon: Users },
