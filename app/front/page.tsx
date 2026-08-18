@@ -170,45 +170,55 @@ export default function FrontHubPage() {
 
       const combined: GameProduct[] = [];
 
-      if (gamesData && gamesData.length > 0) {
-        gamesData.forEach((g) => {
-          if (g.status === 'draft' || g.status === 'archived') return;
+      // 1. Process posts table (Primary)
+      if (postsData && postsData.length > 0) {
+        postsData.forEach((p) => {
+          if (p.status === 'draft' || p.status === 'archived') return;
+          
+          let dur = p.access_duration || p.license_duration;
+          if (!dur && p.duration_days !== undefined) {
+            dur = p.duration_days === 30 ? '30 Days' : p.duration_days === 7 ? '7 Days' : p.duration_days === 1 ? '24 Hours' : 'Lifetime';
+          }
+
           combined.push({
-            id: g.id,
-            title: g.title,
-            description: g.description,
-            cover_image: g.cover_image || g.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-            price: g.price || 0,
-            rating: g.rating || 4.9,
-            category: g.category || 'Maleo Bus Mods TZ',
-            tags: g.tags || ['Chidy Prime Mod', 'Tanzania'],
-            status: g.status || 'published',
-            download_url: g.download_url,
-            access_duration: g.access_duration || g.license_duration || 'Lifetime',
-            license_duration: g.license_duration || g.access_duration || 'Lifetime',
-          });
+            id: p.id,
+            title: p.title || 'Untitled Game',
+            description: p.description || '',
+            cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+            price: Number(p.price || 0),
+            rating: Number(p.rating || 4.9),
+            category: p.category || 'Maleo Bus Mods TZ',
+            tags: ['Chidy Prime Mod', 'Tanzania'],
+            status: p.status || 'published',
+            download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
+            links: p.links || [],
+            access_duration: dur || 'Lifetime',
+            license_duration: dur || 'Lifetime',
+          } as any);
         });
       }
 
-      if (postsData && postsData.length > 0) {
+      // 2. Process games table (Fallback)
+      if (gamesData && gamesData.length > 0) {
         const existingIds = new Set(combined.map((c) => c.id));
-        postsData.forEach((p) => {
-          if (p.status === 'draft' || p.status === 'archived') return;
-          if (!existingIds.has(p.id)) {
+        gamesData.forEach((g) => {
+          if (g.status === 'draft' || g.status === 'archived') return;
+          if (!existingIds.has(g.id)) {
             combined.push({
-              id: p.id,
-              title: p.title,
-              description: p.description,
-              cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-              price: p.price || 0,
-              rating: p.rating || 4.9,
-              category: p.category || 'Maleo Bus Mods TZ',
-              tags: ['Chidy Prime Mod', 'Tanzania'],
-              status: p.status || 'published',
-              download_url: p.download_url,
-              access_duration: p.access_duration || p.license_duration || 'Lifetime',
-              license_duration: p.license_duration || p.access_duration || 'Lifetime',
-            });
+              id: g.id,
+              title: g.title || 'Untitled Game',
+              description: g.description || '',
+              cover_image: g.cover_image || g.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+              price: Number(g.price || 0),
+              rating: Number(g.rating || 4.9),
+              category: g.category || 'Maleo Bus Mods TZ',
+              tags: g.tags || ['Chidy Prime Mod', 'Tanzania'],
+              status: g.status || 'published',
+              download_url: g.download_url,
+              links: g.download_links || g.links || [],
+              access_duration: g.access_duration || g.license_duration || 'Lifetime',
+              license_duration: g.license_duration || g.access_duration || 'Lifetime',
+            } as any);
           }
         });
       }

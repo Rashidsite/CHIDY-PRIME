@@ -14,8 +14,6 @@ import {
   X, 
   Eye, 
   EyeOff, 
-  Sparkles, 
-  Layers, 
   Video, 
   Download, 
   FileText, 
@@ -23,10 +21,17 @@ import {
   CheckCircle2, 
   Info,
   Link as LinkIcon,
-  ChevronRight
+  ChevronRight,
+  PlusCircle,
+  ExternalLink
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+
+interface DownloadLinkItem {
+  name: string;
+  url: string;
+}
 
 export default function AdminGamesPage() {
   const [games, setGames] = useState<any[]>([]);
@@ -37,7 +42,7 @@ export default function AdminGamesPage() {
   const [editingGame, setEditingGame] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'basic' | 'media' | 'content'>('basic');
 
-  // Form State
+  // Form State - Tab 1 Basic
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('5000');
   const [category, setCategory] = useState('MALEO BUS MODE TZ');
@@ -45,12 +50,14 @@ export default function AdminGamesPage() {
   const [rating, setRating] = useState('4.8');
   const [status, setStatus] = useState<'published' | 'draft' | 'archived'>('published');
   
-  // Media State
+  // Form State - Tab 2 Media & Multi-Links
   const [coverImage, setCoverImage] = useState('');
-  const [downloadUrl, setDownloadUrl] = useState('');
+  const [downloadLinks, setDownloadLinks] = useState<DownloadLinkItem[]>([
+    { name: 'Download Game APK', url: '' },
+  ]);
   const [videoUrl, setVideoUrl] = useState('');
 
-  // Content & Plan Duration State
+  // Form State - Tab 3 Duration & Content
   const [accessDuration, setAccessDuration] = useState('Lifetime');
   const [description, setDescription] = useState('');
   const [installGuide, setInstallGuide] = useState('');
@@ -63,19 +70,23 @@ export default function AdminGamesPage() {
   const fetchGames = async () => {
     setLoading(true);
     try {
-      const { data: gData } = await supabase
-        .from('games')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (gData && gData.length > 0) {
-        setGames(gData);
+      const res = await fetch('/api/admin/games');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.games)) {
+        setGames(data.games);
       } else {
-        const { data: pData } = await supabase
+        // Fallback directly to posts table
+        const { data: postsData } = await supabase
           .from('posts')
           .select('*')
           .order('created_at', { ascending: false });
-        if (pData) setGames(pData);
+        if (postsData) {
+          setGames(postsData.map((p) => ({
+            ...p,
+            cover_image: p.image_url,
+            access_duration: p.duration_days === 30 ? '30 Days' : p.duration_days === 7 ? '7 Days' : p.duration_days === 1 ? '24 Hours' : 'Lifetime',
+          })));
+        }
       }
     } catch (err) {
       console.error('Fetch games error:', err);
@@ -97,7 +108,9 @@ export default function AdminGamesPage() {
     setRating('4.8');
     setStatus('published');
     setCoverImage('https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg');
-    setDownloadUrl('');
+    setDownloadLinks([
+      { name: 'Download Game / Mod', url: '' },
+    ]);
     setVideoUrl('');
     setAccessDuration('Lifetime');
     setDescription('');
@@ -119,20 +132,59 @@ export default function AdminGamesPage() {
     setStatus(game.status || 'published');
     setCoverImage(game.cover_image || game.image_url || '');
 
-    // Resolve download URL from multiple field variants
-    let dUrl = game.download_url || '';
-    if (!dUrl && Array.isArray(game.download_links) && game.download_links.length > 0) {
-      dUrl = game.download_links[0].url || '';
+    // Parse links
+    let parsedLinks: DownloadLinkItem[] = [];
+    if (Array.isArray(game.links) && game.links.length > 0) {
+      parsedLinks = game.links.map((l: any) => ({
+        name: l.name || l.label || 'Download File',
+        url: l.url || '',
+      }));
+    } else if (Array.isArray(game.download_links) && game.download_links.length > 0) {
+      parsedLinks = game.download_links.map((l: any) => ({
+        name: l.name || l.label || 'Download File',
+        url: l.url || '',
+      }));
+    } else if (game.download_url) {
+      parsedLinks = [{ name: 'Download Game / Mod', url: game.download_url }];
+    } else {
+      parsedLinks = [{ name: 'Download Game / Mod', url: '' }];
     }
-    setDownloadUrl(dUrl);
-    setVideoUrl(game.video_url || game.trailer_url || '');
 
-    setAccessDuration(game.access_duration || game.license_duration || 'Lifetime');
+    setDownloadLinks(parsedLinks);
+    setVideoUrl(game.youtube_url || game.video_url || '');
+
+    // Resolve plan duration
+    let dur = game.access_duration || game.license_duration;
+    if (!dur && game.duration_days !== undefined) {
+      dur = game.duration_days === 30 ? '30 Days' : game.duration_days === 7 ? '7 Days' : game.duration_days === 1 ? '24 Hours' : 'Lifetime';
+    }
+    setAccessDuration(dur || 'Lifetime');
     setDescription(game.description || '');
     setInstallGuide(game.install_guide || game.installation_steps || '');
     
     setActiveTab('basic');
     setModalOpen(true);
+  };
+
+  // Multi-Link helper actions
+  const handleAddLinkRow = (presetName = 'Download File') => {
+    setDownloadLinks((prev) => [...prev, { name: presetName, url: '' }]);
+  };
+
+  const handleRemoveLinkRow = (index: number) => {
+    if (downloadLinks.length <= 1) {
+      setDownloadLinks([{ name: 'Download File', url: '' }]);
+      return;
+    }
+    setDownloadLinks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateLinkRow = (index: number, field: 'name' | 'url', value: string) => {
+    setDownloadLinks((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
   };
 
   const handleToggleStatus = async (game: any) => {
@@ -172,6 +224,14 @@ export default function AdminGamesPage() {
         ? customCategory.trim() 
         : category.trim();
 
+      // Clean links
+      const cleanLinks = downloadLinks
+        .filter((l) => l.url && l.url.trim())
+        .map((l) => ({
+          name: l.name.trim() || 'Download File',
+          url: l.url.trim(),
+        }));
+
       const payload: Record<string, any> = {
         title: title.trim(),
         price: Number(price),
@@ -182,8 +242,11 @@ export default function AdminGamesPage() {
         description: description.trim(),
         install_guide: installGuide.trim(),
         cover_image: coverImage.trim(),
-        download_url: downloadUrl.trim(),
+        image_url: coverImage.trim(),
+        download_url: cleanLinks[0]?.url || '',
+        links: cleanLinks,
         video_url: videoUrl.trim(),
+        youtube_url: videoUrl.trim(),
         status,
       };
 
@@ -223,15 +286,22 @@ export default function AdminGamesPage() {
     }
   };
 
-  const formatBadgeDuration = (dur?: string) => {
-    if (!dur) return '♾️ Lifetime';
-    const l = dur.toLowerCase();
-    if (l.includes('lifetime') || l.includes('maisha')) return '♾️ Lifetime';
-    if (l.includes('30') || l.includes('month') || l.includes('mwezi')) return '⏳ 30 Days';
-    if (l.includes('7') || l.includes('week') || l.includes('wiki')) return '⏳ 7 Days';
-    if (l.includes('24') || l.includes('day') || l.includes('siku')) return '⏳ 24 Hours';
-    if (l.includes('2')) return '⏳ 2 Hours';
-    return `⏳ ${dur}`;
+  const formatBadgeDuration = (dur?: string, days?: number) => {
+    if (dur) {
+      const l = dur.toLowerCase();
+      if (l.includes('lifetime') || l.includes('maisha')) return '♾️ Lifetime';
+      if (l.includes('30') || l.includes('month') || l.includes('mwezi')) return '⏳ 30 Days';
+      if (l.includes('7') || l.includes('week') || l.includes('wiki')) return '⏳ 7 Days';
+      if (l.includes('24') || l.includes('day') || l.includes('siku')) return '⏳ 24 Hours';
+      if (l.includes('2')) return '⏳ 2 Hours';
+      return `⏳ ${dur}`;
+    }
+    if (days !== undefined) {
+      if (days === 30) return '⏳ 30 Days';
+      if (days === 7) return '⏳ 7 Days';
+      if (days === 1) return '⏳ 24 Hours';
+    }
+    return '♾️ Lifetime';
   };
 
   const PRESET_CATEGORIES = [
@@ -273,7 +343,7 @@ export default function AdminGamesPage() {
             <span>Game &amp; Mod Catalog Management</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Create and edit products in a 3-section layout with dynamic plan duration, direct ImgBB artwork previews, and live storefront visibility.
+            Manage your catalog with dynamic Multi-Link download buttons, plan durations, ImgBB artwork previews, and live storefront visibility.
           </p>
         </div>
 
@@ -322,6 +392,7 @@ export default function AdminGamesPage() {
                 <th className="pb-3.5">Cover Art</th>
                 <th className="pb-3.5">Title</th>
                 <th className="pb-3.5">Category</th>
+                <th className="pb-3.5">Download Buttons</th>
                 <th className="pb-3.5">Plan Duration</th>
                 <th className="pb-3.5">Price</th>
                 <th className="pb-3.5 text-center">Status</th>
@@ -331,16 +402,16 @@ export default function AdminGamesPage() {
             <tbody className="divide-y divide-slate-800/60 text-slate-300">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-bold">
+                  <td colSpan={8} className="py-12 text-center text-slate-500 font-bold">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                      <span>Loading products catalog...</span>
+                      <span>Loading products catalog from database...</span>
                     </div>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-bold">
+                  <td colSpan={8} className="py-12 text-center text-slate-500 font-bold">
                     No products found matching criteria.
                   </td>
                 </tr>
@@ -348,6 +419,7 @@ export default function AdminGamesPage() {
                 filtered.map((g) => {
                   const isLive = g.status === 'published' || !g.status;
                   const isActionLoading = actionLoadingId === g.id;
+                  const linkCount = Array.isArray(g.links) ? g.links.length : (g.download_url ? 1 : 0);
 
                   return (
                     <tr key={g.id} className="hover:bg-slate-800/40 transition-colors">
@@ -361,7 +433,7 @@ export default function AdminGamesPage() {
                           />
                         </div>
                       </td>
-                      <td className="py-3 font-bold text-white max-w-xs truncate pr-4">
+                      <td className="py-3 font-bold text-white max-w-xs truncate pr-3">
                         {g.title}
                       </td>
                       <td className="py-3">
@@ -370,8 +442,13 @@ export default function AdminGamesPage() {
                         </span>
                       </td>
                       <td className="py-3">
+                        <span className="px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20 text-[10px] font-bold">
+                          {linkCount > 1 ? `🔗 ${linkCount} Buttons` : linkCount === 1 ? '🔗 1 Direct Link' : '⚠️ No Link'}
+                        </span>
+                      </td>
+                      <td className="py-3">
                         <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black">
-                          {formatBadgeDuration(g.access_duration || g.license_duration)}
+                          {formatBadgeDuration(g.access_duration || g.license_duration, g.duration_days)}
                         </span>
                       </td>
                       <td className="py-3 font-extrabold text-emerald-400 text-sm">
@@ -487,7 +564,7 @@ export default function AdminGamesPage() {
                 }`}
               >
                 <LinkIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">2.</span> Media &amp; Access
+                <span className="hidden sm:inline">2.</span> Media &amp; Access ({downloadLinks.length})
               </button>
 
               <button
@@ -535,7 +612,7 @@ export default function AdminGamesPage() {
                         <button
                           type="button"
                           onClick={() => setPrice(price === '0' ? '5000' : '0')}
-                          className="text-[10px] font-black text-emerald-400 hover:underline uppercase"
+                          className="text-[10px] font-black text-emerald-400 hover:underline uppercase cursor-pointer"
                         >
                           {price === '0' ? 'Set Standard (5,000)' : 'Make Free (0 TZS)'}
                         </button>
@@ -639,10 +716,10 @@ export default function AdminGamesPage() {
               )}
 
               {/* ═══════════════════════════════════════════════════════════════
-                  TAB 2: MEDIA & ACCESS LINKS
+                  TAB 2: MEDIA & DYNAMIC MULTI-LINK MANAGEMENT
               ══════════════════════════════════════════════════════════════ */}
               {activeTab === 'media' && (
-                <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="space-y-5 animate-in fade-in duration-200">
                   {/* Cover Art Input & Live Thumbnail Preview */}
                   <div>
                     <label className="block font-black uppercase text-slate-300 mb-1.5 tracking-wider text-[11px]">
@@ -686,22 +763,94 @@ export default function AdminGamesPage() {
                     )}
                   </div>
 
-                  {/* Digital Download Link */}
-                  <div>
-                    <label className="block font-black uppercase text-slate-300 mb-1.5 tracking-wider text-[11px] flex items-center gap-1.5">
-                      <Download className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Digital File Download Link (Google Drive / MediaFire / Direct)</span>
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://www.mediafire.com/file/... or https://drive.google.com/..."
-                      value={downloadUrl}
-                      onChange={(e) => setDownloadUrl(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
-                    />
-                    <p className="text-[10px] text-slate-500 font-medium mt-1">
-                      This link is automatically protected and revealed only to users who complete payment.
-                    </p>
+                  {/* Dynamic Multi-Link Download Buttons Section */}
+                  <div className="space-y-3 p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="font-black uppercase text-white tracking-wider text-xs flex items-center gap-1.5">
+                          <Download className="w-4 h-4 text-blue-400" />
+                          <span>Dynamic Download Action Buttons</span>
+                        </label>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Each row below creates an explicit download button on the customer's unlocked screen.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAddLinkRow('Download File')}
+                        className="px-3 py-1.5 rounded-xl bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 text-[10px] font-black uppercase flex items-center gap-1 cursor-pointer transition-all"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Add Link Row</span>
+                      </button>
+                    </div>
+
+                    {/* Preset Link Fast Buttons */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase">Quick Add:</span>
+                      {['Download APK', 'Download OBB File', 'Download Mod Data', 'Download Save Data', 'MediaFire Direct'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => handleAddLinkRow(preset)}
+                          className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[9px] font-bold cursor-pointer"
+                        >
+                          + {preset}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Link Rows */}
+                    <div className="space-y-3 pt-2">
+                      {downloadLinks.map((linkItem, idx) => (
+                        <div key={idx} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
+                            <span>Button #{idx + 1}</span>
+                            {downloadLinks.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLinkRow(idx)}
+                                className="text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Remove</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="sm:col-span-1">
+                              <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">
+                                Button Name / Label
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g. Download APK"
+                                value={linkItem.name}
+                                onChange={(e) => handleUpdateLinkRow(idx, 'name', e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white font-bold text-xs focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-2">
+                              <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">
+                                Download URL (MediaFire, Google Drive, Mega)
+                              </label>
+                              <input
+                                type="url"
+                                required
+                                placeholder="https://www.mediafire.com/file/..."
+                                value={linkItem.url}
+                                onChange={(e) => handleUpdateLinkRow(idx, 'url', e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-blue-300 font-mono text-xs focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Video / Demo Link */}

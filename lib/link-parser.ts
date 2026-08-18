@@ -18,13 +18,19 @@ export function parseUniversalDownloadLinks(gameOrPost: any): ExtractedDownloadL
     return { type: 'direct', provider: 'Direct Server' };
   };
 
-  // 1. Check array of links
-  if (Array.isArray(gameOrPost.links) && gameOrPost.links.length > 0) {
-    gameOrPost.links.forEach((l: any, idx: number) => {
+  // 1. Check array of links or download_links
+  const rawLinks = Array.isArray(gameOrPost.links) 
+    ? gameOrPost.links 
+    : (Array.isArray(gameOrPost.download_links) ? gameOrPost.download_links : []);
+
+  if (rawLinks.length > 0) {
+    rawLinks.forEach((l: any, idx: number) => {
       const url = typeof l === 'string' ? l : (l.url || l.link || l.href);
       if (url && typeof url === 'string' && url.trim().startsWith('http')) {
         const { type, provider } = detectType(url);
-        const name = typeof l === 'object' && l.name ? l.name : (typeof l === 'object' && l.title ? l.title : `${provider} Mirror #${idx + 1}`);
+        const name = typeof l === 'object' && (l.name || l.label || l.title) 
+          ? (l.name || l.label || l.title) 
+          : `${provider} Mirror #${idx + 1}`;
         results.push({
           label: name,
           url: url.trim(),
