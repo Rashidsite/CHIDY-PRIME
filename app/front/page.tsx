@@ -512,35 +512,35 @@ export default function FrontHubPage() {
 
   // Filter Hot & Trending games (6-8 items with high ratings, or manually selected ones)
   const trendingGames = useMemo(() => {
-    if (trendingIds && trendingIds.length > 0) {
+    if (Array.isArray(trendingIds) && trendingIds.length > 0) {
       return trendingIds
-        .map((id) => games.find((g) => g.id === id))
+        .map((id) => (games ?? []).find((g) => g?.id === id))
         .filter(Boolean) as GameProduct[];
     }
-    return [...games]
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    return [...(games ?? [])]
+      .sort((a, b) => (Number(b?.rating) || 0) - (Number(a?.rating) || 0))
       .slice(0, 8);
   }, [games, trendingIds]);
 
   // Scroll horizontal carousel by exactly one viewport step
   const scrollCarousel = (direction: 'left' | 'right') => {
-    if (carouselRef.current) {
-      const delta = direction === 'left' ? -carouselRef.current.clientWidth * 0.75 : carouselRef.current.clientWidth * 0.75;
-      carouselRef.current.scrollBy({
-        left: delta,
-        behavior: 'smooth',
-      });
-      setTimeout(updateScrollBoundaries, 350);
-    }
+    if (typeof window === 'undefined' || !carouselRef.current) return;
+    const clientWidth = carouselRef.current.clientWidth || 300;
+    const delta = direction === 'left' ? -clientWidth * 0.75 : clientWidth * 0.75;
+    carouselRef.current.scrollBy({
+      left: delta,
+      behavior: 'smooth',
+    });
+    setTimeout(updateScrollBoundaries, 350);
   };
 
   const categoryListWithCounts = useMemo(() => {
-    if (categories.length === 0) return undefined;
+    if (!Array.isArray(categories) || categories.length === 0) return undefined;
     return categories.map((cat) => {
-      const fc = cat.name.toLowerCase().replace(/s$/i, '').trim();
-      const count = games.filter((g) => {
-        if (!g.category) return false;
-        const gc = g.category.toLowerCase().replace(/s$/i, '').trim();
+      const fc = (cat?.name || '').toLowerCase().replace(/s$/i, '').trim();
+      const count = (games ?? []).filter((g) => {
+        if (!g?.category) return false;
+        const gc = String(g.category).toLowerCase().replace(/s$/i, '').trim();
         return gc === fc || gc.includes(fc) || fc.includes(gc);
       }).length;
 
@@ -649,13 +649,13 @@ export default function FrontHubPage() {
                 className="category-slider-track flex gap-4 sm:gap-5 overflow-x-auto py-2 px-1 snap-x snap-mandatory touch-pan-x"
                 style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
               >
-                {trendingGames.map((game, idx) => (
-                  <div key={game.id} className="game-card-item w-[210px] sm:w-[240px] md:w-[260px] shrink-0 snap-start">
+                {(trendingGames ?? []).map((game, idx) => (
+                  <div key={game?.id || idx} className="game-card-item w-[210px] sm:w-[240px] md:w-[260px] shrink-0 snap-start">
                     <GameCard
                       game={game}
                       onBuyNow={handleBuyNow}
                       index={idx}
-                      isUnlocked={unlockedGameIds.has(game.id)}
+                      isUnlocked={game?.id ? unlockedGameIds.has(game.id) : false}
                     />
                   </div>
                 ))}
@@ -699,9 +699,11 @@ export default function FrontHubPage() {
               onSelectCategory={(catName) => {
                 setSelectedDrawerCategory(catName);
                 setCategoryDrawerOpen(true);
-                const sectionEl = document.getElementById('category-vault-section');
-                if (sectionEl) {
-                  sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+                  const sectionEl = document.getElementById('category-vault-section');
+                  if (sectionEl) {
+                    sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
                 }
               }}
             />
