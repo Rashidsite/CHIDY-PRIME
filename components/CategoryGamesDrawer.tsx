@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, SlidersHorizontal, Star, AlertCircle, Zap } from 'lucide-react';
@@ -49,6 +49,20 @@ export default function CategoryGamesDrawer({
     return result;
   }, [categoryName, games, sortBy]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.touchAction = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.style.touchAction = 'unset';
+    };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && categoryName && (
@@ -68,7 +82,7 @@ export default function CategoryGamesDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-            className="fixed inset-y-0 right-0 z-[10000] w-full max-w-2xl bg-[#0F172A] border-l border-slate-800 shadow-2xl h-full flex flex-col justify-between"
+            className="fixed inset-y-0 right-0 z-[10000] w-full max-w-2xl bg-[#0F172A] border-l border-slate-800 shadow-2xl h-full flex flex-col justify-between overscroll-contain"
           >
             {/* Header section */}
             <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-[#0F172A]">
@@ -114,7 +128,10 @@ export default function CategoryGamesDrawer({
             </div>
 
             {/* Content list */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-950">
+            <div 
+              className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-950 overscroll-contain"
+              style={{ overscrollBehaviorY: 'contain' }}
+            >
               {filteredAndSortedGames.length > 0 ? (
                 filteredAndSortedGames.map((game, idx) => {
                   const isFree = game.price === 0;

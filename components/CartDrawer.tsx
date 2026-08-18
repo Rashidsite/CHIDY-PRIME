@@ -23,13 +23,27 @@ export default function CartDrawer({
   onClearCart,
   onCheckout,
 }: CartDrawerProps) {
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.touchAction = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.style.touchAction = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const totalAmount = items.reduce((acc, item) => acc + item.price, 0);
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex justify-end">
-      <div className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col justify-between p-6 shadow-2xl animate-slide-right">
+      <div className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col justify-between p-6 shadow-2xl animate-slide-right overscroll-contain">
         
         {/* Drawer Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
@@ -51,7 +65,7 @@ export default function CartDrawer({
         </div>
 
         {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto py-4 space-y-3 overscroll-contain" style={{ overscrollBehaviorY: 'contain' }}>
           {items.length > 0 ? (
             items.map((item) => (
               <div
