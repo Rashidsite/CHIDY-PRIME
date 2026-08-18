@@ -564,7 +564,7 @@ export default function FrontHubPage() {
         games={games}
       />
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 pb-36">
         {/* Style Tag to hide scrollbars cleanly */}
         <style>{`
           .no-scrollbar::-webkit-scrollbar {
@@ -666,17 +666,9 @@ export default function FrontHubPage() {
           )
         )}
 
-        {/* ── Main View: Unified Master All Games Feed with Dynamic Category Pills ── */}
-        {loading ? (
-          <section className="space-y-6">
-            <div className="h-16 bg-slate-900 border border-slate-800 animate-pulse rounded-2xl" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <CategorySkeleton key={i} />
-              ))}
-            </div>
-          </section>
-        ) : (
+        {/* ── Main View (Search Mode or Visual Category Vault Cards) ── */}
+        {searchQuery.trim().length > 0 ? (
+          /* Search results vault mode */
           <GameCatalog
             games={games}
             categories={categories}
@@ -688,6 +680,35 @@ export default function FrontHubPage() {
               setSearchQuery('');
             }}
           />
+        ) : (
+          /* Visual Categories Vault Cards (Original Clean Homepage) */
+          loading ? (
+            <section className="space-y-6">
+              <div className="h-16 bg-slate-900 border border-slate-800 animate-pulse rounded-2xl" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <CategorySkeleton key={i} />
+                ))}
+              </div>
+            </section>
+          ) : (
+            <CategoryGrid
+              categories={categoryListWithCounts}
+              selectedCategory={selectedCategory}
+              isRegistered={isRegistered}
+              onRegisterClick={() => setShowRegisterModal(true)}
+              onSelectCategory={(catName) => {
+                setSelectedDrawerCategory(catName);
+                setCategoryDrawerOpen(true);
+                if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+                  const sectionEl = document.getElementById('category-vault-section');
+                  if (sectionEl) {
+                    sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }
+              }}
+            />
+          )
         )}
       </main>
 
