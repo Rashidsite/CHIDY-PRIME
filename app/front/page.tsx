@@ -80,6 +80,23 @@ export default function FrontHubPage() {
   const [showCelebration, setShowCelebration] = useState(false);
 
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Monitor scroll boundaries
+  const updateScrollBoundaries = useCallback(() => {
+    if (carouselRef.current) {
+      const { scrollLeft, clientWidth, scrollWidth } = carouselRef.current;
+      setCanScrollLeft(scrollLeft > 2);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateScrollBoundaries();
+    window.addEventListener('resize', updateScrollBoundaries);
+    return () => window.removeEventListener('resize', updateScrollBoundaries);
+  }, [updateScrollBoundaries]);
 
   // Load registration and unlocked games from localStorage
   useEffect(() => {
@@ -506,15 +523,15 @@ export default function FrontHubPage() {
       .slice(0, 8);
   }, [games, trendingIds]);
 
-  // Scroll horizontal carousel
+  // Scroll horizontal carousel by exactly one viewport step
   const scrollCarousel = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
-      const { scrollLeft, clientWidth } = carouselRef.current;
-      const scrollAmount = clientWidth * 0.75;
-      carouselRef.current.scrollTo({
-        left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+      const delta = direction === 'left' ? -carouselRef.current.clientWidth * 0.75 : carouselRef.current.clientWidth * 0.75;
+      carouselRef.current.scrollBy({
+        left: delta,
         behavior: 'smooth',
       });
+      setTimeout(updateScrollBoundaries, 350);
     }
   };
 
@@ -601,14 +618,24 @@ export default function FrontHubPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => scrollCarousel('left')}
-                    className="w-8 h-8 rounded-full border border-slate-700 bg-slate-800 text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm cursor-pointer"
+                    disabled={!canScrollLeft}
+                    className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+                      canScrollLeft
+                        ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer'
+                        : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'
+                    }`}
                     aria-label="Scroll left"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => scrollCarousel('right')}
-                    className="w-8 h-8 rounded-full border border-slate-700 bg-slate-800 text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm cursor-pointer"
+                    disabled={!canScrollRight}
+                    className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+                      canScrollRight
+                        ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer'
+                        : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'
+                    }`}
                     aria-label="Scroll right"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -616,14 +643,15 @@ export default function FrontHubPage() {
                 </div>
               </div>
 
-              {/* Touch-swipe horizontal container with clean padding to prevent clipping */}
+              {/* Touch-swipe horizontal container with scroll containment and boundary locking */}
               <div
                 ref={carouselRef}
-                className="flex gap-4 sm:gap-5 overflow-x-auto py-2 px-1 no-scrollbar snap-x snap-mandatory touch-pan-x"
-                style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
+                onScroll={updateScrollBoundaries}
+                className="category-slider-track flex gap-4 sm:gap-5 overflow-x-auto py-2 px-1 snap-x snap-mandatory touch-pan-x"
+                style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
               >
                 {trendingGames.map((game, idx) => (
-                  <div key={game.id} className="w-[210px] sm:w-[240px] md:w-[260px] shrink-0 snap-start">
+                  <div key={game.id} className="game-card-item w-[210px] sm:w-[240px] md:w-[260px] shrink-0 snap-start">
                     <GameCard
                       game={game}
                       onBuyNow={handleBuyNow}
@@ -672,6 +700,10 @@ export default function FrontHubPage() {
               onSelectCategory={(catName) => {
                 setSelectedDrawerCategory(catName);
                 setCategoryDrawerOpen(true);
+                const sectionEl = document.getElementById('category-vault-section');
+                if (sectionEl) {
+                  sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
               }}
             />
           )

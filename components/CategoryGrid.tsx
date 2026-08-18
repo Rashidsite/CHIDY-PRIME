@@ -75,7 +75,7 @@ export default function CategoryGrid({
   };
 
   return (
-    <section className="w-full space-y-6 relative z-10">
+    <section id="category-vault-section" className="w-full space-y-6 relative z-10 scroll-mt-24">
       {/* Section Header */}
       <div className="flex items-center justify-between p-4 bg-[#0F172A] border border-slate-800 rounded-2xl shadow-lg">
         <div className="flex items-center gap-3">
@@ -101,15 +101,17 @@ export default function CategoryGrid({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
         {activeList.map((cat, idx) => {
           const isSelected = selectedCategory.toLowerCase() === cat.name.toLowerCase();
+          const cardId = `category-card-${(cat.id || cat.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
           return (
             <motion.div
               key={cat.id}
+              id={cardId}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: idx * 0.03, ease: 'easeOut' }}
               onClick={() => handleCardClick(cat.name)}
-              className={`relative z-10 rounded-2xl overflow-hidden bg-[#0F172A] flex flex-col justify-between border ${
+              className={`relative z-10 rounded-2xl overflow-hidden bg-[#0F172A] flex flex-col justify-between border scroll-mt-24 ${
                 isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-slate-800'
               } shadow-lg hover:border-blue-500/60 transition-all duration-300 cursor-pointer group touch-manipulation interactive-card`}
             >

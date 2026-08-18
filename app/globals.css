@@ -53,3 +53,22 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Category Slider & Carousel Scroll Containment */
+.category-slider-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.category-slider-track::-webkit-scrollbar {
+  display: none;
+}
+.game-card-item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
