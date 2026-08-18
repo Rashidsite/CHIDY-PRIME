@@ -69,8 +69,22 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   // ── References & Timers ──
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activeChannelRef = useRef<any>(null);
+  const activeBroadcastRef = useRef<any>(null);
+  const activeUnlockedListenerRef = useRef<any>(null);
   const prevIsOpenRef = useRef(false);
   const supabase = createClient();
+
+  // Lock body scroll when modal is active
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow || 'unset';
+      };
+    }
+  }, [isOpen]);
 
   // Reset or initialize ONLY when modal opens
   useEffect(() => {
@@ -140,8 +154,26 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   }, []);
 
   const clearAllTimers = () => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    if (activeChannelRef.current) {
+      supabase.removeChannel(activeChannelRef.current);
+      activeChannelRef.current = null;
+    }
+    if (activeBroadcastRef.current) {
+      supabase.removeChannel(activeBroadcastRef.current);
+      activeBroadcastRef.current = null;
+    }
+    if (activeUnlockedListenerRef.current && typeof window !== 'undefined') {
+      window.removeEventListener('cpcg_order_unlocked', activeUnlockedListenerRef.current);
+      activeUnlockedListenerRef.current = null;
+    }
   };
 
   const resetAndClose = () => {
@@ -205,40 +237,64 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     setStep('STEP_3_SUCCESS');
   };
 
-  // Start Realtime Webhook & Polling listener
+  // Start Realtime Webhook & Polling listener with strict ID verification
   const startPaymentPolling = (orderId: string, orderNumber: string) => {
+    // 1. Strict Guard Clause: Do not initialize channel with undefined/empty order ID
+    if (!orderId || typeof orderId !== 'string' || orderId.trim() === '' || orderId === 'undefined') {
+      console.warn('Payment polling skipped: invalid or undefined order reference.');
+      return;
+    }
+
+    const cleanOrderId = orderId.trim();
+    const cleanOrderNumber = (orderNumber || cleanOrderId).trim();
+
+    // Clean up any previously active channels before subscribing
+    if (activeChannelRef.current) {
+      supabase.removeChannel(activeChannelRef.current);
+      activeChannelRef.current = null;
+    }
+    if (activeBroadcastRef.current) {
+      supabase.removeChannel(activeBroadcastRef.current);
+      activeBroadcastRef.current = null;
+    }
+
     let attempts = 0;
     const maxAttempts = 60;
 
+    // 2. Chain .on('postgres_changes', ...) BEFORE .subscribe()
     const channel = supabase
-      .channel(`order_checkout_status_${orderId}`)
+      .channel(`order_status_${cleanOrderId}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'orders', 
+          filter: `id=eq.${cleanOrderId}` 
+        },
         (payload: any) => {
-          const status = (payload.new?.status || '').toLowerCase();
-          if (['completed', 'approved', 'paid'].includes(status)) {
+          const status = (payload.new?.status || payload.new?.payment_status || '').toLowerCase();
+          if (['completed', 'approved', 'paid', 'success'].includes(status)) {
             handlePaymentConfirmed(payload.new);
-            supabase.removeChannel(channel);
           }
         }
       )
       .subscribe();
 
+    activeChannelRef.current = channel;
+
+    // 3. Chain broadcast listener before .subscribe()
     const broadcastChannel = supabase
-      .channel(`order_broadcast_modal_${orderId}`)
+      .channel(`order_broadcast_modal_${cleanOrderId}`)
       .on(
         'broadcast',
         { event: 'ORDER_APPROVED' },
         (payload: any) => {
           const data = payload?.payload || payload;
-          if (data && (data.orderId === orderId || data.orderNumber === orderNumber || data.productId === game.id)) {
-            clearAllTimers();
-            supabase.removeChannel(channel);
-            supabase.removeChannel(broadcastChannel);
+          if (data && (data.orderId === cleanOrderId || data.orderNumber === cleanOrderNumber || data.productId === game.id)) {
             handlePaymentConfirmed({
-              id: orderId,
-              order_number: orderNumber,
+              id: cleanOrderId,
+              order_number: cleanOrderNumber,
               game_id: game.id,
               status: 'completed',
               activation_key: data.activationKey,
@@ -249,21 +305,21 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       )
       .subscribe();
 
+    activeBroadcastRef.current = broadcastChannel;
+
+    // 4. Window custom event fallback
     const handleWindowUnlocked = (e: any) => {
       const detail = e?.detail;
       if (
         detail &&
-        (detail.orderId === orderId ||
-          detail.orderNumber === orderNumber ||
+        (detail.orderId === cleanOrderId ||
+          detail.orderNumber === cleanOrderNumber ||
           detail.productId === game.id ||
           detail.game_id === game.id)
       ) {
-        clearAllTimers();
-        supabase.removeChannel(channel);
-        supabase.removeChannel(broadcastChannel);
         handlePaymentConfirmed({
-          id: orderId,
-          order_number: orderNumber,
+          id: cleanOrderId,
+          order_number: cleanOrderNumber,
           game_id: game.id,
           status: 'completed',
           activation_key: detail.activationKey || detail.activation_key,
@@ -274,21 +330,17 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
     if (typeof window !== 'undefined') {
       window.addEventListener('cpcg_order_unlocked', handleWindowUnlocked);
+      activeUnlockedListenerRef.current = handleWindowUnlocked;
     }
 
+    // 5. Active Polling interval
     pollTimerRef.current = setInterval(async () => {
       attempts++;
       try {
-        const res = await fetch(`/api/orders/status?ref=${orderId}`);
+        const res = await fetch(`/api/orders/status?ref=${encodeURIComponent(cleanOrderId)}`);
         const data = await res.json();
         if (data.success && data.is_completed) {
-          clearAllTimers();
-          supabase.removeChannel(channel);
-          supabase.removeChannel(broadcastChannel);
-          if (typeof window !== 'undefined') {
-            window.removeEventListener('cpcg_order_unlocked', handleWindowUnlocked);
-          }
-          handlePaymentConfirmed(data.order);
+          handlePaymentConfirmed(data.order || { id: cleanOrderId, game_id: game.id, status: 'completed' });
           return;
         }
       } catch (err) {
@@ -297,11 +349,6 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
       if (attempts >= maxAttempts) {
         clearAllTimers();
-        supabase.removeChannel(channel);
-        supabase.removeChannel(broadcastChannel);
-        if (typeof window !== 'undefined') {
-          window.removeEventListener('cpcg_order_unlocked', handleWindowUnlocked);
-        }
       }
     }, 2000);
   };
@@ -365,7 +412,6 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
     setStep('STEP_2_PROCESSING');
     startCountdown();
-
     setLoading(true);
 
     fetch('/api/checkout', {
@@ -385,17 +431,18 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           return;
         }
 
-        setActiveOrder(data.order);
+        const orderResult = data.order || { id: data.orderId, order_number: data.orderNumber };
+        setActiveOrder(orderResult);
 
         try {
-          if (data.order?.id) localStorage.setItem('cpcg_active_order_id', data.order.id);
-          if (data.order?.order_number) localStorage.setItem('cpcg_active_order_number', data.order.order_number);
+          if (orderResult?.id) localStorage.setItem('cpcg_active_order_id', orderResult.id);
+          if (orderResult?.order_number) localStorage.setItem('cpcg_active_order_number', orderResult.order_number);
         } catch (e) {}
 
-        if (isFree || data.order?.status === 'completed' || data.order?.status === 'approved') {
-          handlePaymentConfirmed(data.order);
-        } else {
-          startPaymentPolling(data.order.id, data.order.order_number);
+        if (isFree || orderResult?.status === 'completed' || orderResult?.status === 'approved') {
+          handlePaymentConfirmed(orderResult);
+        } else if (orderResult?.id) {
+          startPaymentPolling(orderResult.id, orderResult.order_number);
         }
       })
       .catch((err) => {
@@ -416,7 +463,12 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget) resetAndClose();
+      }}
+      className="fixed inset-0 z-[9999] bg-black/65 backdrop-blur-[6px] flex items-center justify-center p-4 animate-in fade-in duration-200"
+    >
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -424,7 +476,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -16, scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-          className="bg-[#0B111E] border border-slate-800/80 rounded-3xl p-6 sm:p-8 max-w-md w-full relative shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto"
+          className="bg-[#0B111E]/95 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-md w-full relative shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] space-y-6 max-h-[92vh] overflow-y-auto overscroll-contain"
         >
 
           {/* STEP 1: INPUT FORM */}
@@ -460,93 +512,92 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                   <h4 className="text-xs sm:text-sm font-black text-white truncate mt-0.5">
                     {game.title}
                   </h4>
+                  <span className="inline-block mt-1 text-[10px] text-emerald-400 font-black">
+                    {formatPlanDuration(game.access_duration || game.license_duration, isFree)}
+                  </span>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="text-[9px] font-bold uppercase text-slate-400 block leading-none mb-1">BEI</span>
-                  <span className="text-sm font-black text-white leading-none block">
-                    {formatCurrency(game.price)}
+                  <span className="text-[9px] text-slate-400 font-bold uppercase block">Bei</span>
+                  <span className="text-base sm:text-lg font-black text-emerald-400">
+                    {isFree ? 'BURE' : formatCurrency(game.price)}
                   </span>
                 </div>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1.5">
-                    JINA LAKO KAMILI (FULL NAME)
+                  <label className="block text-[11px] font-black uppercase text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Jina Lako Kamili (Full Name)</span>
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="e.g. Mbwana Samatta (Optional)"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full bg-[#111827] border border-slate-800 rounded-2xl pl-10 pr-4 py-3.5 text-sm text-white font-bold placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                    <User className="w-4 h-4 text-blue-400 absolute left-3.5 top-4" />
-                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Mfano: Rashid Chidy"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-[#111827] border border-slate-700/80 rounded-2xl px-4 py-3.5 text-xs text-white placeholder:text-slate-500 font-bold focus:outline-none focus:border-blue-500 transition-colors"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1.5">
-                    NAMBA YA SIMU YA MALIPO (07XX / 06XX)
+                  <label className="block text-[11px] font-black uppercase text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Namba ya Simu (M-Pesa / Tigo / Airtel / HaloPesa)</span>
                   </label>
-                  <div className="relative">
-                    <input
-                      type="tel"
-                      required
-                      placeholder="07XX XXX XXX au 06XX XXX XXX"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-[#111827] border border-slate-800 rounded-2xl pl-10 pr-4 py-3.5 text-sm text-white font-bold placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                    <Smartphone className="w-4 h-4 text-blue-400 absolute left-3.5 top-4" />
-                  </div>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="07XX XXX XXX au 06XX XXX XXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-[#111827] border border-slate-700/80 rounded-2xl px-4 py-3.5 text-xs text-emerald-400 font-mono font-bold placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
                 </div>
 
                 {error && (
-                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold">
-                    ⚠️ {error}
+                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                    <span>{error}</span>
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  className="w-full py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-[0.98]"
+                  disabled={loading}
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer touch-manipulation disabled:opacity-50"
                 >
-                  <Zap className="w-4 h-4 fill-white text-white" />
-                  <span>LIPA TSH {game.price.toLocaleString()} KWA SIMU</span>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Inatuma USSD Push...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{isFree ? 'FUNGUA BURE SASA' : `LIPA ${formatCurrency(game.price)} SASA`}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
-
-                <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 pt-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                  <span>100% Salama • Auto-Account & STK Push Unlocking</span>
-                </div>
               </form>
             </>
           )}
 
-          {/* STEP 2: PROCESSING & AWAITING PIN */}
+          {/* STEP 2: PROCESSING / USSD PUSH WAIT */}
           {step === 'STEP_2_PROCESSING' && (
-            <div className="flex flex-col items-center justify-center py-4 gap-5 text-center">
-              <div className="relative flex items-center justify-center my-2">
-                <motion.div
-                  animate={{ scale: [1, 1.45, 1], opacity: [0.25, 0.75, 0.25] }}
-                  transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="absolute w-24 h-24 rounded-full bg-blue-600/20 border border-blue-500/40"
-                />
-                <motion.div
-                  animate={{ scale: [1, 1.85, 1], opacity: [0.1, 0.35, 0.1] }}
-                  transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: 0.35 }}
-                  className="absolute w-32 h-32 rounded-full bg-indigo-600/15"
-                />
-                <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-xl shadow-blue-600/30">
-                  <Smartphone className="w-9 h-9 text-white animate-pulse" />
+            <div className="text-center space-y-5 py-2">
+              <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-4 border-blue-500/20 animate-ping" />
+                <div className="w-16 h-16 rounded-full bg-blue-600/20 border-2 border-blue-500 flex items-center justify-center text-blue-400 shadow-xl shadow-blue-500/20">
+                  <Smartphone className="w-8 h-8 animate-bounce" />
                 </div>
               </div>
 
-              <div className="w-full max-w-xs h-1.5 bg-slate-800 rounded-full overflow-hidden relative">
+              {/* Progress Line */}
+              <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                 <motion.div
-                  animate={{ x: ['-100%', '100%'] }}
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '100%' }}
                   transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
                   className="w-1/2 h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400 rounded-full"
                 />
