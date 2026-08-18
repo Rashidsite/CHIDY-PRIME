@@ -22,7 +22,7 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react';
-import { GameProduct } from './GameCard';
+import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { parseUniversalDownloadLinks, ExtractedDownloadLink } from '@/lib/link-parser';
@@ -552,23 +552,31 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                 />
               </div>
 
-              <div className="space-y-2 max-w-sm">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] font-black uppercase tracking-widest">
-                  <Radio className="w-3 h-3 text-blue-400 animate-pulse" />
-                  <span>STK Push Imetumwa</span>
+              <div className="space-y-3 max-w-sm">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  <span>USSD Push Imetumwa Kwenye Simu</span>
                 </div>
 
-                <h3 className="text-lg font-black text-white uppercase tracking-tight">
-                  Inachakata Malipo...
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                  Weka PIN Kwenye Simu Yako
                 </h3>
 
-                <p className="text-xs text-blue-300 font-bold leading-relaxed">
-                  📲 Tafadhali angalia simu yako (<span className="text-white font-black">{phone}</span>) na uweke PIN ya siri kuthibitisha{' '}
+                {/* Network Badges */}
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[9px] font-black border border-rose-500/30">M-PESA</span>
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 text-[9px] font-black border border-blue-500/30">TIGO PESA</span>
+                  <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-300 text-[9px] font-black border border-red-500/30">AIRTEL</span>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black border border-amber-500/30">HALOPESA</span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-blue-950/40 border border-blue-800/40 text-xs text-blue-200 font-bold leading-relaxed">
+                  📲 Tafadhali angalia simu yako (<span className="text-white font-black">{phone}</span>) sasa hivi na uingize PIN yako ya siri kuthibitisha malipo ya{' '}
                   <span className="text-emerald-400 font-black">{formatCurrency(game.price)}</span>.
-                </p>
+                </div>
 
                 <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                  Ukurasa huu utajifungua kiotomatiki mara tu utakapoweka PIN yako ya M-Pesa / Tigo / Airtel / HaloPesa!
+                  Ukurasa huu utajifungua kiotomatiki mara tu unapoingiza PIN yako!
                 </p>
               </div>
 
@@ -589,7 +597,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                 </div>
               )}
 
-              <div className="flex flex-col gap-2.5 w-full mt-2">
+              <div className="flex flex-col gap-2.5 w-full mt-1">
                 <button
                   type="button"
                   disabled={checkingStatus}
@@ -676,15 +684,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                     <Clock className="w-3 h-3 text-purple-400" /> Muda wa Ufikiaji
                   </span>
                   <span className="text-purple-300 font-black">
-                    {game.access_duration === '30 Days'
-                      ? '⏳ Siku 30 (Mwezi 1)'
-                      : game.access_duration === '7 Days'
-                      ? '⏳ Siku 7 (Wiki 1)'
-                      : game.access_duration === '24 Hours'
-                      ? '⏳ Masaa 24 (Siku 1)'
-                      : game.access_duration === '2 Hours'
-                      ? '⏳ Masaa 2 tu'
-                      : '♾️ Ufikiaji wa Maisha (Lifetime)'}
+                    {formatPlanDuration(game.access_duration || game.license_duration || activeOrder?.access_duration, isFree)}
                   </span>
                 </div>
 

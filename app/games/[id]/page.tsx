@@ -10,7 +10,8 @@ import CheckoutModal from '@/components/CheckoutModal';
 import { Star, ShieldCheck, Zap, Download, ArrowLeft, Cpu, HardDrive, Monitor } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils';
-import { GameProduct } from '@/components/GameCard';
+import { GameProduct, formatPlanDuration } from '@/components/GameCard';
+import { useProductAccess } from '@/hooks/useProductAccess';
 
 export default function GameDetailPage() {
   const params = useParams();
@@ -21,6 +22,7 @@ export default function GameDetailPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const supabase = createClient();
+  const { isUnlocked, refresh: refreshAccess } = useProductAccess();
 
   useEffect(() => {
     async function loadGameDetails() {
@@ -149,17 +151,29 @@ export default function GameDetailPage() {
 
             <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-[11px] uppercase font-bold text-slate-400 block">Instant Digital Access</span>
+                <span className="text-[11px] uppercase font-bold text-purple-400 block mb-0.5">
+                  {formatPlanDuration(game.access_duration || game.license_duration, isFree)}
+                </span>
                 <span className="text-2xl font-black text-white">
-                  {isFree ? <span className="text-emerald-400">FREE DOWNLOAD</span> : formatCurrency(game.price)}
+                  {isUnlocked(gameId) ? (
+                    <span className="text-emerald-400">UNLOCKED</span>
+                  ) : isFree ? (
+                    <span className="text-emerald-400">FREE DOWNLOAD</span>
+                  ) : (
+                    formatCurrency(game.price)
+                  )}
                 </span>
               </div>
               <button
                 onClick={() => setCheckoutOpen(true)}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-brand-600 via-brand-500 to-accent-cyan text-white text-sm font-bold shadow-glow hover:scale-105 transition-transform flex items-center gap-2"
+                className={`px-6 py-3 rounded-2xl ${
+                  isUnlocked(gameId) || isFree
+                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
+                    : 'bg-gradient-to-r from-brand-600 via-brand-500 to-accent-cyan shadow-glow hover:scale-105'
+                } text-white text-sm font-bold transition-all flex items-center gap-2 cursor-pointer`}
               >
-                <Zap className="w-4 h-4" />
-                <span>{isFree ? 'Get Access' : 'Buy Now'}</span>
+                {isUnlocked(gameId) || isFree ? <Download className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                <span>{isUnlocked(gameId) ? 'Pakua Sasa (Download)' : isFree ? 'Get Access' : 'Buy Now'}</span>
               </button>
             </div>
 
@@ -242,6 +256,10 @@ export default function GameDetailPage() {
             price: game.price,
             cover_image: game.cover_image,
             category: game.category,
+            access_duration: game.access_duration || game.license_duration,
+          }}
+          onSuccess={() => {
+            refreshAccess();
           }}
         />
       )}

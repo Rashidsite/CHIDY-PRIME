@@ -9,6 +9,7 @@ import CheckoutModal from '@/components/CheckoutModal';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
 import { GameProduct } from '@/components/GameCard';
 import { createClient } from '@/lib/supabase/client';
+import { useProductAccess } from '@/hooks/useProductAccess';
 
 export default function StorefrontPage() {
   const [games, setGames] = useState<GameProduct[]>([]);
@@ -24,6 +25,7 @@ export default function StorefrontPage() {
   });
 
   const supabase = createClient();
+  const { isUnlocked, unlockedProductIds, refresh: refreshPurchases } = useProductAccess();
 
   useEffect(() => {
     async function loadStorefrontData() {
@@ -57,6 +59,9 @@ export default function StorefrontPage() {
               category: p.category || 'MALEO BUS MODE TZ',
               tags: ['Bus Mod', 'Tanzania', 'Realistic'],
               status: p.status,
+              access_duration: p.access_duration || p.license_duration || 'Lifetime',
+              license_duration: p.license_duration,
+              download_url: p.links?.[0]?.url || p.download_url,
             }));
             setGames(mappedPosts);
           }
@@ -136,6 +141,8 @@ export default function StorefrontPage() {
         <GameCatalog
           games={games}
           searchQuery={searchQuery}
+          unlockedProductIds={unlockedProductIds}
+          isUnlocked={isUnlocked}
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
         />
@@ -162,6 +169,9 @@ export default function StorefrontPage() {
           isOpen={!!checkoutGame}
           onClose={() => setCheckoutGame(null)}
           game={checkoutGame}
+          onSuccess={() => {
+            refreshPurchases();
+          }}
         />
       )}
     </>

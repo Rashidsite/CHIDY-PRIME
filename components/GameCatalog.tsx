@@ -10,6 +10,8 @@ interface GameCatalogProps {
   searchQuery?: string;
   onAddToCart?: (game: GameProduct) => void;
   onBuyNow?: (game: GameProduct) => void;
+  unlockedProductIds?: string[];
+  isUnlocked?: (productId: string) => boolean;
 }
 
 export default function GameCatalog({
@@ -18,6 +20,8 @@ export default function GameCatalog({
   searchQuery = '',
   onAddToCart,
   onBuyNow,
+  unlockedProductIds = [],
+  isUnlocked,
 }: GameCatalogProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedTag, setSelectedTag] = useState<string>('');
@@ -115,11 +119,12 @@ export default function GameCatalog({
       {/* Games Grid */}
       {filteredGames.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredGames.map((game) => (
+          {filteredGames.map((game, idx) => (
             <GameCard
               key={game.id}
               game={game}
-              onAddToCart={onAddToCart}
+              index={idx}
+              isUnlocked={isUnlocked ? isUnlocked(game.id) : unlockedProductIds.includes(game.id)}
               onBuyNow={onBuyNow}
             />
           ))}

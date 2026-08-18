@@ -39,6 +39,31 @@ function getLabel(category: string): 'GAME' | 'MOD' | 'VIDEO' {
   return 'GAME';
 }
 
+export function formatPlanDuration(duration?: string, isFree?: boolean): string {
+  if (isFree) return '🎁 FREE ACCESS';
+  if (!duration || !duration.trim()) return '♾️ LIFETIME ACCESS';
+
+  const clean = duration.trim();
+  const lower = clean.toLowerCase();
+
+  if (lower.includes('lifetime') || lower.includes('maisha') || lower === 'infinity') {
+    return '♾️ LIFETIME ACCESS';
+  }
+  if (lower === '30 days' || lower === '30 day' || lower === 'siku 30' || lower === '1 month' || lower === 'mwezi 1') {
+    return '⏳ 30 DAYS ACCESS';
+  }
+  if (lower === '7 days' || lower === '7 day' || lower === 'siku 7' || lower === '1 week' || lower === 'wiki 1') {
+    return '⏳ 7 DAYS ACCESS';
+  }
+  if (lower === '24 hours' || lower === '24 hrs' || lower === '24 hr' || lower === 'masaa 24' || lower === '1 day') {
+    return '⏳ 24 HOURS ACCESS';
+  }
+  if (lower === '2 hours' || lower === '2 hrs' || lower === 'masaa 2') {
+    return '⏳ 2 HOURS ACCESS';
+  }
+  return `⏳ ${clean.toUpperCase()}`;
+}
+
 export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
   const [unlockedLocally, setUnlockedLocally] = React.useState(isUnlocked);
 
@@ -47,9 +72,19 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
   }, [isUnlocked]);
 
   React.useEffect(() => {
+    try {
+      const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
+      if (savedUnlocked) {
+        const parsed = JSON.parse(savedUnlocked);
+        if (Array.isArray(parsed) && parsed.includes(game.id)) {
+          setUnlockedLocally(true);
+        }
+      }
+    } catch {}
+
     const handleOrderUnlocked = (e: any) => {
       const detail = e?.detail;
-      if (detail?.game_id === game.id) {
+      if (detail?.game_id === game.id || detail?.productId === game.id) {
         setUnlockedLocally(true);
       }
     };
@@ -64,6 +99,10 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
   const isTopRated = (game.rating || 0) >= 4.9;
   const label = getLabel(game.category);
   const showUnlocked = isUnlocked || unlockedLocally || isFree;
+  const durationLabel = formatPlanDuration(
+    game.access_duration || game.license_duration || (game as any).duration || (game as any).plan_duration,
+    isFree
+  );
 
   const buttonText = showUnlocked 
     ? (isFree ? 'DOWNLOAD GAME' : `⬇ PAKUA ${label}`) 
@@ -150,17 +189,9 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
         <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
           <div className="min-w-0">
             <span className="text-[8px] sm:text-[9px] uppercase font-black text-purple-400 tracking-wider block leading-none mb-1 truncate">
-              {game.access_duration === '30 Days'
-                ? '⏳ Siku 30'
-                : game.access_duration === '7 Days'
-                ? '⏳ Siku 7'
-                : game.access_duration === '24 Hours'
-                ? '⏳ Masaa 24'
-                : game.access_duration === '2 Hours'
-                ? '⏳ Masaa 2'
-                : '♾️ Lifetime Access'}
+              {durationLabel}
             </span>
-            {isUnlocked ? (
+            {showUnlocked ? (
               <span className="text-xs font-black text-emerald-400 tracking-wide uppercase">UNLOCKED</span>
             ) : isFree ? (
               <span className="text-xs font-black text-emerald-400 tracking-wide">FREE</span>
