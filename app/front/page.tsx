@@ -456,6 +456,20 @@ export default function FrontHubPage() {
           }
         }
       )
+      .on(
+        'broadcast',
+        { event: 'STORE_SETTINGS_UPDATED' },
+        (payload: any) => {
+          const setting = payload?.payload;
+          if (setting?.key === 'custom_background' && setting.value) {
+            setBgSettings({
+              enabled: setting.value.enabled !== false,
+              image_url: setting.value.image_url || '/game_controller_bg.jpg',
+              opacity: setting.value.opacity ?? 0.45,
+            });
+          }
+        }
+      )
       .subscribe();
 
     return () => {
