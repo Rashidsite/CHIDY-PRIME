@@ -263,11 +263,103 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* Users List Data Table */}
+      {/* Users List Data - MOBILE VIEW (< 1024px) */}
+      {!loading && (
+        <div className="lg:hidden space-y-3.5">
+          {filteredUsers.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center text-slate-400 font-bold text-xs uppercase">
+              Hakuna wateja waliopatikana kwa sasa.
+            </div>
+          ) : (
+            filteredUsers.map((u) => {
+              const isArchived = u.status === 'archived';
+              const rawPhone = u.phone_number || '';
+              const cleanPhone = rawPhone.replace(/\D/g, '');
+
+              return (
+                <div
+                  key={`mob-user-${u.id}`}
+                  className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3.5 shadow-md"
+                >
+                  {/* Header: Name, Email & Role */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-extrabold text-white text-sm truncate">{u.full_name || 'Mteja'}</p>
+                      <p className="text-[11px] text-slate-400 font-mono truncate">{u.email}</p>
+                    </div>
+
+                    <span className={`px-2.5 py-1 rounded-full font-black uppercase text-[10px] tracking-wider border shrink-0 ${
+                      u.role === 'admin'
+                        ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                        : 'bg-slate-950 text-slate-400 border-slate-800'
+                    }`}>
+                      {u.role || 'user'}
+                    </span>
+                  </div>
+
+                  {/* Phone & Metrics */}
+                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[9px] text-slate-500 uppercase font-extrabold block">Simu:</span>
+                      <a
+                        href={cleanPhone ? `tel:${cleanPhone}` : undefined}
+                        className="font-mono font-bold text-blue-400 text-xs hover:underline block"
+                      >
+                        {formatPhone(u.phone_number)}
+                      </a>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[9px] text-slate-500 uppercase font-extrabold block">Oda / Jumla:</span>
+                      <span className="font-black text-emerald-400 text-xs">
+                        {u.orders_count || 1} Oda ({formatCurrency(u.total_spent || 0)})
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Mobile Action Controls Row (min-h-[44px]) */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => handleToggleRole(u.id, u.role)}
+                      className="py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500 hover:text-blue-400 text-white font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all shadow-sm min-h-[44px] touch-manipulation cursor-pointer"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-blue-400" />
+                      <span>Role: {u.role === 'admin' ? 'Admin' : 'User'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleStatus(u.id, u.status)}
+                      className={`py-2.5 px-3 rounded-xl border font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all shadow-sm min-h-[44px] touch-manipulation cursor-pointer ${
+                        isArchived
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                          : 'bg-slate-950 text-rose-400 border-slate-800'
+                      }`}
+                    >
+                      {isArchived ? (
+                        <>
+                          <UserCheck className="w-4 h-4 text-emerald-400" />
+                          <span>Washa</span>
+                        </>
+                      ) : (
+                        <>
+                          <Archive className="w-4 h-4 text-slate-400" />
+                          <span>Archive</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Users List Data - DESKTOP TABLE VIEW (>= 1024px) */}
       {loading ? (
         <div className="text-slate-400 font-bold uppercase text-xs animate-pulse">Loading Registered Accounts...</div>
       ) : (
-        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-card">
+        <div className="hidden lg:block p-6 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-card">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>

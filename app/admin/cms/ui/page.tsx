@@ -352,96 +352,108 @@ export default function AdminUICMSPage() {
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {config.bottom_nav.items.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                  className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-3 shadow-md"
                 >
-                  {/* Order Buttons */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => moveNavItem(idx, 'up')}
-                      disabled={idx === 0}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-                    >
-                      <MoveUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => moveNavItem(idx, 'down')}
-                      disabled={idx === config.bottom_nav.items.length - 1}
-                      className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
-                    >
-                      <MoveDown className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Top Bar: Re-order controls + Live status + Delete */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 pb-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase text-slate-400">Nafasi #{idx + 1}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => moveNavItem(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 min-h-[38px] min-w-[38px] flex items-center justify-center touch-manipulation"
+                          title="Sogeza Juu"
+                        >
+                          <MoveUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => moveNavItem(idx, 'down')}
+                          disabled={idx === config.bottom_nav.items.length - 1}
+                          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 min-h-[38px] min-w-[38px] flex items-center justify-center touch-manipulation"
+                          title="Sogeza Chini"
+                        >
+                          <MoveDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateNavItem(item.id, { is_live: !item.is_live })}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider min-h-[38px] touch-manipulation transition-all cursor-pointer ${
+                          item.is_live
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                        }`}
+                      >
+                        {item.is_live ? '🟢 LIVE' : '⚪ DRAFT'}
+                      </button>
+                      <button
+                        onClick={() => deleteNavItem(item.id)}
+                        className="p-2 rounded-xl bg-rose-600/15 text-rose-400 hover:bg-rose-600 hover:text-white border border-rose-500/30 transition-colors min-h-[38px] min-w-[38px] flex items-center justify-center touch-manipulation cursor-pointer"
+                        title="Futa Kiungo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Label */}
-                  <div className="flex-1 min-w-[120px]">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Jina (Label)</label>
-                    <input
-                      type="text"
-                      value={item.label}
-                      onChange={(e) => updateNavItem(item.id, { label: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
+                  {/* Input Fields Grid: Stacks cleanly on mobile */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {/* Label */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Jina (Label) *</label>
+                      <input
+                        type="text"
+                        value={item.label}
+                        onChange={(e) => updateNavItem(item.id, { label: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500 min-h-[44px]"
+                      />
+                    </div>
 
-                  {/* Icon Selector */}
-                  <div className="w-full md:w-36">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Icon</label>
-                    <select
-                      value={item.icon}
-                      onChange={(e) => updateNavItem(item.id, { icon: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500"
-                    >
-                      {AVAILABLE_ICONS.map((iconName) => (
-                        <option key={iconName} value={iconName}>
-                          {iconName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    {/* Icon Selector */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Icon *</label>
+                      <select
+                        value={item.icon}
+                        onChange={(e) => updateNavItem(item.id, { icon: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500 min-h-[44px] cursor-pointer"
+                      >
+                        {AVAILABLE_ICONS.map((iconName) => (
+                          <option key={iconName} value={iconName}>
+                            {iconName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {/* URL */}
-                  <div className="flex-1 min-w-[140px]">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Target URL</label>
-                    <input
-                      type="text"
-                      value={item.url}
-                      onChange={(e) => updateNavItem(item.id, { url: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
+                    {/* URL */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Target URL *</label>
+                      <input
+                        type="text"
+                        value={item.url}
+                        onChange={(e) => updateNavItem(item.id, { url: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500 min-h-[44px]"
+                      />
+                    </div>
 
-                  {/* Badge Text */}
-                  <div className="w-full md:w-24">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Badge Text</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. HOT"
-                      value={item.badge || ''}
-                      onChange={(e) => updateNavItem(item.id, { badge: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500 uppercase"
-                    />
-                  </div>
-
-                  {/* Status & Delete */}
-                  <div className="flex items-center gap-2 pt-2 md:pt-4">
-                    <button
-                      onClick={() => updateNavItem(item.id, { is_live: !item.is_live })}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${
-                        item.is_live ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
-                      }`}
-                    >
-                      {item.is_live ? 'LIVE' : 'DRAFT'}
-                    </button>
-                    <button
-                      onClick={() => deleteNavItem(item.id)}
-                      className="p-2 rounded-xl bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {/* Badge Text */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Badge Text (Hiari)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. HOT, NEW, LIVE"
+                        value={item.badge || ''}
+                        onChange={(e) => updateNavItem(item.id, { badge: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500 uppercase min-h-[44px]"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}

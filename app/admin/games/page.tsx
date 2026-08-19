@@ -426,8 +426,131 @@ export default function AdminGamesPage() {
         </select>
       </div>
 
-      {/* ── Catalog Table ── */}
-      <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-xl overflow-hidden shadow-2xl">
+      {/* ── MOBILE VIEW: STACKED TOUCH-FRIENDLY GAME CARDS (screens < 1024px) ── */}
+      <div className="lg:hidden space-y-3.5">
+        {loading ? (
+          <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center text-slate-400 font-bold">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <span>Inapakia katalogi ya michezo...</span>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center text-slate-400 font-bold">
+            Hakuna mchezo uliopatikana.
+          </div>
+        ) : (
+          filtered.map((g) => {
+            const isLive = g.status === 'published' || !g.status;
+            const isActionLoading = actionLoadingId === g.id;
+            const linkCount = Array.isArray(g.links) ? g.links.length : (g.download_url ? 1 : 0);
+
+            return (
+              <div
+                key={`mob-${g.id}`}
+                className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3.5 shadow-md"
+              >
+                {/* Top Row: Thumbnail + Title + Category */}
+                <div className="flex items-start gap-3">
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
+                    <Image
+                      src={g.cover_image || g.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
+                      alt={g.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <h3 className="font-bold text-white text-sm leading-snug line-clamp-2">
+                      {g.title}
+                    </h3>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-800 text-teal-300 border border-slate-700 text-[10px] font-black uppercase">
+                        {g.category}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black">
+                        {formatBadgeDuration(g.access_duration || g.license_duration, g.duration_days)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Bar: Price & Link status */}
+                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs">
+                  <span className="font-extrabold text-emerald-400 text-sm">
+                    {g.price === 0 ? 'FREE' : formatCurrency(g.price)}
+                  </span>
+                  <span className="text-[10px] font-bold text-blue-400">
+                    {linkCount > 1 ? `🔗 ${linkCount} Buttons` : linkCount === 1 ? '🔗 1 Direct Link' : '⚠️ No Link'}
+                  </span>
+                </div>
+
+                {/* Mobile Action Controls Row (min-h-[44px] for high touch accuracy) */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {/* Games Mpya Feed Toggle */}
+                  <button
+                    onClick={() => handleToggleNewFeed(g)}
+                    disabled={actionLoadingId === `feed-${g.id}`}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider border transition-all min-h-[44px] touch-manipulation cursor-pointer ${
+                      g.is_new_feed
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>{g.is_new_feed ? '🌟 Games Mpya: ON' : '🌟 Games Mpya: OFF'}</span>
+                  </button>
+
+                  {/* Active / Draft Toggle */}
+                  <button
+                    onClick={() => handleToggleStatus(g)}
+                    disabled={isActionLoading}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider border transition-all min-h-[44px] touch-manipulation cursor-pointer ${
+                      isLive
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                        : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                    }`}
+                  >
+                    {isLive ? (
+                      <>
+                        <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Draft</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Edit & Delete Action Buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenEdit(g)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-xs font-black uppercase tracking-wider transition-all min-h-[44px] touch-manipulation cursor-pointer"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    <span>Hariri (Edit)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteGame(g.id)}
+                    className="px-4 py-2.5 rounded-xl bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 text-xs font-black uppercase tracking-wider transition-all min-h-[44px] touch-manipulation cursor-pointer"
+                    title="Delete Product"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ── DESKTOP CATALOG TABLE VIEW (screens >= 1024px) ── */}
+      <div className="hidden lg:block p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>

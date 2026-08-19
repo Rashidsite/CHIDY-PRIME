@@ -646,8 +646,154 @@ export default function AdminOrdersPage() {
         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+      {/* ── MOBILE VIEW: STACKED TOUCH-FRIENDLY ORDER CARDS (screens < 1024px) ── */}
+      <div className="lg:hidden space-y-3.5">
+        {loading && (
+          <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center text-slate-400 font-bold">
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+              <span>Inapakia oda za wateja...</span>
+            </div>
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && (
+          <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center text-slate-400 font-bold">
+            Hakuna orders zilizopatikana.
+          </div>
+        )}
+
+        <AnimatePresence>
+          {filtered.map((o) => {
+            const s = getStatus(o.status);
+            const isApproved = ['completed', 'approved'].includes(o.status?.toLowerCase());
+            const isRejected = ['rejected', 'failed'].includes(o.status?.toLowerCase());
+            const customerName = getName(o) || 'Mteja Asiye na Jina';
+            const phone = getPhone(o);
+            const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+            const waPhone = cleanPhone.startsWith('0') ? '255' + cleanPhone.slice(1) : cleanPhone.startsWith('255') ? cleanPhone : '255' + cleanPhone;
+
+            return (
+              <motion.div
+                key={`mob-${o.id}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedOrder(o)}
+                className={`p-4 rounded-2xl bg-slate-900 border border-slate-800 border-l-4 ${s.row} space-y-3.5 shadow-md active:scale-[0.99] transition-all cursor-pointer`}
+              >
+                {/* Card Top: Order Ref, Gateway & Status Badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono text-xs font-bold text-white tracking-tight">
+                        {(o.order_number || o.id || '').substring(0, 14)}…
+                      </span>
+                      {o.payment_gateway && o.payment_gateway !== 'free' && (
+                        <span className="px-1.5 py-0.2 rounded-md text-[8px] font-black uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          {o.payment_gateway === 'harakapay' ? '⚡ HarakaPay' : o.payment_gateway}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      {o.created_at ? new Date(o.created_at).toLocaleString('sw-TZ', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                    </span>
+                  </div>
+
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-black uppercase text-[10px] border shrink-0 ${s.badge}`}>
+                    {s.icon}
+                    <span>{s.label}</span>
+                  </span>
+                </div>
+
+                {/* Customer Details & Quick Contact Chips */}
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-black text-white text-xs truncate">{customerName}</p>
+                    <p className="font-mono text-blue-400 text-xs font-bold mt-0.5">{phone || '—'}</p>
+                  </div>
+
+                  {phone && (
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <a
+                        href={`tel:${phone}`}
+                        className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-blue-400 hover:text-white min-h-[38px] min-w-[38px] flex items-center justify-center touch-manipulation"
+                        title="Call Customer"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </a>
+                      <a
+                        href={`https://wa.me/${waPhone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 min-h-[38px] min-w-[38px] flex items-center justify-center touch-manipulation"
+                        title="Chat on WhatsApp"
+                      >
+                        <span className="text-xs font-black">💬</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Title & Price */}
+                <div className="flex items-center justify-between gap-3 border-t border-slate-800/60 pt-2.5">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Bidhaa:</span>
+                    <p className="font-bold text-white text-xs truncate">
+                      {o.game_title || o.product_title || 'Digital Product'}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Kiasi:</span>
+                    <p className="font-black text-emerald-400 text-sm">
+                      {formatCurrency(o.amount)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mobile Full-Width Actions Bar (44px min height for high touch accessibility) */}
+                <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => handleUpdateStatus(o.id, 'completed')}
+                    disabled={isApproved || updating === o.id + 'completed'}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider border transition-all min-h-[44px] touch-manipulation cursor-pointer ${
+                      isApproved
+                        ? 'opacity-35 cursor-not-allowed bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-md'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{updating === o.id + 'completed' ? 'Inaidhinisha...' : 'Approve'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleUpdateStatus(o.id, 'rejected')}
+                    disabled={isRejected || updating === o.id + 'rejected'}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all min-h-[44px] touch-manipulation cursor-pointer ${
+                      isRejected
+                        ? 'opacity-35 cursor-not-allowed bg-rose-500/10 text-rose-600 border-rose-500/20'
+                        : 'bg-slate-800 text-rose-400 border-rose-500/30 hover:bg-rose-600 hover:text-white'
+                    }`}
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedOrder(o)}
+                    className="px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all min-h-[44px] touch-manipulation flex items-center gap-1 cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                    <span>Zaidi</span>
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      {/* ── DESKTOP TABLE VIEW (Visible ONLY on screens >= 1024px) ── */}
+      <div className="hidden lg:block rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
