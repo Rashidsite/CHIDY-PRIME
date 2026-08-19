@@ -606,7 +606,7 @@ export default function FrontHubPage() {
         games={games}
       />
 
-      <main className="main-storefront-wrapper relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 pb-36">
+      <main className="main-storefront-wrapper relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 md:pt-8 md:pb-8 space-y-8 sm:space-y-10">
         {/* Style Tag to hide scrollbars cleanly */}
         <style>{`
           .no-scrollbar::-webkit-scrollbar {

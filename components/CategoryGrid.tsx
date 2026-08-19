@@ -106,6 +106,9 @@ export default function CategoryGrid({
           const isSelected = (selectedCategory || '').toLowerCase() === catName.toLowerCase();
           const rawKey = cat?.id || catName || idx;
           const cardId = `category-card-${String(rawKey).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+          const isOddTotal = (activeList ?? []).length % 2 !== 0;
+          const isLast = idx === (activeList ?? []).length - 1;
+          const isFullSpanMobile = isOddTotal && isLast;
 
           return (
             <motion.div
@@ -117,7 +120,9 @@ export default function CategoryGrid({
               onClick={() => handleCardClick(catName)}
               className={`relative z-10 rounded-2xl overflow-hidden bg-[#0F172A] flex flex-col justify-between border scroll-mt-24 ${
                 isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-slate-800'
-              } shadow-lg hover:border-blue-500/60 transition-all duration-300 cursor-pointer group touch-manipulation interactive-card`}
+              } shadow-lg hover:border-blue-500/60 transition-all duration-300 cursor-pointer group touch-manipulation interactive-card ${
+                isFullSpanMobile ? 'col-span-2 md:col-span-1' : ''
+              }`}
             >
               {/* Card Header: Title + Game Count */}
               <div className="flex items-center justify-between p-2 sm:p-3 bg-[#0F172A] border-b border-slate-800/80">
@@ -145,12 +150,14 @@ export default function CategoryGrid({
               </div>
 
               {/* Card Body: Cover Image */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950">
+              <div className={`relative w-full overflow-hidden bg-slate-950 ${
+                isFullSpanMobile ? 'aspect-[21/9] sm:aspect-video' : 'aspect-[16/10]'
+              }`}>
                 <Image
                   src={cat?.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
                   alt={catName}
                   fill
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  sizes={isFullSpanMobile ? '(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 25vw' : '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'}
                   placeholder="blur"
                   blurDataURL={BLUR_DATA_URL}
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
