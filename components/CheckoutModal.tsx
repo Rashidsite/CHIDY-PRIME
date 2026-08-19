@@ -86,34 +86,115 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     }
   }, [isOpen]);
 
-  // Reset or initialize ONLY when modal opens
+  // Reset or initialize ONLY when modal opens — validate Supabase for timed purchases
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current) {
-      let isUnlockedAlready = isFree;
-      try {
-        const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
-        if (savedUnlocked) {
-          const parsed = JSON.parse(savedUnlocked);
-          if (Array.isArray(parsed) && parsed.includes(game?.id)) {
-            isUnlockedAlready = true;
-          }
-        }
-      } catch (e) {}
-
-      if (isUnlockedAlready) {
-        setStep('STEP_3_SUCCESS');
+      // Pre-fill phone/name from profile or localStorage
+      if (profile?.phone_number && (phone === '07' || !phone)) {
+        setPhone(profile.phone_number);
       } else {
-        setStep('STEP_1_FORM');
-        setError(null);
-        setCountdown(COUNTDOWN_INITIAL_SECONDS);
-
-        if (profile?.phone_number && (phone === '07' || !phone)) {
-          setPhone(profile.phone_number);
-        }
-        if (profile?.full_name && !fullName) {
-          setFullName(profile.full_name);
-        }
+        try {
+          const savedPhone = localStorage.getItem('cpcg_user_phone');
+          if (savedPhone && (phone === '07' || !phone)) setPhone(savedPhone);
+        } catch (e) {}
       }
+      if (profile?.full_name && !fullName) {
+        setFullName(profile.full_name);
+      }
+
+      if (isFree) {
+        setStep('STEP_3_SUCCESS');
+        prevIsOpenRef.current = isOpen;
+        return;
+      }
+
+      // Default to payment form — then async-validate any existing unlock
+      setStep('STEP_1_FORM');
+      setError(null);
+      setCountdown(COUNTDOWN_INITIAL_SECONDS);
+
+      // Check if game is in localStorage unlocked list AND has a valid active Supabase order
+      const validateUnlock = async () => {
+        try {
+          const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
+          const parsed = savedUnlocked ? JSON.parse(savedUnlocked) : [];
+          if (!Array.isArray(parsed) || !parsed.includes(game?.id)) return;
+
+          // Game is in localStorage list — verify Supabase has an active, non-expired order
+          const userPhone =
+            profile?.phone_number ||
+            (typeof window !== 'undefined' ? localStorage.getItem('cpcg_user_phone') : null) ||
+            '';
+          if (!userPhone) return; // No phone → not authenticated, stay on STEP_1
+
+          const digits = userPhone.replace(/\D/g, '');
+          const norm = digits.startsWith('0')
+            ? '255' + digits.slice(1)
+            : digits.startsWith('255')
+            ? digits
+            : '255' + digits;
+          const local = '0' + norm.slice(3);
+
+          const { data: orders } = await supabase
+            .from('orders')
+            .select('id, status, created_at, game_id, access_duration, visitor_phone')
+            .or(`game_id.eq.${game.id},product_id.eq.${game.id}`)
+            .or(`visitor_phone.eq.${norm},visitor_phone.eq.${local}`)
+            .in('status', ['completed', 'approved', 'paid'])
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (!orders || orders.length === 0) {
+            // No valid order → remove stale entry and stay on STEP_1
+            try {
+              const remaining = parsed.filter((id: string) => id !== game?.id);
+              localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
+            } catch (e) {}
+            return;
+          }
+
+          const latestOrder = orders[0];
+
+          // Determine if the purchase has expired
+          const raw =
+            game.access_duration ||
+            game.license_duration ||
+            (game as any).plan_duration ||
+            (game as any).duration_days;
+
+          const durationHours = (() => {
+            if (raw === undefined || raw === null || raw === '') return null;
+            const s = String(raw).toLowerCase().trim();
+            if (s.includes('2 hour') || s === '2') return 2;
+            if (s.includes('24 hour') || s === '1' || s === '24' || s === '1 day') return 24;
+            if (s.includes('7 day') || s === '7') return 7 * 24;
+            if (s.includes('30 day') || s === '30') return 30 * 24;
+            if (s.includes('lifetime') || s.includes('maisha') || s === '0' || s === 'infinity') return null;
+            return null;
+          })();
+
+          if (durationHours !== null) {
+            const orderDate = new Date(latestOrder.created_at);
+            const expiresAt = new Date(orderDate.getTime() + durationHours * 60 * 60 * 1000);
+            if (Date.now() > expiresAt.getTime()) {
+              // Purchase expired → remove from unlocked list and stay on STEP_1
+              try {
+                const remaining = parsed.filter((id: string) => id !== game?.id);
+                localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
+              } catch (e) {}
+              return;
+            }
+          }
+
+          // Valid, non-expired order found → go to STEP_3_SUCCESS
+          setActiveOrder(latestOrder);
+          setStep('STEP_3_SUCCESS');
+        } catch (e) {
+          // On any error, default to STEP_1_FORM (safe)
+        }
+      };
+
+      validateUnlock();
     } else if (!isOpen && prevIsOpenRef.current) {
       clearAllTimers();
     }
@@ -178,9 +259,37 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
   const resetAndClose = () => {
     clearAllTimers();
+
+    // For timed (non-lifetime) purchases, remove the game from the unlocked cache
+    // so the next click opens STEP_1_FORM (payment prompt) correctly
+    try {
+      const raw =
+        game.access_duration ||
+        game.license_duration ||
+        (game as any).plan_duration ||
+        (game as any).duration_days;
+      const s = raw !== undefined && raw !== null ? String(raw).toLowerCase().trim() : '';
+      const isLifetime =
+        !s ||
+        s === '0' ||
+        s === 'infinity' ||
+        s.includes('lifetime') ||
+        s.includes('maisha');
+
+      if (!isLifetime && game?.id) {
+        const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
+        if (savedUnlocked) {
+          const parsed = JSON.parse(savedUnlocked);
+          if (Array.isArray(parsed)) {
+            const remaining = parsed.filter((id: string) => id !== game.id);
+            localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
+          }
+        }
+      }
+    } catch (e) {}
+
     setStep('STEP_1_FORM');
     setError(null);
-    setPhone('07');
     setActiveOrder(null);
     setCountdown(COUNTDOWN_INITIAL_SECONDS);
     onClose();
@@ -725,11 +834,29 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                   <span className="text-white font-extrabold font-mono text-xs">
                     {(() => {
                       const name = (fullName || '').trim();
-                      const rawPhone = cleanPhoneNumber(phone) || (typeof window !== 'undefined' ? localStorage.getItem('cpcg_user_phone') : '') || activeOrder?.phone_number || activeOrder?.phone || '';
-                      if (rawPhone) {
+                      // Priority: activeOrder phone → localStorage saved phone → cleaned form phone
+                      const orderPhone =
+                        activeOrder?.visitor_phone ||
+                        activeOrder?.phone_number ||
+                        activeOrder?.phone ||
+                        '';
+                      const localPhone =
+                        typeof window !== 'undefined'
+                          ? localStorage.getItem('cpcg_user_phone') || ''
+                          : '';
+                      const formPhone = cleanPhoneNumber(phone) || '';
+                      // Use the longest/most complete phone available
+                      const rawPhone = [orderPhone, localPhone, formPhone]
+                        .map((p) => (p || '').replace(/\D/g, ''))
+                        .sort((a, b) => b.length - a.length)[0] || '';
+
+                      if (rawPhone && rawPhone.length >= 9) {
                         const p = rawPhone.startsWith('255') ? '0' + rawPhone.slice(3) : rawPhone;
-                        const formattedPhone = p.length === 10 ? `${p.slice(0, 4)} ${p.slice(4, 7)} ${p.slice(7)}` : p;
-                        if (name && name !== `User-${rawPhone}`) {
+                        const formattedPhone =
+                          p.length === 10
+                            ? `${p.slice(0, 4)} ${p.slice(4, 7)} ${p.slice(7)}`
+                            : p;
+                        if (name && !name.startsWith('User-')) {
                           return `${name} (${formattedPhone})`;
                         }
                         return formattedPhone;

@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Star, Zap, Crown, Download, CheckCircle2 } from 'lucide-react';
+import { Star, Crown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useCMSTheme } from './CMSThemeProvider';
 
@@ -188,19 +188,6 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
               </div>
             </div>
           )}
-        </div>
-
-        <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity duration-250 flex items-center justify-center z-20">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleCardClick}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl ${
-              showUnlocked ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'
-            } text-white font-black text-xs uppercase tracking-wider shadow-lg transition-colors cursor-pointer touch-manipulation`}
-          >
-            {showUnlocked ? <Download className="w-4 h-4 text-white" /> : <Zap className="w-4 h-4 text-white" />}
-            <span>{buttonText}</span>
-          </motion.button>
         </div>
       </div>
 
