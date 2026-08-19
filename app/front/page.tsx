@@ -206,6 +206,7 @@ export default function FrontHubPage() {
             category: p.category || 'Maleo Bus Mods TZ',
             tags: ['Chidy Prime Mod', 'Tanzania'],
             status: p.status || 'published',
+            is_new_feed: Boolean(p.is_new_feed),
             download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
             links: p.links || [],
             access_duration: dur || 'Lifetime',

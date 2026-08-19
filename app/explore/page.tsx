@@ -74,24 +74,32 @@ export default function ExplorePage() {
         .order('created_at', { ascending: false });
 
       if (postsData && postsData.length > 0) {
-        const liveList = postsData
-          .filter((p) => p.status !== 'draft' && p.status !== 'archived' && p.status !== 'hidden' && p.is_active !== false)
-          .map((p) => ({
-            id: p.id,
-            title: p.title || 'Untitled Game',
-            description: p.description || '',
-            cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-            price: Number(p.price || 0),
-            rating: Number(p.rating || 4.9),
-            category: p.category || 'Maleo Bus Mods TZ',
-            tags: p.tags || ['Chidy Prime Mod', 'Tanzania'],
-            status: p.status || 'published',
-            download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
-            access_duration: p.access_duration || p.license_duration || 'Lifetime',
-          }));
+        const liveList = postsData.filter((p) => {
+          const status = String(p.status || '').toLowerCase();
+          return status !== 'draft' && status !== 'archived' && status !== 'hidden' && p.is_active !== false;
+        });
 
-        if (liveList.length > 0) {
-          setGames(liveList);
+        // Filter explicitly curated games with is_new_feed === true
+        const curatedList = liveList.filter((p) => p.is_new_feed === true);
+        const finalList = curatedList.length > 0 ? curatedList : liveList;
+
+        const formattedGames = finalList.map((p) => ({
+          id: p.id,
+          title: p.title || 'Untitled Game',
+          description: p.description || '',
+          cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+          price: Number(p.price || 0),
+          rating: Number(p.rating || 4.9),
+          category: p.category || 'Maleo Bus Mods TZ',
+          tags: p.tags || ['Chidy Prime Mod', 'Tanzania'],
+          status: p.status || 'published',
+          is_new_feed: Boolean(p.is_new_feed),
+          download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
+          access_duration: p.access_duration || p.license_duration || 'Lifetime',
+        }));
+
+        if (formattedGames.length > 0) {
+          setGames(formattedGames);
         }
       }
     } catch (err) {

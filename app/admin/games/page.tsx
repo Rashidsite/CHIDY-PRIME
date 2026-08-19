@@ -49,6 +49,7 @@ export default function AdminGamesPage() {
   const [customCategory, setCustomCategory] = useState('');
   const [rating, setRating] = useState('4.8');
   const [status, setStatus] = useState<'published' | 'draft' | 'archived'>('published');
+  const [isNewFeed, setIsNewFeed] = useState(false);
   
   // Form State - Tab 2 Media & Multi-Links
   const [coverImage, setCoverImage] = useState('');
@@ -118,6 +119,7 @@ export default function AdminGamesPage() {
     setCustomCategory('');
     setRating('4.8');
     setStatus('published');
+    setIsNewFeed(false);
     setCoverImage('https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg');
     setDownloadLinks([
       { name: 'Download Game / Mod', url: '' },
@@ -141,6 +143,7 @@ export default function AdminGamesPage() {
     
     setRating(String(game.rating || 4.8));
     setStatus(game.status || 'published');
+    setIsNewFeed(Boolean(game.is_new_feed));
     setCoverImage(game.cover_image || game.image_url || '');
 
     // Parse links
@@ -226,6 +229,34 @@ export default function AdminGamesPage() {
     }
   };
 
+  const handleToggleNewFeed = async (game: any) => {
+    const nextFeedVal = !game.is_new_feed;
+    setActionLoadingId(`feed-${game.id}`);
+    try {
+      const res = await fetch('/api/admin/games', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: game.id,
+          is_new_feed: nextFeedVal,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update Games Mpya Feed status');
+      }
+
+      setGames((prev) =>
+        prev.map((g) => (g.id === game.id ? { ...g, is_new_feed: nextFeedVal } : g))
+      );
+    } catch (err: any) {
+      alert(err.message || 'Error toggling Games Mpya Feed');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleSaveGame = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -259,6 +290,7 @@ export default function AdminGamesPage() {
         video_url: videoUrl.trim(),
         youtube_url: videoUrl.trim(),
         status,
+        is_new_feed: isNewFeed,
       };
 
       const isEdit = !!editingGame?.id;
@@ -407,13 +439,14 @@ export default function AdminGamesPage() {
                 <th className="pb-3.5">Plan Duration</th>
                 <th className="pb-3.5">Price</th>
                 <th className="pb-3.5 text-center">Status</th>
+                <th className="pb-3.5 text-center">🌟 Games Mpya</th>
                 <th className="pb-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-slate-300">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-500 font-bold">
+                  <td colSpan={9} className="py-12 text-center text-slate-500 font-bold">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                       <span>Loading products catalog from database...</span>
@@ -422,7 +455,7 @@ export default function AdminGamesPage() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-500 font-bold">
+                  <td colSpan={9} className="py-12 text-center text-slate-500 font-bold">
                     No products found matching criteria.
                   </td>
                 </tr>
@@ -489,6 +522,22 @@ export default function AdminGamesPage() {
                               <span>Draft</span>
                             </>
                           )}
+                        </button>
+                      </td>
+
+                      {/* 🌟 Games Mpya Feed Toggle */}
+                      <td className="py-3 text-center">
+                        <button
+                          onClick={() => handleToggleNewFeed(g)}
+                          disabled={actionLoadingId === `feed-${g.id}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border cursor-pointer ${
+                            g.is_new_feed
+                              ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                              : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                          }`}
+                          title={g.is_new_feed ? 'Ipo Kwenye Games Mpya Feed (Bonyeza Kutoa)' : 'Haipo Kwenye Feed (Bonyeza Kuweka)'}
+                        >
+                          <span>{g.is_new_feed ? '🌟 ON' : 'OFF'}</span>
                         </button>
                       </td>
 
@@ -727,6 +776,32 @@ export default function AdminGamesPage() {
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  {/* 🌟 Games Mpya Feed Curation Toggle */}
+                  <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                    <div className="space-y-0.5 pr-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-400 font-black text-xs uppercase tracking-wider">🌟 Weka Kwenye Games Mpya (Feed)</span>
+                        {isNewFeed && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">FEATURED</span>}
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        Litaonekana kwenye ukurasa na tab maalum ya "GAMES MPYA / EXPLORE"
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsNewFeed(!isNewFeed)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        isNewFeed ? 'bg-amber-500' : 'bg-slate-800'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          isNewFeed ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
               )}

@@ -19,6 +19,7 @@ export interface GameProduct {
   tags?: string[];
   status?: string;
   download_url?: string;
+  is_new_feed?: boolean;
   access_duration?: string;
   license_duration?: string;
 }

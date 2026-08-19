@@ -84,7 +84,7 @@ export default function NewGamesFeed({
               </span>
             </div>
             <p className="text-xs text-blue-400 font-bold mt-1">
-              {filteredAndSortedGames.length} Michezo na Mods mpya zilizowekwa hivi karibuni
+              {filteredAndSortedGames.length} Michezo na Mods maalum zilizochaguliwa
             </p>
           </div>
         </div>

@@ -80,6 +80,7 @@ export async function GET() {
           category: p.category || 'MALEO BUS MODE TZ',
           status: p.status || 'published',
           duration_days: p.duration_days ?? 0,
+          is_new_feed: Boolean(p.is_new_feed),
           access_duration: durLabel,
           license_duration: durLabel,
           youtube_url: p.youtube_url || p.video_url || '',
@@ -135,6 +136,8 @@ export async function POST(request: Request) {
 
     const durationDays = parseDurationDays(body.access_duration || body.license_duration);
 
+    const isNewFeed = body.is_new_feed !== undefined ? Boolean(body.is_new_feed) : false;
+
     // 1. Insert into posts table (Primary)
     const { data: newPost, error: pErr } = await supabase
       .from('posts')
@@ -148,6 +151,7 @@ export async function POST(request: Request) {
         youtube_url: youtubeUrl,
         links,
         status,
+        is_new_feed: isNewFeed,
         duration_days: durationDays,
         sort_order: 9999,
       })
@@ -170,6 +174,7 @@ export async function POST(request: Request) {
         cover_image: imageUrl,
         rating,
         status,
+        is_new_feed: isNewFeed,
         access_duration: body.access_duration || 'Lifetime',
         download_url: links[0]?.url || '',
         download_links: links,
@@ -182,6 +187,7 @@ export async function POST(request: Request) {
         ...newPost,
         cover_image: newPost.image_url,
         access_duration: body.access_duration || 'Lifetime',
+        is_new_feed: isNewFeed,
         links,
       },
       message: 'Product published successfully',
@@ -210,6 +216,7 @@ export async function PUT(request: Request) {
     if (updates.description !== undefined) postPayload.description = updates.description.trim();
     if (updates.rating !== undefined) postPayload.rating = Number(updates.rating);
     if (updates.status !== undefined) postPayload.status = updates.status;
+    if (updates.is_new_feed !== undefined) postPayload.is_new_feed = Boolean(updates.is_new_feed);
     if (updates.cover_image !== undefined || updates.image_url !== undefined) {
       postPayload.image_url = (updates.cover_image || updates.image_url).trim();
     }
