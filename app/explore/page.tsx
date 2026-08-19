@@ -58,12 +58,37 @@ export default function ExplorePage() {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('cpcg_unlocked_games');
-      if (saved) {
-        setUnlockedGameIds(new Set(JSON.parse(saved)));
+    const syncUserVault = () => {
+      try {
+        const isAuth = !!localStorage.getItem('cpcg_user_phone') || !!localStorage.getItem('cpcg_registered');
+        if (!isAuth) {
+          setUnlockedGameIds(new Set());
+          return;
+        }
+        const saved = localStorage.getItem('cpcg_unlocked_games');
+        if (saved) {
+          setUnlockedGameIds(new Set(JSON.parse(saved)));
+        } else {
+          setUnlockedGameIds(new Set());
+        }
+      } catch {
+        setUnlockedGameIds(new Set());
       }
-    } catch {}
+    };
+
+    syncUserVault();
+
+    const handleLogout = () => {
+      setUnlockedGameIds(new Set());
+    };
+
+    window.addEventListener('cpcg_auth_change', syncUserVault);
+    window.addEventListener('cpcg_logout_reset', handleLogout);
+
+    return () => {
+      window.removeEventListener('cpcg_auth_change', syncUserVault);
+      window.removeEventListener('cpcg_logout_reset', handleLogout);
+    };
   }, []);
 
   const loadLiveGames = async () => {
@@ -96,20 +121,34 @@ export default function ExplorePage() {
         // Strict Admin Curation: check site_settings list or is_new_feed boolean
         const curatedList = liveList.filter((p) => curatedSet.has(p.id) || p.is_new_feed === true);
 
-        const formattedGames: GameProduct[] = curatedList.map((p) => ({
-          id: p.id,
-          title: p.title || 'Untitled Game',
-          description: p.description || '',
-          cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-          price: Number(p.price || 0),
-          rating: Number(p.rating || 4.9),
-          category: p.category || 'Maleo Bus Mods TZ',
-          tags: ['Chidy Prime Mod', 'Tanzania'],
-          status: p.status || 'published',
-          is_new_feed: true,
-          download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
-          access_duration: p.access_duration || p.license_duration || 'Lifetime',
-        }));
+        const formattedGames: GameProduct[] = curatedList.map((p) => {
+          let dur = p.plan_duration || p.access_duration || p.license_duration || p.duration;
+          if (!dur && p.duration_days !== undefined && p.duration_days !== null) {
+            if (p.duration_days === 2) dur = '2 Hours';
+            else if (p.duration_days === 1 || p.duration_days === 24) dur = '24 Hours';
+            else if (p.duration_days === 7) dur = '7 Days';
+            else if (p.duration_days === 30) dur = '30 Days';
+            else if (p.duration_days === 0) dur = 'Lifetime';
+            else dur = `${p.duration_days} Days`;
+          }
+
+          return {
+            id: p.id,
+            title: p.title || 'Untitled Game',
+            description: p.description || '',
+            cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+            price: Number(p.price || 0),
+            rating: Number(p.rating || 4.9),
+            category: p.category || 'Maleo Bus Mods TZ',
+            tags: ['Chidy Prime Mod', 'Tanzania'],
+            status: p.status || 'published',
+            is_new_feed: true,
+            download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
+            access_duration: dur || 'Lifetime',
+            license_duration: dur || 'Lifetime',
+            plan_duration: dur || 'Lifetime',
+          };
+        });
 
         setGames(formattedGames);
       }

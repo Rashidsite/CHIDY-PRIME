@@ -41,29 +41,42 @@ function getLabel(category: string): 'GAME' | 'MOD' | 'VIDEO' {
   return 'GAME';
 }
 
-export function formatPlanDuration(duration?: string, isFree?: boolean): string {
-  if (isFree) return '🎁 FREE ACCESS';
-  if (!duration || !duration.trim()) return '♾️ LIFETIME ACCESS';
+export function formatPlanDuration(duration?: string | number, isFree?: boolean): string {
+  if (isFree) return '🎁 BURE (FREE)';
+  if (duration === undefined || duration === null || duration === '') return '♾️ UFIKIAJI: MAISHA YOTE';
 
-  const clean = duration.trim();
+  if (typeof duration === 'number') {
+    if (duration === 2) return '⏳ UFIKIAJI: MASAA 2';
+    if (duration === 1 || duration === 24) return '⏳ UFIKIAJI: MASAA 24';
+    if (duration === 7) return '⏳ UFIKIAJI: SIKU 7';
+    if (duration === 30) return '⏳ UFIKIAJI: SIKU 30';
+    if (duration === 0 || duration >= 365) return '♾️ UFIKIAJI: MAISHA YOTE';
+    return `⏳ UFIKIAJI: SIKU ${duration}`;
+  }
+
+  const clean = String(duration).trim();
   const lower = clean.toLowerCase();
 
-  if (lower.includes('lifetime') || lower.includes('maisha') || lower === 'infinity') {
-    return '♾️ LIFETIME ACCESS';
+  if (lower.includes('2 hour') || lower.includes('2 hrs') || lower.includes('masaa 2') || lower === '2') {
+    return '⏳ UFIKIAJI: MASAA 2';
   }
-  if (lower === '30 days' || lower === '30 day' || lower === 'siku 30' || lower === '1 month' || lower === 'mwezi 1') {
-    return '⏳ 30 DAYS ACCESS';
+  if (lower.includes('24 hour') || lower.includes('24 hrs') || lower.includes('masaa 24') || lower === '1 day' || lower === 'siku 1' || lower === '24') {
+    return '⏳ UFIKIAJI: MASAA 24';
   }
-  if (lower === '7 days' || lower === '7 day' || lower === 'siku 7' || lower === '1 week' || lower === 'wiki 1') {
-    return '⏳ 7 DAYS ACCESS';
+  if (lower.includes('7 day') || lower.includes('siku 7') || lower.includes('1 week') || lower.includes('wiki 1') || lower === '7') {
+    return '⏳ UFIKIAJI: SIKU 7';
   }
-  if (lower === '24 hours' || lower === '24 hrs' || lower === '24 hr' || lower === 'masaa 24' || lower === '1 day') {
-    return '⏳ 24 HOURS ACCESS';
+  if (lower.includes('30 day') || lower.includes('siku 30') || lower.includes('1 month') || lower.includes('mwezi 1') || lower === '30') {
+    return '⏳ UFIKIAJI: SIKU 30';
   }
-  if (lower === '2 hours' || lower === '2 hrs' || lower === 'masaa 2') {
-    return '⏳ 2 HOURS ACCESS';
+  if (lower.includes('free') || lower.includes('bure')) {
+    return '🎁 BURE (FREE)';
   }
-  return `⏳ ${clean.toUpperCase()}`;
+  if (lower.includes('lifetime') || lower.includes('maisha') || lower === 'infinity' || lower === '0') {
+    return '♾️ UFIKIAJI: MAISHA YOTE';
+  }
+
+  return `⏳ UFIKIAJI: ${clean.toUpperCase()}`;
 }
 
 export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
@@ -71,19 +84,28 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
   const { getButtonClass, animations } = useCMSTheme();
 
   React.useEffect(() => {
-    setUnlockedLocally(isUnlocked);
-  }, [isUnlocked]);
-
-  React.useEffect(() => {
-    try {
-      const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
-      if (savedUnlocked) {
-        const parsed = JSON.parse(savedUnlocked);
-        if (Array.isArray(parsed) && parsed.includes(game.id)) {
-          setUnlockedLocally(true);
+    const checkAuthAndUnlocked = () => {
+      try {
+        const isAuth = !!localStorage.getItem('cpcg_user_phone') || !!localStorage.getItem('cpcg_registered');
+        if (!isAuth) {
+          setUnlockedLocally(false);
+          return;
         }
+        const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
+        if (savedUnlocked) {
+          const parsed = JSON.parse(savedUnlocked);
+          if (Array.isArray(parsed) && parsed.includes(game.id)) {
+            setUnlockedLocally(true);
+            return;
+          }
+        }
+        setUnlockedLocally(isUnlocked);
+      } catch {
+        setUnlockedLocally(false);
       }
-    } catch {}
+    };
+
+    checkAuthAndUnlocked();
 
     const handleOrderUnlocked = (e: any) => {
       const detail = e?.detail;
@@ -92,20 +114,27 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
       }
     };
 
+    const handleLogoutReset = () => {
+      setUnlockedLocally(false);
+    };
+
+    window.addEventListener('cpcg_auth_change', checkAuthAndUnlocked);
+    window.addEventListener('cpcg_logout_reset', handleLogoutReset);
     window.addEventListener('cpcg_order_unlocked', handleOrderUnlocked);
+
     return () => {
+      window.removeEventListener('cpcg_auth_change', checkAuthAndUnlocked);
+      window.removeEventListener('cpcg_logout_reset', handleLogoutReset);
       window.removeEventListener('cpcg_order_unlocked', handleOrderUnlocked);
     };
-  }, [game.id]);
+  }, [game.id, isUnlocked]);
 
   const isFree = game.price === 0;
   const isTopRated = (game.rating || 0) >= 4.9;
   const label = getLabel(game.category);
   const showUnlocked = isUnlocked || unlockedLocally || isFree;
-  const durationLabel = formatPlanDuration(
-    game.access_duration || game.license_duration || (game as any).duration || (game as any).plan_duration,
-    isFree
-  );
+  const rawDuration = game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration;
+  const durationLabel = formatPlanDuration(rawDuration, isFree);
 
   const buttonText = showUnlocked 
     ? (isFree ? 'DOWNLOAD GAME' : `⬇ PAKUA ${label}`) 

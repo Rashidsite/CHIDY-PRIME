@@ -168,7 +168,7 @@ export default function CategoryGamesDrawer({
                                   {game.category}
                                 </span>
                                 <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-black uppercase tracking-wider">
-                                  {formatPlanDuration(game.access_duration || game.license_duration, isFree)}
+                                  {formatPlanDuration(game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days, isFree)}
                                 </span>
                               </div>
                               {game.rating && (

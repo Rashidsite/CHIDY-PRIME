@@ -172,6 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('cpcg_registered');
       localStorage.removeItem('cpcg_user_phone');
       localStorage.removeItem('cpcg_user_name');
+      localStorage.removeItem('cpcg_user_registered');
+      localStorage.removeItem('cpcg_unlocked_games');
+      localStorage.removeItem('cpcg_active_order_id');
+      localStorage.removeItem('cpcg_active_game_id');
+      sessionStorage.clear();
     } catch (e) {}
 
     setUser(null);
@@ -180,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('cpcg_auth_change'));
+      window.dispatchEvent(new CustomEvent('cpcg_logout_reset'));
     }
 
     window.location.href = '/';

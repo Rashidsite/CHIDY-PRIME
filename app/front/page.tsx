@@ -101,38 +101,63 @@ export default function FrontHubPage() {
 
   // Load registration and unlocked games from localStorage
   useEffect(() => {
-    const savedReg = localStorage.getItem('cpcg_registered');
-    if (savedReg) {
-      const parsed = JSON.parse(savedReg);
-      setIsRegistered(true);
-      setRegisteredName(parsed.name || '');
-    }
+    const syncUserAuthAndVault = () => {
+      try {
+        const savedReg = localStorage.getItem('cpcg_registered');
+        const userPhone = localStorage.getItem('cpcg_user_phone') || (savedReg ? JSON.parse(savedReg).phone : null);
+        
+        if (!userPhone && !savedReg) {
+          setIsRegistered(false);
+          setRegisteredName('');
+          setUnlockedGameIds(new Set());
+          return;
+        }
 
-    // 2. Fetch approved purchases from database for user phone
-    try {
-      const userPhone = localStorage.getItem('cpcg_user_phone') || (savedReg ? JSON.parse(savedReg).phone : null);
-      if (userPhone) {
-        const digits = userPhone.replace(/\D/g, '');
-        const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
-        const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
-        supabase
-          .from('payment_orders')
-          .select('post_id')
-          .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
-          .in('status', ['approved', 'completed', 'paid'])
-          .then(({ data }) => {
-            if (data && data.length > 0) {
-              setUnlockedGameIds((prev) => {
-                const next = new Set(prev);
-                data.forEach((d) => d.post_id && next.add(d.post_id));
-                localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
-                return next;
-              });
-            }
-          });
-      }
-    } catch (e) {}
-  }, []);
+        if (savedReg) {
+          const parsed = JSON.parse(savedReg);
+          setIsRegistered(true);
+          setRegisteredName(parsed.name || '');
+        }
+
+        if (userPhone) {
+          const digits = userPhone.replace(/\D/g, '');
+          const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
+          const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+          supabase
+            .from('payment_orders')
+            .select('post_id')
+            .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
+            .in('status', ['approved', 'completed', 'paid'])
+            .then(({ data }) => {
+              if (data && data.length > 0) {
+                setUnlockedGameIds((prev) => {
+                  const next = new Set(prev);
+                  data.forEach((d) => d.post_id && next.add(d.post_id));
+                  localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
+                  return next;
+                });
+              }
+            });
+        }
+      } catch (e) {}
+    };
+
+    syncUserAuthAndVault();
+
+    const handleLogout = () => {
+      setIsRegistered(false);
+      setRegisteredName('');
+      setUnlockedGameIds(new Set());
+    };
+
+    window.addEventListener('cpcg_auth_change', syncUserAuthAndVault);
+    window.addEventListener('cpcg_logout_reset', handleLogout);
+
+    return () => {
+      window.removeEventListener('cpcg_auth_change', syncUserAuthAndVault);
+      window.removeEventListener('cpcg_logout_reset', handleLogout);
+    };
+  }, [supabase]);
 
   const handleCheckoutSuccess = (order: any) => {
     if (order?.game_id) {
@@ -147,10 +172,15 @@ export default function FrontHubPage() {
 
   const handleRegistrationSuccess = (name: string, phone: string) => {
     localStorage.setItem('cpcg_registered', JSON.stringify({ name, phone }));
+    localStorage.setItem('cpcg_user_phone', phone);
+    localStorage.setItem('cpcg_user_name', name);
     setIsRegistered(true);
     setRegisteredName(name);
     setShowRegisterModal(false);
     setShowCelebration(true);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cpcg_auth_change'));
+    }
     setTimeout(() => setShowCelebration(false), 3000);
   };
 
@@ -176,8 +206,7 @@ export default function FrontHubPage() {
         const { data, error } = await supabase
           .from('posts')
           .select('*')
-          .order('created_at', { ascending: false })
-          .range(0, 5000);
+          .order('created_at', { ascending: false });
         if (error) console.warn('Supabase posts fetch warning:', error.message);
         postsData = data;
       } catch (e) {
@@ -191,9 +220,14 @@ export default function FrontHubPage() {
         postsData.forEach((p) => {
           if (p.status === 'draft' || p.status === 'archived') return;
           
-          let dur = p.access_duration || p.license_duration;
-          if (!dur && p.duration_days !== undefined) {
-            dur = p.duration_days === 30 ? '30 Days' : p.duration_days === 7 ? '7 Days' : p.duration_days === 1 ? '24 Hours' : 'Lifetime';
+          let dur = p.plan_duration || p.access_duration || p.license_duration || p.duration;
+          if (!dur && p.duration_days !== undefined && p.duration_days !== null) {
+            if (p.duration_days === 2) dur = '2 Hours';
+            else if (p.duration_days === 1 || p.duration_days === 24) dur = '24 Hours';
+            else if (p.duration_days === 7) dur = '7 Days';
+            else if (p.duration_days === 30) dur = '30 Days';
+            else if (p.duration_days === 0) dur = 'Lifetime';
+            else dur = `${p.duration_days} Days`;
           }
 
           combined.push({
@@ -211,6 +245,7 @@ export default function FrontHubPage() {
             links: p.links || [],
             access_duration: dur || 'Lifetime',
             license_duration: dur || 'Lifetime',
+            plan_duration: dur || 'Lifetime',
           } as any);
         });
       }
@@ -359,9 +394,14 @@ export default function FrontHubPage() {
 
     // ── HELPER TO NORMALIZE REALTIME GAME PAYLOAD ──
     const formatRealtimeGame = (raw: any): GameProduct => {
-      let dur = raw.access_duration || raw.license_duration;
-      if (!dur && raw.duration_days !== undefined) {
-        dur = raw.duration_days === 30 ? '30 Days' : raw.duration_days === 7 ? '7 Days' : raw.duration_days === 1 ? '24 Hours' : raw.duration_days === 2 ? '2 Hours' : 'Lifetime';
+      let dur = raw.plan_duration || raw.access_duration || raw.license_duration || raw.duration;
+      if (!dur && raw.duration_days !== undefined && raw.duration_days !== null) {
+        if (raw.duration_days === 2) dur = '2 Hours';
+        else if (raw.duration_days === 1 || raw.duration_days === 24) dur = '24 Hours';
+        else if (raw.duration_days === 7) dur = '7 Days';
+        else if (raw.duration_days === 30) dur = '30 Days';
+        else if (raw.duration_days === 0) dur = 'Lifetime';
+        else dur = `${raw.duration_days} Days`;
       }
       let linksList: { name: string; url: string }[] = [];
       if (Array.isArray(raw.links)) {
