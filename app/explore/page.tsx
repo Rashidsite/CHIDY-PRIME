@@ -79,8 +79,8 @@ export default function ExplorePage() {
           return status !== 'draft' && status !== 'archived' && status !== 'hidden' && p.is_active !== false;
         });
 
-        // Strict Admin Curation: ONLY games marked is_new_feed === true
-        const curatedList = liveList.filter((p) => p.is_new_feed === true);
+        // Strict Admin Curation: check both is_new_feed boolean and 'is_new_feed' tag
+        const curatedList = liveList.filter((p) => Boolean(p.is_new_feed === true || (Array.isArray(p.tags) && p.tags.includes('is_new_feed'))));
 
         const formattedGames: GameProduct[] = curatedList.map((p) => ({
           id: p.id,
