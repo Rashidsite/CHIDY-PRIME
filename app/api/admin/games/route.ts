@@ -28,7 +28,20 @@ export async function GET() {
   try {
     const supabase = createAdminClient();
     
-    // 1. Fetch from posts (Primary DB table)
+    // 1. Fetch site_settings for curated_new_games_feed list
+    let curatedSet = new Set<string>();
+    try {
+      const { data: sData } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'curated_new_games_feed')
+        .maybeSingle();
+      if (Array.isArray(sData?.value)) {
+        curatedSet = new Set(sData.value);
+      }
+    } catch {}
+    
+    // 2. Fetch from posts (Primary DB table)
     const { data: postsData, error: postsErr } = await supabase
       .from('posts')
       .select('*')
@@ -38,7 +51,7 @@ export async function GET() {
       console.warn('Posts table query error:', postsErr.message);
     }
 
-    // 2. Fetch from games if table exists
+    // 3. Fetch from games if table exists
     let gamesData: any[] = [];
     try {
       const { data } = await supabase
@@ -80,7 +93,7 @@ export async function GET() {
           category: p.category || 'MALEO BUS MODE TZ',
           status: p.status || 'published',
           duration_days: p.duration_days ?? 0,
-          is_new_feed: Boolean(p.is_new_feed || (Array.isArray(p.tags) && p.tags.includes('is_new_feed'))),
+          is_new_feed: curatedSet.has(p.id) || Boolean(p.is_new_feed),
           access_duration: durLabel,
           license_duration: durLabel,
           youtube_url: p.youtube_url || p.video_url || '',
@@ -96,7 +109,10 @@ export async function GET() {
     if (gamesData.length > 0) {
       gamesData.forEach((g) => {
         if (!seenIds.has(g.id)) {
-          merged.push(g);
+          merged.push({
+            ...g,
+            is_new_feed: curatedSet.has(g.id) || Boolean(g.is_new_feed),
+          });
         }
       });
     }
@@ -136,9 +152,8 @@ export async function POST(request: Request) {
 
     const durationDays = parseDurationDays(body.access_duration || body.license_duration);
     const isNewFeed = body.is_new_feed !== undefined ? Boolean(body.is_new_feed) : false;
-    const initialTags = isNewFeed ? ['Chidy Prime Mod', 'Tanzania', 'is_new_feed'] : ['Chidy Prime Mod', 'Tanzania'];
 
-    // 1. Insert into posts table (Primary) with fallback if is_new_feed column missing
+    // 1. Insert into posts table (Primary)
     const insertPayload: Record<string, any> = {
       title,
       price,
@@ -149,8 +164,6 @@ export async function POST(request: Request) {
       youtube_url: youtubeUrl,
       links,
       status,
-      tags: initialTags,
-      is_new_feed: isNewFeed,
       duration_days: durationDays,
       sort_order: 9999,
     };
@@ -162,19 +175,29 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (pErr && (pErr.message?.includes('is_new_feed') || pErr.details?.includes('is_new_feed') || pErr.code === 'PGRST204' || pErr.code === '42703')) {
-      delete insertPayload.is_new_feed;
-      const retry = await supabase.from('posts').insert(insertPayload).select().single();
-      if (retry.error) throw retry.error;
-      newPost = retry.data;
-    } else if (pErr) {
+    if (pErr) {
       console.error('Error inserting to posts:', pErr);
       throw pErr;
-    } else {
-      newPost = pData;
+    }
+    newPost = pData;
+
+    // 2. If isNewFeed, add to site_settings curated_new_games_feed
+    if (newPost?.id && isNewFeed) {
+      try {
+        const { data: sData } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'curated_new_games_feed')
+          .maybeSingle();
+        let currentList: string[] = Array.isArray(sData?.value) ? [...sData.value] : [];
+        if (!currentList.includes(newPost.id)) currentList.push(newPost.id);
+        await supabase
+          .from('site_settings')
+          .upsert({ key: 'curated_new_games_feed', value: currentList }, { onConflict: 'key' });
+      } catch {}
     }
 
-    // 2. Also try insert to games table if exists
+    // 3. Also try insert to games table if exists
     try {
       await supabase.from('games').insert({
         id: newPost.id,
@@ -185,7 +208,6 @@ export async function POST(request: Request) {
         cover_image: imageUrl,
         rating,
         status,
-        is_new_feed: isNewFeed,
         access_duration: body.access_duration || 'Lifetime',
         download_url: links[0]?.url || '',
         download_links: links,
@@ -219,7 +241,35 @@ export async function PUT(request: Request) {
 
     const supabase = createAdminClient();
 
-    // Prepare updates for posts table
+    // 1. Handle is_new_feed in site_settings (100% resilient storage)
+    if (updates.is_new_feed !== undefined) {
+      const feedVal = Boolean(updates.is_new_feed);
+      try {
+        const { data: sData } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'curated_new_games_feed')
+          .maybeSingle();
+        let currentList: string[] = Array.isArray(sData?.value) ? [...sData.value] : [];
+        if (feedVal) {
+          if (!currentList.includes(id)) currentList.push(id);
+        } else {
+          currentList = currentList.filter((x) => x !== id);
+        }
+        await supabase
+          .from('site_settings')
+          .upsert({ key: 'curated_new_games_feed', value: currentList }, { onConflict: 'key' });
+        try {
+          await supabase
+            .from('store_settings')
+            .upsert({ key: 'curated_new_games_feed', value: currentList }, { onConflict: 'key' });
+        } catch {}
+      } catch (sErr) {
+        console.warn('site_settings sync warning:', sErr);
+      }
+    }
+
+    // 2. Prepare updates for posts table if other fields were changed
     const postPayload: Record<string, any> = {};
     if (updates.title !== undefined) postPayload.title = updates.title.trim();
     if (updates.price !== undefined) postPayload.price = Number(updates.price);
@@ -227,7 +277,6 @@ export async function PUT(request: Request) {
     if (updates.description !== undefined) postPayload.description = updates.description.trim();
     if (updates.rating !== undefined) postPayload.rating = Number(updates.rating);
     if (updates.status !== undefined) postPayload.status = updates.status;
-    if (updates.is_new_feed !== undefined) postPayload.is_new_feed = Boolean(updates.is_new_feed);
     if (updates.cover_image !== undefined || updates.image_url !== undefined) {
       postPayload.image_url = (updates.cover_image || updates.image_url).trim();
     }
@@ -250,66 +299,40 @@ export async function PUT(request: Request) {
       postPayload.links = [{ name: 'Download File', url: updates.download_url.trim() }];
     }
 
-    // Ensure tags contains/removes 'is_new_feed' as bulletproof fallback
-    if (updates.is_new_feed !== undefined) {
-      postPayload.is_new_feed = Boolean(updates.is_new_feed);
-      
-      try {
-        const { data: currentPost } = await supabase.from('posts').select('tags').eq('id', id).maybeSingle();
-        let existingTags: string[] = Array.isArray(currentPost?.tags) ? [...currentPost.tags] : [];
-        if (updates.is_new_feed) {
-          if (!existingTags.includes('is_new_feed')) existingTags.push('is_new_feed');
-        } else {
-          existingTags = existingTags.filter((t) => t !== 'is_new_feed');
-        }
-        postPayload.tags = existingTags;
-      } catch {}
-    }
+    let updatedPost: any = null;
 
-    // 1. Update posts table with graceful fallback if is_new_feed column is not yet in Supabase schema cache
-    let updatedPost = null;
-    let { data: pData, error: pErr } = await supabase
-      .from('posts')
-      .update(postPayload)
-      .eq('id', id)
-      .select()
-      .maybeSingle();
-
-    if (pErr && (pErr.message?.includes('is_new_feed') || pErr.details?.includes('is_new_feed') || pErr.code === 'PGRST204' || pErr.code === '42703')) {
-      // Column is_new_feed does not exist yet in DB schema, retry without is_new_feed column (tags holds the flag)
-      const fallbackPayload = { ...postPayload };
-      delete fallbackPayload.is_new_feed;
-      const retry = await supabase
+    // Only update posts table if there are postPayload fields to update
+    if (Object.keys(postPayload).length > 0) {
+      const { data: pData, error: pErr } = await supabase
         .from('posts')
-        .update(fallbackPayload)
+        .update(postPayload)
         .eq('id', id)
         .select()
         .maybeSingle();
-      if (retry.error) {
-        throw retry.error;
+
+      if (pErr) {
+        console.error('Error updating posts table:', pErr);
+        throw pErr;
       }
-      updatedPost = retry.data;
-    } else if (pErr) {
-      console.error('Error updating posts table:', pErr);
-      throw pErr;
-    } else {
       updatedPost = pData;
     }
 
-    // 2. Also try updating games table
-    try {
-      const gamePayload: Record<string, any> = { ...postPayload };
-      delete gamePayload.is_new_feed; // in case games table doesn't have is_new_feed
-      if (postPayload.image_url) gamePayload.cover_image = postPayload.image_url;
-      if (updates.access_duration) gamePayload.access_duration = updates.access_duration;
-      await supabase.from('games').update(gamePayload).eq('id', id);
-    } catch {}
+    // 3. Also try updating games table if postPayload exists
+    if (Object.keys(postPayload).length > 0) {
+      try {
+        const gamePayload: Record<string, any> = { ...postPayload };
+        if (postPayload.image_url) gamePayload.cover_image = postPayload.image_url;
+        if (updates.access_duration) gamePayload.access_duration = updates.access_duration;
+        await supabase.from('games').update(gamePayload).eq('id', id);
+      } catch {}
+    }
 
     return NextResponse.json({
       success: true,
       game: {
-        ...updatedPost,
-        is_new_feed: Boolean(updates.is_new_feed ?? updatedPost?.is_new_feed),
+        id,
+        ...(updatedPost || {}),
+        is_new_feed: Boolean(updates.is_new_feed),
       },
       message: 'Product updated successfully',
     });

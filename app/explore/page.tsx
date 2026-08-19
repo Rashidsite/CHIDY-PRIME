@@ -68,6 +68,20 @@ export default function ExplorePage() {
 
   const loadLiveGames = async () => {
     try {
+      // 1. Fetch curated_new_games_feed from site_settings
+      let curatedSet = new Set<string>();
+      try {
+        const { data: sData } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'curated_new_games_feed')
+          .maybeSingle();
+        if (Array.isArray(sData?.value)) {
+          curatedSet = new Set(sData.value);
+        }
+      } catch {}
+
+      // 2. Fetch posts
       const { data: postsData } = await supabase
         .from('posts')
         .select('*')
@@ -79,8 +93,8 @@ export default function ExplorePage() {
           return status !== 'draft' && status !== 'archived' && status !== 'hidden' && p.is_active !== false;
         });
 
-        // Strict Admin Curation: check both is_new_feed boolean and 'is_new_feed' tag
-        const curatedList = liveList.filter((p) => Boolean(p.is_new_feed === true || (Array.isArray(p.tags) && p.tags.includes('is_new_feed'))));
+        // Strict Admin Curation: check site_settings list or is_new_feed boolean
+        const curatedList = liveList.filter((p) => curatedSet.has(p.id) || p.is_new_feed === true);
 
         const formattedGames: GameProduct[] = curatedList.map((p) => ({
           id: p.id,
@@ -90,7 +104,7 @@ export default function ExplorePage() {
           price: Number(p.price || 0),
           rating: Number(p.rating || 4.9),
           category: p.category || 'Maleo Bus Mods TZ',
-          tags: p.tags || ['Chidy Prime Mod', 'Tanzania'],
+          tags: ['Chidy Prime Mod', 'Tanzania'],
           status: p.status || 'published',
           is_new_feed: true,
           download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
@@ -112,6 +126,9 @@ export default function ExplorePage() {
     const channel = supabase
       .channel('explore-live-games')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+        loadLiveGames();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
         loadLiveGames();
       })
       .subscribe();
