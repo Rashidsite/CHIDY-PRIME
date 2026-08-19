@@ -128,6 +128,12 @@ export default function ExplorePage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
         loadLiveGames();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        loadLiveGames();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'games' }, () => {
+        loadLiveGames();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => {
         loadLiveGames();
       })

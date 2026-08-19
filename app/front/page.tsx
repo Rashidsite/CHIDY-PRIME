@@ -357,47 +357,92 @@ export default function FrontHubPage() {
   useEffect(() => {
     loadStorefrontData(true);
 
-    // ── SUPABASE REALTIME WEBSOCKET LISTENER FOR REAL-TIME STOREFRONT SYNC ──
+    // ── HELPER TO NORMALIZE REALTIME GAME PAYLOAD ──
+    const formatRealtimeGame = (raw: any): GameProduct => {
+      let dur = raw.access_duration || raw.license_duration;
+      if (!dur && raw.duration_days !== undefined) {
+        dur = raw.duration_days === 30 ? '30 Days' : raw.duration_days === 7 ? '7 Days' : raw.duration_days === 1 ? '24 Hours' : raw.duration_days === 2 ? '2 Hours' : 'Lifetime';
+      }
+      let linksList: { name: string; url: string }[] = [];
+      if (Array.isArray(raw.links)) {
+        linksList = raw.links.map((l: any) => ({
+          name: l.name || l.label || 'Download File',
+          url: l.url || '',
+        }));
+      } else if (Array.isArray(raw.download_links)) {
+        linksList = raw.download_links.map((l: any) => ({
+          name: l.name || l.label || 'Download File',
+          url: l.url || '',
+        }));
+      } else if (raw.download_url) {
+        linksList = [{ name: 'Download File', url: raw.download_url }];
+      }
+
+      return {
+        id: raw.id,
+        title: raw.title || 'Untitled Game',
+        description: raw.description || '',
+        cover_image: raw.image_url || raw.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+        price: Number(raw.price || 0),
+        rating: Number(raw.rating || 4.9),
+        category: raw.category || 'MALEO BUS MODE TZ',
+        tags: Array.isArray(raw.tags) && raw.tags.length > 0 ? raw.tags : ['Chidy Prime Mod', 'Tanzania'],
+        status: raw.status || 'published',
+        is_new_feed: Boolean(raw.is_new_feed),
+        download_url: linksList[0]?.url || raw.download_url || '',
+        links: linksList,
+        access_duration: dur || 'Lifetime',
+        license_duration: dur || 'Lifetime',
+      } as any;
+    };
+
+    const handleProductChange = (payload: any) => {
+      if (payload.eventType === 'INSERT' && payload.new) {
+        const isLive = payload.new.status !== 'draft' && payload.new.status !== 'archived' && payload.new.status !== 'hidden' && payload.new.is_active !== false;
+        if (isLive) {
+          const newGame = formatRealtimeGame(payload.new);
+          setGames((prev) => [newGame, ...prev.filter((g) => g.id !== newGame.id)]);
+        }
+      } else if (payload.eventType === 'UPDATE' && payload.new) {
+        const isLive = payload.new.status !== 'draft' && payload.new.status !== 'archived' && payload.new.status !== 'hidden' && payload.new.is_active !== false;
+        if (!isLive) {
+          setGames((prev) => prev.filter((g) => g.id !== payload.new.id));
+        } else {
+          const updatedGame = formatRealtimeGame(payload.new);
+          setGames((prev) => {
+            const exists = prev.some((g) => g.id === updatedGame.id);
+            if (!exists) return [updatedGame, ...prev];
+            return prev.map((g) => (g.id === updatedGame.id ? { ...g, ...updatedGame } : g));
+          });
+        }
+      } else if (payload.eventType === 'DELETE' && payload.old) {
+        setGames((prev) => prev.filter((g) => g.id !== payload.old.id));
+      }
+    };
+
+    // ── SUPABASE REALTIME WEBSOCKET LISTENER FOR ZERO-PAGE-RELOAD SYNC ──
     const channel = supabase
-      .channel('public-storefront-posts-realtime')
+      .channel('storefront-products-live')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'posts' },
-        (payload: any) => {
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            const updated = payload.new;
-            setGames((prev) =>
-              prev.map((g) =>
-                g.id === updated.id
-                  ? {
-                      ...g,
-                      title: updated.title ?? g.title,
-                      price: updated.price !== undefined ? Number(updated.price) : g.price,
-                      category: updated.category ?? g.category,
-                      cover_image: updated.image_url || updated.cover_image || g.cover_image,
-                      rating: updated.rating ?? g.rating,
-                      download_url: (Array.isArray(updated.links) && updated.links[0]?.url) || updated.download_url || g.download_url,
-                    }
-                  : g
-              )
-            );
-          } else if (payload.eventType === 'INSERT' && payload.new) {
-            const newGame: GameProduct = {
-              id: payload.new.id,
-              title: payload.new.title,
-              description: payload.new.description,
-              cover_image: payload.new.image_url || payload.new.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-              price: Number(payload.new.price || 0),
-              rating: Number(payload.new.rating || 4.9),
-              category: payload.new.category || 'MALEO BUS MODE TZ',
-              tags: ['Chidy Prime Mod', 'Tanzania'],
-              status: payload.new.status || 'published',
-              download_url: (Array.isArray(payload.new.links) && payload.new.links[0]?.url) || payload.new.download_url,
-            };
-            setGames((prev) => [newGame, ...prev.filter((x) => x.id !== newGame.id)]);
-          } else if (payload.eventType === 'DELETE' && payload.old) {
-            setGames((prev) => prev.filter((g) => g.id !== payload.old.id));
-          }
+        handleProductChange
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        handleProductChange
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'games' },
+        handleProductChange
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        () => {
+          loadStorefrontData(false);
         }
       )
       .on(
@@ -439,10 +484,6 @@ export default function FrontHubPage() {
         }
       )
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
 
     // ── SUPABASE BROADCAST LISTENER FOR INSTANT MANUAL ADMIN APPROVAL ──
     const broadcastChannel = supabase
