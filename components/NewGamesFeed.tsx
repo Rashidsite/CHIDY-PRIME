@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
@@ -194,7 +194,7 @@ export default function NewGamesFeed({
   }, [liveGames, search, sortBy]);
 
   return (
-    <div className="w-full space-y-5 pb-36">
+    <div className="w-full space-y-5">
       {/* Header — no hamburger (☰), minimal: icon + title + search + sort only */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-3 min-w-0">
