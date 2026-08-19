@@ -120,10 +120,18 @@ export default function NewGamesFeed({
 
       {/* ── Uninterrupted Vertical Stream of Game Cards ── */}
       {filteredAndSortedGames.length === 0 ? (
-        <div className="text-center py-20 px-4 bg-slate-900/40 rounded-3xl border border-slate-800">
-          <Search className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-base font-black text-white uppercase">Hakuna Michezo Iliyopatikana</h3>
-          <p className="text-xs text-slate-400 mt-1">Jaribu kubadilisha neno la utafutaji.</p>
+        <div className="text-center py-20 px-4 bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-md">
+            <Flame className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-black text-white uppercase tracking-wide">
+            {search.trim() ? 'Hakuna Michezo Iliyopatikana' : 'Hakuna Michezo Kwenye Games Mpya Bado'}
+          </h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            {search.trim() 
+              ? 'Jaribu kubadilisha neno la utafutaji.' 
+              : 'Fungua Admin Panel (/admin/games) na uwashe kitufe cha "🌟 Games Mpya [ON]" kwenye michezo unayotaka ionekane hapa.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">

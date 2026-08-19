@@ -49,7 +49,7 @@ const INITIAL_FALLBACK_GAMES: GameProduct[] = [
 ];
 
 export default function ExplorePage() {
-  const [games, setGames] = useState<GameProduct[]>(INITIAL_FALLBACK_GAMES);
+  const [games, setGames] = useState<GameProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutGame, setCheckoutGame] = useState<GameProduct | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -73,17 +73,16 @@ export default function ExplorePage() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (postsData && postsData.length > 0) {
+      if (postsData) {
         const liveList = postsData.filter((p) => {
           const status = String(p.status || '').toLowerCase();
           return status !== 'draft' && status !== 'archived' && status !== 'hidden' && p.is_active !== false;
         });
 
-        // Filter explicitly curated games with is_new_feed === true
+        // Strict Admin Curation: ONLY games marked is_new_feed === true
         const curatedList = liveList.filter((p) => p.is_new_feed === true);
-        const finalList = curatedList.length > 0 ? curatedList : liveList;
 
-        const formattedGames = finalList.map((p) => ({
+        const formattedGames: GameProduct[] = curatedList.map((p) => ({
           id: p.id,
           title: p.title || 'Untitled Game',
           description: p.description || '',
@@ -93,14 +92,12 @@ export default function ExplorePage() {
           category: p.category || 'Maleo Bus Mods TZ',
           tags: p.tags || ['Chidy Prime Mod', 'Tanzania'],
           status: p.status || 'published',
-          is_new_feed: Boolean(p.is_new_feed),
+          is_new_feed: true,
           download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
           access_duration: p.access_duration || p.license_duration || 'Lifetime',
         }));
 
-        if (formattedGames.length > 0) {
-          setGames(formattedGames);
-        }
+        setGames(formattedGames);
       }
     } catch (err) {
       console.error('Failed to load explore games:', err);
