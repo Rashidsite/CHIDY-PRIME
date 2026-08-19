@@ -52,21 +52,19 @@ export default function CategoryGamesDrawer({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
     } else {
-      document.body.style.overflow = 'unset';
-      document.body.style.touchAction = 'unset';
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
-      document.body.style.touchAction = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
+  if (!isOpen || !categoryName) return null;
+
   return (
     <AnimatePresence>
-      {isOpen && categoryName && (
-        <div className="fixed inset-0 z-[9999]">
+      <div className="fixed inset-0 z-[9999]">
           {/* Backdrop Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -242,7 +240,6 @@ export default function CategoryGamesDrawer({
             </div>
           </motion.div>
         </div>
-      )}
     </AnimatePresence>
   );
 }

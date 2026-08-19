@@ -26,14 +26,11 @@ export default function CartDrawer({
   React.useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
     } else {
-      document.body.style.overflow = 'unset';
-      document.body.style.touchAction = 'unset';
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
-      document.body.style.touchAction = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 

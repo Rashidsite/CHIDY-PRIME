@@ -119,7 +119,7 @@ export default function UserProfilePage() {
     <div className="min-h-screen flex flex-col bg-black text-white">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="main-storefront-wrapper relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-36">
         
         {/* ── PROFILE HEADER BANNER ────────────────────────────────────────── */}
         <div className="relative rounded-3xl overflow-hidden border-2 border-emerald-500/50 bg-gradient-to-r from-slate-950 via-black to-slate-950 p-6 sm:p-8 shadow-[0_0_40px_rgba(16,185,129,0.2)]">

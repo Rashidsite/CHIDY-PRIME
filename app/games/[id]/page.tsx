@@ -108,7 +108,7 @@ export default function GameDetailPage() {
     <>
       <Navbar />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="main-storefront-wrapper relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-36">
         
         {/* Back Link */}
         <Link

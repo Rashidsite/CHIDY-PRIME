@@ -1,3 +1,4 @@
+/* globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,11 +8,26 @@
   --foreground: #f3f4f6;
 }
 
+html, body {
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch;
+  height: auto;
+  min-height: 100%;
+}
+
 body {
   color: var(--foreground);
   background-color: var(--background);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  overflow-x: hidden;
+}
+
+.main-storefront-wrapper {
+  overflow-y: visible;
+  touch-action: pan-y !important;
+  position: relative;
+  z-index: 10;
 }
 
 /* Glassmorphism utility components */
@@ -64,6 +80,7 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 .category-slider-track::-webkit-scrollbar {
   display: none;

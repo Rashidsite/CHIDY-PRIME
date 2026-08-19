@@ -467,7 +467,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
       </div>
 
       {/* Render Mobile Drawer outside header via React Portal */}
-      {mounted && createPortal(drawerPortal, document.body)}
+      {mounted && mobileOpen && createPortal(drawerPortal, document.body)}
 
       {/* Logout Confirmation Modal */}
       <LogoutConfirmModal
