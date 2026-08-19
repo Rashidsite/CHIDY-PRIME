@@ -204,7 +204,13 @@ export default function ExplorePage() {
   return (
     <>
       <BackgroundOverlay />
-      <Navbar games={games} />
+      {/* Hide hamburger (☰) button strictly on this GAMES MPYA view — scoped override only */}
+      <style>{`
+        .games-mpya-nav [aria-label="Open mobile navigation drawer"] { display: none !important; }
+      `}</style>
+      <div className="games-mpya-nav">
+        <Navbar games={games} />
+      </div>
 
       <main className="main-storefront-wrapper relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-36">
         <NewGamesFeed
