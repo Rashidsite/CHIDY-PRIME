@@ -47,7 +47,7 @@ export const DEFAULT_BOTTOM_NAV: CMSBottomNavConfig = {
     { id: 'nav-new-games', label: 'Games Mpya', icon: 'Flame', url: '/explore', is_live: true, badge: 'NEW' },
     { id: 'nav-orders', label: 'Orders', icon: 'PackageCheck', url: '/orders', is_live: true, badge: '' },
     { id: 'nav-profile', label: 'Akaunti', icon: 'User', url: '/profile', is_live: true, badge: '' },
-    { id: 'nav-chat', label: 'Msaada', icon: 'MessageCircle', url: 'https://wa.me/255655361060', is_live: true, badge: 'LIVE' },
+    { id: 'nav-chat', label: 'Msaada', icon: 'MessageCircle', url: '/support', is_live: true, badge: 'LIVE' },
   ],
 };
 

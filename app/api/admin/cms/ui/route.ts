@@ -16,7 +16,18 @@ export async function GET() {
 
     if (settings && Array.isArray(settings)) {
       settings.forEach((s) => {
-        if (s.key === 'cms_bottom_nav' && s.value) cmsData.bottom_nav = s.value;
+        if (s.key === 'cms_bottom_nav' && s.value) {
+          cmsData.bottom_nav = {
+            ...s.value,
+            items: Array.isArray(s.value.items)
+              ? s.value.items.map((it: any) =>
+                  it.id === 'nav-chat' || (it.label || '').toLowerCase().includes('msaada')
+                    ? { ...it, url: '/support' }
+                    : it
+                )
+              : s.value.items,
+          };
+        }
         if (s.key === 'cms_animations' && s.value) cmsData.animations = s.value;
         if (s.key === 'cms_theme_presets' && s.value) cmsData.theme_presets = s.value;
       });

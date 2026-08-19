@@ -67,11 +67,12 @@ export default function MobileBottomNav() {
       <nav className="max-w-lg mx-auto flex items-center justify-around px-2 py-2">
         {liveItems.map((item) => {
           const IconComponent = ICON_MAP[item.icon] || Gamepad2;
-          const isActive = pathname === item.url || (item.url.startsWith('#') && false);
-          const isExternal = item.url.startsWith('http') || item.url.startsWith('//');
+          const targetUrl = (item.id === 'nav-chat' || item.label.toLowerCase().includes('msaada')) ? '/support' : item.url;
+          const isActive = pathname === targetUrl;
+          const isExternal = targetUrl.startsWith('http') || targetUrl.startsWith('//');
 
           const handleClick = (e: React.MouseEvent) => {
-            if (item.url.includes('#catalog') || item.id === 'nav-all-games' || item.id === 'nav-categories') {
+            if (targetUrl.includes('#catalog') || item.id === 'nav-all-games' || item.id === 'nav-categories') {
               if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('cpcg_open_all_games', { detail: { category: 'ALL' } }));
                 const catalogEl = document.getElementById('catalog');
@@ -103,7 +104,7 @@ export default function MobileBottomNav() {
                 )}
 
                 {/* Live Pulse Indicator if item label is Msaada or WhatsApp */}
-                {animations.glowing_radar && item.icon === 'MessageCircle' && (
+                {animations.glowing_radar && (item.icon === 'MessageCircle' || item.id === 'nav-chat') && (
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 )}
               </div>
@@ -123,7 +124,7 @@ export default function MobileBottomNav() {
             return (
               <a
                 key={item.id}
-                href={item.url}
+                href={targetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 flex justify-center focus:outline-none"
@@ -136,7 +137,7 @@ export default function MobileBottomNav() {
           return (
             <Link
               key={item.id}
-              href={item.url}
+              href={targetUrl}
               onClick={handleClick}
               className="flex-1 flex justify-center focus:outline-none"
             >
