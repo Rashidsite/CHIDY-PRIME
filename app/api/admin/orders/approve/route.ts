@@ -1,237 +1,211 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { parseUniversalDownloadLinks } from '@/lib/link-parser';
-import { formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
 
-// ── Duration Parser Helper ──────────────────────────────────────────────────
-function calculateExpirationDate(duration?: string): string | null {
-  if (!duration || duration.toLowerCase().includes('lifetime') || duration.toLowerCase().includes('maisha')) {
-    return null;
-  }
+// Normalize any phone format → 255XXXXXXXXX
+function normalizePhone(raw: string): string {
+  if (!raw) return '';
+  const digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('255') && digits.length === 12) return digits;
+  if (digits.startsWith('0') && digits.length === 10) return '255' + digits.slice(1);
+  if (digits.length === 9) return '255' + digits;
+  return digits;
+}
+
+// Duration → expiry date
+function getExpiresAt(duration?: string): string {
   const now = new Date();
+  if (!duration) {
+    now.setFullYear(now.getFullYear() + 10);
+    return now.toISOString(); // Lifetime = 10 years
+  }
   const lower = duration.toLowerCase();
-
-  if (lower.includes('30 day') || lower.includes('mwezi') || lower.includes('30')) {
-    now.setDate(now.getDate() + 30);
+  if (lower.includes('lifetime') || lower.includes('maisha')) {
+    now.setFullYear(now.getFullYear() + 10);
     return now.toISOString();
   }
-  if (lower.includes('7 day') || lower.includes('wiki') || lower.includes('7')) {
-    now.setDate(now.getDate() + 7);
-    return now.toISOString();
-  }
-  if (lower.includes('24 hour') || lower.includes('siku 1') || lower.includes('24')) {
-    now.setHours(now.getHours() + 24);
-    return now.toISOString();
-  }
-  if (lower.includes('2 hour') || lower.includes('masaa 2') || lower.includes('2h')) {
-    now.setHours(now.getHours() + 2);
-    return now.toISOString();
-  }
-  return null;
+  if (lower.includes('30')) { now.setDate(now.getDate() + 30); return now.toISOString(); }
+  if (lower.includes('7'))  { now.setDate(now.getDate() + 7);  return now.toISOString(); }
+  if (lower.includes('24') || lower.includes('siku')) { now.setHours(now.getHours() + 24); return now.toISOString(); }
+  if (lower.includes('2h') || lower.includes('masaa 2')) { now.setHours(now.getHours() + 2); return now.toISOString(); }
+  // Default: Lifetime
+  now.setFullYear(now.getFullYear() + 10);
+  return now.toISOString();
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const orderId = String(body.id || body.orderId || body.order_id || body.orderNumber || body.order_number || '');
+
+    // Accept id, orderId, order_id, orderNumber, order_number — any of them
+    const orderId = String(
+      body.id || body.orderId || body.order_id ||
+      body.orderNumber || body.order_number || ''
+    ).trim();
 
     if (!orderId) {
       return NextResponse.json(
-        { success: false, error: 'Order identifier (ID or Order Number) is required' },
+        { success: false, error: 'Order ID is required' },
         { status: 400 }
       );
     }
 
     const supabase = createAdminClient();
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 1. FETCH TARGET ORDER (From payment_orders primary or orders)
-    // ──────────────────────────────────────────────────────────────────────────
+    // ── 1. FIND THE ORDER in payment_orders ───────────────────────────────────
     let order: any = null;
-    const isUuid = orderId.includes('-') && orderId.length === 36;
 
-    // Check payment_orders first
-    try {
-      const { data: poData } = await supabase
+    // Try by UUID id first
+    if (orderId.includes('-') && orderId.length === 36) {
+      const { data } = await supabase
         .from('payment_orders')
-        .select('*, posts(*), visitors(*)')
-        .or(`id.eq.${isUuid ? orderId : '00000000-0000-0000-0000-000000000000'},promo_used.ilike.%${orderId}%`)
+        .select('*, posts(id, title, price, links), visitors(id, name, phone)')
+        .eq('id', orderId)
+        .maybeSingle();
+      if (data) order = data;
+    }
+
+    // If not found by UUID, try by promo_used (CPCG-XXXXX)
+    if (!order) {
+      const { data } = await supabase
+        .from('payment_orders')
+        .select('*, posts(id, title, price, links), visitors(id, name, phone)')
+        .ilike('promo_used', `%${orderId}%`)
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-
-      if (poData) {
-        order = {
-          ...poData,
-          id: poData.id,
-          game_id: poData.post_id,
-          product_id: poData.post_id,
-          visitor_phone: poData.phone_number || poData.visitors?.phone,
-          customer_name: poData.visitors?.name,
-          order_number: poData.promo_used?.split('|')[0] || poData.id,
-        };
-      }
-    } catch {}
-
-    if (!order) {
-      try {
-        const { data: oData } = await supabase
-          .from('orders')
-          .select('*')
-          .or(`id.eq.${isUuid ? orderId : '00000000-0000-0000-0000-000000000000'},order_number.eq.${orderId}`)
-          .maybeSingle();
-
-        if (oData) {
-          order = oData;
-        }
-      } catch {}
+      if (data) order = data;
     }
 
     if (!order) {
       return NextResponse.json(
-        { success: false, error: `Order with reference '${orderId}' not found in database.` },
+        { success: false, error: `Order '${orderId}' not found in database.` },
         { status: 404 }
       );
     }
 
-    const rawPhone = order.visitor_phone || order.phone_number || '';
-    const cleanPhone = formatTzPhone(rawPhone);
-    const localPhone = toLocalPhone(rawPhone);
-    const productId = order.game_id || order.product_id;
+    console.log(`[Admin Approve] ✅ Found order: ${order.id} | Phone: ${order.phone_number} | Product: ${order.posts?.title}`);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 2. RETRIEVE PRODUCT DETAILS & DOWNLOAD LINKS
-    // ──────────────────────────────────────────────────────────────────────────
-    let productTitle = order.game_title || 'Premium Game';
-    let durationType = body.accessDuration || order.access_duration || 'Lifetime';
-    let downloadLinks: any[] = [];
+    // ── 2. COLLECT ORDER DATA ─────────────────────────────────────────────────
+    const rawPhone = order.phone_number || order.visitors?.phone || '';
+    const phone = normalizePhone(rawPhone);
+    const localPhone = phone.replace(/^255/, '0');
+    const productTitle = order.posts?.title || 'Digital Product';
+    const productId = order.post_id;
+    const downloadLinks = order.posts?.links || [];
+    const orderRef = order.promo_used?.split('|')[0] || String(order.id);
+    const accessDuration = body.accessDuration || 'Lifetime';
+    const expiresAt = getExpiresAt(accessDuration);
 
-    const { data: postData } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('id', productId)
-      .maybeSingle();
+    // ── 3. UPDATE payment_orders → approved ───────────────────────────────────
+    const { error: updateErr } = await supabase
+      .from('payment_orders')
+      .update({
+        status: 'approved',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', order.id);
 
-    if (postData) {
-      if (postData.title) productTitle = postData.title;
-      downloadLinks = parseUniversalDownloadLinks(postData);
+    if (updateErr) {
+      console.error('[Admin Approve] payment_orders update error:', updateErr.message);
     }
 
-    const expiresAt = calculateExpirationDate(durationType);
-    const downloadToken =
-      order.download_token ||
-      `tok_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // 3. EXECUTE STRICT UPDATES ACROSS TABLES
-    // ──────────────────────────────────────────────────────────────────────────
-
-    // Step A: Update in payment_orders
-    try {
-      await supabase
-        .from('payment_orders')
-        .update({
-          status: 'approved',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', order.id);
-    } catch {}
-
-    // Step B: Update in xx_orders & xx_users
+    // ── 4. UPDATE xx_orders → completed ──────────────────────────────────────
     try {
       await supabase
         .from('xx_orders')
-        .update({
-          status: 'completed',
-          updated_at: new Date().toISOString(),
-        })
-        .or(`reference_id.eq.${order.order_number},reference_id.eq.${order.id}`);
+        .update({ status: 'completed', updated_at: new Date().toISOString() })
+        .or(`reference_id.eq.${orderRef},reference_id.eq.${order.id}`);
     } catch {}
 
+    // ── 5. UPDATE xx_users.access_until ──────────────────────────────────────
+    // Try all phone formats because xx_users may store any format
     try {
-      await supabase
+      const { data: existingUser } = await supabase
         .from('xx_users')
-        .update({
-          access_until: expiresAt || new Date(Date.now() + 3650 * 24 * 3600 * 1000).toISOString(),
-        })
-        .or(`phone.eq.${cleanPhone},phone.eq.${localPhone}`);
-    } catch {}
+        .select('id, phone')
+        .or(`phone.eq.${phone},phone.eq.${localPhone},phone.eq.+${phone}`)
+        .limit(1)
+        .maybeSingle();
 
-    // Step C: Update in orders (if table exists)
-    try {
-      await supabase
-        .from('orders')
-        .update({
-          status: 'approved',
-          payment_status: 'completed',
-          download_token: downloadToken,
-          access_duration: durationType,
-          access_expires_at: expiresAt,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', order.id);
-    } catch {}
+      if (existingUser) {
+        await supabase
+          .from('xx_users')
+          .update({ access_until: expiresAt })
+          .eq('id', existingUser.id);
+      } else {
+        // Create user if not exists
+        await supabase
+          .from('xx_users')
+          .insert({
+            name: order.visitors?.name || 'Mteja',
+            phone: phone,
+            access_until: expiresAt,
+            created_at: new Date().toISOString(),
+          });
+      }
+    } catch (e) {
+      console.warn('[Admin Approve] xx_users update warning:', e);
+    }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 4. TRIGGER REALTIME BROADCASTS
-    // ──────────────────────────────────────────────────────────────────────────
+    // ── 6. BROADCAST UNLOCK TO ALL CHANNELS ──────────────────────────────────
     const broadcastPayload = {
       orderId: String(order.id),
-      orderNumber: order.order_number || String(order.id),
-      orderRef: order.order_number || String(order.id),
-      productId: productId,
-      phone: cleanPhone,
-      customerName: order.customer_name || order.visitors?.name || 'Mteja',
-      productTitle: productTitle,
+      orderNumber: orderRef,
+      orderRef: orderRef,
+      productId,
+      productTitle,
+      phone,
+      customerName: order.visitors?.name || 'Mteja',
       status: 'UNLOCKED',
       isApproved: true,
-      accessDuration: durationType,
+      accessDuration,
       accessExpiresAt: expiresAt,
-      downloadLinks: downloadLinks,
+      downloadLinks,
       unlockedAt: new Date().toISOString(),
     };
 
-    // Admin Channel
-    try {
-      const adminCh = supabase.channel('admin-orders');
-      await adminCh.subscribe();
-      await adminCh.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
-      await adminCh.send({ type: 'broadcast', event: 'ORDER_UPDATED', payload: broadcastPayload });
-      supabase.removeChannel(adminCh);
-    } catch {}
+    const channelNames = [
+      'admin-orders',
+      'cross-domain-storefront-sync',
+      'storefront-sync',
+    ];
 
-    // Storefront Channels
-    try {
-      const syncChannel = supabase.channel('cross-domain-storefront-sync');
-      await syncChannel.subscribe();
-      await syncChannel.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
-      await syncChannel.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
-      supabase.removeChannel(syncChannel);
-    } catch {}
+    for (const chName of channelNames) {
+      try {
+        const ch = supabase.channel(chName);
+        await ch.subscribe();
+        await ch.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
+        await ch.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
+        supabase.removeChannel(ch);
+      } catch {}
+    }
 
-    try {
-      const storefrontCh = supabase.channel('storefront-sync');
-      await storefrontCh.subscribe();
-      await storefrontCh.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
-      supabase.removeChannel(storefrontCh);
-    } catch {}
-
+    // Per-order modal channel for customer waiting screen
     try {
       const modalCh = supabase.channel(`order_broadcast_modal_${order.id}`);
       await modalCh.subscribe();
       await modalCh.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
+      await modalCh.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
       supabase.removeChannel(modalCh);
     } catch {}
 
+    console.log(`[Admin Approve] 🎉 Order ${order.id} approved. Game unlocked for ${phone}.`);
+
     return NextResponse.json({
       success: true,
-      message: `Order ${order.order_number || order.id} approved successfully. Game access unlocked for ${cleanPhone}.`,
-      order: { ...order, status: 'approved', payment_status: 'completed', download_links: downloadLinks },
+      message: `✅ Order ${orderRef} approved. Game access unlocked for ${phone}.`,
+      order: {
+        ...order,
+        status: 'approved',
+        download_links: downloadLinks,
+        access_expires_at: expiresAt,
+      },
     });
   } catch (error: any) {
-    console.error('[Admin Approve] 💥 Fatal Exception:', error);
+    console.error('[Admin Approve] 💥 Fatal error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal Server Error during order approval' },
+      { success: false, error: error.message || 'Internal Server Error' },
       { status: 500 }
     );
   }
