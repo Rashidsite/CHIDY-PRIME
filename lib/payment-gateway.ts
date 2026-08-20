@@ -20,7 +20,7 @@ export interface RoutePaymentResult {
 const PRESSOPAY_KEY = process.env.PRESSSO_API_KEY || process.env.PRESSOPAY_API_KEY || 'pk_ABUk77pwjZEoLkmA';
 const PRESSOPAY_SECRET = process.env.PRESSSO_API_SECRET || process.env.PRESSOPAY_API_SECRET || 'sk_o6_x250mVkQjXFo_sDC2ydYfODErxyo1G0xJEC-A184';
 const PRESSOPAY_BASE = process.env.PRESSOPAY_BASE_URL || 'https://pressopay.com';
-const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_83c505af729a5f9059ef8ea1c6b125e6831adf232da6e387';
+const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_0359eff9eff724d5322d0938d519dd0eb277862480320d83';
 
 /**
  * Sanitize & Normalize Tanzanian Phone Numbers to 255XXXXXXXXX (International Standard)
