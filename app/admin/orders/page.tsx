@@ -427,43 +427,62 @@ export default function AdminOrdersPage() {
     try {
       const { data: usersData } = await supabase.from('xx_users').select('name, phone');
 
-      const { data: ordersData } = await supabase
-        .from('orders')
-        .select('*, profiles(full_name, email), games(title)')
+      // 1. Primary Query: payment_orders joined with posts and visitors
+      const { data: poData, error: poErr } = await supabase
+        .from('payment_orders')
+        .select('*, posts(id, title, price, image_url, links), visitors(id, name, phone)')
         .order('created_at', { ascending: false });
 
-      let finalOrders = [];
-      if (ordersData && ordersData.length > 0) {
-        finalOrders = ordersData.map((o: any) => ({
-          ...o,
-          customer_name: o.profiles?.full_name || o.customer_name || o.visitor_name || '',
-          product_title: o.games?.title || o.game_title || 'Digital Product',
-        }));
+      let finalOrders: any[] = [];
+
+      if (poData && poData.length > 0) {
+        finalOrders = poData.map((o: any) => {
+          const orderPhone = o.phone_number || o.visitors?.phone || '';
+          const normalizedPhone = orderPhone.replace(/\D/g, '').slice(-9);
+
+          const matchedUser = usersData?.find((u) => {
+            const uPhone = u.phone || '';
+            return uPhone.replace(/\D/g, '').slice(-9) === normalizedPhone;
+          });
+
+          const orderRef = o.promo_used?.split('|')[0] || o.id;
+
+          return {
+            ...o,
+            order_number: orderRef,
+            customer_name: o.visitors?.name || matchedUser?.name || '',
+            customer_phone: orderPhone,
+            visitor_phone: orderPhone,
+            product_title: o.posts?.title || 'Digital Product',
+            game_title: o.posts?.title || 'Digital Product',
+            amount: o.amount || o.posts?.price || 0,
+            status: o.status || 'pending',
+            payment_gateway: o.promo_used?.includes('PP:') ? 'pressopay' : 'pressopay',
+          };
+        });
       } else {
+        // Fallback query if payment_orders is empty
         const { data: legacy } = await supabase
-          .from('payment_orders')
-          .select('*, posts(title)')
+          .from('xx_orders')
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (legacy) {
-          finalOrders = legacy.map((o: any) => {
-            const orderPhone = o.phone_number || o.visitor_phone || '';
-            const normalizedOrderPhone = orderPhone.replace(/\D/g, '').slice(-9);
-
-            const matchedUser = usersData?.find(u => {
-              const uPhone = u.phone || '';
-              return uPhone.replace(/\D/g, '').slice(-9) === normalizedOrderPhone;
-            });
-
-            return {
-              ...o,
-              customer_name: matchedUser?.name || '',
-              product_title: o.posts?.title || 'Digital Product',
-              game_title: o.posts?.title || 'Digital Product',
-            };
-          });
+          finalOrders = legacy.map((o: any) => ({
+            ...o,
+            order_number: o.reference_id || o.id,
+            customer_name: '',
+            customer_phone: o.phone || '',
+            visitor_phone: o.phone || '',
+            product_title: 'Digital Product',
+            game_title: 'Digital Product',
+            amount: o.amount || 0,
+            status: o.status || 'pending',
+            payment_gateway: 'pressopay',
+          }));
         }
       }
+
       setOrders(finalOrders);
     } catch (err) {
       console.error('Fetch orders error:', err);
@@ -474,19 +493,78 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    const ch = supabase.channel('orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload: any) => {
-        setLivePulse(true); setTimeout(() => setLivePulse(false), 3000);
+
+    // ── LIVE REALTIME LISTENER FOR ADMIN DASHBOARD ──
+    const adminChannel = supabase
+      .channel('admin-orders-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payment_orders' },
+        (payload: any) => {
+          setLivePulse(true);
+          setTimeout(() => setLivePulse(false), 3000);
+          fetchOrders();
+
+          if (payload.eventType === 'INSERT') {
+            const newPhone = payload.new?.phone_number || '';
+            addToast({
+              type: 'info',
+              title: '🔔 Order Mpya Imeingia!',
+              message: `Mteja: ${newPhone || 'Mteja wa Mtandaoni'} — Kiasi: TZS ${payload.new?.amount || 0}`,
+            });
+          }
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setSelectedOrder((prev: any) =>
+              prev && prev.id === payload.new.id ? { ...prev, ...payload.new } : prev
+            );
+          }
+        }
+      )
+      .on('broadcast', { event: 'ORDER_CREATED' }, (payload: any) => {
+        setLivePulse(true);
+        setTimeout(() => setLivePulse(false), 3000);
         fetchOrders();
-        if (payload.eventType === 'INSERT') {
-          addToast({ type: 'info', title: '🔔 Order Mpya!', message: `Order imeingia — ${getPhone(payload.new) || 'mteja'}` });
-        }
-        if (payload.eventType === 'UPDATE' && payload.new) {
-          setSelectedOrder((prev: any) => (prev && prev.id === payload.new.id) ? payload.new : prev);
-        }
-      }).subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [fetchOrders, supabase]); // eslint-disable-line
+        const data = payload?.payload || payload;
+        addToast({
+          type: 'info',
+          title: '🔔 Order Mpya Imeingia!',
+          message: `${data.customerName || data.visitorPhone || 'Mteja'} — TZS ${data.amount || 0}`,
+        });
+      })
+      .on('broadcast', { event: 'ORDER_APPROVED' }, (payload: any) => {
+        setLivePulse(true);
+        setTimeout(() => setLivePulse(false), 3000);
+        fetchOrders();
+        const data = payload?.payload || payload;
+        addToast({
+          type: 'success',
+          title: '✅ Malipo Yamethibitishwa!',
+          message: `Order ${data.orderNumber || ''} imethibitishwa na kufunguliwa!`,
+        });
+      })
+      .on('broadcast', { event: 'ORDER_UPDATED' }, () => {
+        setLivePulse(true);
+        setTimeout(() => setLivePulse(false), 3000);
+        fetchOrders();
+      })
+      .subscribe();
+
+    // Cross-Domain Sync Channel
+    const syncChannel = supabase
+      .channel('cross-domain-admin-sync')
+      .on('broadcast', { event: 'ORDER_CREATED' }, () => {
+        fetchOrders();
+      })
+      .on('broadcast', { event: 'ORDER_APPROVED' }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(adminChannel);
+      supabase.removeChannel(syncChannel);
+    };
+  }, [fetchOrders, supabase]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     setUpdating(id + newStatus);

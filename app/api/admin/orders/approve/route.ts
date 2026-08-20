@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
+import { formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
 
 // ── Duration Parser Helper ──────────────────────────────────────────────────
 function calculateExpirationDate(duration?: string): string | null {
@@ -30,17 +31,6 @@ function calculateExpirationDate(duration?: string): string | null {
   return null;
 }
 
-// ── Universal Phone Normalizer ───────────────────────────────────────────────
-function normalizePhone(rawPhone: string): string {
-  if (!rawPhone) return '';
-  const digits = String(rawPhone).replace(/\D/g, '');
-  if (digits.startsWith('0') && digits.length === 10) return '255' + digits.substring(1);
-  if ((digits.startsWith('7') || digits.startsWith('6')) && digits.length === 9) return '255' + digits;
-  if (digits.startsWith('255') && digits.length === 12) return digits;
-  if (digits.startsWith('0')) return '255' + digits.substring(1);
-  return digits;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -56,40 +46,45 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 1. FETCH TARGET ORDER (From orders OR payment_orders)
+    // 1. FETCH TARGET ORDER (From payment_orders primary or orders)
     // ──────────────────────────────────────────────────────────────────────────
     let order: any = null;
-    let isLegacy = false;
+    const isUuid = orderId.includes('-') && orderId.length === 36;
 
+    // Check payment_orders first
     try {
-      const { data: oData } = await supabase
-        .from('orders')
-        .select('*')
-        .or(`id.eq.${orderId.includes('-') && orderId.length === 36 ? orderId : '00000000-0000-0000-0000-000000000000'},order_number.eq.${orderId}`)
+      const { data: poData } = await supabase
+        .from('payment_orders')
+        .select('*, posts(*), visitors(*)')
+        .or(`id.eq.${isUuid ? orderId : '00000000-0000-0000-0000-000000000000'},promo_used.ilike.%${orderId}%`)
+        .limit(1)
         .maybeSingle();
 
-      if (oData) {
-        order = oData;
+      if (poData) {
+        order = {
+          ...poData,
+          id: poData.id,
+          game_id: poData.post_id,
+          product_id: poData.post_id,
+          visitor_phone: poData.phone_number || poData.visitors?.phone,
+          customer_name: poData.visitors?.name,
+          order_number: poData.promo_used?.split('|')[0] || poData.id,
+        };
       }
     } catch {}
 
     if (!order) {
-      const { data: legacyData } = await supabase
-        .from('payment_orders')
-        .select('*')
-        .eq('id', orderId)
-        .maybeSingle();
+      try {
+        const { data: oData } = await supabase
+          .from('orders')
+          .select('*')
+          .or(`id.eq.${isUuid ? orderId : '00000000-0000-0000-0000-000000000000'},order_number.eq.${orderId}`)
+          .maybeSingle();
 
-      if (legacyData) {
-        order = {
-          ...legacyData,
-          game_id: legacyData.post_id,
-          product_id: legacyData.post_id,
-          visitor_phone: legacyData.phone_number || legacyData.visitor_phone,
-          order_number: legacyData.promo_used || `ORD-${legacyData.id.slice(0, 8)}`,
-        };
-        isLegacy = true;
-      }
+        if (oData) {
+          order = oData;
+        }
+      } catch {}
     }
 
     if (!order) {
@@ -100,28 +95,16 @@ export async function POST(request: NextRequest) {
     }
 
     const rawPhone = order.visitor_phone || order.phone_number || '';
-    const cleanPhone = normalizePhone(rawPhone);
+    const cleanPhone = formatTzPhone(rawPhone);
+    const localPhone = toLocalPhone(rawPhone);
     const productId = order.game_id || order.product_id;
 
-    if (!cleanPhone || !productId) {
-      return NextResponse.json(
-        { success: false, error: 'Order is missing valid customer phone or product ID.' },
-        { status: 422 }
-      );
-    }
-
     // ──────────────────────────────────────────────────────────────────────────
-    // 2. RETRIEVE PRODUCT DETAILS, DURATION, & DOWNLOAD LINKS
+    // 2. RETRIEVE PRODUCT DETAILS & DOWNLOAD LINKS
     // ──────────────────────────────────────────────────────────────────────────
     let productTitle = order.game_title || 'Premium Game';
     let durationType = body.accessDuration || order.access_duration || 'Lifetime';
     let downloadLinks: any[] = [];
-
-    const { data: gameData } = await supabase
-      .from('games')
-      .select('*')
-      .eq('id', productId)
-      .maybeSingle();
 
     const { data: postData } = await supabase
       .from('posts')
@@ -129,12 +112,10 @@ export async function POST(request: NextRequest) {
       .eq('id', productId)
       .maybeSingle();
 
-    const mergedProduct = { ...gameData, ...postData };
-    if (mergedProduct.title) productTitle = mergedProduct.title;
-    if (mergedProduct.access_duration && !body.accessDuration) {
-      durationType = mergedProduct.access_duration;
+    if (postData) {
+      if (postData.title) productTitle = postData.title;
+      downloadLinks = parseUniversalDownloadLinks(postData);
     }
-    downloadLinks = parseUniversalDownloadLinks(mergedProduct);
 
     const expiresAt = calculateExpirationDate(durationType);
     const downloadToken =
@@ -153,10 +134,30 @@ export async function POST(request: NextRequest) {
           status: 'approved',
           updated_at: new Date().toISOString(),
         })
-        .eq('id', orderId);
+        .eq('id', order.id);
     } catch {}
 
-    // Step B: Update in orders (if table exists)
+    // Step B: Update in xx_orders & xx_users
+    try {
+      await supabase
+        .from('xx_orders')
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString(),
+        })
+        .or(`reference_id.eq.${order.order_number},reference_id.eq.${order.id}`);
+    } catch {}
+
+    try {
+      await supabase
+        .from('xx_users')
+        .update({
+          access_until: expiresAt || new Date(Date.now() + 3650 * 24 * 3600 * 1000).toISOString(),
+        })
+        .or(`phone.eq.${cleanPhone},phone.eq.${localPhone}`);
+    } catch {}
+
+    // Step C: Update in orders (if table exists)
     try {
       await supabase
         .from('orders')
@@ -171,89 +172,61 @@ export async function POST(request: NextRequest) {
         .eq('id', order.id);
     } catch {}
 
-    // Step C: Record in payment_transactions
+    // ──────────────────────────────────────────────────────────────────────────
+    // 4. TRIGGER REALTIME BROADCASTS
+    // ──────────────────────────────────────────────────────────────────────────
+    const broadcastPayload = {
+      orderId: String(order.id),
+      orderNumber: order.order_number || String(order.id),
+      orderRef: order.order_number || String(order.id),
+      productId: productId,
+      phone: cleanPhone,
+      customerName: order.customer_name || order.visitors?.name || 'Mteja',
+      productTitle: productTitle,
+      status: 'UNLOCKED',
+      isApproved: true,
+      accessDuration: durationType,
+      accessExpiresAt: expiresAt,
+      downloadLinks: downloadLinks,
+      unlockedAt: new Date().toISOString(),
+    };
+
+    // Admin Channel
     try {
-      await supabase.from('payment_transactions').insert({
-        order_ref: order.order_number || String(order.id),
-        phone_number: cleanPhone,
-        product_id: productId,
-        amount: order.amount || 0,
-        currency: 'TZS',
-        gateway: 'manual_admin',
-        gateway_ref: `ADM-${Date.now()}`,
-        status: 'COMPLETED',
-        raw_response: {
-          approved_by: 'admin',
-          approved_at: new Date().toISOString(),
-          manual_override: true,
-        },
-      });
+      const adminCh = supabase.channel('admin-orders');
+      await adminCh.subscribe();
+      await adminCh.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
+      await adminCh.send({ type: 'broadcast', event: 'ORDER_UPDATED', payload: broadcastPayload });
+      supabase.removeChannel(adminCh);
     } catch {}
 
-    // Step D: Upsert into user_purchases
+    // Storefront Channels
     try {
-      await supabase.from('user_purchases').upsert(
-        {
-          order_id: String(order.id),
-          order_reference: order.order_number || String(order.id),
-          user_id: order.user_id || null,
-          customer_phone: cleanPhone,
-          phone_number: cleanPhone,
-          product_id: productId,
-          game_id: productId,
-          product_title: productTitle,
-          download_links: downloadLinks,
-          download_token: downloadToken,
-          access_duration: durationType,
-          access_expires_at: expiresAt,
-          status: 'active',
-          unlocked_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'customer_phone,product_id',
-        }
-      );
-    } catch {}
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // 4. TRIGGER BROADCASTS
-    // ──────────────────────────────────────────────────────────────────────────
-    try {
-      const syncChannel = supabase.channel('storefront-sync');
+      const syncChannel = supabase.channel('cross-domain-storefront-sync');
       await syncChannel.subscribe();
-      await syncChannel.send({
-        type: 'broadcast',
-        event: 'PRODUCT_UNLOCKED',
-        payload: {
-          phone: cleanPhone,
-          productId: productId,
-          orderRef: order.order_number || String(order.id),
-          productTitle: productTitle,
-          status: 'UNLOCKED',
-          accessDuration: durationType,
-          accessExpiresAt: expiresAt,
-          downloadLinks: downloadLinks,
-          unlockedAt: new Date().toISOString(),
-        },
-      });
+      await syncChannel.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
+      await syncChannel.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
       supabase.removeChannel(syncChannel);
     } catch {}
 
     try {
-      const legacyChannel = supabase.channel('order-updates');
-      await legacyChannel.send({
-        type: 'broadcast',
-        event: 'ORDER_APPROVED',
-        payload: { order_id: order.id, status: 'completed' },
-      });
-      supabase.removeChannel(legacyChannel);
+      const storefrontCh = supabase.channel('storefront-sync');
+      await storefrontCh.subscribe();
+      await storefrontCh.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
+      supabase.removeChannel(storefrontCh);
+    } catch {}
+
+    try {
+      const modalCh = supabase.channel(`order_broadcast_modal_${order.id}`);
+      await modalCh.subscribe();
+      await modalCh.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
+      supabase.removeChannel(modalCh);
     } catch {}
 
     return NextResponse.json({
       success: true,
       message: `Order ${order.order_number || order.id} approved successfully. Game access unlocked for ${cleanPhone}.`,
-      order: { ...order, status: 'approved', payment_status: 'completed' },
+      order: { ...order, status: 'approved', payment_status: 'completed', download_links: downloadLinks },
     });
   } catch (error: any) {
     console.error('[Admin Approve] 💥 Fatal Exception:', error);

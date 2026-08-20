@@ -409,6 +409,26 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
         { 
           event: 'UPDATE', 
           schema: 'public', 
+          table: 'payment_orders', 
+          filter: `id=eq.${cleanOrderId}` 
+        },
+        (payload: any) => {
+          const status = (payload.new?.status || '').toLowerCase();
+          if (['completed', 'approved', 'paid', 'success'].includes(status)) {
+            handlePaymentConfirmed({
+              ...payload.new,
+              id: payload.new.id,
+              game_id: payload.new.post_id || game.id,
+              status: 'completed',
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
           table: 'orders', 
           filter: `id=eq.${cleanOrderId}` 
         },
@@ -493,12 +513,12 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       activeUnlockedListenerRef.current = handleWindowUnlocked;
     }
 
-    // 5. Active 2.5s Polling interval with PressoPay live check
+    // 5. Active 2.0s Polling interval with PressoPay live check
     pollTimerRef.current = setInterval(async () => {
       attempts++;
       try {
         const res = await fetch(
-          `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
+          `/api/payment/status?reference=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
         );
         const data = await res.json();
         if (data.success && data.is_completed) {
@@ -516,7 +536,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
         // Secondary fallback check
         const res2 = await fetch(
-          `/api/orders/status?ref=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
+          `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
         );
         const data2 = await res2.json();
         if (data2.success && data2.is_completed) {
@@ -538,7 +558,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       if (attempts >= maxAttempts) {
         clearAllTimers();
       }
-    }, 2500);
+    }, 2000);
   };
 
   const handleManualCheck = async () => {

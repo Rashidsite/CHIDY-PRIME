@@ -5,7 +5,7 @@ import { CheckoutSchema } from '@/lib/zod/schemas';
 import { rateLimit } from '@/lib/rate-limit';
 import { generateActivationKey } from '@/lib/utils';
 import { sendTelegramOrderNotification } from '@/lib/telegram';
-import { routePayment, cleanPhoneNumber, formatTzPhone, DEFAULT_PAYMENT_GATEWAY } from '@/lib/payment-gateway';
+import { routePayment, formatTzPhone, toLocalPhone, DEFAULT_PAYMENT_GATEWAY } from '@/lib/payment-gateway';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
@@ -13,7 +13,10 @@ export async function POST(request: Request) {
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
     const limitResult = rateLimit(ip, { limit: 30, windowMs: 60 * 1000 });
     if (!limitResult.success) {
-      return NextResponse.json({ success: false, error: 'Maombi mengi mno kwa wakati mmoja. Tafadhali subiri sekunde chache.' }, { status: 429 });
+      return NextResponse.json(
+        { success: false, error: 'Maombi mengi mno kwa wakati mmoja. Tafadhali subiri sekunde chache.' },
+        { status: 429 }
+      );
     }
 
     const body = await request.json();
@@ -28,6 +31,7 @@ export async function POST(request: Request) {
 
     const { game_id, visitor_phone: rawPhone, customer_name: rawCustomerName } = validation.data as any;
     const visitor_phone = formatTzPhone(rawPhone);
+    const localPhone = toLocalPhone(rawPhone);
     const customer_name = String(rawCustomerName || body.name || body.customerName || 'Mteja wa Mtandaoni').trim();
     const supabase = createAdminClient();
 
@@ -35,30 +39,35 @@ export async function POST(request: Request) {
     let gamePrice = 0;
     let downloadUrl = '';
     let durationType = 'Lifetime';
+    let durationHours = 720;
 
-    const { data: gameData } = await supabase
-      .from('games')
+    // 1. Fetch Product details from posts table (primary) or games table
+    const { data: postData } = await supabase
+      .from('posts')
       .select('*')
       .eq('id', game_id)
       .maybeSingle();
 
-    if (gameData) {
-      gameTitle = gameData.title;
-      gamePrice = Number(gameData.price) || 0;
-      downloadUrl = gameData.download_url || '';
-      if (gameData.access_duration) durationType = gameData.access_duration;
+    if (postData) {
+      gameTitle = postData.title || gameTitle;
+      gamePrice = Number(postData.price) || 0;
+      downloadUrl = postData.links?.[0]?.url || '';
+      if (postData.duration_days) {
+        durationHours = postData.duration_days * 24;
+        durationType = `${postData.duration_days} Days`;
+      }
     } else {
-      const { data: postData } = await supabase
-        .from('posts')
+      const { data: gameData } = await supabase
+        .from('games')
         .select('*')
         .eq('id', game_id)
         .maybeSingle();
 
-      if (postData) {
-        gameTitle = postData.title;
-        gamePrice = Number(postData.price) || 0;
-        downloadUrl = postData.links?.[0]?.url || '';
-        if (postData.access_duration) durationType = postData.access_duration;
+      if (gameData) {
+        gameTitle = gameData.title || gameTitle;
+        gamePrice = Number(gameData.price) || 0;
+        downloadUrl = gameData.download_url || '';
+        if (gameData.access_duration) durationType = gameData.access_duration;
       }
     }
 
@@ -66,17 +75,98 @@ export async function POST(request: Request) {
     const tokenExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
     const activationKey = generateActivationKey('CP-CG');
     const orderNumber = 'CPCG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-
     const initialStatus = gamePrice === 0 ? 'completed' : 'pending';
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 1. IMMEDIATE ORDER INGESTION (Record BEFORE gateway execution)
-    // ──────────────────────────────────────────────────────────────────────────
-    console.log(`[Checkout] 📝 Immediate Ingestion for order: ${orderNumber} | Phone: ${visitor_phone} | Product: ${gameTitle} (TZS ${gamePrice})`);
+    console.log(`[Checkout] 📝 Step 1: Creating Order Record FIRST: ${orderNumber} | Phone: ${visitor_phone} | Product: ${gameTitle} (TZS ${gamePrice})`);
 
-    const { data: order, error: insertError } = await supabase
-      .from('orders')
-      .insert({
+    // ──────────────────────────────────────────────────────────────────────────
+    // 2. FIND OR CREATE VISITOR (Satisfies visitors foreign key constraint)
+    // ──────────────────────────────────────────────────────────────────────────
+    let visitorId: number | null = null;
+    try {
+      const { data: existingVisitor } = await supabase
+        .from('visitors')
+        .select('id')
+        .or(`phone.eq.${visitor_phone},phone.eq.${localPhone},phone.eq.+${visitor_phone}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingVisitor) {
+        visitorId = existingVisitor.id;
+      } else {
+        const { data: newV } = await supabase
+          .from('visitors')
+          .insert({
+            name: customer_name,
+            phone: visitor_phone,
+            created_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        visitorId = newV?.id || null;
+      }
+    } catch (vErr) {
+      console.warn('[Checkout] Visitor record warning:', vErr);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 3. INSERT INTO PRIMARY TABLE: payment_orders (Guarantees Admin View)
+    // ──────────────────────────────────────────────────────────────────────────
+    let createdPaymentOrder: any = null;
+    try {
+      const { data: poData, error: poErr } = await supabase
+        .from('payment_orders')
+        .insert({
+          visitor_id: visitorId,
+          post_id: game_id,
+          amount: gamePrice,
+          phone_number: visitor_phone,
+          status: initialStatus === 'completed' ? 'approved' : 'pending',
+          promo_used: orderNumber,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('*, posts(title), visitors(name, phone)')
+        .single();
+
+      if (poErr) {
+        console.warn('[Checkout] payment_orders insert error:', poErr.message);
+      } else {
+        createdPaymentOrder = poData;
+      }
+    } catch (poErr) {
+      console.error('[Checkout] payment_orders insert exception:', poErr);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 4. INSERT INTO xx_orders & xx_users (Full Multi-Table Ingestion)
+    // ──────────────────────────────────────────────────────────────────────────
+    try {
+      await supabase.from('xx_users').upsert(
+        {
+          name: customer_name,
+          phone: visitor_phone,
+          created_at: new Date().toISOString(),
+        },
+        { onConflict: 'phone' }
+      );
+    } catch {}
+
+    try {
+      await supabase.from('xx_orders').insert({
+        phone: visitor_phone,
+        amount: gamePrice,
+        status: initialStatus === 'completed' ? 'completed' : 'pending',
+        reference_id: orderNumber,
+        hours_granted: durationHours,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } catch {}
+
+    // Fallback attempt for orders table (if created in future)
+    try {
+      await supabase.from('orders').insert({
         order_number: orderNumber,
         visitor_phone,
         phone_number: visitor_phone,
@@ -95,73 +185,40 @@ export async function POST(request: Request) {
         activation_key: activationKey,
         download_url: downloadUrl,
         created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.warn('[Checkout] ⚠️ Primary order insert warning:', insertError.message);
-    }
-
-    // 2. Auto-register / Upsert Customer Profile into database
-    try {
-      await supabase.from('profiles').upsert(
-        {
-          phone_number: visitor_phone,
-          full_name: customer_name,
-          role: 'user',
-          status: 'active',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'phone_number' }
-      );
-    } catch {}
-
-    try {
-      await supabase.from('xx_users').upsert(
-        {
-          phone: visitor_phone,
-          name: customer_name,
-          role: 'user',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'phone' }
-      );
-    } catch {}
-
-    // 3. Insert into immutable payment_transactions ledger
-    try {
-      await supabase.from('payment_transactions').insert({
-        order_ref: orderNumber,
-        phone_number: visitor_phone,
-        product_id: game_id,
-        amount: gamePrice,
-        currency: 'TZS',
-        gateway: gamePrice === 0 ? 'free' : 'pressopay',
-        status: gamePrice === 0 ? 'COMPLETED' : 'PENDING',
-        raw_request: {
-          customer_name,
-          visitor_phone,
-          game_id,
-          game_title: gameTitle,
-          amount: gamePrice,
-        },
       });
     } catch {}
 
-    // 4. Fallback record into payment_orders for legacy views
+    // ──────────────────────────────────────────────────────────────────────────
+    // 5. BROADCAST NEW ORDER IN REAL TIME TO ADMIN PANEL & STOREFRONT
+    // ──────────────────────────────────────────────────────────────────────────
+    const realtimePayload = {
+      orderId: createdPaymentOrder?.id || orderNumber,
+      orderNumber,
+      orderRef: orderNumber,
+      customerName: customer_name,
+      visitorPhone: visitor_phone,
+      productTitle: gameTitle,
+      productId: game_id,
+      amount: gamePrice,
+      status: initialStatus,
+      createdAt: new Date().toISOString(),
+    };
+
     try {
-      await supabase.from('payment_orders').insert({
-        visitor_id: Math.floor(Math.random() * 10000),
-        post_id: game_id,
-        amount: gamePrice,
-        phone_number: visitor_phone,
-        status: initialStatus === 'completed' ? 'approved' : 'pending',
-        promo_used: orderNumber,
-      });
+      const adminCh = supabase.channel('admin-orders');
+      await adminCh.subscribe();
+      await adminCh.send({ type: 'broadcast', event: 'ORDER_CREATED', payload: realtimePayload });
+      supabase.removeChannel(adminCh);
     } catch {}
 
-    // 5. Trigger Instant Telegram Admin Alert
+    try {
+      const syncCh = supabase.channel('cross-domain-storefront-sync');
+      await syncCh.subscribe();
+      await syncCh.send({ type: 'broadcast', event: 'ORDER_CREATED', payload: realtimePayload });
+      supabase.removeChannel(syncCh);
+    } catch {}
+
+    // 6. Trigger Telegram Notification
     sendTelegramOrderNotification({
       order_number: orderNumber,
       visitor_phone,
@@ -172,7 +229,7 @@ export async function POST(request: Request) {
     }).catch((err) => console.warn('Telegram Notification Error:', err));
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 6. SMART GATEWAY ROUTING (Trigger STK Push)
+    // 7. STEP 2: DISPATCH STK PUSH TO PRESSOPAY
     // ──────────────────────────────────────────────────────────────────────────
     let resolvedGateway: 'pressopay' | 'harakapay' | 'free' = 'pressopay';
     let gatewayReference: string | undefined;
@@ -180,6 +237,7 @@ export async function POST(request: Request) {
 
     if (gamePrice > 0) {
       try {
+        console.log(`[Checkout] 🚀 Step 2: Dispatching STK Push via PressoPay for order ${orderNumber}...`);
         const gatewayResult = await routePayment({
           amount: gamePrice,
           phone: visitor_phone,
@@ -190,43 +248,43 @@ export async function POST(request: Request) {
         gatewayReference = gatewayResult.gatewayReference;
         gatewayRaw = gatewayResult.rawResponse;
 
-        await supabase
-          .from('orders')
-          .update({
-            payment_gateway: resolvedGateway,
-            gateway_reference: gatewayReference || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('order_number', orderNumber);
-
-        await supabase
-          .from('payment_transactions')
-          .update({
-            gateway: resolvedGateway,
-            gateway_ref: gatewayReference || null,
-            raw_response: gatewayRaw,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('order_ref', orderNumber);
+        // If gateway returned a reference, update promo_used if different
+        if (createdPaymentOrder?.id && gatewayReference) {
+          await supabase
+            .from('payment_orders')
+            .update({
+              promo_used: `${orderNumber}|${gatewayReference}`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', createdPaymentOrder.id);
+        }
       } catch (gwErr: any) {
-        console.error('[Checkout] ❌ Gateway execution error (Order preserved in DB):', gwErr);
+        console.error('[Checkout] ❌ Gateway execution warning (Order preserved in DB):', gwErr);
       }
     } else {
       resolvedGateway = 'free';
     }
 
+    const orderOutput = {
+      id: createdPaymentOrder?.id || orderNumber,
+      order_number: orderNumber,
+      order_id: createdPaymentOrder?.id || orderNumber,
+      visitor_phone,
+      customer_name,
+      game_id,
+      product_id: game_id,
+      game_title: gameTitle,
+      amount: gamePrice,
+      status: initialStatus,
+      download_token: downloadToken,
+      activation_key: activationKey,
+    };
+
     return NextResponse.json({
       success: true,
-      order: order || {
-        order_number: orderNumber,
-        visitor_phone,
-        game_id,
-        game_title: gameTitle,
-        amount: gamePrice,
-        status: initialStatus,
-        download_token: downloadToken,
-      },
+      order: orderOutput,
       orderNumber,
+      orderId: createdPaymentOrder?.id || orderNumber,
       gatewayResponse: gatewayRaw,
       usedGateway: resolvedGateway,
     });
