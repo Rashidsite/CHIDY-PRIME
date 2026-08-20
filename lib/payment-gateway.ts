@@ -177,8 +177,66 @@ export async function triggerPressoPayCheckout(params: {
   return await response.json();
 }
 
+export function isHarakaPayConfigured(): boolean {
+  return !!HARAKAPAY_API_KEY && HARAKAPAY_API_KEY.startsWith('hpk_');
+}
+
 /**
- * Fast Smart Payment Router (Executes PressoPay STK Push with HarakaPay fallback)
+ * Trigger HarakaPay Mobile Money USSD Push (https://harakapay.net/api/v1/collect)
+ */
+export async function triggerHarakaPayCollect(params: {
+  phone: string;
+  amount: number;
+  description?: string;
+  webhookUrl?: string;
+}): Promise<any> {
+  const formattedPhone = normalizePressoPayPhone(params.phone);
+  const response = await fetch('https://harakapay.net/api/v1/collect', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': HARAKAPAY_API_KEY,
+    },
+    body: JSON.stringify({
+      phone: formattedPhone,
+      amount: Math.round(params.amount),
+      description: params.description || 'Chidy Prime Game Purchase',
+      webhook_url: params.webhookUrl || process.env.HARAKAPAY_WEBHOOK_URL || 'https://chidyprimetz.com/api/webhooks/harakapay',
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  const data = await response.json();
+  if (!response.ok || data.success === false) {
+    throw new Error(data.error || data.message || `HarakaPay error HTTP ${response.status}`);
+  }
+
+  return data;
+}
+
+/**
+ * Check HarakaPay payment status (https://harakapay.net/api/v1/status/:order_id)
+ */
+export async function getHarakaPayStatus(orderId: string): Promise<any> {
+  try {
+    const response = await fetch(`https://harakapay.net/api/v1/status/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': HARAKAPAY_API_KEY,
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (err) {
+    console.warn('[HarakaPay Status] Error fetching status:', err);
+    return null;
+  }
+}
+
+/**
+ * Fast Smart Payment Router (Prioritizes HarakaPay with PressoPay Fallback)
  */
 export async function routePayment(params: RoutePaymentParams): Promise<RoutePaymentResult> {
   const { amount, phone, orderNumber, description, buyerName, buyerEmail } = params;
@@ -195,10 +253,34 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
 
   let lastError: string | null = null;
 
-  // 1. Try PressoPay Primary
+  // 1. Try HarakaPay First (Instant USSD Push via harakapay.net)
+  if (isHarakaPayConfigured()) {
+    try {
+      console.log(`[Payment Gateway] 🚀 Initiating HarakaPay USSD Push for ${formattedPhone} (TZS ${amount})`);
+      const harakaRes = await triggerHarakaPayCollect({
+        phone: formattedPhone,
+        amount,
+        description: description || `Chidy Prime ${orderNumber}`,
+      });
+
+      if (harakaRes.success && harakaRes.order_id) {
+        return {
+          gateway: 'harakapay',
+          gatewayReference: harakaRes.order_id,
+          rawResponse: harakaRes,
+          status: 'PENDING',
+        };
+      }
+    } catch (harakaErr: any) {
+      lastError = harakaErr?.message || 'HarakaPay error';
+      console.warn('[Payment Gateway] ⚠️ HarakaPay attempt error:', harakaErr?.message);
+    }
+  }
+
+  // 2. Try PressoPay (Secondary / Fallback)
   if (isPressoPayConfigured()) {
     try {
-      console.log(`[Payment Gateway] 🚀 Initiating PressoPay STK Push for ${formattedPhone} (TZS ${amount})`);
+      console.log(`[Payment Gateway] 🔄 Fallback to PressoPay STK Push for ${formattedPhone} (TZS ${amount})`);
       const pressoRes = await triggerPressoPayCheckout({
         merchantReference: orderNumber,
         amountMinor,
@@ -221,46 +303,8 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
     }
   }
 
-  // 2. Try HarakaPay Fallback if configured
-  if (HARAKAPAY_API_KEY) {
-    try {
-      console.log(`[Payment Gateway] 🔄 Fallback to HarakaPay for ${formattedPhone}`);
-      const harakaRes = await fetch('https://api.harakapay.com/v1/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${HARAKAPAY_API_KEY}`,
-        },
-        body: JSON.stringify({
-          amount,
-          phone: formattedPhone,
-          order_id: orderNumber,
-          customer_name: buyerName || 'Customer',
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (harakaRes.ok) {
-        const hData = await harakaRes.json();
-        return {
-          gateway: 'harakapay',
-          gatewayReference: hData.reference || hData.id || orderNumber,
-          rawResponse: hData,
-          status: hData.status || 'PENDING',
-        };
-      } else {
-        const errText = await harakaRes.text().catch(() => 'Unknown error');
-        lastError = `HarakaPay HTTP ${harakaRes.status}: ${errText}`;
-        console.warn(`[HarakaPay] Error HTTP ${harakaRes.status}: ${errText.substring(0, 200)}`);
-      }
-    } catch (harakaErr: any) {
-      lastError = harakaErr?.message || 'HarakaPay error';
-      console.warn('[Payment Gateway] ⚠️ HarakaPay attempt error:', harakaErr?.message);
-    }
-  }
-
   return {
-    gateway: 'pressopay',
+    gateway: isHarakaPayConfigured() ? 'harakapay' : 'pressopay',
     gatewayReference: orderNumber,
     rawResponse: { error: lastError || 'Gateway response pending' },
     status: 'PENDING',

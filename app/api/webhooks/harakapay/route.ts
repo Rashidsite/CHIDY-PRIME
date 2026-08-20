@@ -12,12 +12,17 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient();
+    const normalizedStatus = String(status || '').toLowerCase();
 
-    if (status === 'COMPLETED' || status === 'SUCCESS') {
+    if (normalizedStatus === 'completed' || normalizedStatus === 'success') {
       await supabase
         .from('orders')
-        .update({ status: 'completed', updated_at: new Date().toISOString() })
-        .eq('order_number', ref);
+        .update({ 
+          status: 'completed', 
+          payment_status: 'completed',
+          updated_at: new Date().toISOString() 
+        })
+        .or(`gateway_reference.eq.${ref},order_number.eq.${ref}`);
     }
 
     return NextResponse.json({ success: true, message: 'HarakaPay webhook processed' });
