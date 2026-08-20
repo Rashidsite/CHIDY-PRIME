@@ -5,9 +5,10 @@
 
 const { createHmac, randomUUID } = require('crypto');
 
-const PRESSOPAY_KEY    = process.env.PRESSOPAY_API_KEY    || 'pk_IlU-qGhdV5H-sGj7';
-const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || 'sk_Z-H-BqAmcxOwKOFqaBfSgYsZT9KMBgYDpHeEQHKJT-w';
+const PRESSOPAY_KEY    = process.env.PRESSOPAY_API_KEY || process.env.PRESSSO_API_KEY || 'pk_ABUk77pwjZEoLkmA';
+const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || process.env.PRESSSO_API_SECRET || 'sk_o6_x250mVkQjXFo_sDC2ydYfODErxyo1G0xJEC-A184';
 const PRESSOPAY_BASE   = process.env.PRESSOPAY_BASE_URL   || 'https://pressopay.com';
+const DEFAULT_PAYMENT_GATEWAY = 'PRESSOPAY';
 
 // ══════════════════════════════════════════════════════════
 // 1. HMAC-SHA256 SIGNATURE GENERATION
@@ -87,7 +88,7 @@ async function createCheckout(params) {
             'X-Presso-Signature':    signature
         },
         body,
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(12000)
     });
 
     const responseTime = Date.now() - startTime;
@@ -138,7 +139,7 @@ async function checkPaymentStatus(reference) {
             'X-Presso-Nonce':      nonce,
             'X-Presso-Signature':  signature
         },
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(8000)
     });
     const responseTime = Date.now() - startTime;
 
@@ -188,6 +189,7 @@ module.exports = {
     normalizePhoneNumber,
     verifyWebhookSignature,
     isConfigured,
+    DEFAULT_PAYMENT_GATEWAY,
     PRESSOPAY_KEY,
     PRESSOPAY_BASE
 };

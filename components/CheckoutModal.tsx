@@ -599,9 +599,9 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                   </div>
                   <div>
                     <h3 className="text-base font-black text-white uppercase tracking-tight">
-                      MALIPO YA HARAKA ({productLabel})
+                      CHIDYPRIME x CHIDYGAMING
                     </h3>
-                    <p className="text-[10px] text-blue-400 font-bold">Instant STK Push Delivery</p>
+                    <p className="text-[10px] text-blue-400 font-bold">PressoPay Instant STK Push ({productLabel})</p>
                   </div>
                 </div>
 
@@ -731,9 +731,13 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                   <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black border border-amber-500/30">HALOPESA</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-blue-950/40 border border-blue-800/40 text-xs text-blue-200 font-bold leading-relaxed">
-                  📲 Tafadhali angalia simu yako (<span className="text-white font-black">{phone}</span>) sasa hivi na uingize PIN yako ya siri kuthibitisha malipo ya{' '}
-                  <span className="text-emerald-400 font-black">{formatCurrency(game.price)}</span>.
+                <div className="p-3.5 rounded-2xl bg-blue-950/40 border border-blue-800/40 text-xs text-blue-200 font-bold leading-relaxed space-y-1.5">
+                  <p className="text-white font-extrabold">
+                    📲 Tafadhali kamilisha malipo kwa kuweka PIN kwenye simu yako (<span className="text-amber-400 font-mono font-black">{phone}</span>)...
+                  </p>
+                  <p className="text-[11px] text-slate-300">
+                    Kiasi: <span className="text-emerald-400 font-black">{formatCurrency(game.price)}</span> | Gateway: <span className="text-blue-400 font-black">PressoPay STK Push</span>
+                  </p>
                 </div>
 
                 <p className="text-[11px] text-slate-400 leading-relaxed font-medium">

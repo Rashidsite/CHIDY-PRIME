@@ -5,7 +5,7 @@ import { CheckoutSchema } from '@/lib/zod/schemas';
 import { rateLimit } from '@/lib/rate-limit';
 import { generateActivationKey } from '@/lib/utils';
 import { sendTelegramOrderNotification } from '@/lib/telegram';
-import { routePayment, cleanPhoneNumber, formatTzPhone } from '@/lib/payment-gateway';
+import { routePayment, cleanPhoneNumber, formatTzPhone, DEFAULT_PAYMENT_GATEWAY } from '@/lib/payment-gateway';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
       visitor_phone,
       game_title: gameTitle,
       amount: gamePrice,
-      payment_gateway: gamePrice === 0 ? 'FREE' : 'PressoPay / HarakaPay',
+      payment_gateway: gamePrice === 0 ? 'FREE' : DEFAULT_PAYMENT_GATEWAY,
       activation_key: activationKey,
     }).catch((err) => console.warn('Telegram Notification Error:', err));
 

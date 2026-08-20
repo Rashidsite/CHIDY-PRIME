@@ -17,8 +17,10 @@ export interface RoutePaymentResult {
   checkoutUrl?: string;
 }
 
-const PRESSOPAY_KEY = process.env.PRESSSO_API_KEY || process.env.PRESSOPAY_API_KEY || 'pk_ABUk77pwjZEoLkmA';
-const PRESSOPAY_SECRET = process.env.PRESSSO_API_SECRET || process.env.PRESSOPAY_API_SECRET || 'sk_o6_x250mVkQjXFo_sDC2ydYfODErxyo1G0xJEC-A184';
+export const DEFAULT_PAYMENT_GATEWAY = 'PRESSOPAY';
+
+const PRESSOPAY_KEY = process.env.PRESSOPAY_API_KEY || process.env.PRESSSO_API_KEY || 'pk_ABUk77pwjZEoLkmA';
+const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || process.env.PRESSSO_API_SECRET || 'sk_o6_x250mVkQjXFo_sDC2ydYfODErxyo1G0xJEC-A184';
 const PRESSOPAY_BASE = process.env.PRESSOPAY_BASE_URL || 'https://pressopay.com';
 const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_0359eff9eff724d5322d0938d519dd0eb277862480320d83';
 
@@ -82,7 +84,8 @@ export function isPressoPayConfigured(): boolean {
  */
 export async function getPressoPayPaymentStatus(reference: string): Promise<any> {
   try {
-    const path = '/api/v1/payments/' + reference;
+    const cleanRef = reference.replace(/^PP:/i, '');
+    const path = '/api/v1/payments/' + cleanRef;
     const timestamp = new Date().toISOString();
     const nonce = crypto.randomUUID();
     const canonical = [timestamp, nonce, 'GET', path, ''].join('\n');
@@ -91,10 +94,16 @@ export async function getPressoPayPaymentStatus(reference: string): Promise<any>
     const res = await fetch(PRESSOPAY_BASE + path, {
       method: 'GET',
       headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
         'X-Pressso-Key': PRESSOPAY_KEY,
         'X-Pressso-Timestamp': timestamp,
         'X-Pressso-Nonce': nonce,
         'X-Pressso-Signature': signature,
+        'X-Presso-Key': PRESSOPAY_KEY,
+        'X-Presso-Timestamp': timestamp,
+        'X-Presso-Nonce': nonce,
+        'X-Presso-Signature': signature,
       },
       signal: AbortSignal.timeout(6000),
     });
@@ -108,7 +117,7 @@ export async function getPressoPayPaymentStatus(reference: string): Promise<any>
 }
 
 /**
- * Normalizes phone to PressoPay format (07XXXXXXXX, 06XXXXXXXX)
+ * Normalizes phone to PressoPay format (07XXXXXXXX, 06XXXXXXXX or 255XXXXXXXXX)
  */
 export function normalizePressoPayPhone(phone: string): string {
   if (!phone) return '';
@@ -236,7 +245,7 @@ export async function getHarakaPayStatus(orderId: string): Promise<any> {
 }
 
 /**
- * Fast Smart Payment Router (Prioritizes HarakaPay with PressoPay Fallback)
+ * Fast Smart Payment Router (Locked to PressoPay Primary with Failover)
  */
 export async function routePayment(params: RoutePaymentParams): Promise<RoutePaymentResult> {
   const { amount, phone, orderNumber, description, buyerName, buyerEmail } = params;
@@ -253,10 +262,38 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
 
   let lastError: string | null = null;
 
-  // 1. Try HarakaPay First (Instant USSD Push via harakapay.net)
+  // 1. PRIMARY GATEWAY: PressoPay STK Push (Direct Instant Mobile Money Dispatch)
+  if (isPressoPayConfigured()) {
+    try {
+      console.log(`[Payment Gateway] 🚀 Dispatching PressoPay STK Push for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
+      const pressoRes = await triggerPressoPayCheckout({
+        merchantReference: orderNumber,
+        amountMinor,
+        buyerName,
+        buyerEmail,
+        buyerPhone: formattedPhone,
+        description: description || `Chidy Prime ${orderNumber}`,
+      });
+
+      if (pressoRes) {
+        return {
+          gateway: 'pressopay',
+          gatewayReference: pressoRes.reference || pressoRes.id || orderNumber,
+          rawResponse: pressoRes,
+          status: pressoRes.status || 'PENDING',
+          checkoutUrl: pressoRes.checkoutUrl,
+        };
+      }
+    } catch (pressoErr: any) {
+      lastError = pressoErr?.message || 'PressoPay gateway error';
+      console.warn('[Payment Gateway] ⚠️ PressoPay primary attempt error:', pressoErr?.message);
+    }
+  }
+
+  // 2. SECONDARY / FAILOVER: HarakaPay (Only if PressoPay fails or unconfigured)
   if (isHarakaPayConfigured()) {
     try {
-      console.log(`[Payment Gateway] 🚀 Initiating HarakaPay USSD Push for ${formattedPhone} (TZS ${amount})`);
+      console.log(`[Payment Gateway] 🔄 Failover to HarakaPay USSD Push for ${formattedPhone} (TZS ${amount})`);
       const harakaRes = await triggerHarakaPayCollect({
         phone: formattedPhone,
         amount,
@@ -273,38 +310,12 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
       }
     } catch (harakaErr: any) {
       lastError = harakaErr?.message || 'HarakaPay error';
-      console.warn('[Payment Gateway] ⚠️ HarakaPay attempt error:', harakaErr?.message);
-    }
-  }
-
-  // 2. Try PressoPay (Secondary / Fallback)
-  if (isPressoPayConfigured()) {
-    try {
-      console.log(`[Payment Gateway] 🔄 Fallback to PressoPay STK Push for ${formattedPhone} (TZS ${amount})`);
-      const pressoRes = await triggerPressoPayCheckout({
-        merchantReference: orderNumber,
-        amountMinor,
-        buyerName,
-        buyerEmail,
-        buyerPhone: formattedPhone,
-        description: description || `Chidy Prime ${orderNumber}`,
-      });
-
-      return {
-        gateway: 'pressopay',
-        gatewayReference: pressoRes.reference || pressoRes.id || orderNumber,
-        rawResponse: pressoRes,
-        status: pressoRes.status || 'PENDING',
-        checkoutUrl: pressoRes.checkoutUrl,
-      };
-    } catch (pressoErr: any) {
-      lastError = pressoErr?.message || 'PressoPay gateway error';
-      console.warn('[Payment Gateway] ⚠️ PressoPay attempt error:', pressoErr?.message);
+      console.warn('[Payment Gateway] ⚠️ HarakaPay failover error:', harakaErr?.message);
     }
   }
 
   return {
-    gateway: isHarakaPayConfigured() ? 'harakapay' : 'pressopay',
+    gateway: 'pressopay',
     gatewayReference: orderNumber,
     rawResponse: { error: lastError || 'Gateway response pending' },
     status: 'PENDING',

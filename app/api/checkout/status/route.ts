@@ -44,33 +44,31 @@ export async function GET(request: NextRequest) {
 
     let isCompleted = order && ['completed', 'approved', 'paid'].includes((order.status || '').toLowerCase());
 
-    // If still pending, perform a direct live check with HarakaPay / PressoPay status endpoint
+    // If still pending, perform a direct live check with PressoPay / HarakaPay status endpoint
     if (order && !isCompleted && (order.gateway_reference || order.order_number)) {
       const targetRef = order.gateway_reference || order.order_number;
       try {
-        // 1. Check HarakaPay
-        if (targetRef.startsWith('HP') || order.payment_gateway === 'harakapay') {
-          const hStatus = await getHarakaPayStatus(targetRef);
-          if (hStatus?.success && hStatus?.payment?.status === 'completed') {
-            await supabase
-              .from('orders')
-              .update({
-                status: 'completed',
-                payment_status: 'completed',
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', order.id);
+        // 1. Check PressoPay First (Primary Gateway)
+        const pressoStatus = await getPressoPayPaymentStatus(targetRef);
+        if (pressoStatus && ['COMPLETED', 'SUCCESS', 'PAID', 'APPROVED'].includes(String(pressoStatus.status || '').toUpperCase())) {
+          await supabase
+            .from('orders')
+            .update({
+              status: 'completed',
+              payment_status: 'completed',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', order.id);
 
-            order.status = 'completed';
-            order.payment_status = 'completed';
-            isCompleted = true;
-          }
+          order.status = 'completed';
+          order.payment_status = 'completed';
+          isCompleted = true;
         }
 
-        // 2. Check PressoPay
-        if (!isCompleted) {
-          const pressoStatus = await getPressoPayPaymentStatus(targetRef);
-          if (pressoStatus && ['COMPLETED', 'SUCCESS', 'PAID', 'APPROVED'].includes(String(pressoStatus.status || '').toUpperCase())) {
+        // 2. Check HarakaPay Fallback (if applicable)
+        if (!isCompleted && (targetRef.startsWith('HP') || order.payment_gateway === 'harakapay')) {
+          const hStatus = await getHarakaPayStatus(targetRef);
+          if (hStatus?.success && hStatus?.payment?.status === 'completed') {
             await supabase
               .from('orders')
               .update({
