@@ -21,6 +21,7 @@ import {
   Copy,
   ArrowRight,
   Sparkles,
+  MessageCircle,
 } from 'lucide-react';
 import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
@@ -776,6 +777,18 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                     </>
                   )}
                 </button>
+
+                <a
+                  href={`https://wa.me/255655361060?text=${encodeURIComponent(
+                    `Habari CHIDYPRIME, nahitaji kukamilisha malipo ya:\n🎮 Game: ${game.title}\n💰 Bei: ${formatCurrency(game.price)}\n📋 Oda: ${activeOrder?.order_number || activeOrder?.id || 'Oda Mpya'}\n📱 Namba yangu: ${phone}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-emerald-400 text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                >
+                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                  <span>💬 LIPA AU MSAADA WA WHATSAPP</span>
+                </a>
 
                 <div className="flex items-center gap-2">
                   <button

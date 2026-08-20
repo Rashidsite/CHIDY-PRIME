@@ -153,6 +153,8 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
   const formattedPhone = formatTzPhone(phone);
   const amountMinor = Math.round(amount);
 
+  let lastError: string | null = null;
+
   // 1. Try PressoPay Primary
   if (isPressoPayConfigured()) {
     try {
@@ -174,6 +176,7 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
         checkoutUrl: pressoRes.checkoutUrl,
       };
     } catch (pressoErr: any) {
+      lastError = pressoErr?.message || 'PressoPay gateway error';
       console.warn('[Payment Gateway] ⚠️ PressoPay attempt error:', pressoErr?.message);
     }
   }
@@ -207,9 +210,11 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
         };
       } else {
         const errText = await harakaRes.text().catch(() => 'Unknown error');
+        lastError = `HarakaPay HTTP ${harakaRes.status}: ${errText}`;
         console.warn(`[HarakaPay] Error HTTP ${harakaRes.status}: ${errText.substring(0, 200)}`);
       }
     } catch (harakaErr: any) {
+      lastError = harakaErr?.message || 'HarakaPay error';
       console.warn('[Payment Gateway] ⚠️ HarakaPay attempt error:', harakaErr?.message);
     }
   }
@@ -217,7 +222,7 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
   return {
     gateway: 'pressopay',
     gatewayReference: orderNumber,
-    rawResponse: { error: 'Gateway response pending' },
+    rawResponse: { error: lastError || 'Gateway response pending' },
     status: 'PENDING',
   };
 }
