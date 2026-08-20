@@ -108,6 +108,17 @@ export async function getPressoPayPaymentStatus(reference: string): Promise<any>
 }
 
 /**
+ * Normalizes phone to PressoPay format (07XXXXXXXX, 06XXXXXXXX)
+ */
+export function normalizePressoPayPhone(phone: string): string {
+  if (!phone) return '';
+  let clean = String(phone).replace(/\D/g, '');
+  if (clean.startsWith('255')) clean = '0' + clean.substring(3);
+  if (!clean.startsWith('0')) clean = '0' + clean;
+  return clean;
+}
+
+/**
  * Trigger PressoPay Mobile Money Checkout (STK Push)
  */
 export async function triggerPressoPayCheckout(params: {
@@ -123,11 +134,11 @@ export async function triggerPressoPayCheckout(params: {
   const nonce = crypto.randomUUID();
   const idempotencyKey = crypto.randomUUID();
 
-  const formattedPhone = formatTzPhone(params.buyerPhone);
+  const formattedPhone = normalizePressoPayPhone(params.buyerPhone);
 
   const payload = {
     merchantReference: params.merchantReference,
-    amountMinor: params.amountMinor,
+    amountMinor: Math.round(params.amountMinor),
     buyerName: params.buyerName || 'Mteja wa Mtandaoni',
     buyerEmail: params.buyerEmail || 'customer@chidyprime.com',
     buyerPhone: formattedPhone,
@@ -140,9 +151,9 @@ export async function triggerPressoPayCheckout(params: {
   const response = await fetch(PRESSOPAY_BASE + path, {
     method: 'POST',
     headers: {
-      'User-Agent': 'ChidyPrime/2.0 (Mobile Payment Engine)',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       'Accept': 'application/json',
-      'Content-Type': 'application/json',
+      'content-type': 'application/json',
       'idempotency-key': idempotencyKey,
       'X-Pressso-Key': PRESSOPAY_KEY,
       'X-Pressso-Timestamp': timestamp,
@@ -152,10 +163,9 @@ export async function triggerPressoPayCheckout(params: {
       'X-Presso-Timestamp': timestamp,
       'X-Presso-Nonce': nonce,
       'X-Presso-Signature': signature,
-      'Authorization': `Bearer ${PRESSOPAY_SECRET}`,
     },
     body,
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!response.ok) {
@@ -180,7 +190,7 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
     };
   }
 
-  const formattedPhone = formatTzPhone(phone);
+  const formattedPhone = normalizePressoPayPhone(phone);
   const amountMinor = Math.round(amount);
 
   let lastError: string | null = null;
