@@ -17,8 +17,8 @@ export interface RoutePaymentResult {
   checkoutUrl?: string;
 }
 
-const PRESSOPAY_KEY = process.env.PRESSOPAY_API_KEY || 'pk_IlU-qGhdV5H-sGj7';
-const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || 'sk_Z-H-BqAmcxOwKOFqaBfSgYsZT9KMBgYDpHeEQHKJT-w';
+const PRESSOPAY_KEY = process.env.PRESSSO_API_KEY || process.env.PRESSOPAY_API_KEY || 'pk_ABUk77pwjZEoLkmA';
+const PRESSOPAY_SECRET = process.env.PRESSSO_API_SECRET || process.env.PRESSOPAY_API_SECRET || 'sk_o6_x250mVkQjXFo_sDC2ydYfODErxyo1G0xJEC-A184';
 const PRESSOPAY_BASE = process.env.PRESSOPAY_BASE_URL || 'https://pressopay.com';
 const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_83c505af729a5f9059ef8ea1c6b125e6831adf232da6e387';
 
@@ -75,6 +75,36 @@ function generatePressoPaySignature(timestamp: string, nonce: string, method: st
 
 export function isPressoPayConfigured(): boolean {
   return !!(PRESSOPAY_KEY && PRESSOPAY_SECRET);
+}
+
+/**
+ * Check payment status directly from PressoPay API
+ */
+export async function getPressoPayPaymentStatus(reference: string): Promise<any> {
+  try {
+    const path = '/api/v1/payments/' + reference;
+    const timestamp = new Date().toISOString();
+    const nonce = crypto.randomUUID();
+    const canonical = [timestamp, nonce, 'GET', path, ''].join('\n');
+    const signature = crypto.createHmac('sha256', PRESSOPAY_SECRET).update(canonical).digest('hex');
+
+    const res = await fetch(PRESSOPAY_BASE + path, {
+      method: 'GET',
+      headers: {
+        'X-Pressso-Key': PRESSOPAY_KEY,
+        'X-Pressso-Timestamp': timestamp,
+        'X-Pressso-Nonce': nonce,
+        'X-Pressso-Signature': signature,
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn('[PressoPay Status] Error fetching status:', err);
+    return null;
+  }
 }
 
 /**

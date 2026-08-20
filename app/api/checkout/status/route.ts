@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
+import { formatTzPhone, toLocalPhone, getPressoPayPaymentStatus } from '@/lib/payment-gateway';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
 
 export async function GET(request: NextRequest) {
@@ -41,7 +41,31 @@ export async function GET(request: NextRequest) {
       order = data;
     }
 
-    const isCompleted = order && ['completed', 'approved', 'paid'].includes((order.status || '').toLowerCase());
+    let isCompleted = order && ['completed', 'approved', 'paid'].includes((order.status || '').toLowerCase());
+
+    // If still pending, perform a direct live check with PressoPay status endpoint
+    if (order && !isCompleted && (order.gateway_reference || order.order_number)) {
+      const targetRef = order.gateway_reference || order.order_number;
+      try {
+        const pressoStatus = await getPressoPayPaymentStatus(targetRef);
+        if (pressoStatus && ['COMPLETED', 'SUCCESS', 'PAID', 'APPROVED'].includes(String(pressoStatus.status || '').toUpperCase())) {
+          await supabase
+            .from('orders')
+            .update({
+              status: 'completed',
+              payment_status: 'completed',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', order.id);
+
+          order.status = 'completed';
+          order.payment_status = 'completed';
+          isCompleted = true;
+        }
+      } catch (pErr) {
+        console.warn('[Status API] PressoPay live check warning:', pErr);
+      }
+    }
 
     let links: any[] = [];
     if (order && isCompleted) {
