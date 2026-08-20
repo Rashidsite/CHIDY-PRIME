@@ -4,8 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminSidebar from '@/components/AdminSidebar';
+import AdminLockGate from '@/components/AdminLockGate';
 import { createClient } from '@/lib/supabase/client';
-import { ShieldCheck, Loader2, Menu, ShoppingBag, Store } from 'lucide-react';
+import { ShieldCheck, Loader2, Menu, Store, Lock } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -15,6 +16,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
 
   const supabase = createClient();
+
+  const handleAdminLogout = useCallback(async () => {
+    try {
+      localStorage.removeItem('cpcg_admin_session');
+      localStorage.removeItem('cpcg_admin_authenticated');
+      await fetch('/api/admin/auth', { method: 'DELETE' }).catch(() => {});
+    } catch {}
+    setAuthorized(false);
+  }, []);
 
   const fetchPendingOrders = useCallback(async () => {
     try {
@@ -32,30 +42,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     async function checkAdminAuth() {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // Allow access in development or verify admin role
-        if (!session) {
+        const savedToken = typeof window !== 'undefined' ? localStorage.getItem('cpcg_admin_session') : null;
+        const isAuthFlag = typeof window !== 'undefined' ? localStorage.getItem('cpcg_admin_authenticated') : null;
+
+        if (!savedToken && !isAuthFlag) {
+          setAuthorized(false);
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch('/api/admin/auth', {
+          method: 'GET',
+          headers: savedToken ? { Authorization: `Bearer ${savedToken}` } : {},
+        });
+
+        const data = await res.json();
+        if (data.authenticated || isAuthFlag === 'true') {
           setAuthorized(true);
         } else {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profile?.role === 'admin' || session.user.email?.includes('admin')) {
-            setAuthorized(true);
-          } else {
-            setAuthorized(true);
-          }
+          localStorage.removeItem('cpcg_admin_session');
+          localStorage.removeItem('cpcg_admin_authenticated');
+          setAuthorized(false);
         }
-      } catch (err) {
-        setAuthorized(true);
+      } catch {
+        // If offline or network issue, fallback to localStorage flag
+        const isAuthFlag = typeof window !== 'undefined' ? localStorage.getItem('cpcg_admin_authenticated') : null;
+        setAuthorized(isAuthFlag === 'true');
       } finally {
         setLoading(false);
       }
     }
+
     checkAdminAuth();
     fetchPendingOrders();
 
@@ -70,17 +87,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [router, supabase, fetchPendingOrders]);
+  }, [supabase, fetchPendingOrders]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
-        <div className="flex items-center gap-2 font-bold text-xs">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-          <span>Verifying Admin Credentials...</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#060913] text-slate-400">
+        <div className="flex flex-col items-center gap-3 font-bold text-xs">
+          <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+          <span className="text-slate-300 tracking-wider font-mono uppercase">Inahakiki Ufikiaji wa Admin...</span>
         </div>
       </div>
     );
+  }
+
+  // ── CYBER GAMING LOCK SCREEN (Completely blocks Admin if not authenticated) ──
+  if (!authorized) {
+    return <AdminLockGate onUnlock={() => setAuthorized(true)} />;
   }
 
   return (
@@ -113,7 +135,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Right Action: Pending Badge & Store link */}
+        {/* Right Actions: Pending Badge, Store link & Lock button */}
         <div className="flex items-center gap-2">
           {pendingOrdersCount > 0 && (
             <Link
@@ -132,6 +154,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Store className="w-4 h-4" />
           </Link>
+
+          <button
+            type="button"
+            onClick={handleAdminLogout}
+            className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation cursor-pointer"
+            title="Lock Admin (Logout)"
+            aria-label="Lock Admin"
+          >
+            <Lock className="w-4 h-4 text-rose-400" />
+          </button>
         </div>
       </header>
 
@@ -140,6 +172,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         mobileOpen={mobileSidebarOpen}
         onClose={() => setMobileSidebarOpen(false)}
         pendingOrdersCount={pendingOrdersCount}
+        onLogout={handleAdminLogout}
       />
 
       {/* ── Main Content Area ── */}
@@ -149,3 +182,4 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
+

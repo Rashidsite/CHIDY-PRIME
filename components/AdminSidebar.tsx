@@ -14,19 +14,23 @@ import {
   ShieldCheck, 
   Sparkles, 
   Palette,
-  X
+  X,
+  Lock,
+  LogOut
 } from 'lucide-react';
 
 interface AdminSidebarProps {
   mobileOpen?: boolean;
   onClose?: () => void;
   pendingOrdersCount?: number;
+  onLogout?: () => void;
 }
 
 export default function AdminSidebar({
   mobileOpen = false,
   onClose,
   pendingOrdersCount = 0,
+  onLogout,
 }: AdminSidebarProps) {
   const pathname = usePathname();
 
@@ -107,8 +111,22 @@ export default function AdminSidebar({
         </nav>
       </div>
 
-      {/* Return to Storefront */}
-      <div className="pt-4 border-t border-slate-800/80">
+      {/* Actions: Lock Admin & Return to Storefront */}
+      <div className="pt-4 border-t border-slate-800/80 space-y-2">
+        {onLogout && (
+          <button
+            type="button"
+            onClick={() => {
+              if (onClose) onClose();
+              onLogout();
+            }}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/40 text-xs font-black uppercase tracking-wider transition-all min-h-[44px] touch-manipulation shadow-md cursor-pointer hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+          >
+            <Lock className="w-4 h-4 text-rose-400" />
+            <span>🔒 Lock Admin (Toka)</span>
+          </button>
+        )}
+
         <Link
           href="/"
           onClick={onClose}
