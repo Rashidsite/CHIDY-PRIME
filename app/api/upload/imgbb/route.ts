@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { uploadToImgBB } from '@/lib/imgbb';
 import { rateLimit } from '@/lib/rate-limit';
