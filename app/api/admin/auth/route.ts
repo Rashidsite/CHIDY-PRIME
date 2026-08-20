@@ -12,7 +12,7 @@ function createAdminSessionToken(): string {
   return `${Buffer.from(payload).toString('base64')}.${signature}`;
 }
 
-export function verifyAdminSessionToken(token?: string | null): boolean {
+function verifyAdminSessionToken(token?: string | null): boolean {
   if (!token) return false;
   try {
     const [encodedPayload, signature] = token.split('.');

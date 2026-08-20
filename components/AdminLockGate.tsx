@@ -122,12 +122,9 @@ export default function AdminLockGate({ onUnlock }: AdminLockGateProps) {
         {/* ── Form ── */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-black uppercase text-slate-300 mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-blue-400" />
-                <span>Master Admin PIN / Password</span>
-              </span>
-              <span className="text-[10px] text-slate-500 font-mono">Default: 2025</span>
+            <label className="block text-[11px] font-black uppercase text-slate-300 mb-2 flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-blue-400" />
+              <span>Master Admin PIN / Password</span>
             </label>
 
             <div className="relative">
@@ -185,7 +182,7 @@ export default function AdminLockGate({ onUnlock }: AdminLockGateProps) {
             ) : (
               <>
                 <Zap className="w-4 h-4 fill-white text-white" />
-                <span>⚡ FUNGUA ADMIN HQ</span>
+                <span>FUNGUA ADMIN HQ</span>
               </>
             )}
           </button>
