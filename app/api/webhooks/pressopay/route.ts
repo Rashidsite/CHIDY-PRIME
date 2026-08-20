@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
 import { notifySuccessfulPayment } from '@/lib/telegram';
-import { cleanPhoneNumber } from '@/lib/payment-gateway';
+import { formatTzPhone } from '@/lib/payment-gateway';
 
 function calculateExpirationDate(duration?: string): string | null {
   if (!duration || duration.toLowerCase().includes('lifetime') || duration.toLowerCase().includes('maisha')) {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       body.data?.id;
 
     const status = String(body.status || body.payment_status || body.data?.status || '').toUpperCase();
-    const phone = cleanPhoneNumber(body.phone || body.buyerPhone || body.phone_number || body.data?.phone);
+    const phone = formatTzPhone(body.phone || body.buyerPhone || body.phone_number || body.data?.phone || '');
 
     if (!reference && !transactionId) {
       return NextResponse.json({ success: false, message: 'Missing reference' }, { status: 400 });
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (targetOrder) {
-        const effectivePhone = cleanPhoneNumber(targetOrder.visitor_phone || targetOrder.phone_number || phone);
+        const effectivePhone = formatTzPhone(targetOrder.visitor_phone || targetOrder.phone_number || phone);
         const productId = targetOrder.game_id || targetOrder.product_id;
         const durationType = targetOrder.access_duration || 'Lifetime';
         const expiresAt = calculateExpirationDate(durationType);

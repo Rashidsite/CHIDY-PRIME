@@ -43,10 +43,14 @@ export default function UserOrdersPage() {
     if (!phoneSearch.trim()) return;
     setLoading(true);
     try {
+      const digits = phoneSearch.replace(/\D/g, '');
+      const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
+      const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+
       const { data } = await supabase
         .from('orders')
         .select('*')
-        .eq('visitor_phone', phoneSearch.trim())
+        .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
         .order('created_at', { ascending: false });
 
       if (data) setOrders(data);

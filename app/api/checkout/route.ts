@@ -4,7 +4,7 @@ import { CheckoutSchema } from '@/lib/zod/schemas';
 import { rateLimit } from '@/lib/rate-limit';
 import { generateActivationKey } from '@/lib/utils';
 import { sendTelegramOrderNotification } from '@/lib/telegram';
-import { routePayment, cleanPhoneNumber } from '@/lib/payment-gateway';
+import { routePayment, cleanPhoneNumber, formatTzPhone } from '@/lib/payment-gateway';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     const { game_id, visitor_phone: rawPhone, customer_name: rawCustomerName } = validation.data as any;
-    const visitor_phone = cleanPhoneNumber(rawPhone);
+    const visitor_phone = formatTzPhone(rawPhone);
     const customer_name = String(rawCustomerName || body.name || body.customerName || 'Mteja wa Mtandaoni').trim();
     const supabase = createAdminClient();
 

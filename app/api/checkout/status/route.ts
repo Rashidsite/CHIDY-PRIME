@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { cleanPhoneNumber } from '@/lib/payment-gateway';
+import { formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('order_id') || searchParams.get('ref');
-    const phone = cleanPhoneNumber(searchParams.get('phone'));
+    const rawPhone = searchParams.get('phone');
+    const intlPhone = formatTzPhone(rawPhone || '');
+    const localPhone = toLocalPhone(rawPhone || '');
 
     const supabase = createAdminClient();
 
@@ -16,16 +18,23 @@ export async function GET(request: NextRequest) {
       const { data } = await supabase
         .from('orders')
         .select('*')
-        .or(`id.eq.${orderId},order_number.eq.${orderId},transaction_ref.eq.${orderId}`)
+        .or(`id.eq.${orderId},order_number.eq.${orderId},transaction_ref.eq.${orderId},gateway_reference.eq.${orderId}`)
         .maybeSingle();
       order = data;
     }
 
-    if (!order && phone) {
+    if (!order && (intlPhone || localPhone)) {
+      const phoneFilter = [
+        intlPhone ? `visitor_phone.eq.${intlPhone}` : null,
+        localPhone ? `visitor_phone.eq.${localPhone}` : null,
+        intlPhone ? `phone_number.eq.${intlPhone}` : null,
+        localPhone ? `phone_number.eq.${localPhone}` : null,
+      ].filter(Boolean).join(',');
+
       const { data } = await supabase
         .from('orders')
         .select('*')
-        .or(`visitor_phone.eq.${phone},phone_number.eq.${phone}`)
+        .or(phoneFilter)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();

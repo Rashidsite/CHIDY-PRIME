@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
-import { cleanPhoneNumber } from '@/lib/payment-gateway';
+import { formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const ref = searchParams.get('ref') || searchParams.get('order_id') || searchParams.get('order_number');
     const rawPhone = searchParams.get('phone') || searchParams.get('phone_number');
-    const phone = cleanPhoneNumber(rawPhone);
+    const intlPhone = formatTzPhone(rawPhone || '');
+    const localPhone = toLocalPhone(rawPhone || '');
 
-    if (!ref && !phone) {
+    if (!ref && !intlPhone && !localPhone) {
       return NextResponse.json({ success: false, error: 'Reference or phone required' }, { status: 400 });
     }
 
@@ -19,8 +20,14 @@ export async function GET(request: NextRequest) {
     let query = supabase.from('orders').select('*');
     if (ref) {
       query = query.or(`id.eq.${ref},order_number.eq.${ref},transaction_ref.eq.${ref},gateway_reference.eq.${ref}`);
-    } else if (phone) {
-      query = query.or(`visitor_phone.eq.${phone},phone_number.eq.${phone}`).order('created_at', { ascending: false });
+    } else if (intlPhone || localPhone) {
+      const phoneFilter = [
+        intlPhone ? `visitor_phone.eq.${intlPhone}` : null,
+        localPhone ? `visitor_phone.eq.${localPhone}` : null,
+        intlPhone ? `phone_number.eq.${intlPhone}` : null,
+        localPhone ? `phone_number.eq.${localPhone}` : null,
+      ].filter(Boolean).join(',');
+      query = query.or(phoneFilter).order('created_at', { ascending: false });
     }
 
     const { data: order, error } = await query.maybeSingle();

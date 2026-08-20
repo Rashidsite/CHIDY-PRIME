@@ -27,7 +27,7 @@ import { formatCurrency } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { parseUniversalDownloadLinks, ExtractedDownloadLink } from '@/lib/link-parser';
 import { useAuth } from './AuthProvider';
-import { cleanPhoneNumber } from '@/lib/payment-gateway';
+import { cleanPhoneNumber, formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
 
 export type CheckoutStep = 'STEP_1_FORM' | 'STEP_2_PROCESSING' | 'STEP_3_SUCCESS';
 

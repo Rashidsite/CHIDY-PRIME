@@ -23,9 +23,23 @@ const PRESSOPAY_BASE = process.env.PRESSOPAY_BASE_URL || 'https://pressopay.com'
 const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_83c505af729a5f9059ef8ea1c6b125e6831adf232da6e387';
 
 /**
- * Universal Phone Normalizer (Tanzania formats: 07XXXXXXXX, 06XXXXXXXX, 255XXXXXXXXX)
+ * Sanitize & Normalize Tanzanian Phone Numbers to 255XXXXXXXXX (International Standard)
  */
-export function cleanPhoneNumber(rawPhone?: string | null): string {
+export function formatTzPhone(phone: string): string {
+  if (!phone) return '';
+  let clean = phone.replace(/[^0-9]/g, '');
+  if (clean.startsWith('0')) {
+    clean = '255' + clean.slice(1);
+  } else if (!clean.startsWith('255') && clean.length === 9) {
+    clean = '255' + clean;
+  }
+  return clean;
+}
+
+/**
+ * Normalizes phone to local format (07XXXXXXXX, 06XXXXXXXX) for display
+ */
+export function toLocalPhone(rawPhone?: string | null): string {
   if (!rawPhone) return '';
   const digits = String(rawPhone).replace(/\D/g, '');
   if (digits.startsWith('255') && digits.length === 12) {
@@ -41,14 +55,17 @@ export function cleanPhoneNumber(rawPhone?: string | null): string {
 }
 
 /**
+ * Universal Phone Normalizer (Tanzania standard: 255XXXXXXXXX)
+ */
+export function cleanPhoneNumber(rawPhone?: string | null): string {
+  return formatTzPhone(rawPhone || '');
+}
+
+/**
  * Normalizes phone for gateways expecting international 255XXXXXXXXX format
  */
 export function toInternationalPhone(rawPhone?: string | null): string {
-  const local = cleanPhoneNumber(rawPhone);
-  if (local.startsWith('0') && local.length === 10) {
-    return '255' + local.substring(1);
-  }
-  return local;
+  return formatTzPhone(rawPhone || '');
 }
 
 function generatePressoPaySignature(timestamp: string, nonce: string, method: string, path: string, body: string): string {
@@ -76,7 +93,7 @@ export async function triggerPressoPayCheckout(params: {
   const nonce = crypto.randomUUID();
   const idempotencyKey = crypto.randomUUID();
 
-  const formattedPhone = cleanPhoneNumber(params.buyerPhone);
+  const formattedPhone = formatTzPhone(params.buyerPhone);
 
   const payload = {
     merchantReference: params.merchantReference,
@@ -105,13 +122,15 @@ export async function triggerPressoPayCheckout(params: {
       'X-Presso-Timestamp': timestamp,
       'X-Presso-Nonce': nonce,
       'X-Presso-Signature': signature,
+      'Authorization': `Bearer ${PRESSOPAY_SECRET}`,
     },
     body,
-    signal: AbortSignal.timeout(6500),
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
+    console.error(`[PressoPay] Failed HTTP ${response.status}: ${errorText}`);
     throw new Error(`PressoPay Checkout HTTP ${response.status}: ${errorText.substring(0, 200)}`);
   }
 
@@ -131,19 +150,19 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
     };
   }
 
-  const cleanedPhone = cleanPhoneNumber(phone);
+  const formattedPhone = formatTzPhone(phone);
   const amountMinor = Math.round(amount);
 
   // 1. Try PressoPay Primary
   if (isPressoPayConfigured()) {
     try {
-      console.log(`[Payment Gateway] 🚀 Initiating PressoPay STK Push for ${cleanedPhone} (TZS ${amount})`);
+      console.log(`[Payment Gateway] 🚀 Initiating PressoPay STK Push for ${formattedPhone} (TZS ${amount})`);
       const pressoRes = await triggerPressoPayCheckout({
         merchantReference: orderNumber,
         amountMinor,
         buyerName,
         buyerEmail,
-        buyerPhone: cleanedPhone,
+        buyerPhone: formattedPhone,
         description: description || `Chidy Prime ${orderNumber}`,
       });
 
@@ -162,7 +181,7 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
   // 2. Try HarakaPay Fallback if configured
   if (HARAKAPAY_API_KEY) {
     try {
-      console.log(`[Payment Gateway] 🔄 Fallback to HarakaPay for ${cleanedPhone}`);
+      console.log(`[Payment Gateway] 🔄 Fallback to HarakaPay for ${formattedPhone}`);
       const harakaRes = await fetch('https://api.harakapay.com/v1/checkout', {
         method: 'POST',
         headers: {
@@ -171,11 +190,11 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
         },
         body: JSON.stringify({
           amount,
-          phone: cleanedPhone,
+          phone: formattedPhone,
           order_id: orderNumber,
           customer_name: buyerName || 'Customer',
         }),
-        signal: AbortSignal.timeout(6500),
+        signal: AbortSignal.timeout(8000),
       });
 
       if (harakaRes.ok) {
@@ -186,6 +205,9 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
           rawResponse: hData,
           status: hData.status || 'PENDING',
         };
+      } else {
+        const errText = await harakaRes.text().catch(() => 'Unknown error');
+        console.warn(`[HarakaPay] Error HTTP ${harakaRes.status}: ${errText.substring(0, 200)}`);
       }
     } catch (harakaErr: any) {
       console.warn('[Payment Gateway] ⚠️ HarakaPay attempt error:', harakaErr?.message);

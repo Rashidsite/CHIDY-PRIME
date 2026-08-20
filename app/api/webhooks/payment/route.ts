@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
 import { notifySuccessfulPayment } from '@/lib/telegram';
+import { formatTzPhone } from '@/lib/payment-gateway';
 
 function calculateExpirationDate(duration?: string): string | null {
   if (!duration || duration.toLowerCase().includes('lifetime') || duration.toLowerCase().includes('maisha')) {
@@ -30,13 +31,7 @@ function calculateExpirationDate(duration?: string): string | null {
 }
 
 function normalizePhone(rawPhone: string): string {
-  if (!rawPhone) return '';
-  const digits = String(rawPhone).replace(/\D/g, '');
-  if (digits.startsWith('0') && digits.length === 10) return '255' + digits.substring(1);
-  if ((digits.startsWith('7') || digits.startsWith('6')) && digits.length === 9) return '255' + digits;
-  if (digits.startsWith('255') && digits.length === 12) return digits;
-  if (digits.startsWith('0')) return '255' + digits.substring(1);
-  return digits;
+  return formatTzPhone(rawPhone);
 }
 
 export async function POST(request: NextRequest) {
