@@ -2,6 +2,26 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  const host = (
+    request.headers.get('x-forwarded-host') ||
+    request.headers.get('host') ||
+    request.nextUrl.host ||
+    ''
+  ).toLowerCase();
+
+  // ── 1. SINGLE MASTER ADMIN HQ REDIRECT ──
+  // If hitting /admin on mirror domains (e.g. chidy-prime.vercel.app), redirect cleanly to Master HQ
+  const isMasterDomain =
+    host.includes('chidyprimetz.com') ||
+    host.includes('localhost') ||
+    host.includes('127.0.0.1');
+
+  if (pathname.startsWith('/admin') && !isMasterDomain) {
+    const targetUrl = new URL(`https://chidyprimetz.com${pathname}${search}`);
+    return NextResponse.redirect(targetUrl, 307);
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

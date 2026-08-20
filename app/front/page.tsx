@@ -462,7 +462,7 @@ export default function FrontHubPage() {
 
     // ── SUPABASE REALTIME WEBSOCKET LISTENER FOR ZERO-PAGE-RELOAD SYNC ──
     const channel = supabase
-      .channel('storefront-products-live')
+      .channel('cross-domain-storefront-sync')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'posts' },
