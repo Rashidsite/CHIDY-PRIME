@@ -99,17 +99,26 @@ export default function FrontHubPage() {
     return () => window.removeEventListener('resize', updateScrollBoundaries);
   }, [updateScrollBoundaries]);
 
-  // Load registration and unlocked games from localStorage
+  // Load registration and unlocked games from localStorage & Supabase
   useEffect(() => {
-    const syncUserAuthAndVault = () => {
+    const syncUserAuthAndVault = async () => {
       try {
         const savedReg = localStorage.getItem('cpcg_registered');
         const userPhone = localStorage.getItem('cpcg_user_phone') || (savedReg ? JSON.parse(savedReg).phone : null);
-        
+        const localUnlocked = JSON.parse(localStorage.getItem('cpcg_unlocked_games') || '[]');
+
+        // Immediately load any locally cached unlocked games
+        if (Array.isArray(localUnlocked) && localUnlocked.length > 0) {
+          setUnlockedGameIds((prev) => {
+            const merged = new Set(prev);
+            localUnlocked.forEach((id: string) => merged.add(id));
+            return merged;
+          });
+        }
+
         if (!userPhone && !savedReg) {
           setIsRegistered(false);
           setRegisteredName('');
-          setUnlockedGameIds(new Set());
           return;
         }
 
@@ -123,21 +132,60 @@ export default function FrontHubPage() {
           const digits = userPhone.replace(/\D/g, '');
           const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
           const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
-          supabase
-            .from('payment_orders')
-            .select('post_id')
-            .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
-            .in('status', ['approved', 'completed', 'paid'])
-            .then(({ data }) => {
-              if (data && data.length > 0) {
-                setUnlockedGameIds((prev) => {
-                  const next = new Set(prev);
-                  data.forEach((d) => d.post_id && next.add(d.post_id));
-                  localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
-                  return next;
-                });
-              }
-            });
+
+          const newUnlocked = new Set<string>(localUnlocked);
+
+          // 1. Check user_purchases table
+          try {
+            const { data: purchases } = await supabase
+              .from('user_purchases')
+              .select('product_id, game_id')
+              .or(`customer_phone.eq.${clean},customer_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
+              .eq('status', 'active');
+
+            if (purchases && purchases.length > 0) {
+              purchases.forEach((p: any) => {
+                if (p.product_id) newUnlocked.add(p.product_id);
+                if (p.game_id) newUnlocked.add(p.game_id);
+              });
+            }
+          } catch {}
+
+          // 2. Check orders table
+          try {
+            const { data: ordersData } = await supabase
+              .from('orders')
+              .select('game_id, product_id')
+              .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
+              .in('status', ['approved', 'completed', 'paid']);
+
+            if (ordersData && ordersData.length > 0) {
+              ordersData.forEach((o: any) => {
+                if (o.game_id) newUnlocked.add(o.game_id);
+                if (o.product_id) newUnlocked.add(o.product_id);
+              });
+            }
+          } catch {}
+
+          // 3. Check legacy payment_orders
+          try {
+            const { data: legacyData } = await supabase
+              .from('payment_orders')
+              .select('post_id')
+              .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
+              .in('status', ['approved', 'completed', 'paid']);
+
+            if (legacyData && legacyData.length > 0) {
+              legacyData.forEach((d: any) => {
+                if (d.post_id) newUnlocked.add(d.post_id);
+              });
+            }
+          } catch {}
+
+          if (newUnlocked.size > 0) {
+            setUnlockedGameIds(newUnlocked);
+            localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(newUnlocked)));
+          }
         }
       } catch (e) {}
     };
@@ -150,12 +198,26 @@ export default function FrontHubPage() {
       setUnlockedGameIds(new Set());
     };
 
+    const handleOrderUnlockedEvent = (e: any) => {
+      const targetId = e?.detail?.game_id || e?.detail?.productId || e?.detail?.product_id;
+      if (targetId) {
+        setUnlockedGameIds((prev) => {
+          const next = new Set(prev);
+          next.add(targetId);
+          localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
+          return next;
+        });
+      }
+    };
+
     window.addEventListener('cpcg_auth_change', syncUserAuthAndVault);
     window.addEventListener('cpcg_logout_reset', handleLogout);
+    window.addEventListener('cpcg_order_unlocked', handleOrderUnlockedEvent);
 
     return () => {
       window.removeEventListener('cpcg_auth_change', syncUserAuthAndVault);
       window.removeEventListener('cpcg_logout_reset', handleLogout);
+      window.removeEventListener('cpcg_order_unlocked', handleOrderUnlockedEvent);
     };
   }, [supabase]);
 

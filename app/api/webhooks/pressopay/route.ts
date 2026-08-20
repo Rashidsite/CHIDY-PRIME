@@ -43,30 +43,33 @@ export async function POST(request: Request) {
       body.order_id ||
       body.orderRef ||
       body.data?.merchantReference ||
-      body.data?.reference;
+      body.data?.reference ||
+      body.data?.order_number;
 
     const transactionId =
       body.transaction_id ||
       body.transactionRef ||
       body.reference ||
       body.id ||
-      body.data?.id;
+      body.data?.id ||
+      body.data?.transaction_id;
 
-    const status = String(body.status || body.payment_status || body.data?.status || '').toUpperCase();
-    const phone = formatTzPhone(body.phone || body.buyerPhone || body.phone_number || body.data?.phone || '');
+    const status = String(body.status || body.payment_status || body.data?.status || body.data?.payment_status || '').toUpperCase();
+    const phone = formatTzPhone(body.phone || body.buyerPhone || body.phone_number || body.data?.phone || body.data?.buyerPhone || '');
 
     if (!reference && !transactionId) {
       return NextResponse.json({ success: false, message: 'Missing reference' }, { status: 400 });
     }
 
     const supabase = createAdminClient();
-    const isSuccessful = ['SUCCESS', 'COMPLETED', 'APPROVED', 'PAID', 'OK'].includes(status);
+    const isSuccessful = ['SUCCESS', 'COMPLETED', 'APPROVED', 'PAID', 'OK', 'COMPLETE'].includes(status);
 
     if (isSuccessful) {
+      const isUuid = reference && reference.includes('-') && reference.length === 36;
       const { data: targetOrder } = await supabase
         .from('orders')
         .select('*')
-        .or(`order_number.eq.${reference || ''},id.eq.${reference || '00000000-0000-0000-0000-000000000000'},transaction_ref.eq.${transactionId || reference || ''},gateway_reference.eq.${transactionId || reference || ''}`)
+        .or(`order_number.eq.${reference || ''},id.eq.${isUuid ? reference : '00000000-0000-0000-0000-000000000000'},transaction_ref.eq.${transactionId || reference || ''},gateway_reference.eq.${transactionId || reference || ''},gateway_reference.eq.${reference || ''}`)
         .maybeSingle();
 
       if (targetOrder) {
@@ -86,16 +89,19 @@ export async function POST(request: Request) {
           links = parseUniversalDownloadLinks(merged);
         }
 
+        // 1. Update orders table
         await supabase
           .from('orders')
           .update({
             status: 'completed',
             payment_status: 'completed',
+            paid_at: new Date().toISOString(),
             transaction_ref: transactionId || reference,
             updated_at: new Date().toISOString(),
           })
           .eq('id', targetOrder.id);
 
+        // 2. Fulfill user_purchases
         await supabase.from('user_purchases').upsert(
           {
             order_id: String(targetOrder.id),
@@ -117,28 +123,44 @@ export async function POST(request: Request) {
           { onConflict: 'customer_phone,product_id' }
         );
 
+        // 3. Multi-channel Realtime Broadcast
+        const broadcastPayload = {
+          phone: effectivePhone,
+          productId: productId,
+          orderId: String(targetOrder.id),
+          orderNumber: targetOrder.order_number || String(targetOrder.id),
+          orderRef: targetOrder.order_number || String(targetOrder.id),
+          productTitle: productTitle,
+          status: 'UNLOCKED',
+          accessDuration: durationType,
+          accessExpiresAt: expiresAt,
+          downloadLinks: links,
+          downloadToken: targetOrder.download_token,
+          activationKey: targetOrder.activation_key,
+          unlockedAt: new Date().toISOString(),
+        };
+
         try {
-          const channel = supabase.channel('storefront-sync');
-          await channel.subscribe();
-          await channel.send({
-            type: 'broadcast',
-            event: 'PRODUCT_UNLOCKED',
-            payload: {
-              phone: effectivePhone,
-              productId: productId,
-              orderRef: targetOrder.order_number || String(targetOrder.id),
-              productTitle: productTitle,
-              status: 'UNLOCKED',
-              accessDuration: durationType,
-              accessExpiresAt: expiresAt,
-              downloadLinks: links,
-              unlockedAt: new Date().toISOString(),
-            },
-          });
-          supabase.removeChannel(channel);
-        } catch (rErr) {
-          console.warn('[PressoPay Webhook] Realtime broadcast warning:', rErr);
-        }
+          const ch1 = supabase.channel('cross-domain-storefront-sync');
+          await ch1.subscribe();
+          await ch1.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
+          await ch1.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
+          supabase.removeChannel(ch1);
+        } catch (e) {}
+
+        try {
+          const ch2 = supabase.channel('storefront-sync');
+          await ch2.subscribe();
+          await ch2.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
+          supabase.removeChannel(ch2);
+        } catch (e) {}
+
+        try {
+          const ch3 = supabase.channel(`order_broadcast_modal_${targetOrder.id}`);
+          await ch3.subscribe();
+          await ch3.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
+          supabase.removeChannel(ch3);
+        } catch (e) {}
 
         notifySuccessfulPayment({
           id: targetOrder.id,

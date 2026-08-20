@@ -325,21 +325,50 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     clearAllTimers();
     setActiveOrder(order);
 
+    if (order?.download_links && Array.isArray(order.download_links) && order.download_links.length > 0) {
+      setDirectLinks(
+        order.download_links.map((l: any) => ({
+          label: l.name || l.label || 'Download File',
+          url: l.url || '',
+        }))
+      );
+    }
+
     if (onSuccess) {
       onSuccess(order);
     }
 
     try {
-      if (order?.game_id || game.id) {
-        const targetId = order?.game_id || game.id;
-        const currentUnlocked = JSON.parse(localStorage.getItem('cpcg_unlocked_games') || '[]');
+      const targetId = order?.game_id || order?.product_id || game.id;
+      if (targetId) {
+        const currentUnlocked: string[] = JSON.parse(localStorage.getItem('cpcg_unlocked_games') || '[]');
         if (!currentUnlocked.includes(targetId)) {
           currentUnlocked.push(targetId);
           localStorage.setItem('cpcg_unlocked_games', JSON.stringify(currentUnlocked));
         }
 
+        const cleanedPhone = cleanPhoneNumber(phone) || localStorage.getItem('cpcg_user_phone') || '';
+        if (cleanedPhone) {
+          localStorage.setItem(
+            `cpcg_unlocked_${cleanedPhone}_${targetId}`,
+            JSON.stringify({
+              gameId: targetId,
+              orderId: order?.id || order?.order_number,
+              orderNumber: order?.order_number || order?.id,
+              unlockedAt: new Date().toISOString(),
+              status: 'completed',
+              duration: game.access_duration || game.license_duration || order?.access_duration,
+            })
+          );
+        }
+
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('cpcg_order_unlocked', { detail: order || { game_id: targetId } }));
+          window.dispatchEvent(
+            new CustomEvent('cpcg_order_unlocked', {
+              detail: order || { game_id: targetId, productId: targetId },
+            })
+          );
+          window.dispatchEvent(new Event('cpcg_auth_change'));
         }
       }
     } catch (e) {}
@@ -357,6 +386,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
     const cleanOrderId = orderId.trim();
     const cleanOrderNumber = (orderNumber || cleanOrderId).trim();
+    const cleanedPhone = cleanPhoneNumber(phone) || localStorage.getItem('cpcg_user_phone') || '';
 
     // Clean up any previously active channels before subscribing
     if (activeChannelRef.current) {
@@ -369,7 +399,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     }
 
     let attempts = 0;
-    const maxAttempts = 60;
+    const maxAttempts = 30; // 30 attempts * 2.5s = 75 seconds
 
     // 2. Chain .on('postgres_changes', ...) BEFORE .subscribe()
     const channel = supabase
@@ -409,6 +439,25 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
               status: 'completed',
               activation_key: data.activationKey,
               download_token: data.downloadToken,
+              download_links: data.downloadLinks,
+            });
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'PRODUCT_UNLOCKED' },
+        (payload: any) => {
+          const data = payload?.payload || payload;
+          if (data && (data.orderId === cleanOrderId || data.orderRef === cleanOrderNumber || data.productId === game.id)) {
+            handlePaymentConfirmed({
+              id: cleanOrderId,
+              order_number: cleanOrderNumber,
+              game_id: game.id,
+              status: 'completed',
+              activation_key: data.activationKey,
+              download_token: data.downloadToken,
+              download_links: data.downloadLinks,
             });
           }
         }
@@ -434,6 +483,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           status: 'completed',
           activation_key: detail.activationKey || detail.activation_key,
           download_token: detail.downloadToken || detail.download_token,
+          download_links: detail.downloadLinks || detail.download_links,
         });
       }
     };
@@ -443,14 +493,42 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       activeUnlockedListenerRef.current = handleWindowUnlocked;
     }
 
-    // 5. Active Polling interval
+    // 5. Active 2.5s Polling interval with PressoPay live check
     pollTimerRef.current = setInterval(async () => {
       attempts++;
       try {
-        const res = await fetch(`/api/orders/status?ref=${encodeURIComponent(cleanOrderId)}`);
+        const res = await fetch(
+          `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
+        );
         const data = await res.json();
         if (data.success && data.is_completed) {
-          handlePaymentConfirmed(data.order || { id: cleanOrderId, game_id: game.id, status: 'completed' });
+          handlePaymentConfirmed(
+            data.order || {
+              id: cleanOrderId,
+              game_id: game.id,
+              status: 'completed',
+              download_links: data.download_links,
+              activation_key: data.activation_key,
+            }
+          );
+          return;
+        }
+
+        // Secondary fallback check
+        const res2 = await fetch(
+          `/api/orders/status?ref=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
+        );
+        const data2 = await res2.json();
+        if (data2.success && data2.is_completed) {
+          handlePaymentConfirmed(
+            data2.order || {
+              id: cleanOrderId,
+              game_id: game.id,
+              status: 'completed',
+              download_links: data2.download_links,
+              activation_key: data2.activation_key,
+            }
+          );
           return;
         }
       } catch (err) {
@@ -460,7 +538,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       if (attempts >= maxAttempts) {
         clearAllTimers();
       }
-    }, 2000);
+    }, 2500);
   };
 
   const handleManualCheck = async () => {
@@ -470,16 +548,24 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       const target = activeOrder?.id || activeOrder?.order_number || localStorage.getItem('cpcg_active_order_id') || '';
       const cleaned = cleanPhoneNumber(phone) || localStorage.getItem('cpcg_user_phone') || '';
 
-      let res = await fetch(`/api/orders/status?ref=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
+      let res = await fetch(`/api/checkout/status?order_id=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
       let data = await res.json();
 
       if (!data.success || !data.is_completed) {
-        res = await fetch(`/api/checkout/status?order_id=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
+        res = await fetch(`/api/orders/status?ref=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
         data = await res.json();
       }
 
       if (data.success && data.is_completed) {
-        handlePaymentConfirmed(data.order || { id: target, game_id: game.id, status: 'completed' });
+        handlePaymentConfirmed(
+          data.order || {
+            id: target,
+            game_id: game.id,
+            status: 'completed',
+            download_links: data.download_links,
+            activation_key: data.activation_key,
+          }
+        );
       } else {
         setError('Malipo bado hayajathibitishwa na mtandao wa simu. Tafadhali subiri kidogo kisha bonyeza tena Hakiki.');
       }

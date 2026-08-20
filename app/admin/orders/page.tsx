@@ -763,7 +763,7 @@ export default function AdminOrdersPage() {
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>{updating === o.id + 'completed' ? 'Inaidhinisha...' : 'Approve'}</span>
+                    <span>{updating === o.id + 'completed' ? 'Inaidhinisha...' : '⚡ Approve & Unlock'}</span>
                   </button>
 
                   <button
@@ -853,7 +853,7 @@ export default function AdminOrdersPage() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <button onClick={() => handleUpdateStatus(o.id, 'completed')} disabled={isApproved || updating === o.id + 'completed'}
                             className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase border transition-all ${isApproved ? 'opacity-30 cursor-not-allowed bg-emerald-500/5 text-emerald-700 border-emerald-500/10' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'}`}>
-                            <CheckCircle2 className="w-3 h-3" /> {updating === o.id + 'completed' ? '...' : 'Approve'}
+                            <CheckCircle2 className="w-3 h-3" /> {updating === o.id + 'completed' ? '...' : '⚡ Approve & Unlock'}
                           </button>
                           <button onClick={() => handleUpdateStatus(o.id, 'rejected')} disabled={isRejected || updating === o.id + 'rejected'}
                             className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase border transition-all ${isRejected ? 'opacity-30 cursor-not-allowed bg-red-500/5 text-red-700 border-red-500/10' : 'bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/30'}`}>
