@@ -85,13 +85,13 @@ export default function MobileBottomNav() {
           };
 
           const content = (
-            <div className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-250 cursor-pointer touch-manipulation group">
+            <div className="relative flex flex-col items-center justify-center py-1.5 px-3 min-w-[48px] min-h-[48px] rounded-xl transition-all duration-250 cursor-pointer touch-manipulation group">
               {/* Icon Container */}
               <div
                 className={`relative p-1 rounded-lg transition-transform duration-250 ${
                   isActive
                     ? 'text-blue-400 bg-blue-600/20 scale-110'
-                    : 'text-slate-400 group-hover:text-slate-200'
+                    : 'text-slate-200 group-hover:text-white'
                 }`}
               >
                 <IconComponent className="w-5 h-5" />
@@ -112,7 +112,7 @@ export default function MobileBottomNav() {
               {/* Label */}
               <span
                 className={`text-[10px] font-extrabold uppercase tracking-tight mt-0.5 truncate transition-colors ${
-                  isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                  isActive ? 'text-blue-400' : 'text-slate-200 group-hover:text-white'
                 }`}
               >
                 {item.label}
@@ -127,7 +127,7 @@ export default function MobileBottomNav() {
                 href={targetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex justify-center focus:outline-none"
+                className="flex-1 flex justify-center focus:outline-none min-h-[48px]"
               >
                 {content}
               </a>
@@ -139,7 +139,7 @@ export default function MobileBottomNav() {
               key={item.id}
               href={targetUrl}
               onClick={handleClick}
-              className="flex-1 flex justify-center focus:outline-none"
+              className="flex-1 flex justify-center focus:outline-none min-h-[48px]"
             >
               {content}
             </Link>

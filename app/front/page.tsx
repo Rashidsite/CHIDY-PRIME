@@ -762,7 +762,7 @@ export default function FrontHubPage() {
                   <button
                     onClick={() => scrollCarousel('left')}
                     disabled={!canScrollLeft}
-                    className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+                    className={`min-w-[44px] min-h-[44px] rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
                       canScrollLeft
                         ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer'
                         : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'
@@ -774,7 +774,7 @@ export default function FrontHubPage() {
                   <button
                     onClick={() => scrollCarousel('right')}
                     disabled={!canScrollRight}
-                    className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+                    className={`min-w-[44px] min-h-[44px] rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
                       canScrollRight
                         ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer'
                         : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'

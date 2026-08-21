@@ -98,7 +98,7 @@ export default function CategoryGamesDrawer({
 
               <button
                 onClick={onClose}
-                className="w-9 h-9 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 flex items-center justify-center hover:text-white hover:bg-slate-800 transition-all cursor-pointer touch-manipulation"
+                className="min-w-[44px] min-h-[44px] rounded-xl border border-slate-800 bg-slate-900 text-slate-200 flex items-center justify-center hover:text-white hover:bg-slate-800 transition-all cursor-pointer touch-manipulation"
                 aria-label="Close drawer"
               >
                 <X className="w-5 h-5" />
@@ -109,14 +109,14 @@ export default function CategoryGamesDrawer({
             <div className="px-5 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-blue-400" />
-                <span className="text-[11px] font-black uppercase text-slate-300 tracking-wider">
+                <span className="text-[11px] font-black uppercase text-slate-200 tracking-wider">
                   Panga Kwa:
                 </span>
               </div>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-blue-500 cursor-pointer touch-manipulation"
+                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 min-h-[44px] text-xs text-white font-bold focus:outline-none focus:border-blue-500 cursor-pointer touch-manipulation"
               >
                 <option value="newest">Zilizowekwa Hivi Karibuni</option>
                 <option value="price-asc">Bei: Chini Kwenda Juu</option>
@@ -149,8 +149,7 @@ export default function CategoryGamesDrawer({
                             src={game.cover_image}
                             alt={game.title}
                             fill
-                            quality={95}
-                            unoptimized={Boolean(game.cover_image && (game.cover_image.includes('ibb.co') || game.cover_image.includes('images.unsplash.com')))}
+                            quality={75}
                             placeholder="blur"
                             blurDataURL={BLUR_DATA_URL}
                             sizes="(max-width: 640px) 100vw, 150px"
@@ -182,7 +181,7 @@ export default function CategoryGamesDrawer({
                               {game.title}
                             </h3>
                             {game.description && (
-                              <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                              <p className="text-[11px] text-slate-200 line-clamp-2 leading-relaxed font-normal">
                                 {game.description}
                               </p>
                             )}
@@ -191,7 +190,7 @@ export default function CategoryGamesDrawer({
                           {/* Price and CTAs */}
                           <div className="flex items-center justify-between border-t border-slate-800/80 pt-3 mt-3 sm:mt-0">
                             <div>
-                              <span className="text-[8px] font-bold text-slate-500 uppercase block tracking-wider">
+                              <span className="text-[8px] font-bold text-slate-400 uppercase block tracking-wider">
                                 BEI YA GAME
                               </span>
                               <span className="text-sm font-extrabold text-white">
@@ -207,7 +206,7 @@ export default function CategoryGamesDrawer({
                               <motion.button
                                 whileTap={{ scale: 0.94 }}
                                 onClick={() => onBuyNow(game)}
-                                className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider text-white ${
+                                className={`px-5 py-2.5 min-h-[44px] flex items-center justify-center rounded-xl text-[11px] font-black uppercase tracking-wider text-white ${
                                   isUnlocked ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'
                                 } transition-all cursor-pointer shadow-md touch-manipulation`}
                               >

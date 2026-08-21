@@ -108,7 +108,7 @@ export default function RootLayout({
                     </span>
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                <p className="text-xs text-slate-200 leading-relaxed font-medium">
                   Mtandao mkuu wa digital games, simulator bus mods Tanzania, na PC games zenye huduma ya STK Push papo hapo.
                 </p>
                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold">
@@ -122,7 +122,7 @@ export default function RootLayout({
                 <h4 className="text-xs font-black text-white uppercase tracking-widest border-b border-emerald-500/30 pb-2">
                   Vipengele Vya Haraka
                 </h4>
-                <ul className="space-y-2 text-xs font-bold text-slate-300">
+                <ul className="space-y-2 text-xs font-bold text-slate-200">
                   <li><Link href="/front" className="hover:text-emerald-400 transition-colors">🎮 Duka la Games & Mods</Link></li>
                   <li><Link href="/orders" className="hover:text-emerald-400 transition-colors">📦 My Orders & Digital Keys</Link></li>
                   <li><Link href="/profile" className="hover:text-emerald-400 transition-colors">👤 Akaunti Yangu (Profile)</Link></li>
@@ -135,7 +135,7 @@ export default function RootLayout({
                 <h4 className="text-xs font-black text-white uppercase tracking-widest border-b border-emerald-500/30 pb-2">
                   Makundi Mashuhuri
                 </h4>
-                <ul className="space-y-2 text-xs font-bold text-slate-300">
+                <ul className="space-y-2 text-xs font-bold text-slate-200">
                   <li><span className="text-emerald-400">●</span> Maleo Bus Mods TZ</li>
                   <li><span className="text-emerald-400">●</span> Maleo Map Mods TZ</li>
                   <li><span className="text-emerald-400">●</span> Tanzania Games</li>
@@ -148,45 +148,45 @@ export default function RootLayout({
                 <h4 className="text-xs font-black text-white uppercase tracking-widest border-b border-blue-500/30 pb-2">
                   Mawasiliano & Socials
                 </h4>
-                <div className="space-y-2 text-xs font-bold text-slate-300">
-                  <a href="https://wa.me/255655361060" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-emerald-400 transition-colors">
+                <div className="space-y-2 text-xs font-bold text-slate-200">
+                  <a href="https://wa.me/255655361060" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-emerald-400 transition-colors min-h-[32px]">
                     <MessageCircle className="w-4 h-4 text-emerald-400" />
                     <span>WhatsApp: +255 655 361 060</span>
                   </a>
-                  <a href="https://youtube.com/@chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-red-400 transition-colors">
+                  <a href="https://youtube.com/@chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-red-400 transition-colors min-h-[32px]">
                     <Youtube className="w-4 h-4 text-red-500" />
                     <span>YouTube: @chidyprime</span>
                   </a>
-                  <a href="https://www.instagram.com/chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-pink-400 transition-colors">
+                  <a href="https://www.instagram.com/chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-pink-400 transition-colors min-h-[32px]">
                     <Instagram className="w-4 h-4 text-pink-500" />
                     <span>Instagram: @chidyprime</span>
                   </a>
-                  <a href="https://www.facebook.com/chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-400 transition-colors">
+                  <a href="https://www.facebook.com/chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-400 transition-colors min-h-[32px]">
                     <Facebook className="w-4 h-4 text-blue-500" />
                     <span>Facebook: Chidy Prime</span>
                   </a>
-                  <a href="https://www.tiktok.com/@chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
+                  <a href="https://www.tiktok.com/@chidyprime" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors min-h-[32px]">
                     <span className="w-4 h-4 flex items-center justify-center font-black text-[10px] bg-slate-800 text-white rounded-full border border-slate-600">🎵</span>
                     <span>TikTok: @chidyprime</span>
                   </a>
                 </div>
 
-                {/* Social Media Quick Icons Row */}
+                {/* Social Media Quick Icons Row with 44px min touch target */}
                 <div className="pt-2 flex items-center gap-2 flex-wrap">
-                  <a href="https://www.instagram.com/chidyprime" target="_blank" rel="noopener noreferrer" title="Instagram @chidyprime" className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-pink-500 hover:scale-110 hover:border-pink-500 transition-all touch-manipulation">
-                    <Instagram className="w-4 h-4" />
+                  <a href="https://www.instagram.com/chidyprime" target="_blank" rel="noopener noreferrer" title="Instagram @chidyprime" aria-label="Instagram" className="min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-pink-500 hover:scale-110 hover:border-pink-500 transition-all touch-manipulation">
+                    <Instagram className="w-5 h-5" />
                   </a>
-                  <a href="https://www.facebook.com/chidyprime" target="_blank" rel="noopener noreferrer" title="Facebook Chidy Prime" className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-blue-500 hover:scale-110 hover:border-blue-500 transition-all touch-manipulation">
-                    <Facebook className="w-4 h-4" />
+                  <a href="https://www.facebook.com/chidyprime" target="_blank" rel="noopener noreferrer" title="Facebook Chidy Prime" aria-label="Facebook" className="min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-blue-500 hover:scale-110 hover:border-blue-500 transition-all touch-manipulation">
+                    <Facebook className="w-5 h-5" />
                   </a>
-                  <a href="https://www.tiktok.com/@chidyprime" target="_blank" rel="noopener noreferrer" title="TikTok @chidyprime" className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-white hover:scale-110 hover:border-white transition-all font-bold text-xs touch-manipulation">
+                  <a href="https://www.tiktok.com/@chidyprime" target="_blank" rel="noopener noreferrer" title="TikTok @chidyprime" aria-label="TikTok" className="min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-white hover:scale-110 hover:border-white transition-all font-bold text-sm touch-manipulation">
                     🎵
                   </a>
-                  <a href="https://youtube.com/@chidyprime" target="_blank" rel="noopener noreferrer" title="YouTube @chidyprime" className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-red-500 hover:scale-110 hover:border-red-500 transition-all touch-manipulation">
-                    <Youtube className="w-4 h-4" />
+                  <a href="https://youtube.com/@chidyprime" target="_blank" rel="noopener noreferrer" title="YouTube @chidyprime" aria-label="YouTube" className="min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-red-500 hover:scale-110 hover:border-red-500 transition-all touch-manipulation">
+                    <Youtube className="w-5 h-5" />
                   </a>
-                  <a href="https://wa.me/255655361060" target="_blank" rel="noopener noreferrer" title="WhatsApp Direct" className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-emerald-400 hover:scale-110 hover:border-emerald-400 transition-all touch-manipulation">
-                    <MessageCircle className="w-4 h-4" />
+                  <a href="https://wa.me/255655361060" target="_blank" rel="noopener noreferrer" title="WhatsApp Direct" aria-label="WhatsApp" className="min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-emerald-400 hover:scale-110 hover:border-emerald-400 transition-all touch-manipulation">
+                    <MessageCircle className="w-5 h-5" />
                   </a>
                 </div>
               </div>

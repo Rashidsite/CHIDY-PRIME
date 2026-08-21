@@ -162,8 +162,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
           src={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
           alt={game.title}
           fill
-          quality={95}
-          unoptimized={Boolean(game.cover_image && (game.cover_image.includes('ibb.co') || game.cover_image.includes('images.unsplash.com')))}
+          quality={75}
           placeholder="blur"
           blurDataURL={BLUR_DATA_URL}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -199,7 +198,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
             </h3>
           </Link>
           {game.description && (
-            <p className="text-[10px] sm:text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed font-normal">
+            <p className="text-[10px] sm:text-[11px] text-slate-200 line-clamp-2 mt-1 leading-relaxed font-normal">
               {game.description}
             </p>
           )}
@@ -224,7 +223,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
           <motion.button
             whileTap={{ scale: 0.94 }}
             onClick={handleCardClick}
-            className={`px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-[11px] shrink-0 transition-all ${
+            className={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[44px] flex items-center justify-center text-[10px] sm:text-[11px] shrink-0 transition-all ${
               showUnlocked ? getButtonClass('download') : getButtonClass('buy')
             } cursor-pointer touch-manipulation whitespace-nowrap`}
           >

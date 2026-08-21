@@ -218,15 +218,15 @@ export default function GameCatalog({
             <button
               key={pill.id}
               onClick={() => setSelectedPill(pill.id)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all duration-200 cursor-pointer touch-manipulation ${
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all duration-200 cursor-pointer touch-manipulation ${
                 isSelected
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400 scale-[1.02]'
-                  : 'bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-slate-700 hover:text-white'
+                  : 'bg-slate-900/90 text-slate-200 border border-slate-800 hover:border-slate-700 hover:text-white'
               }`}
             >
               <span>{pill.label}</span>
               <span
-                className={`px-1.5 py-0.2 rounded-full text-[9px] font-extrabold ${
+                className={`px-1.5 py-0.5 rounded-full text-[9px] font-extrabold ${
                   isSelected ? 'bg-white/20 text-white' : 'bg-slate-950 text-blue-400 border border-slate-800'
                 }`}
               >
@@ -240,9 +240,9 @@ export default function GameCatalog({
       {/* Grid of games */}
       {filteredGames.length === 0 ? (
         <div className="text-center py-16 px-4 bg-slate-900/50 rounded-3xl border border-slate-800">
-          <Search className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+          <Search className="w-12 h-12 text-slate-500 mx-auto mb-3" />
           <h3 className="text-base font-black text-white uppercase">Hakuna Michezo Iliyopatikana</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-slate-200 mt-1 max-w-sm mx-auto font-normal">
             Hakuna matokeo kwa kategoria au utafutaji uliochagua. Jaribu kuchagua "ZOTE" au kategoria nyingine.
           </p>
         </div>

@@ -231,8 +231,7 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
                   alt={slide.title}
                   fill
                   priority={current === 0}
-                  quality={95}
-                  unoptimized={Boolean(mediaInfo.image && (mediaInfo.image.includes('ibb.co') || mediaInfo.image.includes('images.unsplash.com')))}
+                  quality={80}
                   placeholder="blur"
                   blurDataURL={BLUR_DATA_URL}
                   sizes="(max-width: 768px) 100vw, 60vw"
@@ -261,8 +260,7 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
               alt={slide.title}
               fill
               priority={current === 0}
-              quality={95}
-              unoptimized={Boolean(mediaInfo.image && (mediaInfo.image.includes('ibb.co') || mediaInfo.image.includes('images.unsplash.com')))}
+              quality={80}
               placeholder="blur"
               blurDataURL={BLUR_DATA_URL}
               sizes="100vw"
@@ -277,8 +275,8 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
         {/* Overlay Content */}
         <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 z-20 flex flex-col justify-end gap-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-600/30 border border-blue-400/40 text-blue-300 text-[9px] font-black uppercase tracking-wider">
-              <Sparkles className="w-2.5 h-2.5 text-blue-300" />
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600/30 border border-blue-400/50 text-blue-300 text-[10px] font-black uppercase tracking-wider">
+              <Sparkles className="w-3 h-3 text-blue-300" />
               <span>{slide.tag || 'GAME MPYA'}</span>
             </span>
           </div>
@@ -288,7 +286,7 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
           </h1>
 
           {slide.subtitle && (
-            <p className="text-[10px] text-slate-300 font-medium truncate leading-tight">
+            <p className="text-[10px] sm:text-xs text-slate-200 font-semibold truncate leading-tight">
               {slide.subtitle}
             </p>
           )}
@@ -296,23 +294,25 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
           <div className="pt-1.5 flex items-center justify-between">
             <button
               onClick={(e) => handleCtaClick(e, slide.cta_link)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-400 shadow-md transition-colors cursor-pointer touch-manipulation"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl font-black text-[11px] uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-400 shadow-md transition-colors cursor-pointer touch-manipulation"
             >
-              <Gamepad2 className="w-3.5 h-3.5 text-white" />
+              <Gamepad2 className="w-4 h-4 text-white" />
               <span>{slide.cta_text || 'GAME MPYA ➔'}</span>
             </button>
 
             {/* Slide Dots on Mobile */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 p-1">
               {(activeSlides ?? []).map((_, idx) => (
                 <button
                   key={idx}
                   onClick={(e) => goToSlide(idx, e)}
-                  className={`h-1.5 rounded-full transition-all ${
-                    idx === current ? 'w-4 bg-blue-500' : 'w-1.5 bg-slate-600'
-                  }`}
+                  className={`h-2 rounded-full transition-all min-w-[20px] min-h-[44px] flex items-center justify-center`}
                   aria-label={`Slide ${idx + 1}`}
-                />
+                >
+                  <span className={`block h-1.5 rounded-full transition-all ${
+                    idx === current ? 'w-4 bg-blue-400' : 'w-1.5 bg-slate-500'
+                  }`} />
+                </button>
               ))}
             </div>
           </div>
@@ -323,14 +323,14 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
       <div className="hidden md:flex absolute bottom-4 right-4 z-20 items-center gap-2">
         <button
           onClick={prevSlide}
-          className="w-9 h-9 rounded-full bg-slate-950/80 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
+          className="min-w-[44px] min-h-[44px] rounded-full bg-slate-950/90 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
           aria-label="Previous slide"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <button
           onClick={nextSlide}
-          className="w-9 h-9 rounded-full bg-slate-950/80 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
+          className="min-w-[44px] min-h-[44px] rounded-full bg-slate-950/90 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 transition-colors shadow-md cursor-pointer touch-manipulation"
           aria-label="Next slide"
         >
           <ChevronRight className="w-5 h-5" />

@@ -135,7 +135,7 @@ export default function CategoryGrid({
                       {catName}
                     </h3>
                     {cat?.description && (
-                      <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium line-clamp-1 hidden sm:block">
+                      <p className="text-[9px] sm:text-[10px] text-slate-200 font-medium line-clamp-1 hidden sm:block">
                         {cat.description}
                       </p>
                     )}
@@ -157,6 +157,7 @@ export default function CategoryGrid({
                   src={cat?.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
                   alt={catName}
                   fill
+                  quality={75}
                   sizes={isFullSpanMobile ? '(max-width: 768px) 100vw, (max-width: 1024px) 33vw, 25vw' : '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'}
                   placeholder="blur"
                   blurDataURL={BLUR_DATA_URL}

@@ -62,11 +62,7 @@ function FeedCard({
           src={game.cover_image || "https://images.unsplash.com/photo-1550745165-9bc0b252726f"}
           alt={game.title}
           fill
-          quality={90}
-          unoptimized={Boolean(
-            game.cover_image &&
-              (game.cover_image.includes("ibb.co") || game.cover_image.includes("unsplash.com"))
-          )}
+          quality={75}
           placeholder="blur"
           blurDataURL={BLUR_DATA_URL}
           sizes="(max-width: 640px) 50vw, 33vw"
@@ -103,7 +99,7 @@ function FeedCard({
 
         {/* Description */}
         {game.description && (
-          <p className="text-[9px] sm:text-[10px] text-slate-400 line-clamp-2 leading-relaxed font-normal">
+          <p className="text-[9px] sm:text-[10px] text-slate-200 line-clamp-2 leading-relaxed font-normal">
             {game.description}
           </p>
         )}
@@ -126,10 +122,10 @@ function FeedCard({
             )}
           </div>
 
-          {/* Row 2: Full-width action button */}
+          {/* Row 2: Full-width action button with 44px min touch target */}
           <button
             onClick={handleClick}
-            className={`w-full h-9 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-md cursor-pointer touch-manipulation ${
+            className={`w-full min-h-[44px] py-2 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-md cursor-pointer touch-manipulation ${
               showUnlocked
                 ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30"
                 : "bg-blue-600 hover:bg-blue-500 shadow-blue-600/30"

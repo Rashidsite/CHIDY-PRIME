@@ -236,7 +236,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                     e.stopPropagation();
                     setMobileOpen(false);
                   }}
-                  className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center hover:text-white hover:bg-slate-800 transition-all cursor-pointer pointer-events-auto"
+                  className="min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-center hover:text-white hover:bg-slate-800 transition-all cursor-pointer pointer-events-auto touch-manipulation"
                   aria-label="Close navigation drawer"
                 >
                   <X className="w-5 h-5" />
@@ -258,46 +258,35 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                       if (onSearchChange) onSearchChange(e.target.value);
                     }}
                     onKeyDown={(e) => handleKeyDown(e, matchingGames)}
-                    className="w-full bg-[#1E293B] border border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 font-medium pointer-events-auto"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 min-h-[44px] text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm"
                   />
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <Search className="w-3.5 h-3.5 text-slate-300 absolute left-3 top-3.5" />
                 </form>
                 {showDropdown && renderSearchDropdown(matchingGames, activeIndex)}
               </div>
 
-              {/* 3. Dynamic User Card Section */}
-              <div className="space-y-3 pt-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block px-1">
-                  AKAUNTI & UFIKIAJI
-                </span>
-
-                {(user || profile) ? (
-                  <div className="rounded-2xl p-4 space-y-4 border border-slate-800 bg-slate-900">
-                    {/* User Profile Info */}
+              {/* 3. Account / Profile Menu */}
+              <div className="space-y-3">
+                {user || profile ? (
+                  <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-blue-600/15 border border-blue-600/30 text-blue-400 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-black">
                         <User className="w-5 h-5" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-black text-white truncate uppercase">{displayName}</h4>
-                        {displayPhone && (
-                          <p className="text-xs text-blue-400 font-bold flex items-center gap-1 mt-0.5">
-                            <Phone className="w-3 h-3" />
-                            {displayPhone}
-                          </p>
-                        )}
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-black text-white truncate">{displayName}</h4>
+                        <p className="text-[10px] text-slate-300 font-mono">{displayPhone}</p>
                       </div>
                     </div>
 
-                    {/* Navigation Actions */}
-                    <div className="space-y-2 pt-3 border-t border-slate-800 text-xs font-extrabold uppercase">
+                    <div className="space-y-1.5 pt-2 text-xs font-bold">
                       <Link
                         href="/profile"
                         onClick={(e) => {
                           e.stopPropagation();
                           setMobileOpen(false);
                         }}
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white hover:border-blue-600/50 hover:text-blue-400 transition-colors pointer-events-auto"
+                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white hover:border-blue-600/50 hover:text-blue-400 transition-colors pointer-events-auto min-h-[44px]"
                       >
                         <span className="flex items-center gap-2.5">👤 Profile Yangu</span>
                         <ArrowRight className="w-4 h-4 text-blue-400" />
@@ -309,7 +298,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                           e.stopPropagation();
                           setMobileOpen(false);
                         }}
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white hover:border-blue-600/50 hover:text-blue-400 transition-colors pointer-events-auto"
+                        className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white hover:border-blue-600/50 hover:text-blue-400 transition-colors pointer-events-auto min-h-[44px]"
                       >
                         <span className="flex items-center gap-2.5">🎮 Games Zangu (Vault)</span>
                         <ArrowRight className="w-4 h-4 text-blue-400" />
@@ -321,7 +310,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                           setMobileOpen(false);
                           setShowLogoutConfirm(true);
                         }}
-                        className="flex items-center justify-between w-full p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer pointer-events-auto"
+                        className="flex items-center justify-between w-full p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer pointer-events-auto min-h-[44px]"
                       >
                         <span className="flex items-center gap-2.5">🚪 Toka (Logout)</span>
                         <LogOut className="w-4 h-4 text-red-400" />
@@ -336,7 +325,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                       e.stopPropagation();
                       setMobileOpen(false);
                     }}
-                    className="flex items-center justify-between p-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-wider transition-all shadow-md pointer-events-auto"
+                    className="flex items-center justify-between p-4 min-h-[48px] rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-wider transition-all shadow-md pointer-events-auto"
                   >
                     <div className="flex items-center gap-3">
                       <LogIn className="w-5 h-5" />
@@ -358,7 +347,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
             </div>
 
             {/* Drawer Footer */}
-            <div className="p-5 border-t border-slate-800 text-center text-[10px] text-slate-500 font-bold">
+            <div className="p-5 border-t border-slate-800 text-center text-[10px] text-slate-400 font-bold">
               🔒 Verified Mobile Gaming Store • Dar es Salaam 🇹🇿
             </div>
           </motion.div>
@@ -404,9 +393,9 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                 if (onSearchChange) onSearchChange(e.target.value);
               }}
               onKeyDown={(e) => handleKeyDown(e, matchingGames)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-sm"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm"
             />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-3.5 h-3.5 text-slate-300 absolute left-3 top-3" />
           </form>
           {showDropdown && renderSearchDropdown(matchingGames, activeIndex)}
         </div>
@@ -458,7 +447,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
               e.stopPropagation();
               setMobileOpen(true);
             }}
-            className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 hover:text-white transition-all cursor-pointer pointer-events-auto touch-manipulation"
+            className="p-2.5 min-w-[44px] min-h-[44px] rounded-xl bg-slate-900 border border-slate-800 text-slate-200 hover:text-white transition-all cursor-pointer pointer-events-auto touch-manipulation flex items-center justify-center"
             aria-label="Open mobile navigation drawer"
           >
             <Menu className="w-6 h-6 text-white" />
