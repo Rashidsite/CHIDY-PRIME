@@ -75,12 +75,8 @@ export default function RootLayout({
     <html lang="en" className="dark scroll-smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://dykkgqyrhgjtosifkpmn.supabase.co" />
-        <link rel="dns-prefetch" href="https://dykkgqyrhgjtosifkpmn.supabase.co" />
         <link rel="preconnect" href="https://i.ibb.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://i.ibb.co" />
-        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CHIDYPRIME" />

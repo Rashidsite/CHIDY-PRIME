@@ -2,19 +2,21 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Flame, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import HeroSlideshow, { Slide } from '@/components/HeroSlideshow';
 import CategoryGrid, { CategoryItem } from '@/components/CategoryGrid';
 import GameCatalog from '@/components/GameCatalog';
-import CartDrawer from '@/components/CartDrawer';
-import CheckoutModal from '@/components/CheckoutModal';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
-import RegisterModal from '@/components/RegisterModal';
-import CelebrationPopup from '@/components/CelebrationPopup';
 import GameCard, { GameProduct } from '@/components/GameCard';
-import CategoryGamesDrawer from '@/components/CategoryGamesDrawer';
 import { CategorySkeleton, HorizontalCarouselSkeleton } from '@/components/SkeletonLoader';
 import { createClient } from '@/lib/supabase/client';
+
+const CartDrawer = dynamic(() => import('@/components/CartDrawer'), { ssr: false });
+const CheckoutModal = dynamic(() => import('@/components/CheckoutModal'), { ssr: false });
+const RegisterModal = dynamic(() => import('@/components/RegisterModal'), { ssr: false });
+const CelebrationPopup = dynamic(() => import('@/components/CelebrationPopup'), { ssr: false });
+const CategoryGamesDrawer = dynamic(() => import('@/components/CategoryGamesDrawer'), { ssr: false });
 
 const INITIAL_FALLBACK_GAMES: GameProduct[] = [
   {

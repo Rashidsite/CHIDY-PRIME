@@ -4,14 +4,16 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
-import ScreenshotGallery from '@/components/ScreenshotGallery';
-import CheckoutModal from '@/components/CheckoutModal';
 import { Star, ShieldCheck, Zap, Download, ArrowLeft, Cpu, HardDrive, Monitor } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { GameProduct, formatPlanDuration } from '@/components/GameCard';
 import { useProductAccess } from '@/hooks/useProductAccess';
+
+const ScreenshotGallery = dynamic(() => import('@/components/ScreenshotGallery'), { ssr: false });
+const CheckoutModal = dynamic(() => import('@/components/CheckoutModal'), { ssr: false });
 
 export default function GameDetailPage() {
   const params = useParams();
