@@ -7,6 +7,26 @@ function safeNumber(val: any): number {
   return isNaN(num) ? 0 : num;
 }
 
+function isOrderPaid(order: any): boolean {
+  const status = (order?.status || '').toLowerCase();
+  const paymentStatus = (order?.payment_status || '').toLowerCase();
+  return ['approved', 'completed', 'paid', 'success', 'successful'].includes(status) ||
+         ['completed', 'success', 'successful', 'paid'].includes(paymentStatus);
+}
+
+function isOrderPending(order: any): boolean {
+  const status = (order?.status || '').toLowerCase();
+  const paymentStatus = (order?.payment_status || '').toLowerCase();
+  return status === 'pending' || paymentStatus === 'pending' || (!status && !paymentStatus);
+}
+
+function isOrderFailed(order: any): boolean {
+  const status = (order?.status || '').toLowerCase();
+  const paymentStatus = (order?.payment_status || '').toLowerCase();
+  return ['rejected', 'cancelled', 'failed', 'trashed'].includes(status) ||
+         ['failed', 'rejected', 'cancelled'].includes(paymentStatus);
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,49 +34,92 @@ export async function GET(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // 1. Total real store products (from 'posts' & 'products' tables)
+    // 1. Fetch Real Products from 'posts' table
     let totalProducts = 0;
-    const { count: postsCount } = await supabase
+    const { data: postsList, count: postsCount } = await supabase
       .from('posts')
-      .select('*', { count: 'exact', head: true });
+      .select('id, title, category, price, views', { count: 'exact' });
     
-    const { count: productsCount } = await supabase
-      .from('products')
-      .select('*', { count: 'exact', head: true });
+    totalProducts = postsCount || (postsList ? postsList.length : 0);
 
-    totalProducts = (postsCount || 0) + (productsCount || 0);
-
-    // 2. Fetch real orders from 'orders' and 'payment_orders'
+    // 2. Fetch Orders from 'payment_orders' and 'orders' tables
     let allOrders: any[] = [];
-    
-    try {
-      const { data: oData } = await supabase
-        .from('orders')
-        .select('id, order_number, amount, status, payment_status, created_at, product_id, game_id, game_title');
-      if (oData) allOrders = [...allOrders, ...oData];
-    } catch (e) {}
+    const seenOrderIds = new Set<string>();
 
     try {
       const { data: poData } = await supabase
         .from('payment_orders')
-        .select('id, order_id, amount, status, created_at, product_id');
-      if (poData) {
-        // Map payment_orders into uniform structure if not duplicate
-        const existingIds = new Set(allOrders.map((o) => o.id || o.order_number));
-        poData.forEach((po) => {
-          if (!existingIds.has(po.id) && !existingIds.has(po.order_id)) {
+        .select('id, amount, status, created_at, post_id, phone_number, promo_used, posts(id, title, category, price)')
+        .order('created_at', { ascending: false });
+
+      if (poData && Array.isArray(poData)) {
+        poData.forEach((po: any) => {
+          const id = String(po.id);
+          if (!seenOrderIds.has(id)) {
+            seenOrderIds.add(id);
             allOrders.push({
-              id: po.id,
-              order_number: po.order_id,
-              amount: po.amount,
-              status: po.status,
-              created_at: po.created_at,
-              product_id: po.product_id,
+              id,
+              order_number: po.promo_used?.split('|')[0] || `PO-${id}`,
+              amount: Number(po.amount) || Number(po.posts?.price) || 0,
+              status: po.status || 'pending',
+              payment_status: po.status || 'pending',
+              created_at: po.created_at || new Date().toISOString(),
+              product_id: po.post_id || po.posts?.id,
+              game_title: po.posts?.title || 'Game / Mod',
+              category: po.posts?.category || 'General',
             });
           }
         });
       }
     } catch (e) {}
+
+    try {
+      const { data: oData } = await supabase
+        .from('orders')
+        .select('id, order_number, amount, status, payment_status, created_at, product_id, game_id, game_title')
+        .order('created_at', { ascending: false });
+
+      if (oData && Array.isArray(oData)) {
+        oData.forEach((o: any) => {
+          const id = String(o.id || o.order_number);
+          if (!seenOrderIds.has(id)) {
+            seenOrderIds.add(id);
+            allOrders.push({
+              id,
+              order_number: o.order_number || id,
+              amount: Number(o.amount) || 0,
+              status: o.status || 'pending',
+              payment_status: o.payment_status || o.status || 'pending',
+              created_at: o.created_at || new Date().toISOString(),
+              product_id: o.product_id || o.game_id,
+              game_title: o.game_title || 'Game / Mod',
+            });
+          }
+        });
+      }
+    } catch (e) {}
+
+    // 3. User Statistics (from xx_users and profiles)
+    let userCountTotal = 0;
+    try {
+      const { count: xxCount } = await supabase
+        .from('xx_users')
+        .select('*', { count: 'exact', head: true });
+      if (xxCount !== null && xxCount > 0) {
+        userCountTotal = xxCount;
+      } else {
+        const { count: profileCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        userCountTotal = profileCount || 0;
+      }
+    } catch (e) {
+      userCountTotal = 0;
+    }
+
+    // Product Lookup Map
+    const productMap = new Map<string, any>();
+    (postsList || []).forEach((p) => productMap.set(String(p.id), p));
 
     // Calculate Financial Aggregates
     const now = new Date();
@@ -68,12 +131,14 @@ export async function GET(req: NextRequest) {
     let monthRevenue = 0;
     let pendingOrdersCount = 0;
     let completedOrdersCount = 0;
+    let failedOrdersCount = 0;
 
     const completedOrders: any[] = [];
 
     allOrders.forEach((order) => {
       const isCompleted = isOrderPaid(order);
       const isPending = isOrderPending(order);
+      const isFailed = isOrderFailed(order);
       const amt = safeNumber(order.amount);
       const orderTime = new Date(order.created_at || now).getTime();
 
@@ -90,39 +155,15 @@ export async function GET(req: NextRequest) {
         }
       } else if (isPending) {
         pendingOrdersCount++;
+      } else if (isFailed) {
+        failedOrdersCount++;
       }
-    });
-
-    // 3. User Statistics
-    let userCountTotal = 0;
-    try {
-      const { count: uCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-      userCountTotal = uCount || 0;
-    } catch (e) {
-      userCountTotal = 0;
-    }
-
-    // 4. Fetch posts for product titles & categories
-    const { data: postsList } = await supabase
-      .from('posts')
-      .select('id, title, category, price, views');
-    
-    const { data: productsList } = await supabase
-      .from('products')
-      .select('id, title, category, price');
-
-    const productMap = new Map<string, any>();
-    (postsList || []).forEach((p) => productMap.set(String(p.id), p));
-    (productsList || []).forEach((g) => {
-      if (!productMap.has(String(g.id))) productMap.set(String(g.id), g);
     });
 
     // 5. Top Selling Products (Aggregated from real orders)
     const productSalesMap = new Map<string, { purchases: number; revenue: number }>();
     completedOrders.forEach((o) => {
-      const pId = String(o.product_id || o.game_id || o.post_id || '');
+      const pId = String(o.product_id || o.game_id || '');
       if (pId) {
         const existing = productSalesMap.get(pId) || { purchases: 0, revenue: 0 };
         existing.purchases += 1;
@@ -146,12 +187,12 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 6);
 
-    // 6. Real Category Breakdown
+    // 6. Category Breakdown
     const categoryRevenueMap = new Map<string, { revenue: number; orderCount: number }>();
     completedOrders.forEach((o) => {
-      const pId = String(o.product_id || o.game_id || o.post_id || '');
+      const pId = String(o.product_id || o.game_id || '');
       const prod = productMap.get(pId);
-      const cat = prod?.category || 'General Mods';
+      const cat = prod?.category || o.category || 'General Mods';
       const existing = categoryRevenueMap.get(cat) || { revenue: 0, orderCount: 0 };
       existing.revenue += safeNumber(o.amount);
       existing.orderCount += 1;
@@ -211,10 +252,12 @@ export async function GET(req: NextRequest) {
       totalOrders: allOrders.length,
       completedOrders: completedOrders.length,
       pendingOrders: pendingOrders.length,
-      failedOrders: failedOrders.length,
+      failedOrders: failedOrdersCount,
       activeUsers: Math.max(userCountTotal, completedOrders.length),
       totalGames: safeNumber(totalProducts || productMap.size),
       lifetimeRevenue: safeNumber(totalRevenue),
+      todayRevenue: safeNumber(todayRevenue),
+      monthRevenue: safeNumber(monthRevenue),
       topSellingProducts,
       categoryMetrics,
     };
