@@ -1,239 +1,146 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-
-// Normalize any phone format → 255XXXXXXXXX
-function normalizePhone(raw: string): string {
-  if (!raw) return '';
-  const digits = raw.replace(/\D/g, '');
-  if (digits.startsWith('255') && digits.length === 12) return digits;
-  if (digits.startsWith('0') && digits.length === 10) return '255' + digits.slice(1);
-  if (digits.length === 9) return '255' + digits;
-  return digits;
-}
+import { parseIncomingWebhookPayload, fulfillOrderApproval, normalizePhone } from '@/lib/payment-fulfillment';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json().catch(() => ({}));
-    console.log('[PressoPay Webhook] Received payload:', JSON.stringify(body));
+    const payload = await parseIncomingWebhookPayload(request);
+    console.log('[PressoPay Webhook] 📥 Received callback payload:', JSON.stringify(payload));
 
-    const supabase = createAdminClient();
-
-    // ── 1. Extract fields from PressoPay callback ─────────────────────────────
-    // PressoPay sends different field names — handle all variants
-    const status = (
-      body.status ||
-      body.transaction_status ||
-      body.payment_status ||
-      body.Status ||
+    const status = String(
+      payload.status ||
+      payload.transaction_status ||
+      payload.payment_status ||
+      payload.paymentStatus ||
+      payload.Status ||
+      payload.state ||
+      payload.resultCode ||
       ''
-    ).toUpperCase();
+    ).trim().toUpperCase();
 
-    const gatewayRef = (
-      body.reference ||
-      body.transaction_id ||
-      body.transactionId ||
-      body.payment_reference ||
-      body.id ||
-      body.Reference ||
+    const gatewayRef = String(
+      payload.reference ||
+      payload.transaction_id ||
+      payload.transactionId ||
+      payload.payment_reference ||
+      payload.id ||
+      payload.transid ||
+      payload.Reference ||
       ''
-    ).toString();
+    ).trim();
 
-    const rawPhone = (
-      body.phone ||
-      body.msisdn ||
-      body.customer_phone ||
-      body.phone_number ||
-      body.Phone ||
+    const rawPhone = String(
+      payload.phone ||
+      payload.msisdn ||
+      payload.buyerPhone ||
+      payload.customer_phone ||
+      payload.phone_number ||
+      payload.Phone ||
       ''
-    ).toString();
+    ).trim();
 
-    const amount = Number(
-      body.amount ||
-      body.paid_amount ||
-      body.transaction_amount ||
-      body.Amount ||
-      0
+    const orderRef = String(
+      payload.merchantReference ||
+      payload.merchant_reference ||
+      payload.order_id ||
+      payload.orderId ||
+      payload.order_number ||
+      payload.orderNumber ||
+      payload.externalId ||
+      payload.external_id ||
+      payload.reference_id ||
+      payload.orderRef ||
+      ''
+    ).trim();
+
+    const paidAmount = Number(
+      payload.amountMinor
+        ? Number(payload.amountMinor) / (payload.amountMinor > 100000 ? 100 : 1)
+        : payload.amount || payload.paid_amount || payload.Amount || 0
     );
 
-    const orderRef = (
-      body.order_id ||
-      body.orderId ||
-      body.order_number ||
-      body.externalId ||
-      body.external_id ||
-      body.reference ||
-      ''
-    ).toString();
+    console.log(`[PressoPay Webhook] 🔍 Status: ${status} | GatewayRef: ${gatewayRef} | OrderRef: ${orderRef} | Phone: ${rawPhone}`);
 
-    console.log(`[PressoPay Webhook] Status: ${status} | GatewayRef: ${gatewayRef} | OrderRef: ${orderRef} | Phone: ${rawPhone}`);
+    // Check completion status
+    const isSuccess = [
+      'SUCCESS',
+      'COMPLETED',
+      'SUCCESSFUL',
+      'PAID',
+      'APPROVED',
+      'COMPLETE',
+      'OK',
+      '00',
+      'TRUE',
+    ].includes(status);
 
-    // ── 2. Only process SUCCESS / COMPLETED ──────────────────────────────────
-    const isSuccess = ['SUCCESS', 'COMPLETED', 'SUCCESSFUL', 'PAID', 'APPROVED', 'COMPLETE'].includes(status);
-    const isFailed = ['FAILED', 'REJECTED', 'CANCELLED', 'CANCELED', 'EXPIRED'].includes(status);
+    const isExplicitFailed = [
+      'FAILED',
+      'REJECTED',
+      'CANCELLED',
+      'CANCELED',
+      'EXPIRED',
+      'USER_CANCELLED',
+      'INSUFFICIENT_BALANCE',
+    ].includes(status);
 
-    if (!isSuccess && !isFailed) {
-      return NextResponse.json({ success: true, message: `Status ${status} acknowledged, no action taken.` });
+    // ── Handle explicit failure ──
+    if (isExplicitFailed && !isSuccess) {
+      console.warn(`[PressoPay Webhook] ⚠️ Order rejected by gateway: ${orderRef || gatewayRef}`);
+      const supabase = createAdminClient();
+      if (orderRef || gatewayRef) {
+        await supabase
+          .from('payment_orders')
+          .update({
+            status: 'rejected',
+            updated_at: new Date().toISOString(),
+          })
+          .or(`promo_used.ilike.%${orderRef || gatewayRef}%`);
+      }
+      return NextResponse.json({ success: true, message: 'Order marked rejected per gateway signal.' });
     }
 
-    // ── 3. Find the order ─────────────────────────────────────────────────────
-    // Try multiple strategies to find the correct payment_order
-    let targetOrder: any = null;
-
-    // Strategy A: Match by gateway reference in promo_used (e.g. "PP:PAY-xxx" or "CPCG-xxx|PP:PAY-xxx")
-    if (gatewayRef) {
-      const { data: byRef } = await supabase
-        .from('payment_orders')
-        .select('*, posts(id, title, price, links), visitors(id, name, phone)')
-        .ilike('promo_used', `%${gatewayRef}%`)
-        .limit(1)
-        .maybeSingle();
-      if (byRef) targetOrder = byRef;
+    if (!isSuccess && status) {
+      console.log(`[PressoPay Webhook] ℹ️ Non-terminal status "${status}" acknowledged.`);
+      return NextResponse.json({
+        success: true,
+        message: `Status "${status}" acknowledged, awaiting final confirmation.`,
+      });
     }
 
-    // Strategy B: Match by CPCG order ref in promo_used
-    if (!targetOrder && orderRef && orderRef.startsWith('CPCG-')) {
-      const { data: byCpcg } = await supabase
-        .from('payment_orders')
-        .select('*, posts(id, title, price, links), visitors(id, name, phone)')
-        .ilike('promo_used', `%${orderRef}%`)
-        .limit(1)
-        .maybeSingle();
-      if (byCpcg) targetOrder = byCpcg;
-    }
+    // ── Execute Master Fulfillment Pipeline ──
+    const result = await fulfillOrderApproval({
+      orderIdOrRef: orderRef || gatewayRef,
+      gatewayRef,
+      phone: rawPhone,
+      gatewayName: 'PRESSOPAY',
+      paidAmount,
+    });
 
-    // Strategy C: Match by phone number (latest pending order for this phone)
-    if (!targetOrder && rawPhone) {
-      const cleanPhone = normalizePhone(rawPhone);
-      const localPhone = cleanPhone.replace(/^255/, '0');
-      const { data: byPhone } = await supabase
-        .from('payment_orders')
-        .select('*, posts(id, title, price, links), visitors(id, name, phone)')
-        .in('status', ['pending', 'processing'])
-        .or(
-          `phone_number.eq.${cleanPhone},phone_number.eq.${localPhone},phone_number.eq.+${cleanPhone}`
-        )
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (byPhone) targetOrder = byPhone;
-    }
-
-    if (!targetOrder) {
-      console.warn(`[PressoPay Webhook] ⚠️ Order not found for ref=${gatewayRef}, phone=${rawPhone}`);
+    if (!result.success) {
+      console.warn(`[PressoPay Webhook] ⚠️ Fulfillment lookup note: ${result.error}`);
       return NextResponse.json({
         success: false,
-        error: 'Order not found in database',
-        ref: gatewayRef,
-        phone: rawPhone,
-      }, { status: 404 });
+        error: result.error,
+        orderRef,
+        gatewayRef,
+      }, { status: 200 }); // Return 200 to prevent gateway retry storm
     }
-
-    console.log(`[PressoPay Webhook] ✅ Found order: ${targetOrder.id} | Ref: ${targetOrder.promo_used}`);
-
-    const phone = normalizePhone(targetOrder.phone_number || rawPhone);
-    const localPhone = phone.replace(/^255/, '0');
-    const productTitle = targetOrder.posts?.title || 'Digital Product';
-    const productId = targetOrder.post_id;
-
-    // ── 4. Handle FAILED ─────────────────────────────────────────────────────
-    if (isFailed) {
-      await supabase
-        .from('payment_orders')
-        .update({
-          status: 'rejected',
-          promo_used: targetOrder.promo_used?.includes('|') ? targetOrder.promo_used : `${targetOrder.promo_used}|${gatewayRef}`,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', targetOrder.id);
-
-      return NextResponse.json({ success: true, message: 'Order marked rejected.' });
-    }
-
-    // ── 5. Handle SUCCESS — Update all tables ────────────────────────────────
-
-    // A. Update payment_orders
-    await supabase
-      .from('payment_orders')
-      .update({
-        status: 'approved',
-        promo_used: targetOrder.promo_used?.includes('|')
-          ? targetOrder.promo_used
-          : `${targetOrder.promo_used}|${gatewayRef || 'PP:auto'}`,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', targetOrder.id);
-
-    // B. Update xx_orders
-    try {
-      const orderRef2 = targetOrder.promo_used?.split('|')[0] || targetOrder.id;
-      await supabase
-        .from('xx_orders')
-        .update({ status: 'completed', updated_at: new Date().toISOString() })
-        .or(`reference_id.eq.${orderRef2},reference_id.eq.${targetOrder.id}`);
-    } catch {}
-
-    // C. Update xx_users access — give Lifetime access (10 years)
-    try {
-      const accessUntil = new Date(Date.now() + 3650 * 24 * 3600 * 1000).toISOString();
-      await supabase
-        .from('xx_users')
-        .update({ access_until: accessUntil })
-        .or(`phone.eq.${phone},phone.eq.${localPhone},phone.eq.+${phone}`);
-    } catch {}
-
-    // ── 6. Broadcast to all Realtime channels ────────────────────────────────
-    const broadcastPayload = {
-      orderId: String(targetOrder.id),
-      orderNumber: targetOrder.promo_used?.split('|')[0] || String(targetOrder.id),
-      orderRef: targetOrder.promo_used?.split('|')[0] || String(targetOrder.id),
-      productId,
-      productTitle,
-      phone,
-      status: 'UNLOCKED',
-      isApproved: true,
-      downloadLinks: targetOrder.posts?.links || [],
-      unlockedAt: new Date().toISOString(),
-    };
-
-    const channels = [
-      'admin-orders',
-      'cross-domain-storefront-sync',
-      'storefront-sync',
-    ];
-
-    for (const chName of channels) {
-      try {
-        const ch = supabase.channel(chName);
-        await ch.subscribe();
-        await ch.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
-        await ch.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
-        supabase.removeChannel(ch);
-      } catch {}
-    }
-
-    // Also broadcast to per-order modal channel
-    try {
-      const modalCh = supabase.channel(`order_broadcast_modal_${targetOrder.id}`);
-      await modalCh.subscribe();
-      await modalCh.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
-      await modalCh.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
-      supabase.removeChannel(modalCh);
-    } catch {}
-
-    console.log(`[PressoPay Webhook] 🎉 Order ${targetOrder.id} APPROVED. Broadcasts sent.`);
 
     return NextResponse.json({
       success: true,
-      message: `Order ${targetOrder.id} marked approved. Game unlocked for ${phone}.`,
+      message: `✅ Order ${result.orderNumber} successfully approved and game access unlocked.`,
+      orderId: result.orderId,
+      orderNumber: result.orderNumber,
+      phone: result.phone,
     });
   } catch (error: any) {
-    console.error('[PressoPay Webhook] 💥 Fatal error:', error);
+    console.error('[PressoPay Webhook] 💥 Fatal Exception:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// GET: Health check & manual test endpoint
-export async function GET() {
-  return NextResponse.json({ status: 'ok', webhook: 'PressoPay Callback Ready', timestamp: new Date().toISOString() });
+export async function GET(request: NextRequest) {
+  return POST(request);
 }

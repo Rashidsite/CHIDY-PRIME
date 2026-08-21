@@ -513,18 +513,19 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       activeUnlockedListenerRef.current = handleWindowUnlocked;
     }
 
-    // 5. Active 2.0s Polling interval with PressoPay live check
+    // 5. Active 2.5s Polling interval with PressoPay live auto-approval check
     pollTimerRef.current = setInterval(async () => {
       attempts++;
       try {
         const res = await fetch(
-          `/api/payment/status?reference=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
+          `/api/payment/check-status?reference=${encodeURIComponent(cleanOrderNumber || cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
         );
         const data = await res.json();
         if (data.success && data.is_completed) {
           handlePaymentConfirmed(
             data.order || {
               id: cleanOrderId,
+              order_number: cleanOrderNumber,
               game_id: game.id,
               status: 'completed',
               download_links: data.download_links,
@@ -543,6 +544,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           handlePaymentConfirmed(
             data2.order || {
               id: cleanOrderId,
+              order_number: cleanOrderNumber,
               game_id: game.id,
               status: 'completed',
               download_links: data2.download_links,
@@ -558,7 +560,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       if (attempts >= maxAttempts) {
         clearAllTimers();
       }
-    }, 2000);
+    }, 2500);
   };
 
   const handleManualCheck = async () => {

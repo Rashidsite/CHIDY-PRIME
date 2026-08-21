@@ -3,35 +3,37 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { formatTzPhone, toLocalPhone, getPressoPayPaymentStatus, getHarakaPayStatus } from '@/lib/payment-gateway';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
-import { notifySuccessfulPayment } from '@/lib/telegram';
+import { fulfillOrderApproval, normalizePhone } from '@/lib/payment-fulfillment';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const orderId =
+    const rawRef = (
       searchParams.get('reference') ||
       searchParams.get('order_id') ||
       searchParams.get('ref') ||
       searchParams.get('orderNumber') ||
-      searchParams.get('order_number');
-    const rawPhone = searchParams.get('phone') || searchParams.get('phone_number');
-    const intlPhone = formatTzPhone(rawPhone || '');
-    const localPhone = toLocalPhone(rawPhone || '');
+      searchParams.get('order_number') ||
+      ''
+    ).trim();
+
+    const rawPhone = (searchParams.get('phone') || searchParams.get('phone_number') || '').trim();
+    const cleanPhone = normalizePhone(rawPhone);
+    const localPhone = toLocalPhone(rawPhone);
 
     const supabase = createAdminClient();
-    const isUuid = orderId && orderId.includes('-') && orderId.length === 36;
+    const isUuid = rawRef.includes('-') && rawRef.length === 36;
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 1. QUERY payment_orders (Primary Database Table)
+    // 1. QUERY payment_orders TABLE FIRST
     // ──────────────────────────────────────────────────────────────────────────
     let order: any = null;
 
-    if (orderId) {
-      const refPattern = `%${orderId}%`;
+    if (rawRef) {
       const { data } = await supabase
         .from('payment_orders')
         .select('*, posts(*), visitors(*)')
-        .or(`promo_used.ilike.${refPattern}${isUuid ? `,id.eq.${orderId}` : ''}`)
+        .or(`promo_used.ilike.%${rawRef}%${isUuid ? `,id.eq.${rawRef}` : ''}`)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -39,11 +41,11 @@ export async function GET(request: NextRequest) {
       order = data;
     }
 
-    if (!order && (intlPhone || localPhone)) {
+    if (!order && (cleanPhone || localPhone)) {
       const { data } = await supabase
         .from('payment_orders')
         .select('*, posts(*), visitors(*)')
-        .or(`phone_number.eq.${intlPhone},phone_number.eq.${localPhone}`)
+        .or(`phone_number.eq.${cleanPhone},phone_number.eq.${localPhone}`)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -51,108 +53,101 @@ export async function GET(request: NextRequest) {
       order = data;
     }
 
-    let isCompleted = order && ['completed', 'approved', 'paid'].includes((order.status || '').toLowerCase());
+    // Check if already approved/completed in DB
+    const currentStatus = String(order?.status || '').toLowerCase();
+    let isCompleted = ['completed', 'approved', 'paid', 'success'].includes(currentStatus);
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 2. LIVE GATEWAY STATUS CHECK (PressoPay API Fallback)
+    // 2. LIVE GATEWAY QUERY FALLBACK (PressoPay API Auto-Verification)
     // ──────────────────────────────────────────────────────────────────────────
-    if (order && !isCompleted) {
-      const targetRef = order.promo_used?.split('|')[0] || order.id || orderId;
-      try {
-        const pressoStatus = await getPressoPayPaymentStatus(targetRef);
-        const pStatusStr = String(
-          pressoStatus?.status || pressoStatus?.payment_status || pressoStatus?.data?.status || ''
-        ).toUpperCase();
+    if (!isCompleted && (rawRef || order)) {
+      const gatewayRefPart = order?.promo_used?.includes('|') ? order.promo_used.split('|')[1] : null;
+      const orderRefPart = order?.promo_used?.split('|')[0] || order?.id || rawRef;
 
-        if (['COMPLETED', 'SUCCESS', 'PAID', 'APPROVED', 'OK', 'COMPLETE'].includes(pStatusStr)) {
-          isCompleted = true;
-          order.status = 'approved';
+      const refsToTest = [gatewayRefPart, orderRefPart, rawRef].filter(Boolean) as string[];
 
-          // Commit to database
-          await supabase
-            .from('payment_orders')
-            .update({
-              status: 'approved',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', order.id);
+      for (const testRef of refsToTest) {
+        try {
+          const pressoStatus = await getPressoPayPaymentStatus(testRef);
+          if (pressoStatus) {
+            const pStatusStr = String(
+              pressoStatus.status ||
+              pressoStatus.payment_status ||
+              pressoStatus.data?.status ||
+              pressoStatus.transaction_status ||
+              ''
+            ).trim().toUpperCase();
 
-          try {
-            await supabase
-              .from('xx_orders')
-              .update({ status: 'completed', updated_at: new Date().toISOString() })
-              .eq('reference_id', targetRef);
-          } catch {}
+            console.log(`[Status Poller] 📡 PressoPay API check for ref "${testRef}": status = ${pStatusStr}`);
 
-          const effectivePhone = formatTzPhone(order.phone_number || intlPhone || '');
-          const postData = order.posts || {};
-          const downloadLinks = parseUniversalDownloadLinks(postData);
+            if (['COMPLETED', 'SUCCESS', 'PAID', 'APPROVED', 'OK', 'COMPLETE', '00', 'TRUE'].includes(pStatusStr)) {
+              console.log(`[Status Poller] ⚡ PressoPay confirmed payment! Triggering master approval for ${testRef}...`);
+              const fulfillResult = await fulfillOrderApproval({
+                orderIdOrRef: orderRefPart,
+                gatewayRef: testRef,
+                phone: cleanPhone || order?.phone_number,
+                gatewayName: 'PRESSOPAY',
+                paidAmount: order?.amount,
+              });
 
-          // Realtime broadcast
-          const broadcastPayload = {
-            orderId: String(order.id),
-            orderNumber: targetRef,
-            orderRef: targetRef,
-            productId: order.post_id,
-            phone: effectivePhone,
-            customerName: order.visitors?.name || 'Mteja',
-            productTitle: postData.title || 'Digital Product',
-            status: 'UNLOCKED',
-            isApproved: true,
-            downloadLinks,
-            unlockedAt: new Date().toISOString(),
-          };
-
-          try {
-            const adminCh = supabase.channel('admin-orders');
-            await adminCh.subscribe();
-            await adminCh.send({ type: 'broadcast', event: 'ORDER_APPROVED', payload: broadcastPayload });
-            supabase.removeChannel(adminCh);
-          } catch {}
-
-          try {
-            const syncCh = supabase.channel('cross-domain-storefront-sync');
-            await syncCh.subscribe();
-            await syncCh.send({ type: 'broadcast', event: 'PRODUCT_UNLOCKED', payload: broadcastPayload });
-            supabase.removeChannel(syncCh);
-          } catch {}
-
-          notifySuccessfulPayment({
-            id: order.id,
-            order_number: targetRef,
-            amount: order.amount || 0,
-            game_title: postData.title || 'Digital Product',
-            visitor_phone: effectivePhone,
-            payment_gateway: 'PRESSOPAY',
-          }).catch(() => {});
+              if (fulfillResult.success && fulfillResult.order) {
+                order = {
+                  ...order,
+                  ...fulfillResult.order,
+                  posts: order?.posts || {},
+                  status: 'approved',
+                };
+                isCompleted = true;
+                break;
+              }
+            }
+          }
+        } catch (pErr) {
+          console.warn('[Status Poller] PressoPay live check warning:', pErr);
         }
-      } catch (pErr) {
-        console.warn('[Status API] PressoPay live check warning:', pErr);
+      }
+
+      // HarakaPay status check fallback
+      if (!isCompleted && order?.promo_used?.startsWith('HP:')) {
+        try {
+          const hpRef = order.promo_used.replace('HP:', '');
+          const hpStatus = await getHarakaPayStatus(hpRef);
+          if (hpStatus?.success && ['completed', 'success'].includes(String(hpStatus.status || '').toLowerCase())) {
+            const fulfillResult = await fulfillOrderApproval({
+              orderIdOrRef: orderRefPart,
+              gatewayRef: hpRef,
+              phone: cleanPhone,
+              gatewayName: 'HARAKAPAY',
+            });
+            if (fulfillResult.success) {
+              isCompleted = true;
+              order = { ...order, ...fulfillResult.order, status: 'approved' };
+            }
+          }
+        } catch {}
       }
     }
 
-    let downloadLinks: any[] = [];
-    if (order && order.posts) {
-      downloadLinks = parseUniversalDownloadLinks(order.posts);
-    }
-
-    const orderRef = order?.promo_used?.split('|')[0] || order?.id || orderId;
+    const downloadLinks = order?.posts ? parseUniversalDownloadLinks(order.posts) : [];
+    const resolvedOrderNumber = order?.promo_used?.split('|')[0] || order?.id || rawRef;
 
     return NextResponse.json({
       success: true,
-      is_completed: !!isCompleted,
-      status: isCompleted ? 'completed' : order?.status || 'pending',
+      is_completed: isCompleted,
+      isCompleted: isCompleted,
+      status: isCompleted ? 'approved' : order?.status || 'pending',
+      orderNumber: resolvedOrderNumber,
       order: order
         ? {
             id: order.id,
-            order_number: orderRef,
+            order_number: resolvedOrderNumber,
             order_id: order.id,
             game_id: order.post_id,
             product_id: order.post_id,
             game_title: order.posts?.title || 'Digital Product',
             amount: order.amount,
-            status: isCompleted ? 'completed' : order.status,
-            customer_name: order.visitors?.name || 'Mteja',
+            status: isCompleted ? 'approved' : order.status || 'pending',
+            customer_name: order.visitors?.name || 'Mteja wa Mtandaoni',
             visitor_phone: order.phone_number,
             download_links: downloadLinks,
           }
@@ -160,6 +155,11 @@ export async function GET(request: NextRequest) {
       download_links: downloadLinks,
     });
   } catch (err: any) {
+    console.error('[Status API] Error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
+}
+
+export async function POST(request: NextRequest) {
+  return GET(request);
 }

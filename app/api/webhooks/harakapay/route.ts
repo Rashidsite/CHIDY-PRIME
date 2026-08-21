@@ -1,33 +1,40 @@
 export const dynamic = 'force-dynamic';
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { NextRequest, NextResponse } from 'next/server';
+import { parseIncomingWebhookPayload, fulfillOrderApproval } from '@/lib/payment-fulfillment';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { order_id, reference, status } = body;
-    const ref = reference || order_id;
+    const payload = await parseIncomingWebhookPayload(request);
+    console.log('[HarakaPay Webhook] 📥 Received payload:', JSON.stringify(payload));
 
-    if (!ref) {
-      return NextResponse.json({ success: false, message: 'Missing reference' }, { status: 400 });
+    const status = String(payload.status || payload.state || '').trim().toLowerCase();
+    const isSuccess = ['completed', 'success', 'approved', 'paid', '00', 'ok'].includes(status);
+
+    const orderRef = String(payload.reference || payload.order_id || payload.orderId || payload.order_number || '').trim();
+    const phone = String(payload.phone || payload.phone_number || '').trim();
+
+    if (!isSuccess && status) {
+      return NextResponse.json({ success: true, message: `HarakaPay status ${status} noted.` });
     }
 
-    const supabase = createAdminClient();
-    const normalizedStatus = String(status || '').toLowerCase();
+    const result = await fulfillOrderApproval({
+      orderIdOrRef: orderRef,
+      gatewayRef: orderRef,
+      phone,
+      gatewayName: 'HARAKAPAY',
+      paidAmount: Number(payload.amount || 0),
+    });
 
-    if (normalizedStatus === 'completed' || normalizedStatus === 'success') {
-      await supabase
-        .from('orders')
-        .update({ 
-          status: 'completed', 
-          payment_status: 'completed',
-          updated_at: new Date().toISOString() 
-        })
-        .or(`gateway_reference.eq.${ref},order_number.eq.${ref}`);
-    }
-
-    return NextResponse.json({ success: true, message: 'HarakaPay webhook processed' });
+    return NextResponse.json({
+      success: result.success,
+      message: result.success ? `HarakaPay order ${result.orderNumber} approved.` : result.error,
+    });
   } catch (error: any) {
+    console.error('[HarakaPay Webhook] Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
+}
+
+export async function GET(request: NextRequest) {
+  return POST(request);
 }
