@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -245,7 +245,7 @@ export default function SupportPage() {
                 <Gamepad2 className="w-4 h-4 text-blue-400" />
                 <span>Rudi Kwenye Duka</span>
               </span>
-              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
             </Link>
 
             <Link
@@ -256,7 +256,7 @@ export default function SupportPage() {
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span>Tazama Games Mpya</span>
               </span>
-              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
             </Link>
 
             <Link
@@ -267,7 +267,7 @@ export default function SupportPage() {
                 <PackageCheck className="w-4 h-4 text-emerald-400" />
                 <span>Kagua Namba ya Oda</span>
               </span>
-              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" />
             </Link>
           </div>
         </div>

@@ -12,28 +12,28 @@ export async function POST(req: NextRequest) {
 
     if (type === 'view') {
       const { data } = await supabaseAdmin
-        .from('games')
-        .select('views_count')
+        .from('posts')
+        .select('views')
         .eq('id', game_id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         await supabaseAdmin
-          .from('games')
-          .update({ views_count: (data.views_count || 0) + 1 })
+          .from('posts')
+          .update({ views: (data.views || 0) + 1 })
           .eq('id', game_id);
       }
     } else if (type === 'click') {
       const { data } = await supabaseAdmin
-        .from('games')
-        .select('clicks_count')
+        .from('posts')
+        .select('views')
         .eq('id', game_id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         await supabaseAdmin
-          .from('games')
-          .update({ clicks_count: (data.clicks_count || 0) + 1 })
+          .from('posts')
+          .update({ views: (data.views || 0) + 1 })
           .eq('id', game_id);
       }
     }

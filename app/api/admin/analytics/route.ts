@@ -14,17 +14,17 @@ export async function GET(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // 1. Total real store products (from 'posts' & 'games' tables)
+    // 1. Total real store products (from 'posts' & 'products' tables)
     let totalProducts = 0;
     const { count: postsCount } = await supabase
       .from('posts')
       .select('*', { count: 'exact', head: true });
     
-    const { count: gamesCount } = await supabase
-      .from('games')
+    const { count: productsCount } = await supabase
+      .from('products')
       .select('*', { count: 'exact', head: true });
 
-    totalProducts = (postsCount || 0) + (gamesCount || 0);
+    totalProducts = (postsCount || 0) + (productsCount || 0);
 
     // 2. Fetch real orders from 'orders' and 'payment_orders'
     let allOrders: any[] = [];
@@ -33,55 +33,74 @@ export async function GET(req: NextRequest) {
       const { data: oData } = await supabase
         .from('orders')
         .select('id, order_number, amount, status, payment_status, created_at, product_id, game_id, game_title');
-      if (oData && oData.length > 0) {
-        allOrders = oData;
-      }
-    } catch {}
+      if (oData) allOrders = [...allOrders, ...oData];
+    } catch (e) {}
 
     try {
-      const { data: legacyOrders } = await supabase
+      const { data: poData } = await supabase
         .from('payment_orders')
-        .select('id, amount, status, created_at, post_id');
-      if (legacyOrders && legacyOrders.length > 0) {
-        if (allOrders.length === 0) {
-          allOrders = legacyOrders.map((l) => ({
-            id: l.id,
-            amount: l.amount,
-            status: l.status,
-            created_at: l.created_at,
-            product_id: l.post_id,
-            game_id: l.post_id,
-          }));
-        }
+        .select('id, order_id, amount, status, created_at, product_id');
+      if (poData) {
+        // Map payment_orders into uniform structure if not duplicate
+        const existingIds = new Set(allOrders.map((o) => o.id || o.order_number));
+        poData.forEach((po) => {
+          if (!existingIds.has(po.id) && !existingIds.has(po.order_id)) {
+            allOrders.push({
+              id: po.id,
+              order_number: po.order_id,
+              amount: po.amount,
+              status: po.status,
+              created_at: po.created_at,
+              product_id: po.product_id,
+            });
+          }
+        });
       }
-    } catch {}
+    } catch (e) {}
 
-    const completedOrders = allOrders.filter((o) =>
-      ['approved', 'completed', 'paid'].includes((o.status || '').toLowerCase()) ||
-      (o.payment_status || '').toLowerCase() === 'completed'
-    );
-    const pendingOrders = allOrders.filter((o) => (o.status || '').toLowerCase() === 'pending');
-    const failedOrders = allOrders.filter((o) =>
-      ['rejected', 'cancelled', 'failed', 'trashed'].includes((o.status || '').toLowerCase())
-    );
+    // Calculate Financial Aggregates
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
-    const totalRevenue = completedOrders.reduce((acc, curr) => acc + safeNumber(curr.amount), 0);
+    let totalRevenue = 0;
+    let todayRevenue = 0;
+    let monthRevenue = 0;
+    let pendingOrdersCount = 0;
+    let completedOrdersCount = 0;
 
-    // 3. Registered users count (from profiles, xx_users, and unique buyers)
+    const completedOrders: any[] = [];
+
+    allOrders.forEach((order) => {
+      const isCompleted = isOrderPaid(order);
+      const isPending = isOrderPending(order);
+      const amt = safeNumber(order.amount);
+      const orderTime = new Date(order.created_at || now).getTime();
+
+      if (isCompleted) {
+        completedOrdersCount++;
+        totalRevenue += amt;
+        completedOrders.push(order);
+
+        if (orderTime >= startOfToday) {
+          todayRevenue += amt;
+        }
+        if (orderTime >= startOfMonth) {
+          monthRevenue += amt;
+        }
+      } else if (isPending) {
+        pendingOrdersCount++;
+      }
+    });
+
+    // 3. User Statistics
     let userCountTotal = 0;
     try {
-      const { count: profileCount } = await supabase
+      const { count: uCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
-      if (profileCount !== null && profileCount > 0) {
-        userCountTotal = profileCount;
-      } else {
-        const { count: xxCount } = await supabase
-          .from('xx_users')
-          .select('*', { count: 'exact', head: true });
-        userCountTotal = xxCount || 0;
-      }
-    } catch {
+      userCountTotal = uCount || 0;
+    } catch (e) {
       userCountTotal = 0;
     }
 
@@ -90,13 +109,13 @@ export async function GET(req: NextRequest) {
       .from('posts')
       .select('id, title, category, price, views');
     
-    const { data: gamesList } = await supabase
-      .from('games')
+    const { data: productsList } = await supabase
+      .from('products')
       .select('id, title, category, price');
 
     const productMap = new Map<string, any>();
     (postsList || []).forEach((p) => productMap.set(String(p.id), p));
-    (gamesList || []).forEach((g) => {
+    (productsList || []).forEach((g) => {
       if (!productMap.has(String(g.id))) productMap.set(String(g.id), g);
     });
 
@@ -146,7 +165,6 @@ export async function GET(req: NextRequest) {
     }));
 
     // 7. Compute Real Sales Graph Breakdown (Daily / Monthly)
-    const now = new Date();
     const days = ['Jumapili', 'Jumatatu', 'Jumanne', 'Jumatano', 'Alhamisi', 'Ijumaa', 'Jumamosi'];
     const last7DaysChart = [];
 

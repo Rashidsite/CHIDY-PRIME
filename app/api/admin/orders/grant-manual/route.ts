@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
     let gamePrice = Number(rawAmount) || 0;
     let downloadLinks: any[] = [];
 
-    const { data: gameData } = await supabase.from('games').select('*').eq('id', productId).maybeSingle();
     const { data: postData } = await supabase.from('posts').select('*').eq('id', productId).maybeSingle();
-    const merged = { ...gameData, ...postData };
+    const { data: productData } = await supabase.from('products').select('*').eq('id', productId).maybeSingle();
+    const merged = { ...postData, ...productData };
 
     if (merged.title) gameTitle = merged.title;
     if (merged.price && !rawAmount) gamePrice = Number(merged.price);

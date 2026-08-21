@@ -249,20 +249,7 @@ export default function FrontHubPage() {
   const loadStorefrontData = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
-      // 1. Fetch Real Games from Supabase 'games' table
-      let gamesData: any[] | null = null;
-      try {
-        const { data, error } = await supabase
-          .from('games')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) console.warn('Supabase games fetch warning:', error.message);
-        gamesData = data;
-      } catch (e) {
-        console.error('Failed to fetch from games:', e);
-      }
-
-      // 2. Fetch Real Posts from Supabase 'posts' table
+      // 1. Fetch Real Products/Posts from Supabase 'posts' table
       let postsData: any[] | null = null;
       try {
         const { data, error } = await supabase
@@ -274,6 +261,18 @@ export default function FrontHubPage() {
       } catch (e) {
         console.error('Failed to fetch from posts:', e);
       }
+
+      // 2. Fetch Optional 'products' table if available
+      let productsData: any[] | null = null;
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data) {
+          productsData = data;
+        }
+      } catch (e) {}
 
       const combined: GameProduct[] = [];
 
@@ -312,10 +311,10 @@ export default function FrontHubPage() {
         });
       }
 
-      // 2. Process games table (Fallback)
-      if (gamesData && gamesData.length > 0) {
+      // 2. Process products table (if any)
+      if (productsData && productsData.length > 0) {
         const existingIds = new Set(combined.map((c) => c.id));
-        gamesData.forEach((g) => {
+        productsData.forEach((g) => {
           if (g.status === 'draft' || g.status === 'archived') return;
           if (!existingIds.has(g.id)) {
             combined.push({

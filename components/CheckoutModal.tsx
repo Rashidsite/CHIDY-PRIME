@@ -213,13 +213,13 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           .eq('id', game.id)
           .maybeSingle();
 
-        const { data: gameData } = await supabase
-          .from('games')
+        const { data: productData } = await supabase
+          .from('products')
           .select('*')
           .eq('id', game.id)
           .maybeSingle();
 
-        const mergedRecord = { ...game, ...postData, ...gameData };
+        const mergedRecord = { ...game, ...postData, ...productData };
         const extracted = parseUniversalDownloadLinks(mergedRecord);
         setDirectLinks(extracted);
       } catch (e) {}

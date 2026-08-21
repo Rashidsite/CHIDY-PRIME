@@ -57,17 +57,17 @@ export async function POST(request: Request) {
         durationType = `${postData.duration_days} Days`;
       }
     } else {
-      const { data: gameData } = await supabase
-        .from('games')
+      const { data: productData } = await supabase
+        .from('products')
         .select('*')
         .eq('id', game_id)
         .maybeSingle();
 
-      if (gameData) {
-        gameTitle = gameData.title || gameTitle;
-        gamePrice = Number(gameData.price) || 0;
-        downloadUrl = gameData.download_url || '';
-        if (gameData.access_duration) durationType = gameData.access_duration;
+      if (productData) {
+        gameTitle = productData.title || gameTitle;
+        gamePrice = Number(productData.price) || 0;
+        downloadUrl = productData.download_url || '';
+        if (productData.access_duration) durationType = productData.access_duration;
       }
     }
 

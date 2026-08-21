@@ -136,7 +136,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
       <div className="absolute left-0 right-0 mt-2 z-50 rounded-2xl bg-slate-950 border border-slate-800 shadow-2xl p-2 space-y-1 pointer-events-auto">
         <div className="px-3 py-1.5 border-b border-slate-800 flex items-center justify-between">
           <span className="text-[10px] font-black uppercase text-blue-400 tracking-wider">Matokeo ya Haraka</span>
-          <span className="text-[9px] text-slate-500 font-bold">{results.length} games</span>
+          <span className="text-[9px] text-slate-300 font-bold">{results.length} games</span>
         </div>
         <div className="max-h-[280px] overflow-y-auto space-y-0.5 divide-y divide-slate-800/60">
           {results.map((game, index) => {

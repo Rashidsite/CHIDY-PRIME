@@ -40,22 +40,22 @@ export default function ManualGrantModal({ isOpen, onClose, onSuccess }: ManualG
       setLoadingGames(true);
       setErrorMsg('');
       try {
-        const { data: gamesData } = await supabase
-          .from('games')
-          .select('id, title, price, category')
-          .eq('status', 'published')
-          .order('title', { ascending: true });
-
         const { data: postsData } = await supabase
           .from('posts')
           .select('id, title, price, category')
           .eq('status', 'published')
           .order('title', { ascending: true });
 
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('id, title, price, category')
+          .eq('status', 'published')
+          .order('title', { ascending: true });
+
         const mergedMap = new Map<string, any>();
-        (gamesData || []).forEach((g) => mergedMap.set(String(g.id), g));
-        (postsData || []).forEach((p) => {
-          if (!mergedMap.has(String(p.id))) mergedMap.set(String(p.id), p);
+        (postsData || []).forEach((p) => mergedMap.set(String(p.id), p));
+        (productsData || []).forEach((g) => {
+          if (!mergedMap.has(String(g.id))) mergedMap.set(String(g.id), g);
         });
 
         const list = Array.from(mergedMap.values());

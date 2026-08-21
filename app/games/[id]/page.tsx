@@ -29,46 +29,46 @@ export default function GameDetailPage() {
       if (!gameId) return;
       setLoading(true);
       try {
-        // Query `games` table
-        const { data: gameData } = await supabase
-          .from('games')
+        // Query `posts` table (Primary Storefront Source)
+        const { data: postData } = await supabase
+          .from('posts')
           .select('*')
           .eq('id', gameId)
-          .single();
+          .maybeSingle();
 
-        if (gameData) {
-          setGame(gameData);
+        if (postData) {
+          setGame({
+            id: postData.id,
+            title: postData.title,
+            description: postData.description,
+            cover_image: postData.image_url || postData.cover_image,
+            price: postData.price || 0,
+            rating: postData.rating || 4.8,
+            category: postData.category || 'MALEO BUS MODE TZ',
+            screenshots: [
+              postData.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+              'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+              'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200',
+            ],
+            download_url: postData.links?.[0]?.url || postData.download_url || '',
+            system_req_minimum: {
+              os: 'Windows 10 64-Bit',
+              cpu: 'Intel Core i5 3.0 GHz',
+              ram: '8 GB RAM',
+              gpu: 'NVIDIA GTX 960 / AMD RX 570',
+              storage: '10 GB free space',
+            },
+          });
         } else {
-          // Fallback query to `posts` table
-          const { data: postData } = await supabase
-            .from('posts')
+          // Check optional `products` table
+          const { data: prodData } = await supabase
+            .from('products')
             .select('*')
             .eq('id', gameId)
-            .single();
+            .maybeSingle();
 
-          if (postData) {
-            setGame({
-              id: postData.id,
-              title: postData.title,
-              description: postData.description,
-              cover_image: postData.image_url,
-              price: postData.price || 0,
-              rating: postData.rating || 4.8,
-              category: postData.category || 'MALEO BUS MODE TZ',
-              screenshots: [
-                postData.image_url,
-                'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-                'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200',
-              ],
-              download_url: postData.links?.[0]?.url || '',
-              system_req_minimum: {
-                os: 'Windows 10 64-Bit',
-                cpu: 'Intel Core i5 3.0 GHz',
-                ram: '8 GB RAM',
-                gpu: 'NVIDIA GTX 960 / AMD RX 570',
-                storage: '10 GB free space',
-              },
-            });
+          if (prodData) {
+            setGame(prodData);
           }
         }
       } catch (err) {
