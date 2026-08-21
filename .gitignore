@@ -13,3 +13,6 @@ temp_script.js
 .env.local
 .env.*.local
 tsconfig.tsbuildinfo
+test-results/
+playwright-report/
+playwright-screenshots/

@@ -106,10 +106,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#080D1A] text-foreground overscroll-none">
+    <div className="h-screen overflow-hidden flex flex-col lg:flex-row bg-[#080d19] text-foreground overscroll-none">
       
       {/* ── TOP MOBILE ADMIN HEADER (Visible ONLY on screens < 1024px) ── */}
-      <header className="lg:hidden sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-lg">
+      <header className="lg:hidden shrink-0 sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-lg">
         {/* Brand & Pending Badge */}
         <div className="flex items-center gap-3">
           <button
@@ -167,7 +167,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
 
-      {/* ── Responsive Sidebar & Slide-over Drawer ── */}
+      {/* ── Fixed Sticky Left Navigation Sidebar ── */}
       <AdminSidebar
         mobileOpen={mobileSidebarOpen}
         onClose={() => setMobileSidebarOpen(false)}
@@ -175,9 +175,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         onLogout={handleAdminLogout}
       />
 
-      {/* ── Main Content Area ── */}
-      <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl w-full min-h-[calc(100vh-60px)] lg:min-h-screen">
-        {children}
+      {/* ── Independent Scrollable Main Content Area ── */}
+      <main className="flex-1 h-screen overflow-y-auto p-6 md:p-8 w-full">
+        <div className="max-w-7xl mx-auto w-full pb-12">
+          {children}
+        </div>
       </main>
     </div>
   );

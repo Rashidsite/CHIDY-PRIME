@@ -18,6 +18,7 @@ import {
   Lock,
   LogOut
 } from 'lucide-react';
+import { useAuth } from './AuthProvider';
 
 interface AdminSidebarProps {
   mobileOpen?: boolean;
@@ -33,6 +34,7 @@ export default function AdminSidebar({
   onLogout,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   const links = [
     { href: '/admin/dashboard', label: 'Analytics Dashboard', icon: LayoutDashboard },
@@ -51,7 +53,7 @@ export default function AdminSidebar({
   ];
 
   const sidebarContent = (
-    <div className="flex flex-col justify-between h-full p-5 space-y-6">
+    <div className="flex flex-col justify-between h-full space-y-6">
       <div className="space-y-6">
         
         {/* Brand Header */}
@@ -61,7 +63,7 @@ export default function AdminSidebar({
               <ShieldCheck className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-base font-black text-white tracking-tight uppercase">chidy<span className="text-blue-500">prime</span></h2>
+              <h2 className="text-base font-black text-white tracking-tight uppercase">CHIDY<span className="text-blue-500">PRIME</span> HQ</h2>
               <span className="text-[10px] font-bold text-accent-purple bg-accent-purple/10 px-2 py-0.5 rounded-full border border-accent-purple/20">
                 Admin HQ Portal
               </span>
@@ -111,29 +113,29 @@ export default function AdminSidebar({
         </nav>
       </div>
 
-      {/* Actions: Lock Admin & Return to Storefront */}
-      <div className="pt-4 border-t border-slate-800/80 space-y-2">
-        {onLogout && (
-          <button
-            type="button"
-            onClick={() => {
-              if (onClose) onClose();
-              onLogout();
-            }}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/40 text-xs font-black uppercase tracking-wider transition-all min-h-[44px] touch-manipulation shadow-md cursor-pointer hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-          >
-            <Lock className="w-4 h-4 text-rose-400" />
-            <span>🔒 Lock Admin (Toka)</span>
-          </button>
-        )}
+      {/* Docked Bottom Buttons: Lock Admin & Back to Storefront */}
+      <div className="pt-4 border-t border-slate-800/80 space-y-2 shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            if (onClose) onClose();
+            if (onLogout) onLogout();
+            else signOut();
+          }}
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border border-rose-500/40 text-xs font-black uppercase tracking-wider transition-all min-h-[40px] touch-manipulation shadow-md cursor-pointer hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+          title="Lock & Exit Admin"
+        >
+          <Lock className="w-4 h-4 text-rose-400" />
+          <span>LOCK ADMIN</span>
+        </button>
 
         <Link
           href="/"
           onClick={onClose}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black uppercase tracking-wider border border-slate-700 transition-all min-h-[44px] touch-manipulation shadow-md cursor-pointer"
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black uppercase tracking-wider border border-slate-700 transition-all min-h-[40px] touch-manipulation shadow-md cursor-pointer"
         >
           <Store className="w-4 h-4 text-emerald-400" />
-          <span>Back to Storefront</span>
+          <span>BACK TO STOREFRONT</span>
         </Link>
       </div>
     </div>
@@ -141,8 +143,8 @@ export default function AdminSidebar({
 
   return (
     <>
-      {/* ── Desktop Fixed Sidebar (lg:flex) ── */}
-      <aside className="hidden lg:flex w-64 bg-slate-900 border-r border-slate-800 flex-col justify-between shrink-0 h-screen sticky top-0 z-30">
+      {/* ── Desktop Sticky Fixed Sidebar (lg:flex) ── */}
+      <aside className="hidden lg:flex w-64 shrink-0 h-screen sticky top-0 flex-col justify-between p-4 border-r border-slate-800/80 overflow-y-auto bg-slate-900 z-30">
         {sidebarContent}
       </aside>
 
@@ -165,7 +167,7 @@ export default function AdminSidebar({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 shadow-2xl z-10 flex flex-col justify-between overscroll-contain"
+              className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 shadow-2xl z-10 flex flex-col justify-between p-4 overflow-y-auto overscroll-contain"
             >
               {sidebarContent}
             </motion.div>
