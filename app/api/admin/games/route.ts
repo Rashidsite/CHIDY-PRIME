@@ -51,71 +51,45 @@ export async function GET() {
       console.warn('Posts table query error:', postsErr.message);
     }
 
-    // 3. Fetch from products if table exists
-    let productsData: any[] = [];
-    try {
-      const { data } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (data) productsData = data;
-    } catch {}
-
-    // Merge records
+    // Process records
     const merged: any[] = [];
-    const seenIds = new Set<string>();
 
     if (postsData && Array.isArray(postsData)) {
       postsData.forEach((p) => {
-        seenIds.add(p.id);
+        // Normalize links
+        let linksList: { name: string; url: string }[] = [];
+        if (Array.isArray(p.links)) {
+          linksList = p.links.map((l: any) => ({
+            name: l.name || l.label || 'Download File',
+            url: l.url || '',
+          }));
+        } else if (p.download_url) {
+          linksList = [{ name: 'Download File', url: p.download_url }];
+        }
+
+        const durLabel = formatDurationFromDays(p.duration_days);
+
         merged.push({
           id: p.id,
-          title: p.title || '',
-          price: Number(p.price || 0),
-          category: p.category || 'PC Games',
+          title: p.title || 'Untitled Game',
           description: p.description || '',
           cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-          image_url: p.image_url || p.cover_image,
+          image_url: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+          price: Number(p.price || 0),
           rating: Number(p.rating || 4.8),
+          category: p.category || 'MALEO BUS MODE TZ',
           status: p.status || 'published',
-          is_active: p.is_active !== false,
+          duration_days: p.duration_days ?? 0,
           is_new_feed: curatedSet.has(p.id) || Boolean(p.is_new_feed),
-          access_duration: p.plan_duration || p.access_duration || p.license_duration || formatDurationFromDays(p.duration_days),
-          plan_duration: p.plan_duration || p.access_duration || p.license_duration || formatDurationFromDays(p.duration_days),
-          duration_days: p.duration_days ?? parseDurationDays(p.plan_duration || p.access_duration || p.license_duration),
-          download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url || '',
-          links: Array.isArray(p.links) ? p.links : (p.download_url ? [{ title: 'Main Download', url: p.download_url }] : []),
+          access_duration: durLabel,
+          license_duration: durLabel,
+          youtube_url: p.youtube_url || p.video_url || '',
+          video_url: p.youtube_url || p.video_url || '',
+          download_url: linksList[0]?.url || p.download_url || '',
+          links: linksList,
           created_at: p.created_at,
           updated_at: p.updated_at,
         });
-      });
-    }
-
-    if (productsData && Array.isArray(productsData)) {
-      productsData.forEach((g) => {
-        if (!seenIds.has(g.id)) {
-          seenIds.add(g.id);
-          merged.push({
-            id: g.id,
-            title: g.title || '',
-            price: Number(g.price || 0),
-            category: g.category || 'PC Games',
-            description: g.description || '',
-            cover_image: g.cover_image || g.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-            image_url: g.image_url || g.cover_image,
-            rating: Number(g.rating || 4.8),
-            status: g.status || 'published',
-            is_active: g.is_active !== false,
-            is_new_feed: curatedSet.has(g.id) || Boolean(g.is_new_feed),
-            access_duration: g.access_duration || 'Lifetime',
-            plan_duration: g.access_duration || 'Lifetime',
-            duration_days: parseDurationDays(g.access_duration),
-            download_url: g.download_url || '',
-            links: Array.isArray(g.download_links) ? g.download_links : (g.download_url ? [{ title: 'Main Download', url: g.download_url }] : []),
-            created_at: g.created_at,
-            updated_at: g.updated_at,
-          });
-        }
       });
     }
 
@@ -199,23 +173,6 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    // 3. Also try insert to products table if exists
-    try {
-      await supabase.from('products').insert({
-        id: newPost.id,
-        title,
-        price,
-        category,
-        description,
-        cover_image: imageUrl,
-        rating,
-        status,
-        access_duration: body.access_duration || 'Lifetime',
-        download_url: links[0]?.url || '',
-        download_links: links,
-      });
-    } catch {}
-
     return NextResponse.json({
       success: true,
       game: {
@@ -225,10 +182,9 @@ export async function POST(request: Request) {
         is_new_feed: isNewFeed,
         links,
       },
-      message: 'Game published successfully',
+      message: 'Product published successfully',
     });
   } catch (error: any) {
-    console.error('API Error in POST /api/admin/games:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -239,13 +195,14 @@ export async function PUT(request: Request) {
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json({ success: false, error: 'Product ID is required for updates' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Product ID is required for editing' }, { status: 400 });
     }
 
     const supabase = createAdminClient();
 
-    // 1. Update curated_new_games_feed in site_settings
+    // 1. Handle is_new_feed in site_settings (100% resilient storage)
     if (updates.is_new_feed !== undefined) {
+      const feedVal = Boolean(updates.is_new_feed);
       try {
         const { data: sData } = await supabase
           .from('site_settings')
@@ -253,7 +210,7 @@ export async function PUT(request: Request) {
           .eq('key', 'curated_new_games_feed')
           .maybeSingle();
         let currentList: string[] = Array.isArray(sData?.value) ? [...sData.value] : [];
-        if (updates.is_new_feed) {
+        if (feedVal) {
           if (!currentList.includes(id)) currentList.push(id);
         } else {
           currentList = currentList.filter((x) => x !== id);
@@ -261,57 +218,62 @@ export async function PUT(request: Request) {
         await supabase
           .from('site_settings')
           .upsert({ key: 'curated_new_games_feed', value: currentList }, { onConflict: 'key' });
-      } catch {}
+        try {
+          await supabase
+            .from('store_settings')
+            .upsert({ key: 'curated_new_games_feed', value: currentList }, { onConflict: 'key' });
+        } catch {}
+      } catch (sErr) {
+        console.warn('site_settings sync warning:', sErr);
+      }
     }
 
-    // 2. Prepare payload for posts table
+    // 2. Prepare updates for posts table if other fields were changed
     const postPayload: Record<string, any> = {};
-    if (updates.title !== undefined) postPayload.title = updates.title;
+    if (updates.title !== undefined) postPayload.title = updates.title.trim();
     if (updates.price !== undefined) postPayload.price = Number(updates.price);
-    if (updates.category !== undefined) postPayload.category = updates.category;
-    if (updates.description !== undefined) postPayload.description = updates.description;
-    if (updates.cover_image !== undefined) postPayload.image_url = updates.cover_image;
-    if (updates.image_url !== undefined) postPayload.image_url = updates.image_url;
+    if (updates.category !== undefined) postPayload.category = updates.category.trim();
+    if (updates.description !== undefined) postPayload.description = updates.description.trim();
     if (updates.rating !== undefined) postPayload.rating = Number(updates.rating);
     if (updates.status !== undefined) postPayload.status = updates.status;
-    if (updates.is_active !== undefined) postPayload.is_active = updates.is_active;
-    if (updates.is_new_feed !== undefined) postPayload.is_new_feed = updates.is_new_feed;
-    if (updates.download_url !== undefined) postPayload.download_url = updates.download_url;
-    if (updates.links !== undefined) postPayload.links = updates.links;
-    if (updates.download_links !== undefined) postPayload.links = updates.download_links;
-    if (updates.plan_duration !== undefined || updates.access_duration !== undefined) {
-      const dur = updates.plan_duration || updates.access_duration;
-      postPayload.plan_duration = dur;
-      postPayload.duration_days = parseDurationDays(dur);
+    if (updates.cover_image !== undefined || updates.image_url !== undefined) {
+      postPayload.image_url = (updates.cover_image || updates.image_url).trim();
     }
-    if (updates.duration_days !== undefined) {
-      postPayload.duration_days = Number(updates.duration_days);
-      postPayload.plan_duration = formatDurationFromDays(postPayload.duration_days);
+    if (updates.video_url !== undefined || updates.youtube_url !== undefined) {
+      postPayload.youtube_url = (updates.video_url || updates.youtube_url).trim();
+    }
+    if (updates.access_duration !== undefined || updates.license_duration !== undefined) {
+      postPayload.duration_days = parseDurationDays(updates.access_duration || updates.license_duration);
+    }
+    
+    // Process links array
+    if (Array.isArray(updates.links)) {
+      postPayload.links = updates.links
+        .filter((l: any) => l && l.url && l.url.trim())
+        .map((l: any) => ({
+          name: (l.name || l.label || 'Download File').trim(),
+          url: l.url.trim(),
+        }));
+    } else if (updates.download_url !== undefined) {
+      postPayload.links = [{ name: 'Download File', url: updates.download_url.trim() }];
     }
 
     let updatedPost: any = null;
+
+    // Only update posts table if there are postPayload fields to update
     if (Object.keys(postPayload).length > 0) {
-      postPayload.updated_at = new Date().toISOString();
-      const { data, error } = await supabase
+      const { data: pData, error: pErr } = await supabase
         .from('posts')
         .update(postPayload)
         .eq('id', id)
         .select()
         .maybeSingle();
 
-      if (!error && data) {
-        updatedPost = data;
+      if (pErr) {
+        console.error('Error updating posts table:', pErr);
+        throw pErr;
       }
-    }
-
-    // 3. Also try updating products table if postPayload exists
-    if (Object.keys(postPayload).length > 0) {
-      try {
-        const prodPayload: Record<string, any> = { ...postPayload };
-        if (postPayload.image_url) prodPayload.cover_image = postPayload.image_url;
-        if (updates.access_duration) prodPayload.access_duration = updates.access_duration;
-        await supabase.from('products').update(prodPayload).eq('id', id);
-      } catch {}
+      updatedPost = pData;
     }
 
     return NextResponse.json({
@@ -343,9 +305,6 @@ export async function DELETE(request: Request) {
 
     const supabase = createAdminClient();
     await supabase.from('posts').delete().eq('id', id);
-    try {
-      await supabase.from('products').delete().eq('id', id);
-    } catch {}
 
     return NextResponse.json({ success: true, message: 'Game deleted successfully' });
   } catch (error: any) {

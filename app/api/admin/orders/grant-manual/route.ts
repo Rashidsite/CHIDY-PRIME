@@ -65,8 +65,7 @@ export async function POST(request: NextRequest) {
     let downloadLinks: any[] = [];
 
     const { data: postData } = await supabase.from('posts').select('*').eq('id', productId).maybeSingle();
-    const { data: productData } = await supabase.from('products').select('*').eq('id', productId).maybeSingle();
-    const merged = { ...postData, ...productData };
+    const merged = postData || {};
 
     if (merged.title) gameTitle = merged.title;
     if (merged.price && !rawAmount) gamePrice = Number(merged.price);
@@ -180,30 +179,6 @@ export async function POST(request: NextRequest) {
       });
     } catch (e: any) {
       console.warn('[Grant Manual] payment_transactions insert warning:', e?.message);
-    }
-
-    try {
-      await supabase.from('user_purchases').upsert(
-        {
-          order_id: String(createdOrderRecord?.id || orderNumber),
-          order_reference: orderNumber,
-          customer_phone: cleanPhone,
-          phone_number: cleanPhone,
-          product_id: productId,
-          game_id: productId,
-          product_title: gameTitle,
-          download_links: downloadLinks,
-          download_token: downloadToken,
-          access_duration: durationType,
-          access_expires_at: expiresAt,
-          status: 'active',
-          unlocked_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'customer_phone,product_id' }
-      );
-    } catch (e: any) {
-      console.warn('[Grant Manual] user_purchases upsert warning:', e?.message);
     }
 
     try {

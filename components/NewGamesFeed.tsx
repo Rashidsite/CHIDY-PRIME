@@ -219,9 +219,9 @@ export default function NewGamesFeed({
               placeholder="Tafuta game..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2 text-[11px] text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 font-bold"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-bold"
             />
-            <Search className="w-3 h-3 text-slate-300 absolute left-2.5 top-2.5" />
+            <Search className="w-3 h-3 text-slate-500 absolute left-2.5 top-2.5" />
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <SlidersHorizontal className="w-3 h-3 text-blue-400 hidden sm:inline" />

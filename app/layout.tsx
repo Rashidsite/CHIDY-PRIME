@@ -75,8 +75,8 @@ export default function RootLayout({
     <html lang="en" className="dark scroll-smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://i.ibb.co" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://i.ibb.co" />
+        <link rel="preconnect" href="https://dykkgqyrhgjtosifkpmn.supabase.co" />
+        <link rel="dns-prefetch" href="https://dykkgqyrhgjtosifkpmn.supabase.co" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CHIDYPRIME" />
@@ -210,7 +210,7 @@ export default function RootLayout({
             </div>
 
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 pt-6 border-t border-emerald-500/20 text-center text-xs text-slate-300 font-bold flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 pt-6 border-t border-emerald-500/20 text-center text-xs text-slate-200 font-bold flex flex-col sm:flex-row items-center justify-between gap-3">
               <p>&copy; {new Date().getFullYear()} CHIDYPRIME x CHIDY GAMING. Haki zote zimehifadhiwa.</p>
               <div className="flex items-center gap-1">
                 <span>Made with</span>

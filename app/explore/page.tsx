@@ -1,15 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import NewGamesFeed from '@/components/NewGamesFeed';
+import CheckoutModal from '@/components/CheckoutModal';
+import CelebrationPopup from '@/components/CelebrationPopup';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
 import { GameProduct } from '@/components/GameCard';
-
-const CheckoutModal = dynamic(() => import('@/components/CheckoutModal'), { ssr: false });
-const CelebrationPopup = dynamic(() => import('@/components/CelebrationPopup'), { ssr: false });
 
 const INITIAL_FALLBACK_GAMES: GameProduct[] = [
   {

@@ -4,16 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
+import ScreenshotGallery from '@/components/ScreenshotGallery';
+import CheckoutModal from '@/components/CheckoutModal';
 import { Star, ShieldCheck, Zap, Download, ArrowLeft, Cpu, HardDrive, Monitor } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { GameProduct, formatPlanDuration } from '@/components/GameCard';
 import { useProductAccess } from '@/hooks/useProductAccess';
-
-const ScreenshotGallery = dynamic(() => import('@/components/ScreenshotGallery'), { ssr: false });
-const CheckoutModal = dynamic(() => import('@/components/CheckoutModal'), { ssr: false });
 
 export default function GameDetailPage() {
   const params = useParams();
@@ -31,21 +29,25 @@ export default function GameDetailPage() {
       if (!gameId) return;
       setLoading(true);
       try {
-        // Query `posts` table (Primary Storefront Source)
-        const { data: postData } = await supabase
+        // Query posts table directly (Single source of truth)
+        const { data: postData, error } = await supabase
           .from('posts')
           .select('*')
           .eq('id', gameId)
           .maybeSingle();
 
+        if (error) {
+          console.warn('Game fetch warning:', error.message);
+        }
+
         if (postData) {
           setGame({
             id: postData.id,
-            title: postData.title,
-            description: postData.description,
-            cover_image: postData.image_url || postData.cover_image,
-            price: postData.price || 0,
-            rating: postData.rating || 4.8,
+            title: postData.title || 'Untitled Game',
+            description: postData.description || '',
+            cover_image: postData.image_url || postData.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+            price: Number(postData.price) || 0,
+            rating: Number(postData.rating) || 4.8,
             category: postData.category || 'MALEO BUS MODE TZ',
             screenshots: [
               postData.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
@@ -54,24 +56,13 @@ export default function GameDetailPage() {
             ],
             download_url: postData.links?.[0]?.url || postData.download_url || '',
             system_req_minimum: {
-              os: 'Windows 10 64-Bit',
-              cpu: 'Intel Core i5 3.0 GHz',
-              ram: '8 GB RAM',
-              gpu: 'NVIDIA GTX 960 / AMD RX 570',
-              storage: '10 GB free space',
+              os: 'Android / Windows 10 64-Bit',
+              cpu: 'Octa-Core / Intel Core i5',
+              ram: '4 GB / 8 GB RAM',
+              gpu: 'Adreno / Mali / NVIDIA GTX',
+              storage: '5 GB free space',
             },
           });
-        } else {
-          // Check optional `products` table
-          const { data: prodData } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', gameId)
-            .maybeSingle();
-
-          if (prodData) {
-            setGame(prodData);
-          }
         }
       } catch (err) {
         console.error('Error fetching game detail:', err);

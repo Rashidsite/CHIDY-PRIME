@@ -344,30 +344,6 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
     }
   }
 
-  // ── STEP E: Upsert into user_purchases ──
-  if (effectivePhone && productId) {
-    try {
-      await supabase.from('user_purchases').upsert(
-        {
-          order_id: targetId,
-          order_reference: rawOrderNumber,
-          customer_phone: effectivePhone,
-          phone_number: effectivePhone,
-          product_id: productId,
-          game_id: productId,
-          product_title: productTitle,
-          download_links: downloadLinks,
-          access_duration: durationType,
-          access_expires_at: expiresAt,
-          status: 'active',
-          unlocked_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'customer_phone,product_id' }
-      );
-    } catch {}
-  }
-
   // ── STEP F: Realtime Multi-Channel Broadcast Dispatch ──
   const broadcastPayload = {
     orderId: targetId,

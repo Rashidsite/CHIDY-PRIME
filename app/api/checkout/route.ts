@@ -51,23 +51,12 @@ export async function POST(request: Request) {
     if (postData) {
       gameTitle = postData.title || gameTitle;
       gamePrice = Number(postData.price) || 0;
-      downloadUrl = postData.links?.[0]?.url || '';
+      downloadUrl = postData.links?.[0]?.url || postData.download_url || '';
       if (postData.duration_days) {
         durationHours = postData.duration_days * 24;
         durationType = `${postData.duration_days} Days`;
-      }
-    } else {
-      const { data: productData } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', game_id)
-        .maybeSingle();
-
-      if (productData) {
-        gameTitle = productData.title || gameTitle;
-        gamePrice = Number(productData.price) || 0;
-        downloadUrl = productData.download_url || '';
-        if (productData.access_duration) durationType = productData.access_duration;
+      } else if (postData.plan_duration || postData.access_duration) {
+        durationType = postData.plan_duration || postData.access_duration;
       }
     }
 

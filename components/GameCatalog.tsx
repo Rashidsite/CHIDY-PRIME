@@ -18,56 +18,6 @@ interface GameCatalogProps {
   isUnlocked?: (productId: string) => boolean;
 }
 
-function matchesCategory(gameCategory: string, selectedCategory: string): boolean {
-  if (!gameCategory || !selectedCategory) return false;
-  const gc = gameCategory.toLowerCase().trim();
-  const sc = selectedCategory.toLowerCase().trim();
-
-  if (sc === 'all' || sc === 'zote' || sc === 'zote (all)') return true;
-  if (gc === sc) return true;
-
-  const gcClean = gc.replace(/s$/i, '').trim();
-  const scClean = sc.replace(/s$/i, '').trim();
-  if (gcClean === scClean || gc.includes(scClean) || scClean.includes(gcClean)) return true;
-
-  // Football / Soccer
-  if (sc.includes('football') || sc.includes('soccer') || sc.includes('fifa') || sc.includes('pes')) {
-    if (gc.includes('football') || gc.includes('soccer') || gc.includes('fifa') || gc.includes('ea fc') || gc.includes('pes')) return true;
-  }
-
-  // PS2 / PSP / Mobile Emulator
-  if (sc.includes('ps2') || sc.includes('psp') || sc.includes('simu') || sc.includes('phone') || sc.includes('android')) {
-    if (gc.includes('ps2') || gc.includes('psp') || gc.includes('android') || gc.includes('mobile') || gc.includes('simu')) return true;
-  }
-
-  // World Games / PC Games / Action
-  if (sc.includes('world') || sc.includes('pc') || sc.includes('premium')) {
-    if (
-      gc.includes('world') ||
-      gc.includes('pc') ||
-      gc.includes('action') ||
-      gc.includes('racing') ||
-      gc.includes('fifa') ||
-      gc.includes('gta') ||
-      gc.includes('game')
-    ) return true;
-  }
-
-  // Maleo / Bus / Mods
-  if (sc.includes('maleo') || sc.includes('bus') || sc.includes('mod')) {
-    if (gc.includes('maleo') || gc.includes('bus') || gc.includes('mod') || gc.includes('map') || gc.includes('shabiby')) return true;
-  }
-
-  // Simulator
-  if (sc.includes('simulator') || sc.includes('sim')) {
-    if (gc.includes('sim') || gc.includes('truck') || gc.includes('bus') || gc.includes('tz')) return true;
-  }
-
-  const scWords = scClean.split(/[\s\-_/]+/).filter((w) => w.length > 2);
-  const gcWords = gcClean.split(/[\s\-_/]+/).filter((w) => w.length > 2);
-  return scWords.some((sw) => gcWords.some((gw) => gw.includes(sw) || sw.includes(gw)));
-}
-
 export default function GameCatalog({
   games = [],
   categories = [],
@@ -127,8 +77,10 @@ export default function GameCatalog({
     ];
 
     const safeCats = Array.isArray(categories) ? categories : [];
+    
+    // Extract unique category names from categories prop or existing live games
     const catMap = new Map<string, number>();
-
+    
     safeCats.forEach((c) => {
       const name = typeof c === 'string' ? c : c?.name;
       if (name && !catMap.has(name)) {
@@ -141,7 +93,9 @@ export default function GameCatalog({
         const gc = String(g.category).trim();
         let matched = false;
         for (const catName of Array.from(catMap.keys())) {
-          if (matchesCategory(gc, catName)) {
+          const cClean = catName.toLowerCase().replace(/s$/i, '').trim();
+          const gClean = gc.toLowerCase().replace(/s$/i, '').trim();
+          if (cClean === gClean || cClean.includes(gClean) || gClean.includes(cClean)) {
             catMap.set(catName, (catMap.get(catName) || 0) + 1);
             matched = true;
             break;
@@ -157,7 +111,7 @@ export default function GameCatalog({
       pillList.push({
         id: name,
         label: name,
-        count: count > 0 ? count : liveGames.filter((g) => matchesCategory(g.category || '', name)).length,
+        count,
       });
     });
 
@@ -169,11 +123,13 @@ export default function GameCatalog({
     let result = [...liveGames];
 
     // Filter by selected category pill
-    if (selectedPill && selectedPill !== 'ALL' && selectedPill !== 'ZOTE (ALL)') {
-      result = result.filter((g) => matchesCategory(g.category || '', selectedPill));
-      if (result.length === 0 && liveGames.length > 0) {
-        result = [...liveGames];
-      }
+    if (selectedPill && selectedPill !== 'ALL') {
+      const fc = selectedPill.toLowerCase().replace(/s$/i, '').trim();
+      result = result.filter((g) => {
+        if (!g?.category) return false;
+        const gc = String(g.category).toLowerCase().replace(/s$/i, '').trim();
+        return gc === fc || gc.includes(fc) || fc.includes(gc);
+      });
     }
 
     // Global search query filter
@@ -211,7 +167,7 @@ export default function GameCatalog({
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-lg">
         <div className="flex items-center gap-3 min-w-0">
-          {onBack && searchQuery && (
+          {onBack && (
             <motion.button
               whileHover={{ x: -3 }}
               whileTap={{ scale: 0.92 }}
@@ -257,7 +213,7 @@ export default function GameCatalog({
       {/* Dynamic In-View Horizontal Pill-Selector Bar */}
       <div className="flex items-center gap-2 overflow-x-auto py-1.5 px-0.5 no-scrollbar touch-pan-x">
         {categoryPills.map((pill) => {
-          const isSelected = selectedPill.toLowerCase() === pill.id.toLowerCase() || (selectedPill === 'ALL' && pill.id === 'ALL');
+          const isSelected = selectedPill.toLowerCase() === pill.id.toLowerCase();
           return (
             <button
               key={pill.id}

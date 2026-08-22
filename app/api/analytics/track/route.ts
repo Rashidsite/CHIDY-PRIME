@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       if (data) {
         await supabaseAdmin
           .from('posts')
-          .update({ views: (data.views || 0) + 1 })
+          .update({ views: (Number(data.views) || 0) + 1 })
           .eq('id', game_id);
       }
     } else if (type === 'click') {
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       if (data) {
         await supabaseAdmin
           .from('posts')
-          .update({ views: (data.views || 0) + 1 })
+          .update({ views: (Number(data.views) || 0) + 1 })
           .eq('id', game_id);
       }
     }

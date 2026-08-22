@@ -73,10 +73,11 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
       const local0 = clean255.startsWith('255') ? '0' + clean255.slice(3) : clean255;
 
       const { data, error } = await supabase
-        .from('user_purchases')
+        .from('orders')
         .select('*')
-        .or(`customer_phone.eq.${clean255},customer_phone.eq.${local0},phone_number.eq.${clean255},phone_number.eq.${local0}`)
-        .order('unlocked_at', { ascending: false });
+        .or(`visitor_phone.eq.${clean255},visitor_phone.eq.${local0},phone_number.eq.${clean255},phone_number.eq.${local0}`)
+        .in('status', ['approved', 'completed', 'paid'])
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.warn('[useProductAccess] Query warning:', error.message);
@@ -101,9 +102,9 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
         const purchaseItem: UnlockedPurchase = {
           id: row.id,
           productId: String(prodId),
-          productTitle: row.product_title || 'Premium Game',
-          customerPhone: row.customer_phone || row.phone_number || clean255,
-          orderRef: row.order_reference || row.order_id,
+          productTitle: row.game_title || row.product_title || 'Premium Game',
+          customerPhone: row.visitor_phone || row.customer_phone || row.phone_number || clean255,
+          orderRef: row.order_number || row.order_reference || row.order_id,
           downloadLinks: Array.isArray(row.download_links) ? row.download_links : [],
           downloadToken: row.download_token,
           accessDuration: row.access_duration || 'Lifetime',
