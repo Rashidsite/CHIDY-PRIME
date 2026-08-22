@@ -47,7 +47,7 @@ export async function GET() {
         totalSpent: 0,
         lastActive: o.created_at,
         name: o.visitors?.name || '',
-        productTitles: [],
+        productTitles: [] as string[],
       };
 
       existing.totalOrders += 1;

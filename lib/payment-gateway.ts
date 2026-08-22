@@ -29,8 +29,8 @@ const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_0359eff9eff724d5
  */
 export function formatTzPhone(phone: string): string {
   if (!phone) return '';
-  let clean = phone.replace(/[^0-9]/g, '');
-  if (clean.startsWith('0')) {
+  let clean = phone.replace(/\D/g, '');
+  if (clean.startsWith('0') && clean.length === 10) {
     clean = '255' + clean.slice(1);
   } else if (!clean.startsWith('255') && clean.length === 9) {
     clean = '255' + clean;
@@ -80,7 +80,7 @@ export function isPressoPayConfigured(): boolean {
 }
 
 /**
- * Check payment status directly from PressoPay API
+ * Check payment status directly from PressoPay API (Ultra-Fast 3.5s Timeout)
  */
 export async function getPressoPayPaymentStatus(reference: string): Promise<any> {
   try {
@@ -105,7 +105,7 @@ export async function getPressoPayPaymentStatus(reference: string): Promise<any>
         'X-Presso-Nonce': nonce,
         'X-Presso-Signature': signature,
       },
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(3500),
     });
 
     if (!res.ok) return null;
@@ -174,7 +174,7 @@ export async function triggerPressoPayCheckout(params: {
       'X-Presso-Signature': signature,
     },
     body,
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(6000),
   });
 
   if (!response.ok) {

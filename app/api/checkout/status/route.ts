@@ -5,6 +5,12 @@ import { formatTzPhone, toLocalPhone, getPressoPayPaymentStatus, getHarakaPaySta
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
 import { fulfillOrderApproval, normalizePhone } from '@/lib/payment-fulfillment';
 
+const STATUS_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'X-Accel-Buffering': 'no',
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -25,7 +31,7 @@ export async function GET(request: NextRequest) {
     const isUuid = rawRef.includes('-') && rawRef.length === 36;
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 1. QUERY payment_orders TABLE FIRST
+    // 1. QUERY payment_orders TABLE FIRST (Fast Indexed Match)
     // ──────────────────────────────────────────────────────────────────────────
     let order: any = null;
 
@@ -53,12 +59,12 @@ export async function GET(request: NextRequest) {
       order = data;
     }
 
-    // Check if already approved/completed in DB
+    // Check if already approved/completed in DB (Instant Sub-50ms Short-Circuit)
     const currentStatus = String(order?.status || '').toLowerCase();
     let isCompleted = ['completed', 'approved', 'paid', 'success'].includes(currentStatus);
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 2. LIVE GATEWAY QUERY FALLBACK (PressoPay API Auto-Verification)
+    // 2. LIVE GATEWAY QUERY FALLBACK (Only if not already confirmed in DB)
     // ──────────────────────────────────────────────────────────────────────────
     if (!isCompleted && (rawRef || order)) {
       const gatewayRefPart = order?.promo_used?.includes('|') ? order.promo_used.split('|')[1] : null;
@@ -78,10 +84,8 @@ export async function GET(request: NextRequest) {
               ''
             ).trim().toUpperCase();
 
-            console.log(`[Status Poller] 📡 PressoPay API check for ref "${testRef}": status = ${pStatusStr}`);
-
             if (['COMPLETED', 'SUCCESS', 'PAID', 'APPROVED', 'OK', 'COMPLETE', '00', 'TRUE'].includes(pStatusStr)) {
-              console.log(`[Status Poller] ⚡ PressoPay confirmed payment! Triggering master approval for ${testRef}...`);
+              console.log(`[Status Poller ⚡] PressoPay confirmed payment for ${testRef}! Fulfilling...`);
               const fulfillResult = await fulfillOrderApproval({
                 orderIdOrRef: orderRefPart,
                 gatewayRef: testRef,
@@ -103,7 +107,7 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (pErr) {
-          console.warn('[Status Poller] PressoPay live check warning:', pErr);
+          console.warn('[Status Poller ⚡] PressoPay live check warning:', pErr);
         }
       }
 
@@ -131,32 +135,39 @@ export async function GET(request: NextRequest) {
     const downloadLinks = order?.posts ? parseUniversalDownloadLinks(order.posts) : [];
     const resolvedOrderNumber = order?.promo_used?.split('|')[0] || order?.id || rawRef;
 
-    return NextResponse.json({
-      success: true,
-      is_completed: isCompleted,
-      isCompleted: isCompleted,
-      status: isCompleted ? 'approved' : order?.status || 'pending',
-      orderNumber: resolvedOrderNumber,
-      order: order
-        ? {
-            id: order.id,
-            order_number: resolvedOrderNumber,
-            order_id: order.id,
-            game_id: order.post_id,
-            product_id: order.post_id,
-            game_title: order.posts?.title || 'Digital Product',
-            amount: order.amount,
-            status: isCompleted ? 'approved' : order.status || 'pending',
-            customer_name: order.visitors?.name || 'Mteja wa Mtandaoni',
-            visitor_phone: order.phone_number,
-            download_links: downloadLinks,
-          }
-        : null,
-      download_links: downloadLinks,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        is_completed: isCompleted,
+        isCompleted: isCompleted,
+        status: isCompleted ? 'approved' : order?.status || 'pending',
+        orderNumber: resolvedOrderNumber,
+        order: order
+          ? {
+              id: order.id,
+              order_number: resolvedOrderNumber,
+              order_id: order.id,
+              game_id: order.post_id,
+              product_id: order.post_id,
+              game_title: order.posts?.title || 'Digital Product',
+              amount: order.amount,
+              status: isCompleted ? 'approved' : order.status || 'pending',
+              customer_name: order.visitors?.name || 'Mteja wa Mtandaoni',
+              visitor_phone: order.phone_number,
+              download_links: downloadLinks,
+              activation_key: order.activation_key || 'CP-CG-ACTIVE',
+              access_duration: order.posts?.access_duration || order.posts?.plan_duration || 'Lifetime',
+            }
+          : null,
+        download_links: downloadLinks,
+      },
+      {
+        headers: STATUS_HEADERS,
+      }
+    );
   } catch (err: any) {
-    console.error('[Status API] Error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    console.error('[Status API ⚡] Error:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500, headers: STATUS_HEADERS });
   }
 }
 

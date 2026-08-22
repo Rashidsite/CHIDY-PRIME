@@ -136,25 +136,42 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
             : '255' + digits;
           const local = '0' + norm.slice(3);
 
-          const { data: orders } = await supabase
-            .from('orders')
-            .select('id, status, created_at, game_id, access_duration, visitor_phone')
-            .or(`game_id.eq.${game.id},product_id.eq.${game.id}`)
-            .or(`visitor_phone.eq.${norm},visitor_phone.eq.${local}`)
-            .in('status', ['completed', 'approved', 'paid'])
-            .order('created_at', { ascending: false })
-            .limit(1);
+          let latestOrder: any = null;
+          try {
+            const { data: pOrders } = await supabase
+              .from('payment_orders')
+              .select('id, status, created_at, post_id, phone_number, promo_used')
+              .eq('post_id', game.id)
+              .or(`phone_number.eq.${norm},phone_number.eq.${local}`)
+              .in('status', ['completed', 'approved', 'paid'])
+              .order('created_at', { ascending: false })
+              .limit(1);
 
-          if (!orders || orders.length === 0) {
-            // No valid order → remove stale entry and stay on STEP_1
+            if (pOrders && pOrders.length > 0) {
+              latestOrder = pOrders[0];
+            } else {
+              const { data: orders } = await supabase
+                .from('orders')
+                .select('id, status, created_at, game_id, access_duration, visitor_phone')
+                .or(`game_id.eq.${game.id},product_id.eq.${game.id}`)
+                .or(`visitor_phone.eq.${norm},visitor_phone.eq.${local}`)
+                .in('status', ['completed', 'approved', 'paid'])
+                .order('created_at', { ascending: false })
+                .limit(1);
+              if (orders && orders.length > 0) {
+                latestOrder = orders[0];
+              }
+            }
+          } catch {}
+
+          if (!latestOrder) {
+            // No valid order in DB -> remove stale entry and stay on STEP_1
             try {
               const remaining = parsed.filter((id: string) => id !== game?.id);
               localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
             } catch (e) {}
             return;
           }
-
-          const latestOrder = orders[0];
 
           // Determine if the purchase has expired
           const raw =
@@ -393,7 +410,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     }
 
     let attempts = 0;
-    const maxAttempts = 30; // 30 attempts * 2.5s = 75 seconds
+    const maxAttempts = 60; // 60 attempts * 1.2s = 72 seconds
 
     // 2. Chain .on('postgres_changes', ...) BEFORE .subscribe()
     const channel = supabase
@@ -507,7 +524,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       activeUnlockedListenerRef.current = handleWindowUnlocked;
     }
 
-    // 5. Active 2.5s Polling interval with PressoPay live auto-approval check
+    // 5. Ultra-Fast 1.2s Polling interval with PressoPay live auto-approval check
     pollTimerRef.current = setInterval(async () => {
       attempts++;
       try {
@@ -529,23 +546,25 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           return;
         }
 
-        // Secondary fallback check
-        const res2 = await fetch(
-          `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
-        );
-        const data2 = await res2.json();
-        if (data2.success && data2.is_completed) {
-          handlePaymentConfirmed(
-            data2.order || {
-              id: cleanOrderId,
-              order_number: cleanOrderNumber,
-              game_id: game.id,
-              status: 'completed',
-              download_links: data2.download_links,
-              activation_key: data2.activation_key,
-            }
+        // Secondary fallback check if needed
+        if (attempts % 3 === 0) {
+          const res2 = await fetch(
+            `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
           );
-          return;
+          const data2 = await res2.json();
+          if (data2.success && data2.is_completed) {
+            handlePaymentConfirmed(
+              data2.order || {
+                id: cleanOrderId,
+                order_number: cleanOrderNumber,
+                game_id: game.id,
+                status: 'completed',
+                download_links: data2.download_links,
+                activation_key: data2.activation_key,
+              }
+            );
+            return;
+          }
         }
       } catch (err) {
         console.warn('Status poll error:', err);
@@ -554,7 +573,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       if (attempts >= maxAttempts) {
         clearAllTimers();
       }
-    }, 2500);
+    }, 1200);
   };
 
   const handleManualCheck = async () => {
