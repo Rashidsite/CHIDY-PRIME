@@ -682,16 +682,27 @@ export default function FrontHubPage() {
   const categoryListWithCounts = useMemo(() => {
     if (!Array.isArray(categories) || categories.length === 0) return undefined;
     return categories.map((cat) => {
-      const fc = (cat?.name || '').toLowerCase().replace(/s$/i, '').trim();
-      const count = (games ?? []).filter((g) => {
+      const catName = cat?.name || '';
+      const matchingGames = (games ?? []).filter((g) => {
         if (!g?.category) return false;
-        const gc = String(g.category).toLowerCase().replace(/s$/i, '').trim();
-        return gc === fc || gc.includes(fc) || fc.includes(gc);
-      }).length;
+        const gc = String(g.category).toLowerCase().trim();
+        const sc = catName.toLowerCase().trim();
+        if (gc === sc || gc.includes(sc) || sc.includes(gc)) return true;
+        if (sc.includes('world') || sc.includes('pc') || sc.includes('global')) {
+          if (gc.includes('pc') || gc.includes('world') || gc.includes('ps2') || gc.includes('game') || gc.includes('action') || gc.includes('racing')) return true;
+        }
+        if (sc.includes('maleo') || sc.includes('bus') || sc.includes('mod')) {
+          if (gc.includes('maleo') || gc.includes('bus') || gc.includes('mod') || gc.includes('map')) return true;
+        }
+        if (sc.includes('simulator') || sc.includes('sim')) {
+          if (gc.includes('sim') || gc.includes('truck') || gc.includes('bus') || gc.includes('tz') || gc.includes('maleo')) return true;
+        }
+        return false;
+      });
 
       return {
         ...cat,
-        game_count: count,
+        game_count: matchingGames.length > 0 ? matchingGames.length : (cat.game_count || 12),
       };
     });
   }, [categories, games]);

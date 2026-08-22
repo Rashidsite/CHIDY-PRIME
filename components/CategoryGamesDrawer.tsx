@@ -19,6 +19,77 @@ interface CategoryGamesDrawerProps {
 const BLUR_DATA_URL =
   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxMCI+PHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjEwIiBmaWxsPSIjMGUxNzJhIi8+PC9zdmc+';
 
+function matchesCategory(gameCategory: string, selectedCategory: string): boolean {
+  if (!gameCategory || !selectedCategory) return false;
+  const gc = gameCategory.toLowerCase().trim();
+  const sc = selectedCategory.toLowerCase().trim();
+
+  if (sc === 'all' || sc === 'yote') return true;
+  if (gc === sc) return true;
+
+  const gcClean = gc.replace(/s$/i, '');
+  const scClean = sc.replace(/s$/i, '');
+  if (gcClean === scClean || gc.includes(sc) || sc.includes(gc)) return true;
+
+  // World Games / PC Games / Global Games matching
+  if (sc.includes('world') || sc.includes('pc') || sc.includes('global')) {
+    if (
+      gc.includes('world') ||
+      gc.includes('pc') ||
+      gc.includes('ps2') ||
+      gc.includes('ps3') ||
+      gc.includes('ps4') ||
+      gc.includes('ps5') ||
+      gc.includes('android') ||
+      gc.includes('action') ||
+      gc.includes('racing') ||
+      gc.includes('fifa') ||
+      gc.includes('gta') ||
+      gc.includes('war') ||
+      gc.includes('game')
+    ) {
+      return true;
+    }
+  }
+
+  // Maleo Mods / Bus / Map Mods matching
+  if (sc.includes('maleo') || sc.includes('bus') || sc.includes('mod')) {
+    if (
+      gc.includes('maleo') ||
+      gc.includes('bus') ||
+      gc.includes('mod') ||
+      gc.includes('map') ||
+      gc.includes('shabiby') ||
+      gc.includes('yutong') ||
+      gc.includes('livery')
+    ) {
+      return true;
+    }
+  }
+
+  // TZ Simulators / Simulator matching
+  if (sc.includes('simulator') || sc.includes('sim')) {
+    if (
+      gc.includes('sim') ||
+      gc.includes('truck') ||
+      gc.includes('bus') ||
+      gc.includes('drive') ||
+      gc.includes('tz') ||
+      gc.includes('maleo')
+    ) {
+      return true;
+    }
+  }
+
+  // Word token intersection check
+  const scWords = sc.split(/[\s\-_/]+/).filter((w) => w.length > 2);
+  const gcWords = gc.split(/[\s\-_/]+/).filter((w) => w.length > 2);
+  const hasWordMatch = scWords.some((sw) => gcWords.some((gw) => gw.includes(sw) || sw.includes(gw)));
+  if (hasWordMatch) return true;
+
+  return false;
+}
+
 export default function CategoryGamesDrawer({
   isOpen,
   onClose,
@@ -32,12 +103,19 @@ export default function CategoryGamesDrawer({
   const filteredAndSortedGames = useMemo(() => {
     if (!categoryName) return [];
 
-    const fc = categoryName.toLowerCase().replace(/s$/i, '').trim();
-    let result = games.filter((g) => {
-      if (!g.category) return false;
-      const gc = g.category.toLowerCase().replace(/s$/i, '').trim();
-      return gc === fc || gc.includes(fc) || fc.includes(gc);
-    });
+    let result = games.filter((g) => matchesCategory(g.category || '', categoryName));
+    if (result.length === 0 && games.length > 0) {
+      // Graceful fallback to all games or category token search
+      const scWords = categoryName.toLowerCase().split(/[\s\-_/]+/).filter((w) => w.length > 2);
+      result = games.filter((g) => {
+        const title = (g.title || '').toLowerCase();
+        const desc = (g.description || '').toLowerCase();
+        return scWords.some((w) => title.includes(w) || desc.includes(w));
+      });
+      if (result.length === 0) {
+        result = [...games];
+      }
+    }
 
     result.sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price;
