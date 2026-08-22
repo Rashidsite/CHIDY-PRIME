@@ -182,97 +182,59 @@ export default function FrontHubPage() {
   const loadStorefrontData = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
-      // 1. Fetch Real Products from Supabase 'posts' table
-      let postsData: any[] | null = null;
+      // 1. Primary: Fetch from high-speed cached /api/games endpoint
+      let loadedGames: GameProduct[] = [];
       try {
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (error) console.warn('Supabase posts fetch warning:', error.message);
-        postsData = data;
-      } catch (e) {
-        console.error('Failed to fetch from posts:', e);
-      }
-
-      // 2. Fetch Optional 'products' table if available
-      let productsData: any[] | null = null;
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (!error && data) {
-          productsData = data;
+        const res = await fetch('/api/games', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.games) && json.games.length > 0) {
+            loadedGames = json.games;
+          }
         }
-      } catch (e) {}
-
-      const combined: GameProduct[] = [];
-
-      // Process posts table (Primary)
-      if (postsData && postsData.length > 0) {
-        postsData.forEach((p) => {
-          if (p.status === 'draft' || p.status === 'archived') return;
-
-          let dur = p.plan_duration || p.access_duration || p.license_duration || p.duration;
-          if (!dur && p.duration_days !== undefined && p.duration_days !== null) {
-            if (p.duration_days === 2) dur = '2 Hours';
-            else if (p.duration_days === 1 || p.duration_days === 24) dur = '24 Hours';
-            else if (p.duration_days === 7) dur = '7 Days';
-            else if (p.duration_days === 30) dur = '30 Days';
-            else if (p.duration_days === 0) dur = 'Lifetime';
-            else dur = `${p.duration_days} Days`;
-          }
-
-          combined.push({
-            id: p.id,
-            title: p.title || 'Untitled Game',
-            description: p.description || '',
-            cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-            price: Number(p.price || 0),
-            rating: Number(p.rating || 4.9),
-            category: p.category || 'PC Games',
-            tags: ['Chidy Prime', 'Tanzania'],
-            status: p.status || 'published',
-            is_new_feed: Boolean(p.is_new_feed),
-            download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
-            links: p.links || [],
-            access_duration: dur || 'Lifetime',
-            license_duration: dur || 'Lifetime',
-            plan_duration: dur || 'Lifetime',
-          } as any);
-        });
+      } catch (apiErr) {
+        console.warn('/api/games fetch error, attempting direct supabase fallback:', apiErr);
       }
 
-      // Process products table (if any)
-      if (productsData && productsData.length > 0) {
-        const existingIds = new Set(combined.map((c) => c.id));
-        productsData.forEach((g) => {
-          if (g.status === 'draft' || g.status === 'archived') return;
-          if (!existingIds.has(g.id)) {
-            existingIds.add(g.id);
-            combined.push({
-              id: g.id,
-              title: g.title || 'Untitled Game',
-              description: g.description || '',
-              cover_image: g.cover_image || g.image_url || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-              price: Number(g.price || 0),
-              rating: Number(g.rating || 4.9),
-              category: g.category || 'PC Games',
-              tags: ['Chidy Prime'],
-              status: g.status || 'published',
-              is_new_feed: Boolean(g.is_new_feed),
-              download_url: g.download_url,
-              links: g.download_links || [],
-              access_duration: g.access_duration || 'Lifetime',
-              license_duration: g.access_duration || 'Lifetime',
-              plan_duration: g.access_duration || 'Lifetime',
+      // 2. Secondary Fallback: Direct Supabase query if /api/games returned empty
+      if (loadedGames.length === 0) {
+        let postsData: any[] | null = null;
+        try {
+          const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && data) postsData = data;
+        } catch (e) {}
+
+        if (postsData && postsData.length > 0) {
+          postsData.forEach((p) => {
+            if (p.status === 'draft' || p.status === 'archived') return;
+            const dur = p.plan_duration || p.access_duration || p.license_duration || (p.duration_days ? `${p.duration_days} Days` : 'Lifetime');
+            loadedGames.push({
+              id: p.id,
+              title: p.title || 'Untitled Game',
+              description: p.description || '',
+              cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+              price: Number(p.price || 0),
+              rating: Number(p.rating || 4.9),
+              category: p.category || 'PC Games',
+              tags: ['Chidy Prime', 'Tanzania'],
+              status: p.status || 'published',
+              is_new_feed: Boolean(p.is_new_feed),
+              download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
+              links: p.links || [],
+              access_duration: dur,
+              license_duration: dur,
+              plan_duration: dur,
             } as any);
-          }
-        });
+          });
+        }
       }
 
-      setGames(combined);
+      if (loadedGames.length > 0) {
+        setGames(loadedGames);
+      }
 
       // Load CMS Hero Slides
       try {
