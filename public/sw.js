@@ -10,15 +10,54 @@ importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 //   Fallback       → Return cached page if offline
 // ============================================================
 
-const CACHE_NAME    = 'chidy-prime-v9';
-const API_CACHE     = 'chidy-api-v9';
+const CACHE_NAME = 'chidy-live-v11';
+const API_CACHE = 'chidy-api-v11';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon.png',
   '/maskable-icon.png'
 ];
 
-// API routes: Network-First (fresh live data priority, fallback to cache if offline)
+// ── INSTALL: Force immediate activation ───────────────────────
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS).catch(() => {});
+    })
+  );
+});
+
+// ── ACTIVATE: Instant claim & purge ALL old caches ────────────
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((name) => {
+            if (name !== CACHE_NAME && name !== API_CACHE) {
+              console.log('[SW] 🧹 Purging obsolete cache:', name);
+              return caches.delete(name);
+            }
+          })
+        );
+      }),
+    ])
+  );
+});
+
+// ── MESSAGE LISTENER: Allow manual cache purge from UI ────────
+self.addEventListener('message', (event) => {
+  if (event.data && (event.data.type === 'SKIP_WAITING' || event.data.type === 'PURGE_CACHE')) {
+    self.skipWaiting();
+    caches.keys().then((names) => {
+      names.forEach((name) => caches.delete(name));
+    });
+  }
+});
+
+// ── FETCH HANDLER ─────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -26,7 +65,6 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET and cross-origin requests (except CDNs we trust)
   if (request.method !== 'GET') return;
   if (url.origin !== self.location.origin) {
-    // For CDN fonts/icons: cache-first
     if (url.hostname.includes('fonts.') || url.hostname.includes('cdnjs.') || url.hostname.includes('cdn.jsdelivr')) {
       event.respondWith(cacheFirst(request, CACHE_NAME));
     }
@@ -42,13 +80,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (JS, CSS, images, fonts, icons): Cache-First
+  // Navigation (Page Loads): Always Network-First (Never show stale cached pages)
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request, CACHE_NAME));
+    return;
+  }
+
+  // Static assets (CSS, images, fonts, icons): Cache-First
   if (/\.(js|css|png|jpg|jpeg|svg|webp|gif|woff2?|ttf|ico|json)$/.test(url.pathname)) {
     event.respondWith(cacheFirst(request, CACHE_NAME));
     return;
   }
 
-  // HTML pages: Network-First with offline fallback
+  // Fallback
   event.respondWith(networkFirst(request, CACHE_NAME));
 });
 
@@ -83,33 +127,6 @@ async function networkFirst(request, cacheName) {
     const cached = await caches.match(request);
     return cached || new Response('Offline', { status: 503 });
   }
-}
-
-/** Stale-While-Revalidate: return cache instantly, update in background */
-async function staleWhileRevalidate(request, cacheName, maxAgeSeconds) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-
-  const fetchPromise = fetch(request).then((response) => {
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  }).catch(() => null);
-
-  if (cached) {
-    // Check if cached response is still within maxAge
-    const cachedDate = cached.headers.get('date');
-    if (cachedDate) {
-      const age = (Date.now() - new Date(cachedDate).getTime()) / 1000;
-      if (age < maxAgeSeconds) return cached; // Fresh enough — instant!
-    } else {
-      return cached; // No date header, serve anyway
-    }
-  }
-
-  // No cache or stale — wait for network
-  return fetchPromise || new Response('Offline', { status: 503 });
 }
 
 // ── PUSH NOTIFICATIONS ────────────────────────────────────────

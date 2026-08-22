@@ -46,13 +46,15 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
       const isIosDevice = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
       setIsIOS(isIosDevice);
 
-      // 2. Register Service Worker
+      // 2. Register Service Worker with instant update check
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
             .register('/sw.js')
             .then((registration) => {
               console.log('[PWA] Service Worker active with scope:', registration.scope);
+              // Force check for updates on load to avoid serving stale builds
+              registration.update().catch(() => {});
             })
             .catch((err) => {
               console.warn('[PWA] Service Worker registration failed:', err);
