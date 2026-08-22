@@ -24,6 +24,7 @@ const nextConfig = {
         hostname: '**',
       },
     ],
+  },
   async headers() {
     return [
       {
