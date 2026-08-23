@@ -373,86 +373,20 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
     activeChannelRef.current = channel;
 
-    // 3. Chain broadcast listener before .subscribe()
-    const broadcastChannel = supabase
-      .channel(`order_broadcast_modal_${cleanOrderId}`)
-      .on(
-        'broadcast',
-        { event: 'ORDER_APPROVED' },
-        (payload: any) => {
-          const data = payload?.payload || payload;
-          if (data && (data.orderId === cleanOrderId || data.orderNumber === cleanOrderNumber)) {
-            handlePaymentConfirmed({
-              id: cleanOrderId,
-              order_number: cleanOrderNumber,
-              game_id: game.id,
-              status: 'completed',
-              activation_key: data.activationKey,
-              download_token: data.downloadToken,
-              download_links: data.downloadLinks,
-            });
-          }
-        }
-      )
-      .on(
-        'broadcast',
-        { event: 'PRODUCT_UNLOCKED' },
-        (payload: any) => {
-          const data = payload?.payload || payload;
-          if (data && (data.orderId === cleanOrderId || data.orderRef === cleanOrderNumber)) {
-            handlePaymentConfirmed({
-              id: cleanOrderId,
-              order_number: cleanOrderNumber,
-              game_id: game.id,
-              status: 'completed',
-              activation_key: data.activationKey,
-              download_token: data.downloadToken,
-              download_links: data.downloadLinks,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    activeBroadcastRef.current = broadcastChannel;
-
-    // 4. Window custom event fallback (Strict specific order match)
-    const handleWindowUnlocked = (e: any) => {
-      const detail = e?.detail;
-      if (
-        detail &&
-        (detail.orderId === cleanOrderId || detail.orderNumber === cleanOrderNumber)
-      ) {
-        handlePaymentConfirmed({
-          id: cleanOrderId,
-          order_number: cleanOrderNumber,
-          game_id: game.id,
-          status: 'completed',
-          activation_key: detail.activationKey || detail.activation_key,
-          download_token: detail.downloadToken || detail.download_token,
-          download_links: detail.downloadLinks || detail.download_links,
-        });
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('cpcg_order_unlocked', handleWindowUnlocked);
-      activeUnlockedListenerRef.current = handleWindowUnlocked;
-    }
-
-    // 5. Ultra-Fast 1.2s Polling interval with PressoPay live auto-approval check
+    // 3. Ultra-Reliable 2s Polling interval with live gateway status verification
     pollTimerRef.current = setInterval(async () => {
       attempts++;
       try {
         const res = await fetch(
           `/api/payment/check-status?reference=${encodeURIComponent(cleanOrderNumber || cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
         );
+        const data = await res.json();
         const isConfirmed = 
-          data.success && 
-          (data.is_completed === true || data.isCompleted === true) && 
-          ['completed', 'approved', 'paid', 'success'].includes(String(data.status || data.order?.status || '').toLowerCase());
+          data?.success && 
+          (data?.is_completed === true || data?.isCompleted === true) && 
+          ['completed', 'approved', 'paid', 'success'].includes(String(data?.status || data?.order?.status || '').toLowerCase());
 
-        if (isConfirmed && data.order) {
+        if (isConfirmed && data?.order) {
           handlePaymentConfirmed(data.order);
           return;
         }
@@ -464,11 +398,11 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           );
           const data2 = await res2.json();
           const isConfirmed2 = 
-            data2.success && 
-            (data2.is_completed === true || data2.isCompleted === true) && 
-            ['completed', 'approved', 'paid', 'success'].includes(String(data2.status || data2.order?.status || '').toLowerCase());
+            data2?.success && 
+            (data2?.is_completed === true || data2?.isCompleted === true) && 
+            ['completed', 'approved', 'paid', 'success'].includes(String(data2?.status || data2?.order?.status || '').toLowerCase());
 
-          if (isConfirmed2 && data2.order) {
+          if (isConfirmed2 && data2?.order) {
             handlePaymentConfirmed(data2.order);
             return;
           }
@@ -479,8 +413,9 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
       if (attempts >= maxAttempts) {
         clearAllTimers();
+        setError('Muda wa kusubiri malipo umekwisha. Kama umeweka PIN tafadhali bonyeza Hakiki Malipo.');
       }
-    }, 1200);
+    }, 2000);
   };
 
   const handleManualCheck = async () => {
