@@ -51,7 +51,7 @@ const COUNTDOWN_INITIAL_SECONDS = 60;
 export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: CheckoutModalProps) {
   // ── Form State ──
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('07');
+  const [phone, setPhone] = useState('');
 
   // ── Step State Machine ──
   const [step, setStep] = useState<CheckoutStep>('STEP_1_FORM');
@@ -90,13 +90,23 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   // Reset or initialize ONLY when modal opens — validate Supabase for timed purchases
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current) {
-      // Pre-fill phone/name from profile or localStorage
-      if (profile?.phone_number && (phone === '07' || !phone)) {
-        setPhone(profile.phone_number);
-      } else {
+      // Pre-fill phone/name from profile or localStorage if valid local format
+      if (profile?.phone_number && !phone) {
+        const raw = profile.phone_number.replace(/\D/g, '');
+        const local = raw.startsWith('255') ? '0' + raw.slice(3) : raw;
+        if (local.length === 10 && (local.startsWith('06') || local.startsWith('07'))) {
+          setPhone(local);
+        }
+      } else if (!phone) {
         try {
           const savedPhone = localStorage.getItem('cpcg_user_phone');
-          if (savedPhone && (phone === '07' || !phone)) setPhone(savedPhone);
+          if (savedPhone) {
+            const raw = savedPhone.replace(/\D/g, '');
+            const local = raw.startsWith('255') ? '0' + raw.slice(3) : raw;
+            if (local.length === 10 && (local.startsWith('06') || local.startsWith('07'))) {
+              setPhone(local);
+            }
+          }
         } catch (e) {}
       }
       if (profile?.full_name && !fullName) {
@@ -633,17 +643,27 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     e.preventDefault();
     setError(null);
 
-    const cleaned = cleanPhoneNumber(phone);
+    const digitsOnly = phone.replace(/\D/g, '');
+    let localPhone = digitsOnly;
+    if (digitsOnly.startsWith('255') && digitsOnly.length === 12) {
+      localPhone = '0' + digitsOnly.slice(3);
+    }
 
-    if (!cleaned || cleaned.length < 9) {
-      setError('Tafadhali weka namba sahihi ya simu (mfano: 07XX XXX XXX au 06XX XXX XXX).');
+    // Strict Tanzanian Mobile Network Validation (06XXXXXXXX or 07XXXXXXXX)
+    const isValidTz =
+      localPhone.length === 10 &&
+      (localPhone.startsWith('06') || localPhone.startsWith('07'));
+
+    if (!isValidTz) {
+      setError('Tafadhali weka namba sahihi ya simu ya Tanzania inayoanza na 06 au 07 (tarakimu 10 kamili, mfano: 0796615257).');
       return;
     }
 
-    const resolvedName = fullName.trim() || `User-${cleaned}`;
+    const internationalPhone = '255' + localPhone.slice(1);
+    const resolvedName = fullName.trim() || `User-${localPhone}`;
 
     try {
-      localStorage.setItem('cpcg_user_phone', cleaned);
+      localStorage.setItem('cpcg_user_phone', localPhone);
       localStorage.setItem('cpcg_user_registered', 'true');
       localStorage.setItem('cpcg_active_game_id', game.id);
     } catch (e) {}
@@ -653,11 +673,11 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: resolvedName,
-        phone: cleaned,
+        phone: internationalPhone,
       }),
     }).catch(() => {});
 
-    syncPhoneAuth(resolvedName, cleaned);
+    syncPhoneAuth(resolvedName, localPhone);
 
     setStep('STEP_2_PROCESSING');
     startCountdown();
@@ -668,7 +688,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         game_id: game.id,
-        visitor_phone: cleaned,
+        visitor_phone: internationalPhone,
         customer_name: resolvedName,
         payment_gateway: 'pressopay',
       }),
@@ -743,7 +763,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                     <h3 className="text-base font-black text-white uppercase tracking-tight">
                       CHIDYPRIME x CHIDYGAMING
                     </h3>
-                    <p className="text-[10px] text-blue-400 font-bold">PressoPay Instant STK Push ({productLabel})</p>
+                    <p className="text-[10px] text-blue-400 font-bold">Malipo ya Haraka kwa Simu ({productLabel})</p>
                   </div>
                 </div>
 
@@ -795,16 +815,24 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                 <div>
                   <label className="block text-[11px] font-black uppercase text-slate-300 mb-1.5 flex items-center gap-1.5">
                     <Smartphone className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Namba ya Simu (M-Pesa / Tigo / Airtel / HaloPesa)</span>
+                    <span>Namba ya Simu (06XX / 07XX)</span>
                   </label>
                   <input
                     type="tel"
                     required
-                    placeholder="07XX XXX XXX au 06XX XXX XXX"
+                    maxLength={10}
+                    placeholder="07XXXXXXXX au 06XXXXXXXX"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone(val);
+                      if (error) setError(null);
+                    }}
                     className="w-full bg-[#111827] border border-slate-700/80 rounded-2xl px-4 py-3.5 text-xs text-emerald-400 font-mono font-bold placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
                   />
+                  <p className="text-[9px] text-slate-400 mt-1 font-medium">
+                    Andika namba yako halisi ya Vodacom, Tigo, Airtel au Halotel (tarakimu 10 kuanzia 06 au 07)
+                  </p>
                 </div>
 
                 {error && (
@@ -878,7 +906,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                     📲 Tafadhali kamilisha malipo kwa kuweka PIN kwenye simu yako (<span className="text-amber-400 font-mono font-black">{phone}</span>)...
                   </p>
                   <p className="text-[11px] text-slate-300">
-                    Kiasi: <span className="text-emerald-400 font-black">{formatCurrency(game.price)}</span> | Gateway: <span className="text-blue-400 font-black">PressoPay STK Push</span>
+                    Kiasi: <span className="text-emerald-400 font-black">{formatCurrency(game.price)}</span> | Mtandao: <span className="text-blue-400 font-black">M-Pesa / Tigo Pesa / Airtel / HaloPesa</span>
                   </p>
                 </div>
 
@@ -923,18 +951,6 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                     </>
                   )}
                 </button>
-
-                <a
-                  href={`https://wa.me/255655361060?text=${encodeURIComponent(
-                    `Habari CHIDYPRIME, nahitaji kukamilisha malipo ya:\n🎮 Game: ${game.title}\n💰 Bei: ${formatCurrency(game.price)}\n📋 Oda: ${activeOrder?.order_number || activeOrder?.id || 'Oda Mpya'}\n📱 Namba yangu: ${phone}`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 px-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-emerald-400 text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
-                >
-                  <MessageCircle className="w-4 h-4 text-emerald-400" />
-                  <span>💬 LIPA AU MSAADA WA WHATSAPP</span>
-                </a>
 
                 <div className="flex items-center gap-2">
                   <button
