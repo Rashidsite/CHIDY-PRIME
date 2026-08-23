@@ -33,6 +33,10 @@ export default function DownloadTokenPage() {
 
         if (err || !data) {
           setError('Invalid or expired download token. Please check your order history.');
+        } else if (!['approved', 'completed', 'paid'].includes(String(data.status || '').toLowerCase())) {
+          setError('Payment is pending or not yet approved for this download token.');
+        } else if (data.access_expires_at && new Date(data.access_expires_at).getTime() < Date.now()) {
+          setError('Muda wa ufikiaji wa link hii umekwisha (Access token expired). Tafadhali nunua tena kupata link mpya.');
         } else {
           setOrder(data);
         }
