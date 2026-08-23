@@ -13,8 +13,12 @@ export async function POST(request: NextRequest) {
     const orderRef = String(payload.reference || payload.order_id || payload.orderId || payload.order_number || '').trim();
     const phone = String(payload.phone || payload.phone_number || '').trim();
 
-    if (!isSuccess && status) {
-      return NextResponse.json({ success: true, message: `HarakaPay status ${status} noted.` });
+    if (!isSuccess) {
+      return NextResponse.json({ success: true, message: `HarakaPay status "${status || 'EMPTY'}" noted without unlock.` });
+    }
+
+    if (!orderRef || orderRef.length < 4) {
+      return NextResponse.json({ success: false, error: 'Missing valid order reference' }, { status: 400 });
     }
 
     const result = await fulfillOrderApproval({

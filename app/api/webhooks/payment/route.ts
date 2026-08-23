@@ -64,15 +64,22 @@ export async function POST(request: NextRequest) {
         : payload.amount || payload.paid_amount || 0
     );
 
-    if (!isSuccess && status) {
+    // STRICT SECURITY GUARD: Never fulfill without explicit verified completion status
+    if (!isSuccess) {
+      console.warn(`[Payment Webhook 🔒] Rejected non-completed webhook payload (status: "${status || 'EMPTY'}")`);
       return NextResponse.json({
         success: true,
-        message: `Webhook received with non-completion status: ${status}`,
+        message: `Webhook received with non-completion status: ${status || 'EMPTY'}`,
       });
     }
 
+    const targetRef = orderRef || gatewayRef;
+    if (!targetRef || targetRef.length < 4) {
+      return NextResponse.json({ success: false, error: 'Missing valid order reference' }, { status: 400 });
+    }
+
     const result = await fulfillOrderApproval({
-      orderIdOrRef: orderRef || gatewayRef,
+      orderIdOrRef: targetRef,
       gatewayRef,
       phone,
       gatewayName: payload.gateway || 'PAYMENT_WEBHOOK',

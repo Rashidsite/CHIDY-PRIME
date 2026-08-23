@@ -101,17 +101,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Order marked rejected per gateway signal.' });
     }
 
-    if (!isSuccess && status) {
-      console.log(`[PressoPay Webhook] ℹ️ Non-terminal status "${status}" acknowledged.`);
+    if (!isSuccess) {
+      console.log(`[PressoPay Webhook 🔒] Non-success status "${status || 'EMPTY'}" acknowledged without unlock.`);
       return NextResponse.json({
         success: true,
-        message: `Status "${status}" acknowledged, awaiting final confirmation.`,
+        message: `Status "${status || 'EMPTY'}" acknowledged, awaiting final confirmation.`,
       });
+    }
+
+    const targetRef = orderRef || gatewayRef;
+    if (!targetRef || targetRef.length < 4) {
+      return NextResponse.json({ success: false, error: 'Missing valid order reference' }, { status: 400 });
     }
 
     // ── Execute Master Fulfillment Pipeline ──
     const result = await fulfillOrderApproval({
-      orderIdOrRef: orderRef || gatewayRef,
+      orderIdOrRef: targetRef,
       gatewayRef,
       phone: rawPhone,
       gatewayName: 'PRESSOPAY',

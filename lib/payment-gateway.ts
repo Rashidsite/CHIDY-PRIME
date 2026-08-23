@@ -19,8 +19,8 @@ export interface RoutePaymentResult {
 
 export const DEFAULT_PAYMENT_GATEWAY = 'PRESSOPAY';
 
-const PRESSOPAY_KEY = process.env.PRESSOPAY_API_KEY || process.env.PRESSSO_API_KEY || 'pk_ABUk77pwjZEoLkmA';
-const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || process.env.PRESSOPAY_SECRET_KEY || process.env.PRESSSO_API_SECRET || 'sk_o6_x250mVkQjXFo_sDC2ydYfODErxyo1G0xJEC-A184';
+const PRESSOPAY_KEY = process.env.PRESSOPAY_API_KEY || process.env.PRESSSO_API_KEY || 'pk_s-C8IMEnYUbhazcA';
+const PRESSOPAY_SECRET = process.env.PRESSOPAY_API_SECRET || process.env.PRESSOPAY_SECRET_KEY || process.env.PRESSSO_API_SECRET || 'sk_y0zADWLtOKUtVd0snk8muTIZ0-j9narSjGGbB4QPkIY';
 const PRESSOPAY_BASE = process.env.PRESSOPAY_BASE_URL || 'https://pressopay.com';
 const HARAKAPAY_API_KEY = process.env.HARAKAPAY_API_KEY || 'hpk_0359eff9eff724d5322d0938d519dd0eb277862480320d83';
 
@@ -262,10 +262,39 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
 
   let lastError: string | null = null;
 
-  // 1. PRIMARY GATEWAY: HarakaPay Direct USSD STK Push (Sends PIN prompt to Handset)
+  // 1. PRIMARY GATEWAY: PressoPay Direct STK Push (https://pressopay.com/api/v1/checkouts)
+  if (isPressoPayConfigured()) {
+    try {
+      console.log(`[Payment Gateway ⚡] 🚀 Dispatching PressoPay STK Push for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
+      const pressoRes = await triggerPressoPayCheckout({
+        merchantReference: orderNumber,
+        amountMinor,
+        buyerName,
+        buyerEmail,
+        buyerPhone: formattedPhone,
+        description: description || `Chidy Prime ${orderNumber}`,
+      });
+
+      if (pressoRes && pressoRes.reference) {
+        console.log(`[Payment Gateway ⚡] ✅ PressoPay checkout created: ${pressoRes.reference}`);
+        return {
+          gateway: 'pressopay',
+          gatewayReference: pressoRes.reference,
+          rawResponse: pressoRes,
+          status: pressoRes.status || 'PENDING',
+          checkoutUrl: pressoRes.checkoutUrl,
+        };
+      }
+    } catch (pressoErr: any) {
+      lastError = pressoErr?.message || 'PressoPay gateway error';
+      console.warn('[Payment Gateway] ⚠️ PressoPay attempt error:', pressoErr?.message);
+    }
+  }
+
+  // 2. SECONDARY / FAILOVER: HarakaPay Direct USSD STK Push
   if (isHarakaPayConfigured()) {
     try {
-      console.log(`[Payment Gateway] 🚀 Dispatching Direct USSD Push for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
+      console.log(`[Payment Gateway] 🔄 HarakaPay USSD Failover for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
       const harakaRes = await triggerHarakaPayCollect({
         phone: formattedPhone,
         amount,
@@ -282,40 +311,12 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
       }
     } catch (harakaErr: any) {
       lastError = harakaErr?.message || 'HarakaPay error';
-      console.warn('[Payment Gateway] ⚠️ HarakaPay direct push error:', harakaErr?.message);
-    }
-  }
-
-  // 2. SECONDARY / FAILOVER: PressoPay STK Push
-  if (isPressoPayConfigured()) {
-    try {
-      console.log(`[Payment Gateway] 🔄 PressoPay Mobile Money Dispatch for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
-      const pressoRes = await triggerPressoPayCheckout({
-        merchantReference: orderNumber,
-        amountMinor,
-        buyerName,
-        buyerEmail,
-        buyerPhone: formattedPhone,
-        description: description || `Chidy Prime ${orderNumber}`,
-      });
-
-      if (pressoRes) {
-        return {
-          gateway: 'pressopay',
-          gatewayReference: pressoRes.reference || pressoRes.id || orderNumber,
-          rawResponse: pressoRes,
-          status: pressoRes.status || 'PENDING',
-          checkoutUrl: pressoRes.checkoutUrl,
-        };
-      }
-    } catch (pressoErr: any) {
-      lastError = pressoErr?.message || 'PressoPay gateway error';
-      console.warn('[Payment Gateway] ⚠️ PressoPay attempt error:', pressoErr?.message);
+      console.warn('[Payment Gateway] ⚠️ HarakaPay error:', harakaErr?.message);
     }
   }
 
   return {
-    gateway: 'harakapay',
+    gateway: 'pressopay',
     gatewayReference: orderNumber,
     rawResponse: { error: lastError || 'Gateway response pending' },
     status: 'PENDING',
