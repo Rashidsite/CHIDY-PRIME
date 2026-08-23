@@ -243,18 +243,12 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
   // Transition to Step 3: SUCCESS RECEIPT & DIRECT UNLOCK (Strict Verified Check)
   const handlePaymentConfirmed = (order: any) => {
-    const isOrderApproved =
-      isFree ||
-      order?.is_completed === true ||
-      order?.isCompleted === true ||
-      order?.unlocked === true ||
-      ['completed', 'approved', 'paid', 'success'].includes(
-        String(order?.status || order?.payment_status || '').toLowerCase()
-      );
+    const statusStr = String(order?.status || order?.payment_status || '').toLowerCase();
+    const isExplicitlyApproved = ['completed', 'approved', 'paid', 'success'].includes(statusStr);
 
-    // STRICT PAYWALL SECURITY GUARD: Never unlock paid games without verified confirmation
-    if (!isFree && !isOrderApproved) {
-      console.warn('[CheckoutModal 🔒 Paywall] Blocked premature unlock attempt for paid game:', game.title);
+    // STRICT PAYWALL SECURITY GUARD: Paid games MUST have explicit verified approval status
+    if (!isFree && !isExplicitlyApproved) {
+      console.warn('[CheckoutModal 🔒 Paywall] Blocked premature unlock attempt for paid game (status:', statusStr, '):', game.title);
       return;
     }
 
@@ -453,18 +447,13 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
         const res = await fetch(
           `/api/payment/check-status?reference=${encodeURIComponent(cleanOrderNumber || cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
         );
-        const data = await res.json();
-        if (data.success && data.is_completed) {
-          handlePaymentConfirmed(
-            data.order || {
-              id: cleanOrderId,
-              order_number: cleanOrderNumber,
-              game_id: game.id,
-              status: 'completed',
-              download_links: data.download_links,
-              activation_key: data.activation_key,
-            }
-          );
+        const isConfirmed = 
+          data.success && 
+          (data.is_completed === true || data.isCompleted === true) && 
+          ['completed', 'approved', 'paid', 'success'].includes(String(data.status || data.order?.status || '').toLowerCase());
+
+        if (isConfirmed && data.order) {
+          handlePaymentConfirmed(data.order);
           return;
         }
 
@@ -474,17 +463,13 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
             `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
           );
           const data2 = await res2.json();
-          if (data2.success && data2.is_completed) {
-            handlePaymentConfirmed(
-              data2.order || {
-                id: cleanOrderId,
-                order_number: cleanOrderNumber,
-                game_id: game.id,
-                status: 'completed',
-                download_links: data2.download_links,
-                activation_key: data2.activation_key,
-              }
-            );
+          const isConfirmed2 = 
+            data2.success && 
+            (data2.is_completed === true || data2.isCompleted === true) && 
+            ['completed', 'approved', 'paid', 'success'].includes(String(data2.status || data2.order?.status || '').toLowerCase());
+
+          if (isConfirmed2 && data2.order) {
+            handlePaymentConfirmed(data2.order);
             return;
           }
         }
@@ -505,26 +490,23 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       const target = activeOrder?.id || activeOrder?.order_number || localStorage.getItem('cpcg_active_order_id') || '';
       const cleaned = cleanPhoneNumber(phone) || localStorage.getItem('cpcg_user_phone') || '';
 
-      let res = await fetch(`/api/checkout/status?order_id=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
-      let data = await res.json();
-
-      if (!data.success || !data.is_completed) {
-        res = await fetch(`/api/orders/status?ref=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
-        data = await res.json();
+      if (!target) {
+        setError('Namba ya oda haikupatikana. Tafadhali bonyeza Jaribu Tena.');
+        return;
       }
 
-      if (data.success && data.is_completed) {
-        handlePaymentConfirmed(
-          data.order || {
-            id: target,
-            game_id: game.id,
-            status: 'completed',
-            download_links: data.download_links,
-            activation_key: data.activation_key,
-          }
-        );
+      const res = await fetch(`/api/checkout/status?order_id=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
+      const data = await res.json();
+
+      const isConfirmed = 
+        data.success && 
+        (data.is_completed === true || data.isCompleted === true) && 
+        ['completed', 'approved', 'paid', 'success'].includes(String(data.status || data.order?.status || '').toLowerCase());
+
+      if (isConfirmed && data.order) {
+        handlePaymentConfirmed(data.order);
       } else {
-        setError('Malipo bado hayajathibitishwa na mtandao wa simu. Tafadhali subiri kidogo kisha bonyeza tena Hakiki.');
+        setError('Malipo bado hayajathibitishwa na mtandao wa simu. Tafadhali kamilisha kuingiza PIN kwenye simu yako kisha bonyeza Hakiki.');
       }
     } catch (e: any) {
       setError(e.message || 'Hitilafu imetokea wakati wa kuhakiki malipo.');

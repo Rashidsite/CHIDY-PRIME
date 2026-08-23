@@ -28,50 +28,60 @@ export async function GET(request: NextRequest) {
     const localPhone = toLocalPhone(rawPhone);
 
     const supabase = createAdminClient();
-    const isUuid = rawRef.includes('-') && rawRef.length === 36;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 1. QUERY payment_orders & orders TABLES (Strict Specific Order Match)
-    // ──────────────────────────────────────────────────────────────────────────
+    // STRICT GUARD: If reference is missing or invalid, never query database with wildcards
+    if (!rawRef || rawRef === 'undefined' || rawRef === 'null' || rawRef.trim().length < 4) {
+      return NextResponse.json(
+        {
+          success: true,
+          is_completed: false,
+          isCompleted: false,
+          status: 'pending',
+          message: 'Order reference required',
+        },
+        { headers: STATUS_HEADERS }
+      );
+    }
+
+    const isUuid = rawRef.includes('-') && rawRef.length === 36;
     let order: any = null;
 
-    if (rawRef) {
-      const { data } = await supabase
-        .from('payment_orders')
-        .select('*, posts(*), visitors(*)')
-        .or(`promo_used.ilike.%${rawRef}%,promo_used.eq.${rawRef}${isUuid ? `,id.eq.${rawRef}` : ''}`)
+    // 1. Strict Exact Match on payment_orders
+    const { data } = await supabase
+      .from('payment_orders')
+      .select('*, posts(*), visitors(*)')
+      .or(isUuid ? `id.eq.${rawRef},promo_used.eq.${rawRef}` : `promo_used.eq.${rawRef},promo_used.ilike.${rawRef}|%`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    order = data;
+
+    if (!order) {
+      const { data: ordData } = await supabase
+        .from('orders')
+        .select('*, posts:game_id(*)')
+        .or(isUuid ? `id.eq.${rawRef},order_number.eq.${rawRef}` : `order_number.eq.${rawRef}`)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      order = data;
-
-      if (!order) {
-        const { data: ordData } = await supabase
-          .from('orders')
-          .select('*, posts:game_id(*)')
-          .or(`order_number.eq.${rawRef}${isUuid ? `,id.eq.${rawRef}` : ''}`)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (ordData) {
-          order = {
-            id: ordData.id,
-            post_id: ordData.game_id || ordData.product_id,
-            amount: ordData.amount,
-            status: ordData.status,
-            phone_number: ordData.visitor_phone || ordData.phone_number,
-            promo_used: ordData.order_number,
-            activation_key: ordData.activation_key,
-            posts: ordData.posts,
-            visitors: { name: ordData.customer_name, phone: ordData.visitor_phone },
-          };
-        }
+      if (ordData) {
+        order = {
+          id: ordData.id,
+          post_id: ordData.game_id || ordData.product_id,
+          amount: ordData.amount,
+          status: ordData.status,
+          phone_number: ordData.visitor_phone || ordData.phone_number,
+          promo_used: ordData.order_number,
+          activation_key: ordData.activation_key,
+          posts: ordData.posts,
+          visitors: { name: ordData.customer_name, phone: ordData.visitor_phone },
+        };
       }
     }
 
-    // Check if already approved/completed in DB (Instant Sub-50ms Short-Circuit)
+    // Check if THIS specific order is approved in DB
     const currentStatus = String(order?.status || '').toLowerCase();
     let isCompleted = ['completed', 'approved', 'paid', 'success'].includes(currentStatus);
 
