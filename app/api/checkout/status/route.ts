@@ -123,24 +123,37 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // HarakaPay status check fallback
-      if (!isCompleted && order?.promo_used?.startsWith('HP:')) {
-        try {
-          const hpRef = order.promo_used.replace('HP:', '');
-          const hpStatus = await getHarakaPayStatus(hpRef);
-          if (hpStatus?.success && ['completed', 'success'].includes(String(hpStatus.status || '').toLowerCase())) {
-            const fulfillResult = await fulfillOrderApproval({
-              orderIdOrRef: orderRefPart,
-              gatewayRef: hpRef,
-              phone: cleanPhone,
-              gatewayName: 'HARAKAPAY',
-            });
-            if (fulfillResult.success) {
-              isCompleted = true;
-              order = { ...order, ...fulfillResult.order, status: 'approved' };
+      // HarakaPay status check (Instant Handset USSD status verification)
+      if (!isCompleted) {
+        const hpRefCandidates = refsToTest.concat([
+          order?.promo_used?.includes('|') ? order.promo_used.split('|')[1] : null,
+          order?.promo_used,
+        ]).filter(r => r && (r.startsWith('HP') || r.includes('HP')));
+
+        for (const hpRefRaw of hpRefCandidates) {
+          if (!hpRefRaw) continue;
+          const hpRef = hpRefRaw.replace(/^HP:/, '');
+          try {
+            const hpStatus = await getHarakaPayStatus(hpRef);
+            if (hpStatus?.success && ['completed', 'success', 'approved', 'paid'].includes(String(hpStatus.status || '').toLowerCase())) {
+              console.log(`[Status Poller ⚡] HarakaPay confirmed payment for ${hpRef}! Fulfilling...`);
+              const fulfillResult = await fulfillOrderApproval({
+                orderIdOrRef: orderRefPart,
+                gatewayRef: hpRef,
+                phone: cleanPhone || order?.phone_number,
+                gatewayName: 'HARAKAPAY',
+                paidAmount: order?.amount,
+              });
+              if (fulfillResult.success && fulfillResult.order) {
+                isCompleted = true;
+                order = { ...order, ...fulfillResult.order, status: 'approved' };
+                break;
+              }
             }
+          } catch (hpErr) {
+            console.warn('[Status Poller ⚡] HarakaPay status check warning:', hpErr);
           }
-        } catch {}
+        }
       }
     }
 

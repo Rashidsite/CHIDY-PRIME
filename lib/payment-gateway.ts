@@ -262,10 +262,34 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
 
   let lastError: string | null = null;
 
-  // 1. PRIMARY GATEWAY: PressoPay STK Push (Direct Instant Mobile Money Dispatch)
+  // 1. PRIMARY GATEWAY: HarakaPay Direct USSD STK Push (Sends PIN prompt to Handset)
+  if (isHarakaPayConfigured()) {
+    try {
+      console.log(`[Payment Gateway] 🚀 Dispatching Direct USSD Push for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
+      const harakaRes = await triggerHarakaPayCollect({
+        phone: formattedPhone,
+        amount,
+        description: description || `Chidy Prime ${orderNumber}`,
+      });
+
+      if (harakaRes.success && harakaRes.order_id) {
+        return {
+          gateway: 'harakapay',
+          gatewayReference: harakaRes.order_id,
+          rawResponse: harakaRes,
+          status: 'PENDING',
+        };
+      }
+    } catch (harakaErr: any) {
+      lastError = harakaErr?.message || 'HarakaPay error';
+      console.warn('[Payment Gateway] ⚠️ HarakaPay direct push error:', harakaErr?.message);
+    }
+  }
+
+  // 2. SECONDARY / FAILOVER: PressoPay STK Push
   if (isPressoPayConfigured()) {
     try {
-      console.log(`[Payment Gateway] 🚀 Dispatching PressoPay STK Push for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
+      console.log(`[Payment Gateway] 🔄 PressoPay Mobile Money Dispatch for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
       const pressoRes = await triggerPressoPayCheckout({
         merchantReference: orderNumber,
         amountMinor,
@@ -286,36 +310,12 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
       }
     } catch (pressoErr: any) {
       lastError = pressoErr?.message || 'PressoPay gateway error';
-      console.warn('[Payment Gateway] ⚠️ PressoPay primary attempt error:', pressoErr?.message);
-    }
-  }
-
-  // 2. SECONDARY / FAILOVER: HarakaPay (Only if PressoPay fails or unconfigured)
-  if (isHarakaPayConfigured()) {
-    try {
-      console.log(`[Payment Gateway] 🔄 Failover to HarakaPay USSD Push for ${formattedPhone} (TZS ${amount})`);
-      const harakaRes = await triggerHarakaPayCollect({
-        phone: formattedPhone,
-        amount,
-        description: description || `Chidy Prime ${orderNumber}`,
-      });
-
-      if (harakaRes.success && harakaRes.order_id) {
-        return {
-          gateway: 'harakapay',
-          gatewayReference: harakaRes.order_id,
-          rawResponse: harakaRes,
-          status: 'PENDING',
-        };
-      }
-    } catch (harakaErr: any) {
-      lastError = harakaErr?.message || 'HarakaPay error';
-      console.warn('[Payment Gateway] ⚠️ HarakaPay failover error:', harakaErr?.message);
+      console.warn('[Payment Gateway] ⚠️ PressoPay attempt error:', pressoErr?.message);
     }
   }
 
   return {
-    gateway: 'pressopay',
+    gateway: 'harakapay',
     gatewayReference: orderNumber,
     rawResponse: { error: lastError || 'Gateway response pending' },
     status: 'PENDING',
