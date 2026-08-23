@@ -109,7 +109,10 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
 
     const handleOrderUnlocked = (e: any) => {
       const detail = e?.detail;
-      if (detail?.game_id === game.id || detail?.productId === game.id) {
+      const targetId = detail?.game_id || detail?.productId || detail?.product_id;
+      const status = String(detail?.status || '').toLowerCase();
+      const isExplicitApproved = ['completed', 'approved', 'paid', 'success', 'unlocked'].includes(status) || detail?.isApproved === true || detail?.unlocked === true;
+      if (targetId === game.id && isExplicitApproved) {
         setUnlockedLocally(true);
       }
     };

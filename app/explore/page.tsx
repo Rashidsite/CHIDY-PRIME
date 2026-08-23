@@ -58,19 +58,56 @@ export default function ExplorePage() {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    const syncUserVault = () => {
+    const syncUserVault = async () => {
       try {
-        const isAuth = !!localStorage.getItem('cpcg_user_phone') || !!localStorage.getItem('cpcg_registered');
-        if (!isAuth) {
+        const savedReg = localStorage.getItem('cpcg_registered');
+        const userPhone = localStorage.getItem('cpcg_user_phone') || (savedReg ? JSON.parse(savedReg).phone : null);
+
+        if (!userPhone) {
           setUnlockedGameIds(new Set());
+          localStorage.removeItem('cpcg_unlocked_games');
           return;
         }
-        const saved = localStorage.getItem('cpcg_unlocked_games');
-        if (saved) {
-          setUnlockedGameIds(new Set(JSON.parse(saved)));
-        } else {
-          setUnlockedGameIds(new Set());
-        }
+
+        const digits = userPhone.replace(/\D/g, '');
+        const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
+        const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+
+        const newUnlocked = new Set<string>();
+
+        // Query payment_orders for verified completed orders
+        try {
+          const { data: legacyData } = await supabase
+            .from('payment_orders')
+            .select('post_id')
+            .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
+            .in('status', ['approved', 'completed', 'paid']);
+
+          if (legacyData && legacyData.length > 0) {
+            legacyData.forEach((d: any) => {
+              if (d.post_id) newUnlocked.add(String(d.post_id));
+            });
+          }
+        } catch {}
+
+        // Query orders table fallback
+        try {
+          const { data: ordersData } = await supabase
+            .from('orders')
+            .select('game_id, product_id')
+            .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
+            .in('status', ['approved', 'completed', 'paid']);
+
+          if (ordersData && ordersData.length > 0) {
+            ordersData.forEach((o: any) => {
+              if (o.game_id) newUnlocked.add(String(o.game_id));
+              if (o.product_id) newUnlocked.add(String(o.product_id));
+            });
+          }
+        } catch {}
+
+        setUnlockedGameIds(newUnlocked);
+        localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(newUnlocked)));
       } catch {
         setUnlockedGameIds(new Set());
       }
@@ -80,6 +117,7 @@ export default function ExplorePage() {
 
     const handleLogout = () => {
       setUnlockedGameIds(new Set());
+      localStorage.removeItem('cpcg_unlocked_games');
     };
 
     window.addEventListener('cpcg_auth_change', syncUserVault);
@@ -89,7 +127,7 @@ export default function ExplorePage() {
       window.removeEventListener('cpcg_auth_change', syncUserVault);
       window.removeEventListener('cpcg_logout_reset', handleLogout);
     };
-  }, []);
+  }, [supabase]);
 
   const loadLiveGames = async () => {
     try {
@@ -189,14 +227,23 @@ export default function ExplorePage() {
 
   const handleCheckoutSuccess = (order: any) => {
     if (checkoutGame) {
-      setUnlockedGameIds((prev) => {
-        const next = new Set(prev);
-        next.add(checkoutGame.id);
-        try {
-          localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
-        } catch {}
-        return next;
-      });
+      const isFree = Number(checkoutGame.price) === 0;
+      const isOrderApproved =
+        isFree ||
+        order?.is_completed === true ||
+        order?.unlocked === true ||
+        ['completed', 'approved', 'paid', 'success'].includes(String(order?.status || '').toLowerCase());
+
+      if (isOrderApproved) {
+        setUnlockedGameIds((prev) => {
+          const next = new Set(prev);
+          next.add(checkoutGame.id);
+          try {
+            localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
+          } catch {}
+          return next;
+        });
+      }
     }
     setShowCelebration(true);
   };

@@ -116,61 +116,61 @@ export default function FrontHubPage() {
           });
         }
 
-        if (!userPhone && !savedReg) {
+        if (!userPhone) {
           setIsRegistered(false);
           setRegisteredName('');
+          setUnlockedGameIds(new Set());
+          localStorage.removeItem('cpcg_unlocked_games');
           return;
         }
 
         if (savedReg) {
-          const parsed = JSON.parse(savedReg);
-          setIsRegistered(true);
-          setRegisteredName(parsed.name || '');
+          try {
+            const parsed = JSON.parse(savedReg);
+            setIsRegistered(true);
+            setRegisteredName(parsed.name || '');
+          } catch {}
         }
 
-        if (userPhone) {
-          const digits = userPhone.replace(/\D/g, '');
-          const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
-          const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+        const digits = userPhone.replace(/\D/g, '');
+        const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
+        const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
 
-          const newUnlocked = new Set<string>(localUnlocked);
+        const newUnlocked = new Set<string>();
 
-          // 1. Check orders table
-          try {
-            const { data: ordersData } = await supabase
-              .from('orders')
-              .select('game_id, product_id')
-              .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
-              .in('status', ['approved', 'completed', 'paid']);
+        // 1. Check payment_orders table (Primary)
+        try {
+          const { data: legacyData } = await supabase
+            .from('payment_orders')
+            .select('post_id')
+            .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
+            .in('status', ['approved', 'completed', 'paid']);
 
-            if (ordersData && ordersData.length > 0) {
-              ordersData.forEach((o: any) => {
-                if (o.game_id) newUnlocked.add(o.game_id);
-                if (o.product_id) newUnlocked.add(o.product_id);
-              });
-            }
-          } catch {}
-
-          // 2. Check legacy payment_orders
-          try {
-            const { data: legacyData } = await supabase
-              .from('payment_orders')
-              .select('post_id')
-              .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
-              .in('status', ['approved', 'completed', 'paid']);
-
-            if (legacyData && legacyData.length > 0) {
-              legacyData.forEach((d: any) => {
-                if (d.post_id) newUnlocked.add(d.post_id);
-              });
-            }
-          } catch {}
-
-          if (newUnlocked.size > 0) {
-            setUnlockedGameIds(newUnlocked);
-            localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(newUnlocked)));
+          if (legacyData && legacyData.length > 0) {
+            legacyData.forEach((d: any) => {
+              if (d.post_id) newUnlocked.add(String(d.post_id));
+            });
           }
-        }
+        } catch {}
+
+        // 2. Check orders table (Fallback)
+        try {
+          const { data: ordersData } = await supabase
+            .from('orders')
+            .select('game_id, product_id')
+            .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
+            .in('status', ['approved', 'completed', 'paid']);
+
+          if (ordersData && ordersData.length > 0) {
+            ordersData.forEach((o: any) => {
+              if (o.game_id) newUnlocked.add(String(o.game_id));
+              if (o.product_id) newUnlocked.add(String(o.product_id));
+            });
+          }
+        } catch {}
+
+        setUnlockedGameIds(newUnlocked);
+        localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(newUnlocked)));
       } catch (e) {}
     };
 
@@ -180,14 +180,20 @@ export default function FrontHubPage() {
       setIsRegistered(false);
       setRegisteredName('');
       setUnlockedGameIds(new Set());
+      localStorage.removeItem('cpcg_unlocked_games');
     };
 
     const handleOrderUnlockedEvent = (e: any) => {
-      const targetId = e?.detail?.game_id || e?.detail?.productId || e?.detail?.product_id;
-      if (targetId) {
+      const detail = e?.detail;
+      const targetId = detail?.game_id || detail?.productId || detail?.product_id;
+      const status = String(detail?.status || '').toLowerCase();
+      const isExplicitApproved = ['completed', 'approved', 'paid', 'success', 'unlocked'].includes(status) || detail?.isApproved === true || detail?.unlocked === true;
+
+      // STRICT PAYWALL: Only unlock on verified approval
+      if (targetId && isExplicitApproved) {
         setUnlockedGameIds((prev) => {
           const next = new Set(prev);
-          next.add(targetId);
+          next.add(String(targetId));
           localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
           return next;
         });
@@ -553,14 +559,15 @@ export default function FrontHubPage() {
 
           const isPhoneMatch = last9Current && last9Order && last9Current === last9Order;
           const isOrderMatch = activeOrderId && (data.orderId === activeOrderId || data.orderNumber === activeOrderId);
-          const isGameMatch = activeGameId && data.productId === activeGameId;
+          const isExplicitApproved = data.isApproved === true || data.status === 'approved' || data.status === 'completed' || data.status === 'UNLOCKED';
 
-          if (isPhoneMatch || isOrderMatch || isGameMatch || !currentPhone) {
-            const targetProductId = data.productId || activeGameId;
+          // STRICT PAYWALL: Only unlock if explicit phone or active order match AND verified approval
+          if ((isPhoneMatch || isOrderMatch) && isExplicitApproved) {
+            const targetProductId = data.productId;
             if (targetProductId) {
               setUnlockedGameIds((prev) => {
                 const next = new Set(prev);
-                next.add(targetProductId);
+                next.add(String(targetProductId));
                 localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
                 return next;
               });

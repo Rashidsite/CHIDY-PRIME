@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -109,8 +109,10 @@ export default function PhoneFirstAuthCard({
               .in('status', ['approved', 'completed', 'paid']);
 
             if (approvedOrders && approvedOrders.length > 0) {
-              const unlockedIds = approvedOrders.map((o: any) => o.post_id).filter(Boolean);
+              const unlockedIds = approvedOrders.map((o: any) => String(o.post_id)).filter(Boolean);
               localStorage.setItem('cpcg_unlocked_games', JSON.stringify(unlockedIds));
+            } else {
+              localStorage.removeItem('cpcg_unlocked_games');
             }
           } catch (e) {}
         }

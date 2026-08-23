@@ -126,7 +126,13 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
             profile?.phone_number ||
             (typeof window !== 'undefined' ? localStorage.getItem('cpcg_user_phone') : null) ||
             '';
-          if (!userPhone) return; // No phone → not authenticated, stay on STEP_1
+          if (!userPhone) {
+            try {
+              const remaining = parsed.filter((id: string) => id !== game?.id);
+              localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
+            } catch (e) {}
+            return;
+          }
 
           const digits = userPhone.replace(/\D/g, '');
           const norm = digits.startsWith('0')
@@ -331,8 +337,23 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     }, 1000);
   };
 
-  // Transition to Step 3: SUCCESS RECEIPT & DIRECT UNLOCK
+  // Transition to Step 3: SUCCESS RECEIPT & DIRECT UNLOCK (Strict Verified Check)
   const handlePaymentConfirmed = (order: any) => {
+    const isOrderApproved =
+      isFree ||
+      order?.is_completed === true ||
+      order?.isCompleted === true ||
+      order?.unlocked === true ||
+      ['completed', 'approved', 'paid', 'success'].includes(
+        String(order?.status || order?.payment_status || '').toLowerCase()
+      );
+
+    // STRICT PAYWALL SECURITY GUARD: Never unlock paid games without verified confirmation
+    if (!isFree && !isOrderApproved) {
+      console.warn('[CheckoutModal 🔒 Paywall] Blocked premature unlock attempt for paid game:', game.title);
+      return;
+    }
+
     clearAllTimers();
     setActiveOrder(order);
 
@@ -670,10 +691,13 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           if (orderResult?.order_number) localStorage.setItem('cpcg_active_order_number', orderResult.order_number);
         } catch (e) {}
 
-        if (isFree || orderResult?.status === 'completed' || orderResult?.status === 'approved') {
+        // STRICT PAYWALL: Only 100% free games (price === 0) skip polling. Paid games MUST stay on STEP_2_PROCESSING and wait for verified USSD PIN entry!
+        if (isFree) {
           handlePaymentConfirmed(orderResult);
         } else if (orderResult?.id) {
           startPaymentPolling(orderResult.id, orderResult.order_number);
+        } else {
+          setError('Hitilafu ya kuanzisha malipo kwenye simu. Tafadhali bonyeza Jaribu Tena.');
         }
       })
       .catch((err) => {
