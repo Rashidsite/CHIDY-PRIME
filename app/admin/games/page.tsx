@@ -699,7 +699,7 @@ export default function AdminGamesPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalOpen(false);
           }}
-          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[6px] flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
         >
           <div className="bg-slate-900/95 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-2xl w-full relative shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] space-y-6 max-h-[92vh] flex flex-col justify-between overscroll-contain">
             

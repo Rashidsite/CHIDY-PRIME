@@ -388,7 +388,7 @@ export default function AdminCmsSlidesPage() {
 
       {/* ── ADD / EDIT HERO BANNER MODAL WITH LIVE HD PREVIEW ── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -578,7 +578,7 @@ export default function AdminCmsSlidesPage() {
 
       {/* ── CONFIRM DELETE MODAL ── */}
       {deleteTargetId && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full relative shadow-2xl space-y-4 text-center">
             <div className="w-12 h-12 rounded-full bg-rose-600/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto">
               <Trash2 className="w-6 h-6" />
