@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const downloadLinks = order?.posts ? parseUniversalDownloadLinks(order.posts) : [];
+    const downloadLinks = (isCompleted && order?.posts) ? parseUniversalDownloadLinks(order.posts) : [];
     const resolvedOrderNumber = order?.promo_used?.split('|')[0] || order?.id || rawRef;
 
     return NextResponse.json(
@@ -189,12 +189,12 @@ export async function GET(request: NextRequest) {
               status: isCompleted ? 'approved' : order.status || 'pending',
               customer_name: order.visitors?.name || 'Mteja wa Mtandaoni',
               visitor_phone: order.phone_number,
-              download_links: downloadLinks,
-              activation_key: order.activation_key || 'CP-CG-ACTIVE',
+              download_links: isCompleted ? downloadLinks : [],
+              activation_key: isCompleted ? (order.activation_key || 'CP-CG-ACTIVE') : null,
               access_duration: order.posts?.access_duration || order.posts?.plan_duration || 'Lifetime',
             }
           : null,
-        download_links: downloadLinks,
+        download_links: isCompleted ? downloadLinks : [],
       },
       {
         headers: STATUS_HEADERS,

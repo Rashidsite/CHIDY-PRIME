@@ -37,22 +37,32 @@ export async function POST(request: Request) {
     const customer_name = String(rawCustomerName || body.name || body.customerName || 'Mteja wa Mtandaoni').trim();
     const supabase = createAdminClient();
 
-    let gameTitle = 'Digital Product Access';
-    let gamePrice = 0;
+    const bodyPrice = Number(body.price || body.amount || 0);
+    const bodyTitle = String(body.title || body.game_title || '').trim();
+    let gameTitle = bodyTitle || 'Digital Product Access';
+    let gamePrice = bodyPrice;
     let downloadUrl = '';
     let durationType = 'Lifetime';
     let durationHours = 720;
 
     // 1. Fetch Product details from posts table
-    const { data: postData } = await supabase
-      .from('posts')
-      .select('id, title, price, links, download_url, duration_days, plan_duration, access_duration')
-      .eq('id', game_id)
-      .maybeSingle();
+    let postData: any = null;
+    if (game_id) {
+      const isUuid = typeof game_id === 'string' && game_id.includes('-') && game_id.length === 36;
+      const { data } = await supabase
+        .from('posts')
+        .select('id, title, price, links, download_url, duration_days, plan_duration, access_duration, category')
+        .or(isUuid ? `id.eq.${game_id}` : `title.ilike.%${game_id}%`)
+        .limit(1)
+        .maybeSingle();
+      postData = data;
+    }
 
     if (postData) {
       gameTitle = postData.title || gameTitle;
-      gamePrice = Number(postData.price) || 0;
+      if (postData.price !== undefined && postData.price !== null) {
+        gamePrice = Number(postData.price);
+      }
       downloadUrl = postData.links?.[0]?.url || postData.download_url || '';
       if (postData.duration_days) {
         durationHours = postData.duration_days * 24;
@@ -66,9 +76,14 @@ export async function POST(request: Request) {
     const tokenExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
     const activationKey = generateActivationKey('CP-CG');
     const orderNumber = 'CPCG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    const initialStatus = gamePrice === 0 ? 'completed' : 'pending';
 
-    console.log(`[Checkout ⚡ Ultra-Fast] Initiating: ${orderNumber} | Phone: ${visitor_phone} | Product: ${gameTitle} (TZS ${gamePrice})`);
+    // STRICT PAYWALL LOCK: Paid games MUST NEVER have initialStatus === 'completed'!
+    // ONLY games with explicit 0 price and Free category/title are free.
+    const isFreeCategory = postData?.category?.toLowerCase().includes('free') || gameTitle.toLowerCase().includes('free');
+    const isGenuinelyFree = gamePrice === 0 && isFreeCategory;
+    const initialStatus = isGenuinelyFree ? 'completed' : 'pending';
+
+    console.log(`[Checkout ⚡ Strict Lock] Initiating: ${orderNumber} | Phone: ${visitor_phone} | Product: ${gameTitle} (TZS ${gamePrice}) | Status: ${initialStatus}`);
 
     // ──────────────────────────────────────────────────────────────────────────
     // 2. PARALLEL EXECUTION: PressoPay STK Push & Database Ingestion Concurrent

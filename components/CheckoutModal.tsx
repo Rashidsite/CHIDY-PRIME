@@ -499,6 +499,9 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         game_id: game.id,
+        price: game.price,
+        amount: game.price,
+        title: game.title,
         visitor_phone: internationalPhone,
         customer_name: resolvedName,
         payment_gateway: 'pressopay',
