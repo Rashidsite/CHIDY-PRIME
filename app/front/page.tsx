@@ -105,17 +105,6 @@ export default function FrontHubPage() {
       try {
         const savedReg = localStorage.getItem('cpcg_registered');
         const userPhone = localStorage.getItem('cpcg_user_phone') || (savedReg ? JSON.parse(savedReg).phone : null);
-        const localUnlocked = JSON.parse(localStorage.getItem('cpcg_unlocked_games') || '[]');
-
-        // Immediately load any locally cached unlocked games
-        if (Array.isArray(localUnlocked) && localUnlocked.length > 0) {
-          setUnlockedGameIds((prev) => {
-            const merged = new Set(prev);
-            localUnlocked.forEach((id: string) => merged.add(id));
-            return merged;
-          });
-        }
-
         if (!userPhone) {
           setIsRegistered(false);
           setRegisteredName('');

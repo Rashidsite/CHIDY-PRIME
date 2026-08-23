@@ -135,7 +135,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
   const isFree = game.price === 0;
   const isTopRated = (game.rating || 0) >= 4.9;
   const label = getLabel(game.category);
-  const showUnlocked = isUnlocked || unlockedLocally || isFree;
+  const showUnlocked = isFree || isUnlocked || unlockedLocally;
   const rawDuration = game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration;
   const durationLabel = formatPlanDuration(rawDuration, isFree);
 
