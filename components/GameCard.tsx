@@ -80,62 +80,12 @@ export function formatPlanDuration(duration?: string | number, isFree?: boolean)
 }
 
 export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
-  const [unlockedLocally, setUnlockedLocally] = React.useState(isUnlocked);
   const { getButtonClass, animations } = useCMSTheme();
 
-  React.useEffect(() => {
-    const checkAuthAndUnlocked = () => {
-      try {
-        const isAuth = !!localStorage.getItem('cpcg_user_phone') || !!localStorage.getItem('cpcg_registered');
-        if (!isAuth) {
-          setUnlockedLocally(false);
-          return;
-        }
-        const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
-        if (savedUnlocked) {
-          const parsed = JSON.parse(savedUnlocked);
-          if (Array.isArray(parsed) && parsed.includes(game.id)) {
-            setUnlockedLocally(true);
-            return;
-          }
-        }
-        setUnlockedLocally(isUnlocked);
-      } catch {
-        setUnlockedLocally(false);
-      }
-    };
-
-    checkAuthAndUnlocked();
-
-    const handleOrderUnlocked = (e: any) => {
-      const detail = e?.detail;
-      const targetId = detail?.game_id || detail?.productId || detail?.product_id;
-      const status = String(detail?.status || '').toLowerCase();
-      const isExplicitApproved = ['completed', 'approved', 'paid', 'success', 'unlocked'].includes(status) || detail?.isApproved === true || detail?.unlocked === true;
-      if (targetId === game.id && isExplicitApproved) {
-        setUnlockedLocally(true);
-      }
-    };
-
-    const handleLogoutReset = () => {
-      setUnlockedLocally(false);
-    };
-
-    window.addEventListener('cpcg_auth_change', checkAuthAndUnlocked);
-    window.addEventListener('cpcg_logout_reset', handleLogoutReset);
-    window.addEventListener('cpcg_order_unlocked', handleOrderUnlocked);
-
-    return () => {
-      window.removeEventListener('cpcg_auth_change', checkAuthAndUnlocked);
-      window.removeEventListener('cpcg_logout_reset', handleLogoutReset);
-      window.removeEventListener('cpcg_order_unlocked', handleOrderUnlocked);
-    };
-  }, [game.id, isUnlocked]);
-
-  const isFree = game.price === 0;
+  const isFree = game.price === 0 && (game.category?.toLowerCase().includes('free') || game.title?.toLowerCase().includes('free'));
   const isTopRated = (game.rating || 0) >= 4.9;
   const label = getLabel(game.category);
-  const showUnlocked = isFree || isUnlocked || unlockedLocally;
+  const showUnlocked = isFree || isUnlocked;
   const rawDuration = game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration;
   const durationLabel = formatPlanDuration(rawDuration, isFree);
 
