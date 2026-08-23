@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const isUuid = rawRef.includes('-') && rawRef.length === 36;
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 1. QUERY payment_orders TABLE FIRST (Fast Indexed Match)
+    // 1. QUERY payment_orders & orders TABLES (Strict Specific Order Match)
     // ──────────────────────────────────────────────────────────────────────────
     let order: any = null;
 
@@ -39,24 +39,36 @@ export async function GET(request: NextRequest) {
       const { data } = await supabase
         .from('payment_orders')
         .select('*, posts(*), visitors(*)')
-        .or(`promo_used.ilike.%${rawRef}%${isUuid ? `,id.eq.${rawRef}` : ''}`)
+        .or(`promo_used.ilike.%${rawRef}%,promo_used.eq.${rawRef}${isUuid ? `,id.eq.${rawRef}` : ''}`)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       order = data;
-    }
 
-    if (!order && (cleanPhone || localPhone)) {
-      const { data } = await supabase
-        .from('payment_orders')
-        .select('*, posts(*), visitors(*)')
-        .or(`phone_number.eq.${cleanPhone},phone_number.eq.${localPhone}`)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (!order) {
+        const { data: ordData } = await supabase
+          .from('orders')
+          .select('*, posts:game_id(*)')
+          .or(`order_number.eq.${rawRef}${isUuid ? `,id.eq.${rawRef}` : ''}`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      order = data;
+        if (ordData) {
+          order = {
+            id: ordData.id,
+            post_id: ordData.game_id || ordData.product_id,
+            amount: ordData.amount,
+            status: ordData.status,
+            phone_number: ordData.visitor_phone || ordData.phone_number,
+            promo_used: ordData.order_number,
+            activation_key: ordData.activation_key,
+            posts: ordData.posts,
+            visitors: { name: ordData.customer_name, phone: ordData.visitor_phone },
+          };
+        }
+      }
     }
 
     // Check if already approved/completed in DB (Instant Sub-50ms Short-Circuit)

@@ -483,7 +483,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
         { event: 'ORDER_APPROVED' },
         (payload: any) => {
           const data = payload?.payload || payload;
-          if (data && (data.orderId === cleanOrderId || data.orderNumber === cleanOrderNumber || data.productId === game.id)) {
+          if (data && (data.orderId === cleanOrderId || data.orderNumber === cleanOrderNumber)) {
             handlePaymentConfirmed({
               id: cleanOrderId,
               order_number: cleanOrderNumber,
@@ -501,7 +501,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
         { event: 'PRODUCT_UNLOCKED' },
         (payload: any) => {
           const data = payload?.payload || payload;
-          if (data && (data.orderId === cleanOrderId || data.orderRef === cleanOrderNumber || data.productId === game.id)) {
+          if (data && (data.orderId === cleanOrderId || data.orderRef === cleanOrderNumber)) {
             handlePaymentConfirmed({
               id: cleanOrderId,
               order_number: cleanOrderNumber,
@@ -518,15 +518,12 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
     activeBroadcastRef.current = broadcastChannel;
 
-    // 4. Window custom event fallback
+    // 4. Window custom event fallback (Strict specific order match)
     const handleWindowUnlocked = (e: any) => {
       const detail = e?.detail;
       if (
         detail &&
-        (detail.orderId === cleanOrderId ||
-          detail.orderNumber === cleanOrderNumber ||
-          detail.productId === game.id ||
-          detail.game_id === game.id)
+        (detail.orderId === cleanOrderId || detail.orderNumber === cleanOrderNumber)
       ) {
         handlePaymentConfirmed({
           id: cleanOrderId,
