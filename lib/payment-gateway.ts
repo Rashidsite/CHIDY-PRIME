@@ -80,7 +80,7 @@ export function isPressoPayConfigured(): boolean {
 }
 
 /**
- * Check payment status directly from PressoPay API (Ultra-Fast 3.5s Timeout)
+ * Check payment status directly from PressoPay API
  */
 export async function getPressoPayPaymentStatus(reference: string): Promise<any> {
   try {
@@ -105,7 +105,7 @@ export async function getPressoPayPaymentStatus(reference: string): Promise<any>
         'X-Presso-Nonce': nonce,
         'X-Presso-Signature': signature,
       },
-      signal: AbortSignal.timeout(3500),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) return null;

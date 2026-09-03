@@ -167,8 +167,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const downloadLinks = (isCompleted && order?.posts) ? parseUniversalDownloadLinks(order.posts) : [];
-    const resolvedOrderNumber = order?.promo_used?.split('|')[0] || order?.id || rawRef;
+    let postRecord = order?.posts;
+    if (isCompleted && (!postRecord || (!postRecord.links && !postRecord.download_url)) && (order?.post_id || order?.game_id || order?.product_id)) {
+      try {
+        const targetPostId = order.post_id || order.game_id || order.product_id;
+        const isUuid = typeof targetPostId === 'string' && targetPostId.includes('-') && targetPostId.length === 36;
+        const { data: directPost } = await supabase
+          .from('posts')
+          .select('*')
+          .or(isUuid ? `id.eq.${targetPostId}` : `title.ilike.%${targetPostId}%`)
+          .limit(1)
+          .maybeSingle();
+        if (directPost) {
+          postRecord = { ...postRecord, ...directPost };
+        }
+      } catch {}
+    }
+
+    const downloadLinks = isCompleted ? parseUniversalDownloadLinks(postRecord || (Array.isArray(order?.download_links) ? { links: order.download_links } : {})) : [];
+    const resolvedOrderNumber = order?.promo_used?.split('|')[0] || order?.order_number || order?.id || rawRef;
 
     return NextResponse.json(
       {
@@ -182,16 +199,16 @@ export async function GET(request: NextRequest) {
               id: order.id,
               order_number: resolvedOrderNumber,
               order_id: order.id,
-              game_id: order.post_id,
-              product_id: order.post_id,
-              game_title: order.posts?.title || 'Digital Product',
+              game_id: order.post_id || order.game_id,
+              product_id: order.post_id || order.product_id,
+              game_title: postRecord?.title || order.game_title || 'Digital Product',
               amount: order.amount,
               status: isCompleted ? 'approved' : order.status || 'pending',
-              customer_name: order.visitors?.name || 'Mteja wa Mtandaoni',
-              visitor_phone: order.phone_number,
+              customer_name: order.visitors?.name || order.customer_name || 'Mteja wa Mtandaoni',
+              visitor_phone: order.phone_number || order.visitor_phone,
               download_links: isCompleted ? downloadLinks : [],
               activation_key: isCompleted ? (order.activation_key || 'CP-CG-ACTIVE') : null,
-              access_duration: order.posts?.access_duration || order.posts?.plan_duration || 'Lifetime',
+              access_duration: postRecord?.access_duration || postRecord?.plan_duration || order.access_duration || 'Lifetime',
             }
           : null,
         download_links: isCompleted ? downloadLinks : [],

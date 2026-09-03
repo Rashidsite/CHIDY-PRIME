@@ -256,9 +256,29 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
     fallbackOrderRecord?.product_id ||
     '';
 
-  const postDetails = targetPaymentOrder?.posts || fallbackOrderRecord || {};
+  let postDetails = targetPaymentOrder?.posts || fallbackOrderRecord || {};
+
+  // Fallback direct query on posts table if relational join returned empty links
+  if (productId && (!postDetails?.links || postDetails.links.length === 0) && !postDetails?.download_url) {
+    try {
+      const isUuid = typeof productId === 'string' && productId.includes('-') && productId.length === 36;
+      const { data: directPost } = await supabase
+        .from('posts')
+        .select('*')
+        .or(isUuid ? `id.eq.${productId}` : `title.ilike.%${productId}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (directPost) {
+        postDetails = { ...postDetails, ...directPost };
+      }
+    } catch {}
+  }
+
   const productTitle = postDetails.title || fallbackOrderRecord?.game_title || 'Digital Product';
   const downloadLinks = parseUniversalDownloadLinks(postDetails);
+  const primaryDownloadUrl = postDetails.links?.[0]?.url || postDetails.download_url || (downloadLinks?.[0]?.url || '');
+
   const durationType =
     params.accessDuration ||
     postDetails.plan_duration ||
@@ -300,6 +320,7 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
         status: 'approved',
         payment_status: 'completed',
         unlocked: true,
+        download_url: primaryDownloadUrl,
         updated_at: new Date().toISOString(),
       })
       .or(`id.eq.${targetId},order_number.eq.${rawOrderNumber}`);
