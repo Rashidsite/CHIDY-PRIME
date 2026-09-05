@@ -51,7 +51,7 @@ export const SignUpSchema = z.object({
 export const HeroSlideSchema = z.object({
   title: z.string().min(2, 'Slide title is required'),
   subtitle: z.string().optional(),
-  image_url: z.string().url('Must be a valid image URL'),
+  image_url: z.string().min(1, 'Media URL is required'),
   cta_text: z.string().optional().default('Buy Now'),
   cta_link: z.string().optional().default('/'),
   display_order: z.number().int().optional().default(1),

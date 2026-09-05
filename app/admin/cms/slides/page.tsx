@@ -6,28 +6,99 @@ import ImgBBUploadModal from '@/components/ImgBBUploadModal';
 import { Plus, Trash2, Sliders, Eye, EyeOff, Save, X, Edit3, ArrowUp, ArrowDown, Sparkles, Loader2, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const parseSlideMedia = (rawUrl: string) => {
-  try {
-    if (rawUrl && rawUrl.startsWith('{')) {
-      const parsed = JSON.parse(rawUrl);
-      return {
-        image: parsed.image || '',
-        video: parsed.video || '',
-        type: parsed.type || 'video',
-      };
-    }
-  } catch (e) {}
-  return {
-    image: rawUrl || '',
-    video: '',
-    type: 'image',
-  };
+const getYouTubeId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const match = (url || '').match(regExp);
+  return match && match[1] ? match[1] : null;
 };
 
-const getYouTubeId = (url: string) => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = (url || '').match(regExp);
-  return match && match[2].length === 11 ? match[2] : null;
+const getVimeoId = (url: string): string | null => {
+  if (!url) return null;
+  const match = (url || '').match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/i);
+  return match && match[1] ? match[1] : null;
+};
+
+const isDirectVideoUrl = (url: string): boolean => {
+  if (!url) return false;
+  const clean = url.toLowerCase().split('?')[0];
+  return (
+    clean.endsWith('.mp4') ||
+    clean.endsWith('.webm') ||
+    clean.endsWith('.ogg') ||
+    clean.endsWith('.mov') ||
+    clean.endsWith('.m4v') ||
+    clean.endsWith('.m3u8') ||
+    url.includes('.r2.dev') ||
+    url.includes('b-cdn.net') ||
+    url.includes('blob:') ||
+    url.includes('video/upload')
+  );
+};
+
+const parseSlideMedia = (rawUrl: string) => {
+  let img = '';
+  let vid = '';
+  let explicitType: 'image' | 'video' | null = null;
+
+  if (rawUrl && typeof rawUrl === 'string') {
+    const trimmed = rawUrl.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        img = parsed.image || '';
+        vid = parsed.video || '';
+        if (parsed.type === 'video' || parsed.type === 'image') {
+          explicitType = parsed.type;
+        }
+      } catch (e) {}
+    } else {
+      if (getYouTubeId(trimmed) || getVimeoId(trimmed) || isDirectVideoUrl(trimmed)) {
+        vid = trimmed;
+        explicitType = 'video';
+      } else {
+        img = trimmed;
+        explicitType = 'image';
+      }
+    }
+  }
+
+  const ytId = vid ? getYouTubeId(vid) : (img ? getYouTubeId(img) : null);
+  const vmId = vid ? getVimeoId(vid) : (img ? getVimeoId(img) : null);
+
+  let videoType: 'youtube' | 'vimeo' | 'direct' | 'none' = 'none';
+  let finalType: 'image' | 'video' = 'image';
+
+  if (ytId) {
+    videoType = 'youtube';
+    finalType = 'video';
+    if (!img) {
+      img = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    }
+  } else if (vmId) {
+    videoType = 'vimeo';
+    finalType = 'video';
+  } else if (vid || isDirectVideoUrl(img)) {
+    videoType = 'direct';
+    finalType = 'video';
+    if (!vid && isDirectVideoUrl(img)) {
+      vid = img;
+    }
+  } else if (explicitType === 'video' && vid) {
+    videoType = 'direct';
+    finalType = 'video';
+  } else {
+    finalType = 'image';
+  }
+
+  return {
+    type: finalType,
+    image: img,
+    video: vid,
+    videoType,
+    youtubeId: ytId,
+    vimeoId: vmId,
+  };
 };
 
 const BLUR_DATA_URL =
@@ -93,8 +164,8 @@ export default function AdminCmsSlidesPage() {
     setTitle(slide.title || '');
     setSubtitle(slide.subtitle || '');
     const media = parseSlideMedia(slide.image_url);
-    setImageUrl(media.image || slide.image_url || '');
-    setMediaType(media.type as any || 'image');
+    setImageUrl(media.image || '');
+    setMediaType(media.type);
     setVideoUrl(media.video || '');
     setTag(slide.tag || 'CHIDY PRIME EXCLUSIVE');
     setCtaText(slide.cta_text || 'EXPLORE NOW');
@@ -108,10 +179,12 @@ export default function AdminCmsSlidesPage() {
     setSubmitting(true);
     try {
       let finalImageUrl = imageUrl;
-      if (mediaType === 'video' && videoUrl.trim()) {
+      const effectiveVideoUrl = videoUrl.trim() || (isDirectVideoUrl(imageUrl) || getYouTubeId(imageUrl) || getVimeoId(imageUrl) ? imageUrl.trim() : '');
+
+      if (mediaType === 'video' || effectiveVideoUrl) {
         finalImageUrl = JSON.stringify({
-          image: imageUrl,
-          video: videoUrl.trim(),
+          image: imageUrl.trim() || (getYouTubeId(effectiveVideoUrl) ? `https://img.youtube.com/vi/${getYouTubeId(effectiveVideoUrl)}/hqdefault.jpg` : ''),
+          video: effectiveVideoUrl,
           type: 'video',
         });
       }
@@ -299,13 +372,8 @@ export default function AdminCmsSlidesPage() {
                       {/* Banner Image / Media Preview */}
                       <td className="py-4">
                         <div className="relative w-28 h-16 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
-                          {mediaInfo.type === 'video' ? (
-                            <div className="text-[10px] text-blue-400 font-black uppercase p-1 text-center bg-slate-950 w-full h-full flex items-center justify-center gap-1">
-                              <Play className="w-3 h-3 text-blue-400" />
-                              <span>Video Banner</span>
-                            </div>
-                          ) : (
-                            mediaInfo.image && (
+                          {mediaInfo.image ? (
+                            <>
                               <Image
                                 src={mediaInfo.image}
                                 alt={s.title}
@@ -316,7 +384,23 @@ export default function AdminCmsSlidesPage() {
                                 blurDataURL={BLUR_DATA_URL}
                                 className="object-cover"
                               />
-                            )
+                              {mediaInfo.type === 'video' && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                                  <span className="p-1 rounded-full bg-blue-600/90 text-white shadow">
+                                    <Play className="w-3 h-3 fill-white" />
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          ) : mediaInfo.type === 'video' ? (
+                            <div className="text-[10px] text-blue-400 font-black uppercase p-1 text-center bg-slate-950 w-full h-full flex items-center justify-center gap-1">
+                              <Play className="w-3.5 h-3.5 text-blue-400 fill-blue-400" />
+                              <span>Video</span>
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-slate-500 font-bold uppercase p-1 text-center bg-slate-950 w-full h-full flex items-center justify-center">
+                              No Image
+                            </div>
                           )}
                         </div>
                       </td>
@@ -413,27 +497,64 @@ export default function AdminCmsSlidesPage() {
                 LIVE BANNER PREVIEW
               </label>
               <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner flex items-center justify-center">
-                {mediaType === 'video' && videoUrl.trim() ? (
-                  <iframe
-                    src={`https://www.youtube.com/embed/${getYouTubeId(videoUrl)}?autoplay=0&controls=1`}
-                    title="Live Preview"
-                    className="w-full h-full object-cover border-0"
-                  />
-                ) : imageUrl ? (
-                  <Image
-                    src={imageUrl}
-                    alt="Preview"
-                    fill
-                    quality={90}
-                    unoptimized={Boolean(imageUrl.includes('ibb.co'))}
-                    placeholder="blur"
-                    blurDataURL={BLUR_DATA_URL}
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-bold text-slate-500 uppercase">No Image Selected</span>
-                )}
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-blue-600 text-white font-black text-[10px] uppercase shadow-md">
+                {(() => {
+                  const effectiveVid = videoUrl.trim() || (isDirectVideoUrl(imageUrl) || getYouTubeId(imageUrl) || getVimeoId(imageUrl) ? imageUrl.trim() : '');
+                  const ytId = getYouTubeId(effectiveVid);
+                  const vmId = getVimeoId(effectiveVid);
+
+                  if (mediaType === 'video' || effectiveVid) {
+                    if (ytId) {
+                      return (
+                        <iframe
+                          src={`https://www.youtube.com/embed/${ytId}?autoplay=0&controls=1`}
+                          title="Live YouTube Preview"
+                          className="w-full h-full object-cover border-0"
+                        />
+                      );
+                    }
+                    if (vmId) {
+                      return (
+                        <iframe
+                          src={`https://player.vimeo.com/video/${vmId}?autoplay=0&controls=1`}
+                          title="Live Vimeo Preview"
+                          className="w-full h-full object-cover border-0"
+                        />
+                      );
+                    }
+                    if (effectiveVid) {
+                      return (
+                        <video
+                          src={effectiveVid}
+                          poster={imageUrl || undefined}
+                          autoPlay
+                          muted
+                          loop
+                          controls
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                      );
+                    }
+                  }
+
+                  if (imageUrl) {
+                    return (
+                      <Image
+                        src={imageUrl}
+                        alt="Preview"
+                        fill
+                        quality={90}
+                        unoptimized={Boolean(imageUrl.includes('ibb.co'))}
+                        placeholder="blur"
+                        blurDataURL={BLUR_DATA_URL}
+                        className="object-cover"
+                      />
+                    );
+                  }
+
+                  return <span className="text-xs font-bold text-slate-500 uppercase">Hakuna Media Iliyochaguliwa</span>;
+                })()}
+                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-blue-600 text-white font-black text-[10px] uppercase shadow-md pointer-events-none">
                   {tag || 'EXCLUSIVE'}
                 </div>
               </div>
@@ -470,14 +591,33 @@ export default function AdminCmsSlidesPage() {
                   onChange={(e) => setMediaType(e.target.value as any)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
                 >
-                  <option value="image">Image (Picha pekee)</option>
-                  <option value="video">Video (YouTube Direct Embed)</option>
+                  <option value="image">Picha Pekee (Image Banner)</option>
+                  <option value="video">Video (YouTube / Direct MP4 / Cloudflare R2 / Vimeo)</option>
                 </select>
               </div>
 
+              {mediaType === 'video' && (
+                <div>
+                  <label className="block font-black uppercase text-slate-300 mb-1.5">
+                    VIDEO URL (YouTube, Shorts, Direct .MP4 au Cloudflare R2)
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://www.youtube.com/watch?v=... au https://.../video.mp4"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-bold placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                    Inakubali video yoyote ya YouTube, YouTube Shorts, Vimeo, au direct MP4/Cloudflare video URL.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block font-black uppercase text-slate-300 mb-1.5">
-                  BANNER IMAGE URL (IMGBB HOSTED)
+                  {mediaType === 'video' ? 'POSTER / BANGO LA PICHA (THUMBNAIL YA VIDEO)' : 'BANNER IMAGE URL (IMGBB / LINK YA PICHA)'}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -493,20 +633,12 @@ export default function AdminCmsSlidesPage() {
                     buttonLabel="Upload ImgBB"
                   />
                 </div>
+                {mediaType === 'video' && (
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                    (Hiari) Ukiacha wazi, YouTube itatengeneza cover kiotomatiki.
+                  </p>
+                )}
               </div>
-
-              {mediaType === 'video' && (
-                <div>
-                  <label className="block font-black uppercase text-slate-300 mb-1.5">YOUTUBE VIDEO URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-bold placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

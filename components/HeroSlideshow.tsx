@@ -49,29 +49,185 @@ const DEFAULT_SLIDES: Slide[] = [
 const BLUR_DATA_URL =
   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxMCI+PHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjEwIiBmaWxsPSIjMGUxNzJhIi8+PC9zdmc+';
 
-const parseMedia = (rawUrl: string) => {
-  try {
-    if (rawUrl && rawUrl.startsWith('{')) {
-      const parsed = JSON.parse(rawUrl);
-      return {
-        image: parsed.image || '',
-        video: parsed.video || '',
-        type: parsed.type || 'video',
-      };
+export interface MediaInfo {
+  type: 'image' | 'video';
+  image: string;
+  video: string;
+  videoType: 'youtube' | 'vimeo' | 'direct' | 'none';
+  youtubeId: string | null;
+  vimeoId: string | null;
+}
+
+export const getYouTubeId = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const match = url.match(regExp);
+  return match && match[1] ? match[1] : null;
+};
+
+export const getVimeoId = (url: string): string | null => {
+  if (!url) return null;
+  const match = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/i);
+  return match && match[1] ? match[1] : null;
+};
+
+export const isDirectVideoUrl = (url: string): boolean => {
+  if (!url) return false;
+  const clean = url.toLowerCase().split('?')[0];
+  return (
+    clean.endsWith('.mp4') ||
+    clean.endsWith('.webm') ||
+    clean.endsWith('.ogg') ||
+    clean.endsWith('.mov') ||
+    clean.endsWith('.m4v') ||
+    clean.endsWith('.m3u8') ||
+    url.includes('.r2.dev') ||
+    url.includes('b-cdn.net') ||
+    url.includes('blob:') ||
+    url.includes('video/upload')
+  );
+};
+
+export const parseMedia = (rawUrl: string): MediaInfo => {
+  let img = '';
+  let vid = '';
+  let explicitType: 'image' | 'video' | null = null;
+
+  if (rawUrl && typeof rawUrl === 'string') {
+    const trimmed = rawUrl.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        img = parsed.image || '';
+        vid = parsed.video || '';
+        if (parsed.type === 'video' || parsed.type === 'image') {
+          explicitType = parsed.type;
+        }
+      } catch (e) {}
+    } else {
+      if (getYouTubeId(trimmed) || getVimeoId(trimmed) || isDirectVideoUrl(trimmed)) {
+        vid = trimmed;
+        explicitType = 'video';
+      } else {
+        img = trimmed;
+        explicitType = 'image';
+      }
     }
-  } catch (e) {}
+  }
+
+  const ytId = vid ? getYouTubeId(vid) : (img ? getYouTubeId(img) : null);
+  const vmId = vid ? getVimeoId(vid) : (img ? getVimeoId(img) : null);
+
+  let videoType: 'youtube' | 'vimeo' | 'direct' | 'none' = 'none';
+  let finalType: 'image' | 'video' = 'image';
+
+  if (ytId) {
+    videoType = 'youtube';
+    finalType = 'video';
+    if (!img) {
+      img = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    }
+  } else if (vmId) {
+    videoType = 'vimeo';
+    finalType = 'video';
+  } else if (vid || isDirectVideoUrl(img)) {
+    videoType = 'direct';
+    finalType = 'video';
+    if (!vid && isDirectVideoUrl(img)) {
+      vid = img;
+    }
+  } else if (explicitType === 'video' && vid) {
+    videoType = 'direct';
+    finalType = 'video';
+  } else {
+    finalType = 'image';
+  }
+
   return {
-    image: rawUrl || '',
-    video: '',
-    type: 'image',
+    type: finalType,
+    image: img,
+    video: vid,
+    videoType,
+    youtubeId: ytId,
+    vimeoId: vmId,
   };
 };
 
-const getYouTubeId = (url: string) => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return match && match[2].length === 11 ? match[2] : null;
-};
+function SlideMediaViewer({ mediaInfo, title, isPriority }: { mediaInfo: MediaInfo; title: string; isPriority: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
+    }
+  }, [mediaInfo.video]);
+
+  if (mediaInfo.type === 'video') {
+    if (mediaInfo.videoType === 'youtube' && mediaInfo.youtubeId) {
+      return (
+        <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none">
+          <iframe
+            src={`https://www.youtube.com/embed/${mediaInfo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${mediaInfo.youtubeId}&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&iv_load_policy=3`}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="w-[140%] h-[140%] min-w-full min-h-full object-cover border-0 scale-125 pointer-events-none"
+          />
+        </div>
+      );
+    }
+
+    if (mediaInfo.videoType === 'vimeo' && mediaInfo.vimeoId) {
+      return (
+        <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none">
+          <iframe
+            src={`https://player.vimeo.com/video/${mediaInfo.vimeoId}?autoplay=1&muted=1&loop=1&autopause=0&background=1&playsinline=1`}
+            title={title}
+            allow="autoplay; fullscreen; picture-in-picture"
+            className="w-[140%] h-[140%] min-w-full min-h-full object-cover border-0 scale-125 pointer-events-none"
+          />
+        </div>
+      );
+    }
+
+    if (mediaInfo.video) {
+      return (
+        <div className="relative w-full h-full bg-slate-950 overflow-hidden">
+          <video
+            ref={videoRef}
+            src={mediaInfo.video}
+            poster={mediaInfo.image || undefined}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      );
+    }
+  }
+
+  return (
+    <Image
+      src={mediaInfo.image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
+      alt={title}
+      fill
+      priority={isPriority}
+      quality={85}
+      placeholder="blur"
+      blurDataURL={BLUR_DATA_URL}
+      sizes="(max-width: 768px) 100vw, 60vw"
+      className="object-cover object-center select-none"
+      draggable={false}
+    />
+  );
+}
 
 interface HeroSlideshowProps {
   slides?: Slide[];
@@ -142,8 +298,6 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
 
   const slide = activeSlides[current] || activeSlides[0];
   const mediaInfo = parseMedia(slide.image_url);
-  const isYouTube = mediaInfo.type === 'video' && (mediaInfo.video.includes('youtube.com') || mediaInfo.video.includes('youtu.be'));
-  const ytId = isYouTube ? getYouTubeId(mediaInfo.video) : null;
 
   return (
     <div className="relative w-full aspect-[16/10] min-h-[220px] max-h-[280px] md:min-h-[340px] md:max-h-none md:aspect-auto rounded-2xl md:rounded-3xl overflow-hidden bg-[#0F172A] border border-slate-800 shadow-xl group">
@@ -218,27 +372,7 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
               transition={{ duration: 0.45 }}
               className="absolute inset-0 w-full h-full"
             >
-              {ytId ? (
-                <iframe
-                  src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&disablekb=1&modestbranding=1&rel=0`}
-                  title={slide.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  className="w-full h-full object-cover border-0 pointer-events-none scale-125"
-                />
-              ) : (
-                <Image
-                  src={mediaInfo.image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
-                  alt={slide.title}
-                  fill
-                  priority={current === 0}
-                  quality={80}
-                  placeholder="blur"
-                  blurDataURL={BLUR_DATA_URL}
-                  sizes="(max-width: 768px) 100vw, 60vw"
-                  className="object-cover object-center select-none pointer-events-auto"
-                  draggable={false}
-                />
-              )}
+              <SlideMediaViewer mediaInfo={mediaInfo} title={slide.title} isPriority={current === 0} />
             </motion.div>
           </AnimatePresence>
         </div>
@@ -255,22 +389,12 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
             transition={{ duration: 0.4 }}
             className="absolute inset-0 w-full h-full"
           >
-            <Image
-              src={mediaInfo.image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
-              alt={slide.title}
-              fill
-              priority={current === 0}
-              quality={80}
-              placeholder="blur"
-              blurDataURL={BLUR_DATA_URL}
-              sizes="100vw"
-              className="object-cover object-center w-full h-full"
-            />
+            <SlideMediaViewer mediaInfo={mediaInfo} title={slide.title} isPriority={current === 0} />
           </motion.div>
         </AnimatePresence>
 
         {/* Clean Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B111E] via-[#0B111E]/75 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B111E] via-[#0B111E]/75 to-transparent z-10 pointer-events-none" />
 
         {/* Overlay Content */}
         <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 z-20 flex flex-col justify-end gap-1">
