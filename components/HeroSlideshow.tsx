@@ -111,6 +111,7 @@ export const parseMedia = (rawUrl: string): MediaInfo => {
   let img = '';
   let vid = '';
   let explicitType: 'image' | 'video' | null = null;
+  let fromJson = false; // tracks whether data came from JSON (trust fields as-is)
 
   if (rawUrl && typeof rawUrl === 'string') {
     const trimmed = rawUrl.trim();
@@ -122,8 +123,10 @@ export const parseMedia = (rawUrl: string): MediaInfo => {
         if (parsed.type === 'video' || parsed.type === 'image') {
           explicitType = parsed.type;
         }
+        fromJson = true;
       } catch (e) {}
     } else {
+      // Raw URL (not JSON) — detect type by URL pattern
       if (getYouTubeId(trimmed) || getVimeoId(trimmed) || isDirectVideoUrl(trimmed)) {
         vid = trimmed;
         explicitType = 'video';
@@ -134,14 +137,15 @@ export const parseMedia = (rawUrl: string): MediaInfo => {
     }
   }
 
-  // Safety: if img was accidentally set to a video URL, move it to vid
-  if (img && !isImageUrl(img) && isDirectVideoUrl(img)) {
+  // ONLY swap img→vid when we're NOT from JSON (raw URLs only).
+  // When fromJson=true, img is the poster/thumbnail and vid is the video — trust them.
+  if (!fromJson && img && !isImageUrl(img) && isDirectVideoUrl(img)) {
     if (!vid) vid = img;
     img = '';
   }
 
-  const ytId = vid ? getYouTubeId(vid) : (img ? getYouTubeId(img) : null);
-  const vmId = vid ? getVimeoId(vid) : (img ? getVimeoId(img) : null);
+  const ytId = getYouTubeId(vid) || getYouTubeId(img) || null;
+  const vmId = getVimeoId(vid) || getVimeoId(img) || null;
 
   let videoType: 'youtube' | 'vimeo' | 'direct' | 'none' = 'none';
   let finalType: 'image' | 'video' = 'image';
@@ -149,19 +153,23 @@ export const parseMedia = (rawUrl: string): MediaInfo => {
   if (ytId) {
     videoType = 'youtube';
     finalType = 'video';
+    // Always use YouTube thumbnail as the image fallback
     if (!img || img.includes('youtube.com') || img.includes('youtu.be')) {
       img = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
     }
   } else if (vmId) {
     videoType = 'vimeo';
     finalType = 'video';
-  } else if (vid || isDirectVideoUrl(img)) {
+  } else if (vid) {
+    // vid is already set — trust it as a direct video (MP4, R2, CDN, etc.)
     videoType = 'direct';
     finalType = 'video';
-    if (!vid && isDirectVideoUrl(img)) {
-      vid = img;
-      img = '';
-    }
+  } else if (!fromJson && isDirectVideoUrl(img)) {
+    // Non-JSON raw URL: img is actually a video URL
+    videoType = 'direct';
+    finalType = 'video';
+    vid = img;
+    img = '';
   } else if (explicitType === 'video' && vid) {
     videoType = 'direct';
     finalType = 'video';

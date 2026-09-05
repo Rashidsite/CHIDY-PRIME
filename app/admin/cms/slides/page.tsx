@@ -57,6 +57,7 @@ const parseSlideMedia = (rawUrl: string) => {
   let img = '';
   let vid = '';
   let explicitType: 'image' | 'video' | null = null;
+  let fromJson = false;
 
   if (rawUrl && typeof rawUrl === 'string') {
     const trimmed = rawUrl.trim();
@@ -68,6 +69,7 @@ const parseSlideMedia = (rawUrl: string) => {
         if (parsed.type === 'video' || parsed.type === 'image') {
           explicitType = parsed.type;
         }
+        fromJson = true;
       } catch (e) {}
     } else {
       if (getYouTubeId(trimmed) || getVimeoId(trimmed) || isDirectVideoUrl(trimmed)) {
@@ -80,8 +82,14 @@ const parseSlideMedia = (rawUrl: string) => {
     }
   }
 
-  const ytId = vid ? getYouTubeId(vid) : (img ? getYouTubeId(img) : null);
-  const vmId = vid ? getVimeoId(vid) : (img ? getVimeoId(img) : null);
+  // Only swap img→vid for raw (non-JSON) URLs
+  if (!fromJson && img && !isImageUrl(img) && isDirectVideoUrl(img)) {
+    if (!vid) vid = img;
+    img = '';
+  }
+
+  const ytId = getYouTubeId(vid) || getYouTubeId(img) || null;
+  const vmId = getVimeoId(vid) || getVimeoId(img) || null;
 
   let videoType: 'youtube' | 'vimeo' | 'direct' | 'none' = 'none';
   let finalType: 'image' | 'video' = 'image';
@@ -95,12 +103,15 @@ const parseSlideMedia = (rawUrl: string) => {
   } else if (vmId) {
     videoType = 'vimeo';
     finalType = 'video';
-  } else if (vid || isDirectVideoUrl(img)) {
+  } else if (vid) {
+    // Trust vid as-is — direct video (MP4, R2, CDN)
     videoType = 'direct';
     finalType = 'video';
-    if (!vid && isDirectVideoUrl(img)) {
-      vid = img;
-    }
+  } else if (!fromJson && isDirectVideoUrl(img)) {
+    videoType = 'direct';
+    finalType = 'video';
+    vid = img;
+    img = '';
   } else if (explicitType === 'video' && vid) {
     videoType = 'direct';
     finalType = 'video';
