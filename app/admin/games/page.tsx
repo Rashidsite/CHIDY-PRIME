@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import ImgBBUploadModal from '@/components/ImgBBUploadModal';
+import GameMediaThumbnail from '@/components/GameMediaThumbnail';
 import { 
   Plus, 
   Trash2, 
@@ -23,7 +24,9 @@ import {
   Link as LinkIcon,
   ChevronRight,
   PlusCircle,
-  ExternalLink
+  ExternalLink,
+  Layers,
+  Film
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -53,6 +56,8 @@ export default function AdminGamesPage() {
   
   // Form State - Tab 2 Media & Multi-Links
   const [coverImage, setCoverImage] = useState('');
+  const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [thumbnailType, setThumbnailType] = useState<'image' | 'slideshow' | 'video' | 'auto'>('auto');
   const [downloadLinks, setDownloadLinks] = useState<DownloadLinkItem[]>([
     { name: 'Download Game APK', url: '' },
   ]);
@@ -121,6 +126,8 @@ export default function AdminGamesPage() {
     setStatus('published');
     setIsNewFeed(false);
     setCoverImage('https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg');
+    setScreenshots([]);
+    setThumbnailType('auto');
     setDownloadLinks([
       { name: 'Download Game / Mod', url: '' },
     ]);
@@ -144,7 +151,37 @@ export default function AdminGamesPage() {
     setRating(String(game.rating || 4.8));
     setStatus(game.status || 'published');
     setIsNewFeed(Boolean(game.is_new_feed));
-    setCoverImage(game.cover_image || game.image_url || '');
+    
+    let rawCover = game.cover_image || game.image_url || '';
+    let rawScreenshots: string[] = [];
+    let rawVideo = game.youtube_url || game.video_url || '';
+    let rawThumbType: 'image' | 'slideshow' | 'video' | 'auto' = game.thumbnail_type || 'auto';
+
+    if (typeof rawCover === 'string' && rawCover.trim().startsWith('{')) {
+      try {
+        const parsedMedia = JSON.parse(rawCover);
+        rawCover = parsedMedia.image || parsedMedia.cover || rawCover;
+        if (Array.isArray(parsedMedia.screenshots)) rawScreenshots = parsedMedia.screenshots;
+        if (parsedMedia.video) rawVideo = parsedMedia.video;
+        if (parsedMedia.thumbnail_type) rawThumbType = parsedMedia.thumbnail_type;
+      } catch (e) {}
+    }
+
+    if (Array.isArray(game.screenshots)) {
+      rawScreenshots = game.screenshots;
+    } else if (typeof game.screenshots === 'string' && game.screenshots.trim()) {
+      if (game.screenshots.trim().startsWith('[')) {
+        try {
+          rawScreenshots = JSON.parse(game.screenshots);
+        } catch (e) {}
+      } else {
+        rawScreenshots = game.screenshots.split(',').map((s: string) => s.trim()).filter(Boolean);
+      }
+    }
+
+    setCoverImage(rawCover);
+    setScreenshots(rawScreenshots);
+    setThumbnailType(rawThumbType);
 
     // Parse links
     let parsedLinks: DownloadLinkItem[] = [];
@@ -165,7 +202,7 @@ export default function AdminGamesPage() {
     }
 
     setDownloadLinks(parsedLinks);
-    setVideoUrl(game.youtube_url || game.video_url || '');
+    setVideoUrl(rawVideo);
 
     // Resolve plan duration
     let dur = game.access_duration || game.license_duration;
@@ -178,6 +215,23 @@ export default function AdminGamesPage() {
     
     setActiveTab('basic');
     setModalOpen(true);
+  };
+
+  // Screenshot helpers
+  const handleAddScreenshot = () => {
+    setScreenshots((prev) => [...prev, '']);
+  };
+
+  const handleRemoveScreenshot = (index: number) => {
+    setScreenshots((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateScreenshot = (index: number, value: string) => {
+    setScreenshots((prev) => {
+      const copy = [...prev];
+      copy[index] = value;
+      return copy;
+    });
   };
 
   // Multi-Link helper actions
@@ -274,6 +328,8 @@ export default function AdminGamesPage() {
           url: l.url.trim(),
         }));
 
+      const cleanScreenshots = screenshots.filter((s) => s && s.trim());
+
       const payload: Record<string, any> = {
         title: title.trim(),
         price: Number(price),
@@ -285,6 +341,8 @@ export default function AdminGamesPage() {
         install_guide: installGuide.trim(),
         cover_image: coverImage.trim(),
         image_url: coverImage.trim(),
+        screenshots: cleanScreenshots,
+        thumbnail_type: thumbnailType,
         download_url: cleanLinks[0]?.url || '',
         links: cleanLinks,
         video_url: videoUrl.trim(),
@@ -591,12 +649,14 @@ export default function AdminGamesPage() {
                   return (
                     <tr key={g.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-3">
-                        <div className="relative w-12 h-9 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
-                          <Image
-                            src={g.cover_image || g.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
-                            alt={g.title}
-                            fill
-                            className="object-cover"
+                        <div className="relative w-14 h-9 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
+                          <GameMediaThumbnail
+                            coverImage={g.cover_image || g.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
+                            screenshots={g.screenshots}
+                            videoUrl={g.video_url || g.youtube_url}
+                            thumbnailType={g.thumbnail_type || 'auto'}
+                            title={g.title}
+                            sizes="60px"
                           />
                         </div>
                       </td>
@@ -934,10 +994,56 @@ export default function AdminGamesPage() {
               ══════════════════════════════════════════════════════════════ */}
               {activeTab === 'media' && (
                 <div className="space-y-5 animate-in fade-in duration-200">
-                  {/* Cover Art Input & Live Thumbnail Preview */}
+                  {/* ── LIVE INTERACTIVE THUMBNAIL PREVIEW ── */}
+                  <div className="space-y-1.5 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Live Thumbnail & Moving Media Preview</span>
+                      </label>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+                        {videoUrl ? '🎬 Video Mode' : screenshots.filter(Boolean).length > 0 ? `🖼️ ${screenshots.filter(Boolean).length + 1} Slides` : '🖼️ 1 Image'}
+                      </span>
+                    </div>
+
+                    <div className="relative aspect-[16/9] w-full max-w-md mx-auto rounded-2xl overflow-hidden bg-slate-900 border border-slate-700/80 shadow-2xl">
+                      <GameMediaThumbnail
+                        coverImage={coverImage || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
+                        screenshots={screenshots.filter(Boolean)}
+                        videoUrl={videoUrl}
+                        thumbnailType={thumbnailType}
+                        title={title || 'Product Preview'}
+                        sizes="450px"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-60 pointer-events-none" />
+                      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/70 text-[9px] font-bold text-slate-200 backdrop-blur-sm pointer-events-none">
+                        Live Store Preview
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thumbnail Display Mode */}
+                  <div>
+                    <label className="block font-black uppercase text-slate-300 mb-1.5 tracking-wider text-[11px] flex items-center gap-1.5">
+                      <Film className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Thumbnail Display Mode (Aina ya Muonekano wa Bango)</span>
+                    </label>
+                    <select
+                      value={thumbnailType}
+                      onChange={(e) => setThumbnailType(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-bold text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value="auto">⚡ Auto-Detect (Inajichagulia kulingana na Video au Picha)</option>
+                      <option value="slideshow">🖼️ Multi-Image Slideshow (Picha 2+ zinazobadilika zenyewe)</option>
+                      <option value="video">🎬 Live Video Moving Poster (Video inayoplay yenyewe bila controls)</option>
+                      <option value="image">🖼️ Picha Moja Pekee (Single Poster Art)</option>
+                    </select>
+                  </div>
+
+                  {/* 1. Cover Art Input */}
                   <div>
                     <label className="block font-black uppercase text-slate-300 mb-1.5 tracking-wider text-[11px]">
-                      Cover Art ImgBB URL *
+                      Primary Cover Art / Bango Kuu (ImgBB URL) *
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -953,31 +1059,86 @@ export default function AdminGamesPage() {
                         buttonLabel="Upload ImgBB"
                       />
                     </div>
+                  </div>
 
-                    {/* Image Preview Box */}
-                    {coverImage && (
-                      <div className="mt-3 p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-4">
-                        <div className="relative w-24 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shrink-0">
-                          <Image
-                            src={coverImage}
-                            alt="Cover Preview"
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider block">
-                            ✓ Cover Art Validated
-                          </span>
-                          <p className="text-[11px] text-slate-400 truncate max-w-xs font-mono mt-0.5">
-                            {coverImage}
-                          </p>
-                        </div>
+                  {/* 2. Additional Screenshots / Multi-Image Slideshow Manager */}
+                  <div className="space-y-3 p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="font-black uppercase text-white tracking-wider text-xs flex items-center gap-1.5">
+                          <Layers className="w-4 h-4 text-emerald-400" />
+                          <span>Picha za Ziada za Slideshow (Screenshots & Angles)</span>
+                        </label>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Ongeza picha za ndani, pembeni na barabarani ili zibadilike zenyewe (Auto-Slideshow).
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAddScreenshot}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 text-[10px] font-black uppercase flex items-center gap-1 cursor-pointer transition-all"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>+ Ongeza Picha</span>
+                      </button>
+                    </div>
+
+                    {screenshots.length === 0 ? (
+                      <p className="text-[11px] text-slate-500 italic py-2">
+                        Bado hujaweka picha za ziada. Bonyeza "+ Ongeza Picha" hapo juu kuongeza picha za slideshow.
+                      </p>
+                    ) : (
+                      <div className="space-y-2.5 pt-1">
+                        {screenshots.map((screenUrl, sIdx) => (
+                          <div key={sIdx} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                            <span className="text-[10px] font-black text-slate-400 px-1.5 py-0.5 rounded bg-slate-950">
+                              #{sIdx + 2}
+                            </span>
+                            <input
+                              type="text"
+                              placeholder={`Screenshot #${sIdx + 2} (https://i.ibb.co/...)`}
+                              value={screenUrl}
+                              onChange={(e) => handleUpdateScreenshot(sIdx, e.target.value)}
+                              className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-500 truncate"
+                            />
+                            <ImgBBUploadModal
+                              onUploadSuccess={(url) => handleUpdateScreenshot(sIdx, url)}
+                              buttonLabel="Upload"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveScreenshot(sIdx)}
+                              className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 cursor-pointer"
+                              title="Futa Picha"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Dynamic Multi-Link Download Buttons Section */}
+                  {/* 3. Video / Demo Link */}
+                  <div>
+                    <label className="block font-black uppercase text-slate-300 mb-1.5 tracking-wider text-[11px] flex items-center gap-1.5">
+                      <Video className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Video Demo / Gameplay Trailer Link (YouTube, Shorts au .mp4)</span>
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=... au .mp4 link"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                      Ukiweka video, itacheza yenyewe moja kwa moja (Autoplay Looping Video) bila vitufe vya pause/seek.
+                    </p>
+                  </div>
+
+                  {/* 4. Dynamic Multi-Link Download Buttons Section */}
                   <div className="space-y-3 p-4 rounded-2xl bg-slate-950 border border-slate-800">
                     <div className="flex items-center justify-between">
                       <div>
@@ -1065,21 +1226,6 @@ export default function AdminGamesPage() {
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Video / Demo Link */}
-                  <div>
-                    <label className="block font-black uppercase text-slate-300 mb-1.5 tracking-wider text-[11px] flex items-center gap-1.5">
-                      <Video className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Video Demo / Gameplay Trailer Link (Optional)</span>
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://www.youtube.com/watch?v=... or .mp4 URL"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
-                    />
                   </div>
                 </div>
               )}

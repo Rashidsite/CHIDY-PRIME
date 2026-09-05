@@ -258,11 +258,43 @@ export default function FrontHubPage() {
             else dur = `${p.duration_days} Days`;
           }
 
+          let rawCover = p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
+          let rawScreenshots: string[] = [];
+          let rawVideoUrl = p.youtube_url || p.video_url || '';
+          let thumbnailType: 'image' | 'slideshow' | 'video' | 'auto' = p.thumbnail_type || (rawVideoUrl ? 'video' : 'auto');
+
+          // Resilient parsing if JSON was stored in image_url or screenshots
+          if (typeof rawCover === 'string' && rawCover.trim().startsWith('{')) {
+            try {
+              const parsedMedia = JSON.parse(rawCover);
+              rawCover = parsedMedia.image || parsedMedia.cover || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
+              if (Array.isArray(parsedMedia.screenshots)) rawScreenshots = parsedMedia.screenshots;
+              if (parsedMedia.video) rawVideoUrl = parsedMedia.video;
+              if (parsedMedia.thumbnail_type) thumbnailType = parsedMedia.thumbnail_type;
+            } catch (e) {}
+          }
+
+          if (Array.isArray(p.screenshots)) {
+            rawScreenshots = p.screenshots;
+          } else if (typeof p.screenshots === 'string' && p.screenshots.trim()) {
+            if (p.screenshots.trim().startsWith('[')) {
+              try {
+                rawScreenshots = JSON.parse(p.screenshots);
+              } catch (e) {}
+            } else {
+              rawScreenshots = p.screenshots.split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+          }
+
           combined.push({
             id: p.id,
             title: p.title || 'Untitled Game',
             description: p.description || '',
-            cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+            cover_image: rawCover,
+            screenshots: rawScreenshots,
+            video_url: rawVideoUrl,
+            youtube_url: rawVideoUrl,
+            thumbnail_type: thumbnailType,
             price: Number(p.price || 0),
             rating: Number(p.rating || 4.9),
             category: p.category || 'Maleo Bus Mods TZ',

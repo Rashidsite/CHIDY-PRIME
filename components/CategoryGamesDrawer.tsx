@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, SlidersHorizontal, Star, AlertCircle, Zap } from 'lucide-react';
 import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
+import GameMediaThumbnail from './GameMediaThumbnail';
 
 interface CategoryGamesDrawerProps {
   isOpen: boolean;
@@ -143,18 +144,15 @@ export default function CategoryGamesDrawer({
                         transition={{ delay: idx * 0.04 }}
                         className="group flex flex-col sm:flex-row gap-4 p-4 rounded-2xl bg-[#0F172A] border border-slate-800/80 hover:border-blue-600/40 transition-all interactive-card"
                       >
-                        {/* Image Thumbnail */}
+                        {/* Media Thumbnail */}
                         <div className="relative w-full sm:w-36 aspect-[16/10] sm:aspect-square rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-800">
-                          <Image
-                            src={game.cover_image}
-                            alt={game.title}
-                            fill
-                            quality={75}
-                            placeholder="blur"
-                            blurDataURL={BLUR_DATA_URL}
+                          <GameMediaThumbnail
+                            coverImage={game.cover_image}
+                            screenshots={game.screenshots}
+                            videoUrl={game.video_url || game.youtube_url}
+                            thumbnailType={game.thumbnail_type || 'auto'}
+                            title={game.title}
                             sizes="(max-width: 640px) 100vw, 150px"
-                            className="object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
-                            loading="lazy"
                           />
                         </div>
 

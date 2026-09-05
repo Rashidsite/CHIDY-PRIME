@@ -67,14 +67,43 @@ export async function GET() {
           linksList = [{ name: 'Download File', url: p.download_url }];
         }
 
+        let rawCover = p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
+        let rawScreenshots: string[] = [];
+        let rawVideoUrl = p.youtube_url || p.video_url || '';
+        let thumbnailType: 'image' | 'slideshow' | 'video' | 'auto' = p.thumbnail_type || (rawVideoUrl ? 'video' : 'auto');
+
+        if (typeof rawCover === 'string' && rawCover.trim().startsWith('{')) {
+          try {
+            const parsedMedia = JSON.parse(rawCover);
+            rawCover = parsedMedia.image || parsedMedia.cover || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
+            if (Array.isArray(parsedMedia.screenshots)) rawScreenshots = parsedMedia.screenshots;
+            if (parsedMedia.video) rawVideoUrl = parsedMedia.video;
+            if (parsedMedia.thumbnail_type) thumbnailType = parsedMedia.thumbnail_type;
+          } catch (e) {}
+        }
+
+        if (Array.isArray(p.screenshots)) {
+          rawScreenshots = p.screenshots;
+        } else if (typeof p.screenshots === 'string' && p.screenshots.trim()) {
+          if (p.screenshots.trim().startsWith('[')) {
+            try {
+              rawScreenshots = JSON.parse(p.screenshots);
+            } catch (e) {}
+          } else {
+            rawScreenshots = p.screenshots.split(',').map((s: string) => s.trim()).filter(Boolean);
+          }
+        }
+
         const durLabel = formatDurationFromDays(p.duration_days);
 
         merged.push({
           id: p.id,
           title: p.title || 'Untitled Game',
           description: p.description || '',
-          cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-          image_url: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+          cover_image: rawCover,
+          image_url: rawCover,
+          screenshots: rawScreenshots,
+          thumbnail_type: thumbnailType,
           price: Number(p.price || 0),
           rating: Number(p.rating || 4.8),
           category: p.category || 'MALEO BUS MODE TZ',
@@ -83,8 +112,8 @@ export async function GET() {
           is_new_feed: curatedSet.has(p.id) || Boolean(p.is_new_feed),
           access_duration: durLabel,
           license_duration: durLabel,
-          youtube_url: p.youtube_url || p.video_url || '',
-          video_url: p.youtube_url || p.video_url || '',
+          youtube_url: rawVideoUrl,
+          video_url: rawVideoUrl,
           download_url: linksList[0]?.url || p.download_url || '',
           links: linksList,
           created_at: p.created_at,
@@ -112,6 +141,8 @@ export async function POST(request: Request) {
     const status = body.status || 'published';
     const imageUrl = body.cover_image?.trim() || body.image_url?.trim() || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
     const youtubeUrl = body.video_url?.trim() || body.youtube_url?.trim() || '';
+    const screenshots = Array.isArray(body.screenshots) ? body.screenshots.filter((s: any) => typeof s === 'string' && s.trim()) : [];
+    const thumbnailType = body.thumbnail_type || (youtubeUrl ? 'video' : screenshots.length > 0 ? 'slideshow' : 'image');
     
     // Process Multi-Links
     let links: { name: string; url: string }[] = [];
@@ -144,6 +175,10 @@ export async function POST(request: Request) {
       sort_order: 9999,
     };
 
+    if (screenshots.length > 0) {
+      insertPayload.screenshots = screenshots;
+    }
+
     let newPost = null;
     let { data: pData, error: pErr } = await supabase
       .from('posts')
@@ -152,8 +187,29 @@ export async function POST(request: Request) {
       .single();
 
     if (pErr) {
-      console.error('Error inserting to posts:', pErr);
-      throw pErr;
+      // If error was missing screenshots column, retry without screenshots column
+      if (pErr.message && pErr.message.includes('screenshots')) {
+        delete insertPayload.screenshots;
+        // Resiliently encode in image_url if multiple media
+        if (screenshots.length > 0) {
+          insertPayload.image_url = JSON.stringify({
+            image: imageUrl,
+            screenshots,
+            video: youtubeUrl,
+            thumbnail_type: thumbnailType,
+          });
+        }
+        const retryResult = await supabase
+          .from('posts')
+          .insert(insertPayload)
+          .select()
+          .single();
+        if (retryResult.error) throw retryResult.error;
+        pData = retryResult.data;
+      } else {
+        console.error('Error inserting to posts:', pErr);
+        throw pErr;
+      }
     }
     newPost = pData;
 
@@ -242,6 +298,11 @@ export async function PUT(request: Request) {
     if (updates.video_url !== undefined || updates.youtube_url !== undefined) {
       postPayload.youtube_url = (updates.video_url || updates.youtube_url).trim();
     }
+    if (updates.screenshots !== undefined) {
+      postPayload.screenshots = Array.isArray(updates.screenshots)
+        ? updates.screenshots.filter((s: any) => typeof s === 'string' && s.trim())
+        : [];
+    }
     if (updates.access_duration !== undefined || updates.license_duration !== undefined) {
       postPayload.duration_days = parseDurationDays(updates.access_duration || updates.license_duration);
     }
@@ -262,7 +323,7 @@ export async function PUT(request: Request) {
 
     // Only update posts table if there are postPayload fields to update
     if (Object.keys(postPayload).length > 0) {
-      const { data: pData, error: pErr } = await supabase
+      let { data: pData, error: pErr } = await supabase
         .from('posts')
         .update(postPayload)
         .eq('id', id)
@@ -270,8 +331,30 @@ export async function PUT(request: Request) {
         .maybeSingle();
 
       if (pErr) {
-        console.error('Error updating posts table:', pErr);
-        throw pErr;
+        // If error was missing screenshots column, retry without screenshots and encode in image_url
+        if (pErr.message && pErr.message.includes('screenshots')) {
+          const screens = postPayload.screenshots || [];
+          delete postPayload.screenshots;
+          if (screens.length > 0) {
+            postPayload.image_url = JSON.stringify({
+              image: postPayload.image_url || updates.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+              screenshots: screens,
+              video: postPayload.youtube_url || updates.video_url || '',
+              thumbnail_type: updates.thumbnail_type || (postPayload.youtube_url ? 'video' : 'slideshow'),
+            });
+          }
+          const retryRes = await supabase
+            .from('posts')
+            .update(postPayload)
+            .eq('id', id)
+            .select()
+            .maybeSingle();
+          if (retryRes.error) throw retryRes.error;
+          pData = retryRes.data;
+        } else {
+          console.error('Error updating posts table:', pErr);
+          throw pErr;
+        }
       }
       updatedPost = pData;
     }

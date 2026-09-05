@@ -7,12 +7,17 @@ import { motion } from 'framer-motion';
 import { Star, Crown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useCMSTheme } from './CMSThemeProvider';
+import GameMediaThumbnail from './GameMediaThumbnail';
 
 export interface GameProduct {
   id: string;
   title: string;
   description?: string;
   cover_image: string;
+  screenshots?: string[];
+  video_url?: string;
+  youtube_url?: string;
+  thumbnail_type?: 'image' | 'slideshow' | 'video' | 'auto';
   price: number;
   rating?: number;
   category: string;
@@ -111,19 +116,15 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
       } shadow-xl transition-all duration-300 interactive-card game-card-accelerated`}
     >
       <div className="relative aspect-[16/9] aspect-card-16-9 w-full overflow-hidden bg-slate-900 shrink-0">
-        <Image
-          src={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
-          alt={game.title}
-          fill
-          quality={75}
-          placeholder="blur"
-          blurDataURL={BLUR_DATA_URL}
+        <GameMediaThumbnail
+          coverImage={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
+          screenshots={game.screenshots}
+          videoUrl={game.video_url || game.youtube_url}
+          thumbnailType={game.thumbnail_type || 'auto'}
+          title={game.title}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover object-center group-hover:scale-[1.03] transition-transform duration-500 ease-out select-none pointer-events-auto"
-          loading="lazy"
-          draggable={false}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/10 to-transparent opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/10 to-transparent opacity-90 pointer-events-none" />
 
         <div className="absolute top-3 right-3 flex items-center justify-end z-10 gap-1.5 pointer-events-none">
           {showUnlocked ? (
