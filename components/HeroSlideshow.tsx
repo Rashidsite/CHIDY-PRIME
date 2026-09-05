@@ -124,7 +124,7 @@ export const parseMedia = (rawUrl: string): MediaInfo => {
   if (ytId) {
     videoType = 'youtube';
     finalType = 'video';
-    if (!img) {
+    if (!img || img.includes('youtube.com') || img.includes('youtu.be')) {
       img = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
     }
   } else if (vmId) {
@@ -169,13 +169,24 @@ function SlideMediaViewer({ mediaInfo, title, isPriority }: { mediaInfo: MediaIn
   if (mediaInfo.type === 'video') {
     if (mediaInfo.videoType === 'youtube' && mediaInfo.youtubeId) {
       return (
-        <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none">
+        <div className="relative w-full h-full overflow-hidden bg-slate-950 flex items-center justify-center pointer-events-none select-none">
+          {mediaInfo.image && (
+            <Image
+              src={mediaInfo.image}
+              alt={title}
+              fill
+              priority={isPriority}
+              quality={80}
+              className="object-cover object-center pointer-events-none -z-0 opacity-60"
+            />
+          )}
           <iframe
             src={`https://www.youtube.com/embed/${mediaInfo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${mediaInfo.youtubeId}&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&iv_load_policy=3`}
             title={title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
-            className="w-[140%] h-[140%] min-w-full min-h-full object-cover border-0 scale-125 pointer-events-none"
+            loading="eager"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] h-[160%] min-w-full min-h-full object-cover border-0 pointer-events-none z-[1]"
           />
         </div>
       );
@@ -183,12 +194,23 @@ function SlideMediaViewer({ mediaInfo, title, isPriority }: { mediaInfo: MediaIn
 
     if (mediaInfo.videoType === 'vimeo' && mediaInfo.vimeoId) {
       return (
-        <div className="relative w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none">
+        <div className="relative w-full h-full overflow-hidden bg-slate-950 flex items-center justify-center pointer-events-none select-none">
+          {mediaInfo.image && (
+            <Image
+              src={mediaInfo.image}
+              alt={title}
+              fill
+              priority={isPriority}
+              quality={80}
+              className="object-cover object-center pointer-events-none -z-0 opacity-60"
+            />
+          )}
           <iframe
             src={`https://player.vimeo.com/video/${mediaInfo.vimeoId}?autoplay=1&muted=1&loop=1&autopause=0&background=1&playsinline=1`}
             title={title}
             allow="autoplay; fullscreen; picture-in-picture"
-            className="w-[140%] h-[140%] min-w-full min-h-full object-cover border-0 scale-125 pointer-events-none"
+            loading="eager"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] h-[160%] min-w-full min-h-full object-cover border-0 pointer-events-none z-[1]"
           />
         </div>
       );
@@ -393,8 +415,8 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
           </motion.div>
         </AnimatePresence>
 
-        {/* Clean Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B111E] via-[#0B111E]/75 to-transparent z-10 pointer-events-none" />
+        {/* Clean Gradient Overlay - allows background video to be clearly visible while maintaining text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B111E] via-[#0B111E]/40 to-transparent z-10 pointer-events-none" />
 
         {/* Overlay Content */}
         <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5 z-20 flex flex-col justify-end gap-1">

@@ -72,7 +72,7 @@ const parseSlideMedia = (rawUrl: string) => {
   if (ytId) {
     videoType = 'youtube';
     finalType = 'video';
-    if (!img) {
+    if (!img || img.includes('youtube.com') || img.includes('youtu.be')) {
       img = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
     }
   } else if (vmId) {
