@@ -71,9 +71,27 @@ export const getVimeoId = (url: string): string | null => {
   return match && match[1] ? match[1] : null;
 };
 
+export const isImageUrl = (url: string): boolean => {
+  if (!url) return false;
+  const clean = url.toLowerCase().split('?')[0];
+  return (
+    clean.endsWith('.jpg') ||
+    clean.endsWith('.jpeg') ||
+    clean.endsWith('.png') ||
+    clean.endsWith('.gif') ||
+    clean.endsWith('.webp') ||
+    clean.endsWith('.avif') ||
+    clean.endsWith('.svg') ||
+    clean.endsWith('.bmp') ||
+    clean.endsWith('.tiff')
+  );
+};
+
 export const isDirectVideoUrl = (url: string): boolean => {
   if (!url) return false;
   const clean = url.toLowerCase().split('?')[0];
+  // If it has a clear image extension, it's NOT a video (even on R2/CDN)
+  if (isImageUrl(url)) return false;
   return (
     clean.endsWith('.mp4') ||
     clean.endsWith('.webm') ||
@@ -81,8 +99,9 @@ export const isDirectVideoUrl = (url: string): boolean => {
     clean.endsWith('.mov') ||
     clean.endsWith('.m4v') ||
     clean.endsWith('.m3u8') ||
-    url.includes('.r2.dev') ||
-    url.includes('b-cdn.net') ||
+    // R2/CDN URLs only if they don't have an image extension
+    (url.includes('.r2.dev') && !isImageUrl(url)) ||
+    (url.includes('b-cdn.net') && !isImageUrl(url)) ||
     url.includes('blob:') ||
     url.includes('video/upload')
   );
@@ -115,6 +134,12 @@ export const parseMedia = (rawUrl: string): MediaInfo => {
     }
   }
 
+  // Safety: if img was accidentally set to a video URL, move it to vid
+  if (img && !isImageUrl(img) && isDirectVideoUrl(img)) {
+    if (!vid) vid = img;
+    img = '';
+  }
+
   const ytId = vid ? getYouTubeId(vid) : (img ? getYouTubeId(img) : null);
   const vmId = vid ? getVimeoId(vid) : (img ? getVimeoId(img) : null);
 
@@ -135,6 +160,7 @@ export const parseMedia = (rawUrl: string): MediaInfo => {
     finalType = 'video';
     if (!vid && isDirectVideoUrl(img)) {
       vid = img;
+      img = '';
     }
   } else if (explicitType === 'video' && vid) {
     videoType = 'direct';
@@ -166,20 +192,22 @@ function SlideMediaViewer({ mediaInfo, title, isPriority }: { mediaInfo: MediaIn
     }
   }, [mediaInfo.video]);
 
+  const FALLBACK_IMG = 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
+
   if (mediaInfo.type === 'video') {
     if (mediaInfo.videoType === 'youtube' && mediaInfo.youtubeId) {
+      const thumbSrc = mediaInfo.image || `https://img.youtube.com/vi/${mediaInfo.youtubeId}/hqdefault.jpg`;
       return (
         <div className="relative w-full h-full overflow-hidden bg-slate-950 flex items-center justify-center pointer-events-none select-none">
-          {mediaInfo.image && (
-            <Image
-              src={mediaInfo.image}
-              alt={title}
-              fill
-              priority={isPriority}
-              quality={80}
-              className="object-cover object-center pointer-events-none -z-0 opacity-60"
-            />
-          )}
+          {/* Always show thumbnail as background until iframe loads */}
+          <Image
+            src={thumbSrc}
+            alt={title}
+            fill
+            priority={isPriority}
+            quality={80}
+            className="object-cover object-center pointer-events-none z-0"
+          />
           <iframe
             src={`https://www.youtube.com/embed/${mediaInfo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${mediaInfo.youtubeId}&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&iv_load_policy=3`}
             title={title}
@@ -202,7 +230,7 @@ function SlideMediaViewer({ mediaInfo, title, isPriority }: { mediaInfo: MediaIn
               fill
               priority={isPriority}
               quality={80}
-              className="object-cover object-center pointer-events-none -z-0 opacity-60"
+              className="object-cover object-center pointer-events-none z-0"
             />
           )}
           <iframe
@@ -219,16 +247,27 @@ function SlideMediaViewer({ mediaInfo, title, isPriority }: { mediaInfo: MediaIn
     if (mediaInfo.video) {
       return (
         <div className="relative w-full h-full bg-slate-950 overflow-hidden">
+          {/* Show poster/fallback image behind video */}
+          {(mediaInfo.image || FALLBACK_IMG) && (
+            <Image
+              src={mediaInfo.image || FALLBACK_IMG}
+              alt={title}
+              fill
+              priority={isPriority}
+              quality={75}
+              className="object-cover object-center z-0 opacity-80"
+            />
+          )}
           <video
             ref={videoRef}
             src={mediaInfo.video}
-            poster={mediaInfo.image || undefined}
+            poster={mediaInfo.image || FALLBACK_IMG}
             autoPlay
             muted
             loop
             playsInline
             preload="auto"
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover z-[1]"
           />
         </div>
       );
@@ -237,7 +276,7 @@ function SlideMediaViewer({ mediaInfo, title, isPriority }: { mediaInfo: MediaIn
 
   return (
     <Image
-      src={mediaInfo.image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg'}
+      src={mediaInfo.image || FALLBACK_IMG}
       alt={title}
       fill
       priority={isPriority}

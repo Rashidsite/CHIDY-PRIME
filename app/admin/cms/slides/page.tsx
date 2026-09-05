@@ -19,9 +19,26 @@ const getVimeoId = (url: string): string | null => {
   return match && match[1] ? match[1] : null;
 };
 
+const isImageUrl = (url: string): boolean => {
+  if (!url) return false;
+  const clean = url.toLowerCase().split('?')[0];
+  return (
+    clean.endsWith('.jpg') ||
+    clean.endsWith('.jpeg') ||
+    clean.endsWith('.png') ||
+    clean.endsWith('.gif') ||
+    clean.endsWith('.webp') ||
+    clean.endsWith('.avif') ||
+    clean.endsWith('.svg') ||
+    clean.endsWith('.bmp') ||
+    clean.endsWith('.tiff')
+  );
+};
+
 const isDirectVideoUrl = (url: string): boolean => {
   if (!url) return false;
   const clean = url.toLowerCase().split('?')[0];
+  if (isImageUrl(url)) return false;
   return (
     clean.endsWith('.mp4') ||
     clean.endsWith('.webm') ||
@@ -29,8 +46,8 @@ const isDirectVideoUrl = (url: string): boolean => {
     clean.endsWith('.mov') ||
     clean.endsWith('.m4v') ||
     clean.endsWith('.m3u8') ||
-    url.includes('.r2.dev') ||
-    url.includes('b-cdn.net') ||
+    (url.includes('.r2.dev') && !isImageUrl(url)) ||
+    (url.includes('b-cdn.net') && !isImageUrl(url)) ||
     url.includes('blob:') ||
     url.includes('video/upload')
   );
