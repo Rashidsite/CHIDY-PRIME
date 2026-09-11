@@ -1,4 +1,4 @@
-﻿import type { Metadata, Viewport } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import React from 'react';
 import { PWAProvider } from '@/components/PWAProvider';
@@ -7,6 +7,7 @@ import { CMSThemeProvider } from '@/components/CMSThemeProvider';
 import ContentProtectionGuard from '@/components/ContentProtectionGuard';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import StorefrontFooter from '@/components/StorefrontFooter';
+import GameToastPopup from '@/components/GameToastPopup';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chidyprimetz.com'),
@@ -78,6 +79,7 @@ export default function RootLayout({
               </div>
               <MobileBottomNav />
               <StorefrontFooter />
+              <GameToastPopup />
             </CMSThemeProvider>
           </PWAProvider>
         </AuthProvider>
