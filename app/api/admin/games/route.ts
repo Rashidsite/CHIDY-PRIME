@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { broadcastStorefrontChange } from '@/lib/realtime-broadcast';
 
 export const dynamic = 'force-dynamic';
 
@@ -229,6 +230,9 @@ export async function POST(request: Request) {
       } catch {}
     }
 
+    // Broadcast instant realtime sync to front-end
+    await broadcastStorefrontChange('GAME_CREATED', { id: newPost?.id, game: newPost });
+
     return NextResponse.json({
       success: true,
       game: {
@@ -359,6 +363,9 @@ export async function PUT(request: Request) {
       updatedPost = pData;
     }
 
+    // Broadcast instant realtime sync to front-end
+    await broadcastStorefrontChange('GAME_UPDATED', { id, updates });
+
     return NextResponse.json({
       success: true,
       game: {
@@ -388,6 +395,9 @@ export async function DELETE(request: Request) {
 
     const supabase = createAdminClient();
     await supabase.from('posts').delete().eq('id', id);
+
+    // Broadcast instant realtime sync to front-end
+    await broadcastStorefrontChange('GAME_DELETED', { id });
 
     return NextResponse.json({ success: true, message: 'Game deleted successfully' });
   } catch (error: any) {

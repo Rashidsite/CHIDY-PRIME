@@ -499,6 +499,13 @@ export default function FrontHubPage() {
     const channel = supabase
       .channel('cross-domain-storefront-sync')
       .on(
+        'broadcast',
+        { event: 'STOREFRONT_DATA_CHANGED' },
+        () => {
+          loadStorefrontData(false);
+        }
+      )
+      .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'posts' },
         handleProductChange
@@ -616,9 +623,19 @@ export default function FrontHubPage() {
       )
       .subscribe();
 
+    const handleGlobalSync = () => {
+      loadStorefrontData(false);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cpcg_storefront_sync', handleGlobalSync);
+    }
+
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(broadcastChannel);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('cpcg_storefront_sync', handleGlobalSync);
+      }
     };
   }, [loadStorefrontData, supabase]);
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { broadcastStorefrontChange } from '@/lib/realtime-broadcast';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,15 +61,8 @@ export async function POST(request: Request) {
       .from('store_settings')
       .upsert({ key, value }, { onConflict: 'key' });
 
-    // 3. Broadcast update to storefront-sync channel
-    try {
-      const channel = supabase.channel('storefront-sync');
-      await channel.send({
-        type: 'broadcast',
-        event: 'STORE_SETTINGS_UPDATED',
-        payload: { key, value },
-      });
-    } catch {}
+    // 3. Broadcast instant sync to all storefront users
+    await broadcastStorefrontChange('STORE_SETTINGS_UPDATED', { key, value });
 
     return NextResponse.json({
       success: true,

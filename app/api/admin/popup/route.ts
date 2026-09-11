@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { broadcastStorefrontChange } from '@/lib/realtime-broadcast';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,17 +70,8 @@ export async function POST(request: Request) {
         .upsert({ key: 'game_toast_popup', value: config }, { onConflict: 'key' });
     } catch {}
 
-    // 3. Broadcast update
-    try {
-      const channel = supabase.channel('storefront-sync');
-      await channel.send({
-        type: 'broadcast',
-        event: 'GAME_POPUP_UPDATED',
-        payload: config,
-      });
-    } catch (e) {
-      console.warn('Realtime broadcast failed:', e);
-    }
+    // 3. Broadcast instant realtime update across all channels
+    await broadcastStorefrontChange('GAME_POPUP_UPDATED', config);
 
     return NextResponse.json({
       success: true,

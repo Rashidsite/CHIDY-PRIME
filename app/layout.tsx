@@ -8,6 +8,7 @@ import ContentProtectionGuard from '@/components/ContentProtectionGuard';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import StorefrontFooter from '@/components/StorefrontFooter';
 import GameToastPopup from '@/components/GameToastPopup';
+import RealtimeStorefrontSync from '@/components/RealtimeStorefrontSync';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chidyprimetz.com'),
@@ -80,6 +81,7 @@ export default function RootLayout({
               <MobileBottomNav />
               <StorefrontFooter />
               <GameToastPopup />
+              <RealtimeStorefrontSync />
             </CMSThemeProvider>
           </PWAProvider>
         </AuthProvider>

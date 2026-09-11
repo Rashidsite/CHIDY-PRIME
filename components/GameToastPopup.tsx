@@ -62,10 +62,32 @@ export default function GameToastPopup() {
         }
       })
       .subscribe();
+    const handleGlobalSync = async () => {
+      try {
+        const res = await fetch('/api/popup', { cache: 'no-cache' });
+        const data = await res.json();
+        if (data.success && data.config) {
+          if (data.config.enabled) {
+            setConfig(data.config);
+            setVisible(true);
+            setClosing(false);
+          } else {
+            setVisible(false);
+          }
+        }
+      } catch (_) {}
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cpcg_storefront_sync', handleGlobalSync);
+    }
 
     return () => {
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('cpcg_storefront_sync', handleGlobalSync);
+      }
     };
   }, []);
 
