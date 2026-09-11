@@ -9,6 +9,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import StorefrontFooter from '@/components/StorefrontFooter';
 import GameToastPopup from '@/components/GameToastPopup';
 import RealtimeStorefrontSync from '@/components/RealtimeStorefrontSync';
+import SafeErrorBoundary from '@/components/SafeErrorBoundary';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chidyprimetz.com'),
@@ -80,8 +81,12 @@ export default function RootLayout({
               </div>
               <MobileBottomNav />
               <StorefrontFooter />
-              <GameToastPopup />
-              <RealtimeStorefrontSync />
+              <SafeErrorBoundary>
+                <GameToastPopup />
+              </SafeErrorBoundary>
+              <SafeErrorBoundary>
+                <RealtimeStorefrontSync />
+              </SafeErrorBoundary>
             </CMSThemeProvider>
           </PWAProvider>
         </AuthProvider>
