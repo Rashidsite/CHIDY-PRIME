@@ -62,6 +62,10 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   const [activeOrder, setActiveOrder] = useState<any>(null);
   const [directLinks, setDirectLinks] = useState<ExtractedDownloadLink[]>([]);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [usedGateway, setUsedGateway] = useState<string>('pressopay');
+  const [gatewayReference, setGatewayReference] = useState<string | null>(null);
+  const [dispatchingHaraka, setDispatchingHaraka] = useState(false);
 
   const { syncPhoneAuth, profile } = useAuth();
   const isFree = game.price === 0;
@@ -307,16 +311,19 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   };
 
   // Start Realtime Webhook & Polling listener with strict ID verification
-  const startPaymentPolling = (orderId: string, orderNumber: string) => {
+  const startPaymentPolling = (orderId: string, orderNumber?: string, gwRef?: string) => {
     // 1. Strict Guard Clause: Do not initialize channel with undefined/empty order ID
     if (!orderId || typeof orderId !== 'string' || orderId.trim() === '' || orderId === 'undefined') {
       console.warn('Payment polling skipped: invalid or undefined order reference.');
       return;
     }
 
+    clearAllTimers();
+
     const cleanOrderId = orderId.trim();
     const cleanOrderNumber = (orderNumber || cleanOrderId).trim();
     const cleanedPhone = cleanPhoneNumber(phone) || localStorage.getItem('cpcg_user_phone') || '';
+    const cleanGwRef = String(gwRef || gatewayReference || '').trim();
 
     // Clean up any previously active channels before subscribing
     if (activeChannelRef.current) {
@@ -328,10 +335,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       activeBroadcastRef.current = null;
     }
 
-    let attempts = 0;
-    const maxAttempts = 60; // 60 attempts * 1.2s = 72 seconds
-
-    // 2. Chain .on('postgres_changes', ...) BEFORE .subscribe()
+    // 2. Supabase Realtime: listen for DB updates on payment_orders & orders
     const channel = supabase
       .channel(`order_status_${cleanOrderId}`)
       .on(
@@ -374,11 +378,15 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     activeChannelRef.current = channel;
 
     // 3. Ultra-Reliable 2s Polling interval with live gateway status verification
+    let attempts = 0;
+    const maxAttempts = 60; // 60 × 2s = 2 minutes
+
     pollTimerRef.current = setInterval(async () => {
       attempts++;
       try {
+        const gwParam = cleanGwRef ? `&gateway_ref=${encodeURIComponent(cleanGwRef)}` : '';
         const res = await fetch(
-          `/api/payment/check-status?reference=${encodeURIComponent(cleanOrderNumber || cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
+          `/api/payment/check-status?reference=${encodeURIComponent(cleanOrderNumber || cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}${gwParam}`
         );
         const data = await res.json();
         const isConfirmed = 
@@ -391,10 +399,10 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           return;
         }
 
-        // Secondary fallback check if needed
+        // Secondary fallback: hit /api/checkout/status every 3rd attempt
         if (attempts % 3 === 0) {
           const res2 = await fetch(
-            `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}`
+            `/api/checkout/status?order_id=${encodeURIComponent(cleanOrderId)}&phone=${encodeURIComponent(cleanedPhone)}${gwParam}`
           );
           const data2 = await res2.json();
           const isConfirmed2 = 
@@ -424,13 +432,15 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     try {
       const target = activeOrder?.id || activeOrder?.order_number || localStorage.getItem('cpcg_active_order_id') || '';
       const cleaned = cleanPhoneNumber(phone) || localStorage.getItem('cpcg_user_phone') || '';
+      const gwRef = gatewayReference || '';
 
       if (!target) {
         setError('Namba ya oda haikupatikana. Tafadhali bonyeza Jaribu Tena.');
         return;
       }
 
-      const res = await fetch(`/api/checkout/status?order_id=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}`);
+      const gwParam = gwRef ? `&gateway_ref=${encodeURIComponent(gwRef)}` : '';
+      const res = await fetch(`/api/checkout/status?order_id=${encodeURIComponent(target)}&phone=${encodeURIComponent(cleaned)}${gwParam}`);
       const data = await res.json();
 
       const isConfirmed = 
@@ -517,6 +527,11 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
         const orderResult = data.order || { id: data.orderId, order_number: data.orderNumber };
         setActiveOrder(orderResult);
 
+        // Capture gateway data from API response
+        if (data.checkoutUrl) setCheckoutUrl(data.checkoutUrl);
+        if (data.usedGateway) setUsedGateway(data.usedGateway);
+        if (data.gatewayReference) setGatewayReference(data.gatewayReference);
+
         try {
           if (orderResult?.id) localStorage.setItem('cpcg_active_order_id', orderResult.id);
           if (orderResult?.order_number) localStorage.setItem('cpcg_active_order_number', orderResult.order_number);
@@ -526,7 +541,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
         if (isFree) {
           handlePaymentConfirmed(orderResult);
         } else if (orderResult?.id) {
-          startPaymentPolling(orderResult.id, orderResult.order_number);
+          startPaymentPolling(orderResult.id, orderResult.order_number, data.gatewayReference || '');
         } else {
           setError('Hitilafu ya kuanzisha malipo kwenye simu. Tafadhali bonyeza Jaribu Tena.');
         }
@@ -728,6 +743,17 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                   Ukurasa huu utajifungua kiotomatiki mara tu unapoingiza PIN yako!
                 </p>
               </div>
+
+                {checkoutUrl && (
+                  <a
+                    href={checkoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider transition-colors text-center shadow-md"
+                  >
+                    👉 LIPA HAPA SELCOM / M-PESA (Njia ya pili)
+                  </a>
+                )}
 
               <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#111827] border border-slate-800 text-xs font-mono font-bold text-slate-300">
                 <Clock className="w-4 h-4 text-blue-400" />

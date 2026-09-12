@@ -23,6 +23,13 @@ export async function GET(request: NextRequest) {
       ''
     ).trim();
 
+    const rawGatewayRef = (
+      searchParams.get('gateway_reference') ||
+      searchParams.get('gateway_ref') ||
+      searchParams.get('gatewayRef') ||
+      ''
+    ).trim();
+
     const rawPhone = (searchParams.get('phone') || searchParams.get('phone_number') || '').trim();
     const cleanPhone = normalizePhone(rawPhone);
     const localPhone = toLocalPhone(rawPhone);
@@ -92,7 +99,7 @@ export async function GET(request: NextRequest) {
       const gatewayRefPart = order?.promo_used?.includes('|') ? order.promo_used.split('|')[1] : null;
       const orderRefPart = order?.promo_used?.split('|')[0] || order?.id || rawRef;
 
-      const refsToTest = [gatewayRefPart, orderRefPart, rawRef].filter(Boolean) as string[];
+      const refsToTest = [gatewayRefPart, rawGatewayRef, orderRefPart, rawRef].filter(Boolean) as string[];
 
       for (const testRef of refsToTest) {
         try {
@@ -145,19 +152,29 @@ export async function GET(request: NextRequest) {
           const hpRef = hpRefRaw.replace(/^HP:/, '');
           try {
             const hpStatus = await getHarakaPayStatus(hpRef);
-            if (hpStatus?.success && ['completed', 'success', 'approved', 'paid'].includes(String(hpStatus.status || '').toLowerCase())) {
-              console.log(`[Status Poller ⚡] HarakaPay confirmed payment for ${hpRef}! Fulfilling...`);
-              const fulfillResult = await fulfillOrderApproval({
-                orderIdOrRef: orderRefPart,
-                gatewayRef: hpRef,
-                phone: cleanPhone || order?.phone_number,
-                gatewayName: 'HARAKAPAY',
-                paidAmount: order?.amount,
-              });
-              if (fulfillResult.success && fulfillResult.order) {
-                isCompleted = true;
-                order = { ...order, ...fulfillResult.order, status: 'approved' };
-                break;
+            if (hpStatus?.success) {
+              const hStatusStr = String(
+                hpStatus.status ||
+                hpStatus.payment?.status ||
+                hpStatus.data?.status ||
+                hpStatus.payment_status ||
+                ''
+              ).trim().toLowerCase();
+
+              if (['completed', 'success', 'approved', 'paid'].includes(hStatusStr)) {
+                console.log(`[Status Poller ⚡] HarakaPay confirmed payment for ${hpRef}! Fulfilling...`);
+                const fulfillResult = await fulfillOrderApproval({
+                  orderIdOrRef: orderRefPart,
+                  gatewayRef: hpRef,
+                  phone: cleanPhone || order?.phone_number,
+                  gatewayName: 'HARAKAPAY',
+                  paidAmount: order?.amount,
+                });
+                if (fulfillResult.success && fulfillResult.order) {
+                  isCompleted = true;
+                  order = { ...order, ...fulfillResult.order, status: 'approved' };
+                  break;
+                }
               }
             }
           } catch (hpErr) {

@@ -101,13 +101,15 @@ export async function POST(request: Request) {
       }
 
       try {
-        console.log(`[Checkout ⚡] 🚀 Dispatching PressoPay STK Push in parallel for order ${orderNumber}...`);
+        console.log(`[Checkout ⚡] 🚀 Dispatching payment route in parallel for order ${orderNumber}...`);
+        const reqGateway = (body.payment_gateway || body.gateway || 'pressopay').toLowerCase();
         return await routePayment({
           amount: gamePrice,
           phone: visitor_phone,
           orderNumber,
           description: `Chidy Prime ${orderNumber} - ${gameTitle}`,
           buyerName: customer_name,
+          preferredGateway: reqGateway === 'harakapay' ? 'harakapay' : 'pressopay',
         });
       } catch (gwErr: any) {
         console.error('[Checkout ⚡] ❌ Gateway dispatch warning (DB order will still persist):', gwErr);
@@ -238,19 +240,28 @@ export async function POST(request: Request) {
     const gatewayReference = gatewayResult.gatewayReference;
     const gatewayRaw = gatewayResult.rawResponse;
 
-    // Async Gateway Ref Sync if gateway returned additional reference ID
+    // Synchronous Gateway Ref Sync if gateway returned additional reference ID
     if (createdPaymentOrder?.id && gatewayReference && gatewayReference !== orderNumber) {
-      (async () => {
-        try {
-          await supabase
+      try {
+        await Promise.allSettled([
+          supabase
             .from('payment_orders')
             .update({
               promo_used: `${orderNumber}|${gatewayReference}`,
               updated_at: new Date().toISOString(),
             })
-            .eq('id', createdPaymentOrder.id);
-        } catch {}
-      })().catch(() => {});
+            .eq('id', createdPaymentOrder.id),
+          supabase
+            .from('orders')
+            .update({
+              payment_gateway: resolvedGateway,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('order_number', orderNumber),
+        ]);
+      } catch (syncErr) {
+        console.warn('[Checkout ⚡] Gateway ref sync warning:', syncErr);
+      }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -314,11 +325,18 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        order: orderOutput,
+        order: {
+          ...orderOutput,
+          checkoutUrl: gatewayResult.checkoutUrl || gatewayRaw?.checkoutUrl || null,
+          gatewayReference: gatewayReference || null,
+          payment_gateway: resolvedGateway,
+        },
         orderNumber,
         orderId: createdPaymentOrder?.id || orderNumber,
         gatewayResponse: gatewayRaw,
         usedGateway: resolvedGateway,
+        checkoutUrl: gatewayResult.checkoutUrl || gatewayRaw?.checkoutUrl || null,
+        gatewayReference: gatewayReference || null,
       },
       {
         headers: {
