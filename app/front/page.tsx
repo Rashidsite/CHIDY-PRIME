@@ -66,7 +66,21 @@ export default function FrontHubPage() {
     image_url: '/game_controller_bg.jpg',
     opacity: 0.45,
   });
-  const [trendingIds, setTrendingIds] = useState<string[]>([]);
+  const [trendingConfig, setTrendingConfig] = useState<{
+    enabled: boolean;
+    title: string;
+    subtitle: string;
+    mode: 'manual' | 'auto';
+    game_ids: string[];
+    max_items: number;
+  }>({
+    enabled: true,
+    title: '🔥 Hot & Trending Games',
+    subtitle: 'Michezo inayopendwa zaidi sasa hivi',
+    mode: 'manual',
+    game_ids: [],
+    max_items: 8,
+  });
   const [unlockedGameIds, setUnlockedGameIds] = useState<Set<string>>(new Set());
 
   // Loading & Category Drawer States
@@ -412,7 +426,23 @@ export default function FrontHubPage() {
           .eq('key', 'trending_games')
           .single();
         if (!error && trendingData?.value) {
-          setTrendingIds(trendingData.value);
+          const val = trendingData.value;
+          if (Array.isArray(val)) {
+            setTrendingConfig((prev) => ({
+              ...prev,
+              game_ids: val,
+              enabled: true,
+            }));
+          } else if (typeof val === 'object' && val !== null) {
+            setTrendingConfig({
+              enabled: val.enabled !== false,
+              title: val.title || '🔥 Hot & Trending Games',
+              subtitle: val.subtitle || 'Michezo inayopendwa zaidi sasa hivi',
+              mode: val.mode || 'manual',
+              game_ids: Array.isArray(val.game_ids) ? val.game_ids : [],
+              max_items: Number(val.max_items) || 8,
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to load trending games:', err);
@@ -619,6 +649,25 @@ export default function FrontHubPage() {
               opacity: setting.value.opacity ?? 0.45,
             });
           }
+          if (setting?.key === 'trending_games' && setting.value) {
+            const val = setting.value;
+            if (Array.isArray(val)) {
+              setTrendingConfig((prev) => ({
+                ...prev,
+                game_ids: val,
+                enabled: true,
+              }));
+            } else if (typeof val === 'object' && val !== null) {
+              setTrendingConfig({
+                enabled: val.enabled !== false,
+                title: val.title || '🔥 Hot & Trending Games',
+                subtitle: val.subtitle || 'Michezo inayopendwa zaidi sasa hivi',
+                mode: val.mode || 'manual',
+                game_ids: Array.isArray(val.game_ids) ? val.game_ids : [],
+                max_items: Number(val.max_items) || 8,
+              });
+            }
+          }
         }
       )
       .subscribe();
@@ -645,17 +694,26 @@ export default function FrontHubPage() {
     setCheckoutGame(game);
   };
 
-  // Filter Hot & Trending games (6-8 items with high ratings, or manually selected ones)
+  // Filter Hot & Trending games (with dynamic config, mode, and max count)
   const trendingGames = useMemo(() => {
-    if (Array.isArray(trendingIds) && trendingIds.length > 0) {
-      return trendingIds
+    if (!trendingConfig.enabled) return [];
+
+    const limit = trendingConfig.max_items || 8;
+
+    if (trendingConfig.mode === 'manual' && Array.isArray(trendingConfig.game_ids) && trendingConfig.game_ids.length > 0) {
+      const picked = trendingConfig.game_ids
         .map((id) => (games ?? []).find((g) => g?.id === id))
         .filter(Boolean) as GameProduct[];
+      if (picked.length > 0) {
+        return picked.slice(0, limit);
+      }
     }
+
+    // Fallback or Auto mode: sort by rating / popularity
     return [...(games ?? [])]
       .sort((a, b) => (Number(b?.rating) || 0) - (Number(a?.rating) || 0))
-      .slice(0, 8);
-  }, [games, trendingIds]);
+      .slice(0, limit);
+  }, [games, trendingConfig]);
 
   // Scroll horizontal carousel by exactly one viewport step
   const scrollCarousel = (direction: 'left' | 'right') => {
@@ -725,7 +783,7 @@ export default function FrontHubPage() {
         {loading ? (
           <HorizontalCarouselSkeleton />
         ) : (
-          trendingGames.length > 0 && (
+          trendingConfig.enabled && trendingGames.length > 0 && (
             <section className="w-full space-y-6">
               <div 
                 className="flex items-center justify-between p-4 border border-slate-800 rounded-2xl bg-slate-900 shadow-lg"
@@ -740,12 +798,12 @@ export default function FrontHubPage() {
                     <h2 
                       className="text-base sm:text-xl font-black text-white tracking-tight uppercase leading-none"
                     >
-                      🔥 Hot & Trending Games
+                      {trendingConfig.title || '🔥 Hot & Trending Games'}
                     </h2>
                     <p 
                       className="text-xs text-blue-400 font-bold mt-1.5"
                     >
-                      Michezo inayopendwa zaidi sasa hivi
+                      {trendingConfig.subtitle || 'Michezo inayopendwa zaidi sasa hivi'}
                     </p>
                   </div>
                 </div>

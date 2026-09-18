@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import ImgBBUploadModal from '@/components/ImgBBUploadModal';
 import GameMediaThumbnail from '@/components/GameMediaThumbnail';
 import { 
@@ -26,7 +27,8 @@ import {
   PlusCircle,
   ExternalLink,
   Layers,
-  Film
+  Film,
+  Flame
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -448,13 +450,23 @@ export default function AdminGamesPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white text-xs font-black shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-105 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Product</span>
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <Link
+            href="/admin/trending"
+            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-600/20 to-amber-600/20 hover:from-orange-600/30 hover:to-amber-600/30 border border-orange-500/40 text-orange-300 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer touch-manipulation min-h-[44px]"
+          >
+            <Flame className="w-4 h-4 text-orange-400 fill-orange-400" />
+            <span>🔥 Hot &amp; Trending Controls</span>
+          </Link>
+
+          <button
+            onClick={handleOpenAdd}
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white text-xs font-black shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-105 transition-all flex items-center gap-2 shrink-0 cursor-pointer min-h-[44px] touch-manipulation"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Product</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Filters Bar ── */}
