@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/utils';
 import GameMediaThumbnail from './GameMediaThumbnail';
 import SquadImageLightbox from './SquadImageLightbox';
 import { parseSquadData } from '@/lib/efootball-squads';
+import { isGameAccessActive } from '@/lib/access-duration';
 
 interface CategoryGamesDrawerProps {
   isOpen: boolean;
@@ -276,7 +277,10 @@ export default function CategoryGamesDrawer({
                     }
 
                     const isFree = game.price === 0;
-                    const isUnlocked = unlockedGameIds.has(game.id) || isFree;
+                    const isUnlocked =
+                      unlockedGameIds.has(game.id) ||
+                      (game?.id ? isGameAccessActive(game.id, game.access_duration || game.license_duration) : false) ||
+                      isFree;
                     return (
                       <motion.div
                         key={game.id}

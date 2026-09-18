@@ -47,7 +47,52 @@ interface AccessCacheEntry {
 
 function readLocalCache(): Record<string, AccessCacheEntry> {
   if (typeof window === 'undefined') return {};
-  try { return JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '{}'); } catch { return {}; }
+  try {
+    const cache: Record<string, AccessCacheEntry> = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '{}');
+    
+    // Merge from cpcg_unlocked_durations
+    const durStr = localStorage.getItem('cpcg_unlocked_durations');
+    if (durStr) {
+      try {
+        const durations = JSON.parse(durStr);
+        Object.entries(durations).forEach(([pId, d]: [string, any]) => {
+          if (!cache[pId]) {
+            cache[pId] = {
+              productId: pId,
+              productTitle: d.title || 'Unlocked Game',
+              accessDuration: d.duration || 'Lifetime',
+              accessExpiresAt: d.expiresAt || null,
+              unlockedAt: d.unlockedAt || new Date().toISOString(),
+              orderRef: d.orderRef,
+            };
+          }
+        });
+      } catch {}
+    }
+
+    // Merge from cpcg_unlocked_games
+    const unlStr = localStorage.getItem('cpcg_unlocked_games');
+    if (unlStr) {
+      try {
+        const ids: string[] = JSON.parse(unlStr);
+        if (Array.isArray(ids)) {
+          ids.forEach((id) => {
+            if (!cache[id]) {
+              cache[id] = {
+                productId: String(id),
+                productTitle: 'Unlocked Game',
+                accessDuration: 'Lifetime',
+                accessExpiresAt: null,
+                unlockedAt: new Date().toISOString(),
+              };
+            }
+          });
+        }
+      } catch {}
+    }
+
+    return cache;
+  } catch { return {}; }
 }
 
 function saveCacheEntry(entry: AccessCacheEntry) {
@@ -133,11 +178,13 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
       const now = new Date().getTime();
       const map = new Map<string, UnlockedPurchase>();
 
+      const phoneCore = clean255.length >= 9 ? clean255.slice(-9) : clean255;
+
       // ── PRIMARY: Query payment_orders (main payment table used by server.js / checkout) ──
       const { data: poData } = await supabase
         .from('payment_orders')
         .select('id, post_id, phone_number, status, promo_used, created_at, visitor_id')
-        .or(`phone_number.eq.${clean255},phone_number.eq.${local0}`)
+        .or(`phone_number.eq.${clean255},phone_number.eq.${local0},phone_number.ilike.%${phoneCore}%`)
         .in('status', ['approved', 'completed', 'paid'])
         .order('created_at', { ascending: false });
 

@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { GameProduct, formatPlanDuration } from "./GameCard";
+import { isGameAccessActive } from "@/lib/access-duration";
 import { Flame, SlidersHorizontal, Search, Zap, Download, CheckCircle2, Star } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -33,13 +34,13 @@ function FeedCard({
   index: number;
 }) {
   const isFree = game.price === 0;
-  const showUnlocked = isUnlocked || isFree;
   const rawDuration =
     game.access_duration ||
     game.license_duration ||
     (game as any).plan_duration ||
     (game as any).duration_days ||
     (game as any).duration;
+  const showUnlocked = isUnlocked || isFree || (game?.id ? isGameAccessActive(game.id, rawDuration) : false);
   const durationLabel = formatPlanDuration(rawDuration, isFree);
   const isTopRated = (game.rating || 0) >= 4.5;
 

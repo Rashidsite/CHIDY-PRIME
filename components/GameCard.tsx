@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useCMSTheme } from './CMSThemeProvider';
 import GameMediaThumbnail from './GameMediaThumbnail';
 import { cleanRedirectUrl } from '@/lib/efootball-squads';
+import { isGameAccessActive } from '@/lib/access-duration';
 
 export interface GameProduct {
   id: string;
@@ -95,9 +96,59 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
   const isFree = !isSquad && game.price === 0 && (game.category?.toLowerCase().includes('free') || game.title?.toLowerCase().includes('free'));
   const isTopRated = (game.rating || 0) >= 4.9;
   const label = isSquad ? 'KIKOSI' : getLabel(game.category);
-  const showUnlocked = isFree || isUnlocked;
   const rawDuration = isSquad ? '7 Days' : (game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration);
   const durationLabel = isSquad ? '⚽ EFOOTBALL SQUAD' : formatPlanDuration(rawDuration, isFree);
+
+  // Check active access from local storage caches immediately
+  const [localActive, setLocalActive] = useState<boolean>(() => {
+    if (isUnlocked) return true;
+    if (typeof window !== 'undefined' && game?.id) {
+      return isGameAccessActive(game.id, rawDuration);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isUnlocked) {
+      setLocalActive(true);
+      return;
+    }
+    if (game?.id) {
+      const active = isGameAccessActive(game.id, rawDuration);
+      setLocalActive(active);
+    }
+  }, [isUnlocked, game?.id, rawDuration]);
+
+  // Listen to unlock events & auth changes to refresh card state instantly
+  useEffect(() => {
+    const handleOrderUnlocked = (e: any) => {
+      const detail = e?.detail;
+      const targetId = detail?.game_id || detail?.productId || detail?.product_id;
+      if (targetId && String(targetId) === String(game?.id)) {
+        setLocalActive(true);
+      }
+    };
+
+    const handleAuthChange = () => {
+      if (game?.id) {
+        setLocalActive(isGameAccessActive(game.id, rawDuration));
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cpcg_order_unlocked', handleOrderUnlocked);
+      window.addEventListener('cpcg_auth_change', handleAuthChange);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('cpcg_order_unlocked', handleOrderUnlocked);
+        window.removeEventListener('cpcg_auth_change', handleAuthChange);
+      }
+    };
+  }, [game?.id, rawDuration]);
+
+  const showUnlocked = isFree || isUnlocked || localActive;
 
   const customButtonText = (game as any).links?.[0]?.button_text;
   const buttonText = isSquad 

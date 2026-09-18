@@ -81,7 +81,20 @@ export default function FrontHubPage() {
     game_ids: [],
     max_items: 8,
   });
-  const [unlockedGameIds, setUnlockedGameIds] = useState<Set<string>>(new Set());
+  const [unlockedGameIds, setUnlockedGameIds] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cpcg_unlocked_games');
+        if (cached) {
+          const ids = JSON.parse(cached);
+          if (Array.isArray(ids) && ids.length > 0) {
+            return new Set(ids.map(String));
+          }
+        }
+      } catch {}
+    }
+    return new Set();
+  });
 
   // Loading & Category Drawer States
   const [loading, setLoading] = useState(true);
@@ -118,36 +131,24 @@ export default function FrontHubPage() {
     const syncUserAuthAndVault = async () => {
       try {
         const savedReg = localStorage.getItem('cpcg_registered');
-        if (!userPhone) {
-          setIsRegistered(false);
-          setRegisteredName('');
-          try {
-            const cached = localStorage.getItem('cpcg_unlocked_games');
-            if (cached) {
-              const ids: string[] = JSON.parse(cached);
-              if (Array.isArray(ids) && ids.length > 0) {
-                setUnlockedGameIds(new Set(ids));
-              }
-            }
-          } catch {}
-          return;
-        }
+        let userPhone = localStorage.getItem('cpcg_user_phone') || '';
+        let registeredUser = localStorage.getItem('cpcg_user_name') || '';
 
         if (savedReg) {
           try {
             const parsed = JSON.parse(savedReg);
-            setIsRegistered(true);
-            setRegisteredName(parsed.name || '');
+            if (!userPhone && parsed?.phone) userPhone = parsed.phone;
+            if (!registeredUser && parsed?.name) registeredUser = parsed.name;
           } catch {}
         }
 
-        const digits = userPhone.replace(/\D/g, '');
-        const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
-        const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+        if (registeredUser) {
+          setIsRegistered(true);
+          setRegisteredName(registeredUser);
+        }
 
+        // 1. Immediately read and restore from verified local storage caches
         const newUnlocked = new Set<string>();
-
-        // 1. Merge existing verified local cache so purchases stay unlocked immediately
         try {
           const cached = localStorage.getItem('cpcg_unlocked_games');
           if (cached) {
@@ -158,12 +159,55 @@ export default function FrontHubPage() {
           }
         } catch {}
 
+        try {
+          const durStr = localStorage.getItem('cpcg_unlocked_durations');
+          if (durStr) {
+            const durations = JSON.parse(durStr);
+            const now = Date.now();
+            Object.entries(durations).forEach(([gId, entry]: [string, any]) => {
+              if (!entry?.expiresAt || new Date(entry.expiresAt).getTime() > now) {
+                newUnlocked.add(String(gId));
+              }
+            });
+          }
+        } catch {}
+
+        try {
+          const cacheStr = localStorage.getItem('cpcg_access_cache_v2');
+          if (cacheStr) {
+            const cache = JSON.parse(cacheStr);
+            const now = Date.now();
+            Object.entries(cache).forEach(([gId, entry]: [string, any]) => {
+              if (!entry?.accessExpiresAt || new Date(entry.accessExpiresAt).getTime() > now) {
+                newUnlocked.add(String(gId));
+              }
+            });
+          }
+        } catch {}
+
+        if (newUnlocked.size > 0) {
+          setUnlockedGameIds(new Set(newUnlocked));
+        }
+
+        if (!userPhone) {
+          if (!registeredUser) {
+            setIsRegistered(false);
+            setRegisteredName('');
+          }
+          return;
+        }
+
+        const digits = userPhone.replace(/\D/g, '');
+        const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
+        const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+        const phoneCore = clean.length >= 9 ? clean.slice(-9) : digits;
+
         // 2. Check payment_orders table (Primary)
         try {
           const { data: legacyData } = await supabase
             .from('payment_orders')
             .select('post_id')
-            .or(`phone_number.eq.${clean},phone_number.eq.${local}`)
+            .or(`phone_number.eq.${clean},phone_number.eq.${local},phone_number.ilike.%${phoneCore}%`)
             .in('status', ['approved', 'completed', 'paid']);
 
           if (legacyData && legacyData.length > 0) {
@@ -178,7 +222,7 @@ export default function FrontHubPage() {
           const { data: ordersData } = await supabase
             .from('orders')
             .select('game_id, product_id')
-            .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
+            .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local},phone_number.ilike.%${phoneCore}%`)
             .in('status', ['approved', 'completed', 'paid']);
 
           if (ordersData && ordersData.length > 0) {
@@ -191,7 +235,9 @@ export default function FrontHubPage() {
 
         setUnlockedGameIds(newUnlocked);
         localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(newUnlocked)));
-      } catch (e) {}
+      } catch (e) {
+        console.warn('syncUserAuthAndVault notice:', e);
+      }
     };
 
     syncUserAuthAndVault();

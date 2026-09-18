@@ -133,8 +133,9 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
   const rawPhone = (params.phone || '').trim();
   const cleanPhone = normalizePhone(rawPhone);
   const localPhone = toLocalPhone(cleanPhone || rawPhone);
+  const baseRef = rawRef.replace(/-P\d+$/i, '').trim();
 
-  console.log(`[Fulfill Pipeline] ⚡ Processing approval for ref: "${rawRef}", gatewayRef: "${rawGatewayRef}", phone: "${cleanPhone}"`);
+  console.log(`[Fulfill Pipeline] ⚡ Processing approval for ref: "${rawRef}" (base: "${baseRef}"), gatewayRef: "${rawGatewayRef}", phone: "${cleanPhone}"`);
 
   let targetPaymentOrder: any = null;
 
@@ -148,12 +149,16 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
     if (data) targetPaymentOrder = data;
   }
 
-  // ── 2. STRATEGY B: Find by promo_used matching order reference (CPCG-XXXXX) ──
-  if (!targetPaymentOrder && rawRef) {
+  // ── 2. STRATEGY B: Find by promo_used matching order reference (CPCG-XXXXX or CPCG-XXXXX-P2) ──
+  if (!targetPaymentOrder && (rawRef || baseRef)) {
+    const filterParts: string[] = [];
+    if (rawRef) filterParts.push(`promo_used.ilike.%${rawRef}%`);
+    if (baseRef && baseRef !== rawRef) filterParts.push(`promo_used.ilike.%${baseRef}%`);
+
     const { data } = await supabase
       .from('payment_orders')
       .select('*, posts(*), visitors(*)')
-      .ilike('promo_used', `%${rawRef}%`)
+      .or(filterParts.join(','))
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -173,22 +178,24 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
   }
 
   // ── 4. STRATEGY D: Match from xx_orders reference_id ──
-  if (!targetPaymentOrder && rawRef) {
+  if (!targetPaymentOrder && (rawRef || baseRef)) {
     try {
+      const orParts = [rawRef, baseRef].filter(Boolean).map(r => `reference_id.eq.${r},id.eq.${r}`).join(',');
       const { data: xxOrder } = await supabase
         .from('xx_orders')
         .select('*')
-        .or(`reference_id.eq.${rawRef},id.eq.${rawRef}`)
+        .or(orParts)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (xxOrder && xxOrder.phone) {
         const xxPhone = normalizePhone(xxOrder.phone);
+        const xxLocal = toLocalPhone(xxPhone);
         const { data: poByPhone } = await supabase
           .from('payment_orders')
           .select('*, posts(*), visitors(*)')
-          .or(`phone_number.eq.${xxPhone},phone_number.eq.${toLocalPhone(xxPhone)}`)
+          .or(`phone_number.eq.${xxPhone},phone_number.eq.${xxLocal},phone_number.ilike.%${xxLocal}%`)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -197,26 +204,48 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
     } catch {}
   }
 
-  // ── 5. STRATEGY E: Match by Phone (Latest pending/processing order) ──
+  // ── 5. STRATEGY E: Match by Phone (Latest pending/processing order, or latest order) ──
   if (!targetPaymentOrder && (cleanPhone || localPhone)) {
-    const { data: byPhone } = await supabase
+    const phoneFilters = [
+      cleanPhone ? `phone_number.eq.${cleanPhone}` : null,
+      localPhone ? `phone_number.eq.${localPhone}` : null,
+      cleanPhone ? `phone_number.eq.+${cleanPhone}` : null,
+      localPhone ? `phone_number.ilike.%${localPhone}%` : null,
+    ].filter(Boolean).join(',');
+
+    // Priority 1: Match pending or processing orders for this customer phone
+    const { data: pendingByPhone } = await supabase
       .from('payment_orders')
       .select('*, posts(*), visitors(*)')
-      .or(`phone_number.eq.${cleanPhone},phone_number.eq.${localPhone},phone_number.eq.+${cleanPhone}`)
+      .or(phoneFilters)
+      .in('status', ['pending', 'processing'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (byPhone) targetPaymentOrder = byPhone;
+
+    if (pendingByPhone) {
+      targetPaymentOrder = pendingByPhone;
+    } else {
+      // Priority 2: Any order for this customer phone
+      const { data: byPhone } = await supabase
+        .from('payment_orders')
+        .select('*, posts(*), visitors(*)')
+        .or(phoneFilters)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (byPhone) targetPaymentOrder = byPhone;
+    }
   }
 
   // ── 6. FALLBACK: Check if order exists in fallback 'orders' table ──
   let fallbackOrderRecord: any = null;
-  if (!targetPaymentOrder && rawRef) {
+  if (!targetPaymentOrder && (rawRef || baseRef)) {
     try {
       const { data: ordData } = await supabase
         .from('orders')
         .select('*')
-        .or(`order_number.eq.${rawRef},id.eq.${rawRef.includes('-') && rawRef.length === 36 ? rawRef : '00000000-0000-0000-0000-000000000000'}`)
+        .or(`order_number.eq.${rawRef},order_number.eq.${baseRef}`)
         .maybeSingle();
       if (ordData) fallbackOrderRecord = ordData;
     } catch {}
@@ -232,10 +261,11 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
 
   // Collect resolved identifiers
   const targetId = String(targetPaymentOrder?.id || fallbackOrderRecord?.id || rawRef);
-  const rawOrderNumber =
+  const rawOrderNumber = (
     targetPaymentOrder?.promo_used?.split('|')[0] ||
     fallbackOrderRecord?.order_number ||
-    (rawRef.startsWith('CPCG-') ? rawRef : `CPCG-${targetId.substring(0, 6).toUpperCase()}`);
+    (baseRef.startsWith('CPCG-') ? baseRef : (rawRef.startsWith('CPCG-') ? rawRef : `CPCG-${targetId.substring(0, 6).toUpperCase()}`))
+  ).replace(/-P\d+$/i, '').trim();
 
   const effectivePhone = normalizePhone(
     targetPaymentOrder?.phone_number ||
@@ -287,9 +317,10 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
     'Lifetime';
   const expiresAt = calculateExpirationDate(durationType);
 
-  const updatedPromoUsed = targetPaymentOrder?.promo_used?.includes('|')
-    ? targetPaymentOrder.promo_used
-    : `${rawOrderNumber}|${rawGatewayRef || 'PP:auto-approved'}`;
+  let updatedPromoUsed = targetPaymentOrder?.promo_used || rawOrderNumber;
+  if (rawGatewayRef && !updatedPromoUsed.includes(rawGatewayRef)) {
+    updatedPromoUsed = `${updatedPromoUsed}|${rawGatewayRef}`;
+  }
 
   const currentStatus = String(targetPaymentOrder?.status || fallbackOrderRecord?.status || '').toLowerCase();
   const isAlreadyApproved = ['approved', 'completed', 'paid'].includes(currentStatus);

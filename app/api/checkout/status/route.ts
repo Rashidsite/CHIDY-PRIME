@@ -50,60 +50,131 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const baseRef = rawRef.replace(/-P\d+$/i, '').trim();
     const isUuid = rawRef.includes('-') && rawRef.length === 36;
     let order: any = null;
 
-    // 1. Strict Exact Match on payment_orders
+    // 1. Flexible Match on payment_orders
+    const queryFilters: string[] = [];
+    if (isUuid) {
+      queryFilters.push(`id.eq.${rawRef}`);
+    }
+    if (rawRef) {
+      queryFilters.push(`promo_used.ilike.%${rawRef}%`);
+    }
+    if (baseRef && baseRef !== rawRef) {
+      queryFilters.push(`promo_used.ilike.%${baseRef}%`);
+    }
+
     const { data } = await supabase
       .from('payment_orders')
       .select('*, posts(*), visitors(*)')
-      .or(isUuid ? `id.eq.${rawRef},promo_used.eq.${rawRef}` : `promo_used.eq.${rawRef},promo_used.ilike.${rawRef}|%`)
+      .or(queryFilters.join(','))
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     order = data;
 
-    if (!order) {
-      const { data: ordData } = await supabase
-        .from('orders')
-        .select('*, posts:game_id(*)')
-        .or(isUuid ? `id.eq.${rawRef},order_number.eq.${rawRef}` : `order_number.eq.${rawRef}`)
+    // Fallback: match by phone if reference didn't hit
+    if (!order && (cleanPhone || localPhone)) {
+      const phoneFilters = [
+        cleanPhone ? `phone_number.eq.${cleanPhone}` : null,
+        localPhone ? `phone_number.eq.${localPhone}` : null,
+        cleanPhone ? `phone_number.eq.+${cleanPhone}` : null,
+        localPhone ? `phone_number.ilike.%${localPhone}%` : null,
+      ].filter(Boolean).join(',');
+
+      const { data: poByPhone } = await supabase
+        .from('payment_orders')
+        .select('*, posts(*), visitors(*)')
+        .or(phoneFilters)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (ordData) {
-        order = {
-          id: ordData.id,
-          post_id: ordData.game_id || ordData.product_id,
-          amount: ordData.amount,
-          status: ordData.status,
-          phone_number: ordData.visitor_phone || ordData.phone_number,
-          promo_used: ordData.order_number,
-          activation_key: ordData.activation_key,
-          posts: ordData.posts,
-          visitors: { name: ordData.customer_name, phone: ordData.visitor_phone },
-        };
+      if (poByPhone) {
+        order = poByPhone;
       }
     }
 
+    if (!order) {
+      try {
+        const { data: ordData } = await supabase
+          .from('orders')
+          .select('*, posts:game_id(*)')
+          .or(isUuid ? `id.eq.${rawRef},order_number.eq.${rawRef}` : `order_number.eq.${rawRef},order_number.eq.${baseRef}`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (ordData) {
+          order = {
+            id: ordData.id,
+            post_id: ordData.game_id || ordData.product_id,
+            amount: ordData.amount,
+            status: ordData.status,
+            phone_number: ordData.visitor_phone || ordData.phone_number,
+            promo_used: ordData.order_number,
+            activation_key: ordData.activation_key,
+            posts: ordData.posts,
+            visitors: { name: ordData.customer_name, phone: ordData.visitor_phone },
+          };
+        }
+      } catch {}
+    }
+
     // Check if THIS specific order is approved in DB
-    const currentStatus = String(order?.status || '').toLowerCase();
+    let currentStatus = String(order?.status || '').toLowerCase();
     let isCompleted = ['completed', 'approved', 'paid', 'success'].includes(currentStatus);
+
+    // If order not yet approved, check if another order for this phone & product is approved
+    if (!isCompleted && order?.post_id && (cleanPhone || localPhone)) {
+      try {
+        const phoneFilters = [
+          cleanPhone ? `phone_number.eq.${cleanPhone}` : null,
+          localPhone ? `phone_number.eq.${localPhone}` : null,
+          cleanPhone ? `phone_number.eq.+${cleanPhone}` : null,
+          localPhone ? `phone_number.ilike.%${localPhone}%` : null,
+        ].filter(Boolean).join(',');
+
+        const { data: approvedPo } = await supabase
+          .from('payment_orders')
+          .select('*, posts(*), visitors(*)')
+          .eq('post_id', order.post_id)
+          .or(phoneFilters)
+          .in('status', ['approved', 'completed', 'paid'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (approvedPo) {
+          order = approvedPo;
+          isCompleted = true;
+          currentStatus = 'approved';
+        }
+      } catch {}
+    }
 
     // ──────────────────────────────────────────────────────────────────────────
     // 2. LIVE GATEWAY QUERY FALLBACK (Only if not already confirmed in DB)
     // ──────────────────────────────────────────────────────────────────────────
     if (!isCompleted && (rawRef || order)) {
-      const gatewayRefPart = order?.promo_used?.includes('|') ? order.promo_used.split('|')[1] : null;
-      const orderRefPart = order?.promo_used?.split('|')[0] || order?.id || rawRef;
+      const promoTokens = (order?.promo_used || '').split('|').map((s: string) => s.trim()).filter(Boolean);
+      const allCandidates = Array.from(new Set([
+        rawGatewayRef,
+        ...promoTokens,
+        rawRef,
+        baseRef,
+      ])).filter((t): t is string => Boolean(t && t.length >= 4));
 
-      const refsToTest = [gatewayRefPart, rawGatewayRef, orderRefPart, rawRef].filter(Boolean) as string[];
+      const orderRefPart = order?.promo_used?.split('|')[0] || baseRef || order?.id || rawRef;
 
-      for (const testRef of refsToTest) {
+      // PressoPay check: only for tokens starting with PAY- or UUIDs
+      const pressoTokens = allCandidates.filter(t => t.startsWith('PAY-') || (t.includes('-') && t.length === 36));
+      for (const pRef of pressoTokens) {
         try {
-          const pressoStatus = await getPressoPayPaymentStatus(testRef);
+          const pressoStatus = await getPressoPayPaymentStatus(pRef);
           if (pressoStatus) {
             const pStatusStr = String(
               pressoStatus.status ||
@@ -114,10 +185,10 @@ export async function GET(request: NextRequest) {
             ).trim().toUpperCase();
 
             if (['COMPLETED', 'SUCCESS', 'PAID', 'APPROVED', 'OK', 'COMPLETE', '00', 'TRUE'].includes(pStatusStr)) {
-              console.log(`[Status Poller ⚡] PressoPay confirmed payment for ${testRef}! Fulfilling...`);
+              console.log(`[Status Poller ⚡] PressoPay confirmed payment for ${pRef}! Fulfilling...`);
               const fulfillResult = await fulfillOrderApproval({
                 orderIdOrRef: orderRefPart,
-                gatewayRef: testRef,
+                gatewayRef: pRef,
                 phone: cleanPhone || order?.phone_number,
                 gatewayName: 'PRESSOPAY',
                 paidAmount: order?.amount,
@@ -140,18 +211,14 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // HarakaPay status check (Instant Handset USSD status verification)
+      // HarakaPay check: check any candidate token that is not a PressoPay token and not CPCG base
       if (!isCompleted) {
-        const hpRefCandidates = refsToTest.concat([
-          order?.promo_used?.includes('|') ? order.promo_used.split('|')[1] : null,
-          order?.promo_used,
-        ]).filter(r => r && (r.startsWith('HP') || r.includes('HP')));
-
-        for (const hpRefRaw of hpRefCandidates) {
-          if (!hpRefRaw) continue;
-          const hpRef = hpRefRaw.replace(/^HP:/, '');
+        const harakaTokens = allCandidates.filter(t => !t.startsWith('PAY-') && !t.startsWith('CPCG-'));
+        for (const hRefRaw of harakaTokens) {
+          const hRef = hRefRaw.replace(/^HP:/, '').trim();
+          if (!hRef || hRef.length < 3) continue;
           try {
-            const hpStatus = await getHarakaPayStatus(hpRef);
+            const hpStatus = await getHarakaPayStatus(hRef);
             if (hpStatus?.success) {
               const hStatusStr = String(
                 hpStatus.status ||
@@ -161,15 +228,16 @@ export async function GET(request: NextRequest) {
                 ''
               ).trim().toLowerCase();
 
-              if (['completed', 'success', 'approved', 'paid'].includes(hStatusStr)) {
-                console.log(`[Status Poller ⚡] HarakaPay confirmed payment for ${hpRef}! Fulfilling...`);
+              if (['completed', 'success', 'approved', 'paid', '00', 'ok'].includes(hStatusStr)) {
+                console.log(`[Status Poller ⚡] HarakaPay confirmed payment for ${hRef}! Fulfilling...`);
                 const fulfillResult = await fulfillOrderApproval({
                   orderIdOrRef: orderRefPart,
-                  gatewayRef: hpRef,
+                  gatewayRef: hRef,
                   phone: cleanPhone || order?.phone_number,
                   gatewayName: 'HARAKAPAY',
                   paidAmount: order?.amount,
                 });
+
                 if (fulfillResult.success && fulfillResult.order) {
                   isCompleted = true;
                   order = { ...order, ...fulfillResult.order, status: 'approved' };
