@@ -175,7 +175,7 @@ export async function triggerPressoPayCheckout(params: {
       'X-Presso-Signature': signature,
     },
     body,
-    signal: AbortSignal.timeout(4000),
+    signal: AbortSignal.timeout(20000), // 20 second timeout for telecom network response (matches connect-xx-men-pro)
   });
 
   if (!response.ok) {
@@ -262,34 +262,8 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
   const amountMinor = Math.round(amount);
 
   let lastError: string | null = null;
-  const preferred = preferredGateway || (process.env.DEFAULT_PAYMENT_GATEWAY?.toLowerCase() === 'harakapay' ? 'harakapay' : 'pressopay');
 
-  // Option A: If HarakaPay explicitly preferred (Direct Handset USSD STK Push)
-  if (preferred === 'harakapay' && isHarakaPayConfigured()) {
-    try {
-      console.log(`[Payment Gateway ⚡] 🚀 Dispatching HarakaPay USSD Push for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
-      const harakaRes = await triggerHarakaPayCollect({
-        phone: formattedPhone,
-        amount,
-        description: description || `Chidy Prime ${orderNumber}`,
-      });
-
-      if (harakaRes.success && harakaRes.order_id) {
-        console.log(`[Payment Gateway ⚡] ✅ HarakaPay USSD Push dispatched: ${harakaRes.order_id}`);
-        return {
-          gateway: 'harakapay',
-          gatewayReference: harakaRes.order_id,
-          rawResponse: harakaRes,
-          status: 'PENDING',
-        };
-      }
-    } catch (harakaErr: any) {
-      lastError = harakaErr?.message || 'HarakaPay error';
-      console.warn('[Payment Gateway] ⚠️ HarakaPay primary attempt error:', harakaErr?.message);
-    }
-  }
-
-  // Option B (Default): PressoPay Direct STK / Online Checkout (https://pressopay.com/api/v1/checkouts)
+  // Option A (Primary & Default): PressoPay Direct STK / Online Checkout (https://pressopay.com/api/v1/checkouts)
   if (isPressoPayConfigured()) {
     try {
       console.log(`[Payment Gateway ⚡] 🚀 Dispatching PressoPay Checkout for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
@@ -318,8 +292,8 @@ export async function routePayment(params: RoutePaymentParams): Promise<RoutePay
     }
   }
 
-  // Option C: HarakaPay Failover (Triggered if PressoPay was primary and failed/timed out)
-  if (preferred !== 'harakapay' && isHarakaPayConfigured()) {
+  // Option B: HarakaPay Failover (Only triggered if PressoPay was unavailable or failed)
+  if (isHarakaPayConfigured()) {
     try {
       console.log(`[Payment Gateway] 🔄 HarakaPay USSD Failover for ${formattedPhone} (TZS ${amount}) | Order: ${orderNumber}`);
       const harakaRes = await triggerHarakaPayCollect({

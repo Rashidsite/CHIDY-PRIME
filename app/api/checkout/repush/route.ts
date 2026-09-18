@@ -67,8 +67,8 @@ export async function POST(request: Request) {
 
     console.log(`[RePush ⚡] Dispatching push #${attempt}/4 to ${formattedPhone} for order ${orderRef} (TZS ${numAmount})...`);
 
-    // Alternate gateways on retries to ensure delivery across different network USSD channels
-    const preferredGateway = attempt % 2 === 0 ? 'harakapay' : 'pressopay';
+    // All repushes consistently use PressoPay for unified instant HMAC status tracking
+    const preferredGateway = 'pressopay';
 
     const gatewayResult = await routePayment({
       amount: numAmount,

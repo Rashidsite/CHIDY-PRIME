@@ -170,8 +170,13 @@ export async function GET(request: NextRequest) {
 
       const orderRefPart = order?.promo_used?.split('|')[0] || baseRef || order?.id || rawRef;
 
-      // PressoPay check: only for tokens starting with PAY- or UUIDs
-      const pressoTokens = allCandidates.filter(t => t.startsWith('PAY-') || (t.includes('-') && t.length === 36));
+      // PressoPay check: tokens starting with PAY-, PP:, UUIDs, or explicit gateway references
+      const pressoTokens = allCandidates.filter(t => 
+        t.toUpperCase().startsWith('PAY-') || 
+        t.toUpperCase().startsWith('PP:') || 
+        (t.includes('-') && t.length === 36) ||
+        (rawGatewayRef && t === rawGatewayRef)
+      );
       for (const pRef of pressoTokens) {
         try {
           const pressoStatus = await getPressoPayPaymentStatus(pRef);
