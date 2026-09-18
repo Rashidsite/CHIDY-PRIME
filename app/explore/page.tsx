@@ -64,8 +64,15 @@ export default function ExplorePage() {
         const userPhone = localStorage.getItem('cpcg_user_phone') || (savedReg ? JSON.parse(savedReg).phone : null);
 
         if (!userPhone) {
-          setUnlockedGameIds(new Set());
-          localStorage.removeItem('cpcg_unlocked_games');
+          try {
+            const cached = localStorage.getItem('cpcg_unlocked_games');
+            if (cached) {
+              const ids: string[] = JSON.parse(cached);
+              if (Array.isArray(ids) && ids.length > 0) {
+                setUnlockedGameIds(new Set(ids));
+              }
+            }
+          } catch {}
           return;
         }
 
@@ -75,7 +82,18 @@ export default function ExplorePage() {
 
         const newUnlocked = new Set<string>();
 
-        // Query payment_orders for verified completed orders
+        // 1. Merge existing verified local cache
+        try {
+          const cached = localStorage.getItem('cpcg_unlocked_games');
+          if (cached) {
+            const ids: string[] = JSON.parse(cached);
+            if (Array.isArray(ids)) {
+              ids.forEach((id) => newUnlocked.add(String(id)));
+            }
+          }
+        } catch {}
+
+        // 2. Query payment_orders for verified completed orders
         try {
           const { data: legacyData } = await supabase
             .from('payment_orders')
@@ -90,7 +108,7 @@ export default function ExplorePage() {
           }
         } catch {}
 
-        // Query orders table fallback
+        // 3. Query orders table fallback
         try {
           const { data: ordersData } = await supabase
             .from('orders')
@@ -109,7 +127,13 @@ export default function ExplorePage() {
         setUnlockedGameIds(newUnlocked);
         localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(newUnlocked)));
       } catch {
-        setUnlockedGameIds(new Set());
+        try {
+          const cached = localStorage.getItem('cpcg_unlocked_games');
+          if (cached) {
+            const ids: string[] = JSON.parse(cached);
+            if (Array.isArray(ids)) setUnlockedGameIds(new Set(ids));
+          }
+        } catch {}
       }
     };
 
@@ -272,6 +296,7 @@ export default function ExplorePage() {
           isOpen={!!checkoutGame}
           onClose={() => setCheckoutGame(null)}
           game={checkoutGame}
+          isUnlocked={checkoutGame?.id ? unlockedGameIds.has(checkoutGame.id) : false}
           onSuccess={handleCheckoutSuccess}
         />
       )}

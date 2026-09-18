@@ -579,6 +579,7 @@ export default function GameDetailPage() {
             category: game.category,
             access_duration: game.access_duration || game.license_duration,
           }}
+          isUnlocked={isUnlocked(gameId)}
           onSuccess={() => {
             refreshAccess();
           }}

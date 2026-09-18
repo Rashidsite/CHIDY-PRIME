@@ -118,12 +118,18 @@ export default function FrontHubPage() {
     const syncUserAuthAndVault = async () => {
       try {
         const savedReg = localStorage.getItem('cpcg_registered');
-        const userPhone = localStorage.getItem('cpcg_user_phone') || (savedReg ? JSON.parse(savedReg).phone : null);
         if (!userPhone) {
           setIsRegistered(false);
           setRegisteredName('');
-          setUnlockedGameIds(new Set());
-          localStorage.removeItem('cpcg_unlocked_games');
+          try {
+            const cached = localStorage.getItem('cpcg_unlocked_games');
+            if (cached) {
+              const ids: string[] = JSON.parse(cached);
+              if (Array.isArray(ids) && ids.length > 0) {
+                setUnlockedGameIds(new Set(ids));
+              }
+            }
+          } catch {}
           return;
         }
 
@@ -141,7 +147,18 @@ export default function FrontHubPage() {
 
         const newUnlocked = new Set<string>();
 
-        // 1. Check payment_orders table (Primary)
+        // 1. Merge existing verified local cache so purchases stay unlocked immediately
+        try {
+          const cached = localStorage.getItem('cpcg_unlocked_games');
+          if (cached) {
+            const ids: string[] = JSON.parse(cached);
+            if (Array.isArray(ids)) {
+              ids.forEach((id) => newUnlocked.add(String(id)));
+            }
+          }
+        } catch {}
+
+        // 2. Check payment_orders table (Primary)
         try {
           const { data: legacyData } = await supabase
             .from('payment_orders')
@@ -156,7 +173,7 @@ export default function FrontHubPage() {
           }
         } catch {}
 
-        // 2. Check orders table (Fallback)
+        // 3. Check orders table (Fallback)
         try {
           const { data: ordersData } = await supabase
             .from('orders')
@@ -920,6 +937,7 @@ export default function FrontHubPage() {
           isOpen={!!checkoutGame}
           onClose={() => setCheckoutGame(null)}
           game={checkoutGame}
+          isUnlocked={checkoutGame?.id ? unlockedGameIds.has(checkoutGame.id) : false}
           onSuccess={handleCheckoutSuccess}
         />
       )}

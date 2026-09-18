@@ -29,6 +29,7 @@ import { createClient } from '@/lib/supabase/client';
 import { parseUniversalDownloadLinks, ExtractedDownloadLink } from '@/lib/link-parser';
 import { useAuth } from './AuthProvider';
 import { cleanPhoneNumber, formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
+import { calculateDurationExpiry, isGameAccessActive, saveUnlockedAccess } from '@/lib/access-duration';
 
 export type CheckoutStep = 'STEP_1_FORM' | 'STEP_2_PROCESSING' | 'STEP_3_SUCCESS';
 
@@ -36,6 +37,7 @@ interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   game: GameProduct;
+  isUnlocked?: boolean;
   onSuccess?: (order: any) => void;
 }
 
@@ -48,7 +50,13 @@ function getProductLabel(category: string): 'GAME' | 'MOD' | 'VIDEO' {
 
 const COUNTDOWN_INITIAL_SECONDS = 60;
 
-export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: CheckoutModalProps) {
+export default function CheckoutModal({
+  isOpen,
+  onClose,
+  game,
+  isUnlocked = false,
+  onSuccess,
+}: CheckoutModalProps) {
   // ── Form State ──
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -121,13 +129,21 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
         setFullName(profile.full_name);
       }
 
-      if (isFree) {
+      // Check if game is free OR already unlocked with an active duration window
+      const isAlreadyUnlocked =
+        isFree ||
+        isUnlocked ||
+        (game?.id ? isGameAccessActive(game.id, game.access_duration || game.license_duration) : false);
+
+      if (isAlreadyUnlocked) {
+        // Direct access: immediately render Step 3 Success with full download links
         setStep('STEP_3_SUCCESS');
+        setError(null);
         prevIsOpenRef.current = isOpen;
         return;
       }
 
-      // STRICT PAYWALL: Paid games ALWAYS open on STEP_1_FORM (Payment Prompt)
+      // STRICT PAYWALL: Only games without active purchase open on STEP_1_FORM (Payment Prompt)
       setStep('STEP_1_FORM');
       setError(null);
       setCountdown(COUNTDOWN_INITIAL_SECONDS);
@@ -135,13 +151,19 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       clearAllTimers();
     }
     prevIsOpenRef.current = isOpen;
-  }, [isOpen, isFree, game?.id]);
+  }, [isOpen, isFree, isUnlocked, game?.id, game?.access_duration, game?.license_duration]);
 
   // Load product download links
   useEffect(() => {
     const loadGameLinks = async () => {
       if (!isOpen || !game?.id) return;
       try {
+        // Immediately populate from game props if available
+        const immediate = parseUniversalDownloadLinks(game);
+        if (immediate && immediate.length > 0) {
+          setDirectLinks(immediate);
+        }
+
         const { data: postData } = await supabase
           .from('posts')
           .select('*')
@@ -150,7 +172,9 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
         const mergedRecord = { ...game, ...postData };
         const extracted = parseUniversalDownloadLinks(mergedRecord);
-        setDirectLinks(extracted);
+        if (extracted && extracted.length > 0) {
+          setDirectLinks(extracted);
+        }
       } catch (e) {}
     };
 
@@ -197,29 +221,23 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     pushCountRef.current = 1;
     setIsRepushing(false);
 
-    // For timed (non-lifetime) purchases, remove the game from the unlocked cache
-    // so the next click opens STEP_1_FORM (payment prompt) correctly
+    // Only remove game from unlocked cache IF its duration has actually expired.
+    // Never remove active or lifetime purchases just because the customer closed the modal!
     try {
-      const raw =
-        game.access_duration ||
-        game.license_duration ||
-        (game as any).plan_duration ||
-        (game as any).duration_days;
-      const s = raw !== undefined && raw !== null ? String(raw).toLowerCase().trim() : '';
-      const isLifetime =
-        !s ||
-        s === '0' ||
-        s === 'infinity' ||
-        s.includes('lifetime') ||
-        s.includes('maisha');
+      if (game?.id) {
+        const stillActive = isGameAccessActive(
+          game.id,
+          game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days
+        );
 
-      if (!isLifetime && game?.id) {
-        const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
-        if (savedUnlocked) {
-          const parsed = JSON.parse(savedUnlocked);
-          if (Array.isArray(parsed)) {
-            const remaining = parsed.filter((id: string) => id !== game.id);
-            localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
+        if (!stillActive) {
+          const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
+          if (savedUnlocked) {
+            const parsed = JSON.parse(savedUnlocked);
+            if (Array.isArray(parsed)) {
+              const remaining = parsed.filter((id: string) => id !== game.id);
+              localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
+            }
           }
         }
       }
@@ -380,31 +398,27 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
     try {
       const targetId = order?.game_id || order?.product_id || game.id;
       if (targetId) {
-        const currentUnlocked: string[] = JSON.parse(localStorage.getItem('cpcg_unlocked_games') || '[]');
-        if (!currentUnlocked.includes(targetId)) {
-          currentUnlocked.push(targetId);
-          localStorage.setItem('cpcg_unlocked_games', JSON.stringify(currentUnlocked));
-        }
-
         const cleanedPhone = cleanPhoneNumber(phone) || localStorage.getItem('cpcg_user_phone') || '';
-        if (cleanedPhone) {
-          localStorage.setItem(
-            `cpcg_unlocked_${cleanedPhone}_${targetId}`,
-            JSON.stringify({
-              gameId: targetId,
-              orderId: order?.id || order?.order_number,
-              orderNumber: order?.order_number || order?.id,
-              unlockedAt: new Date().toISOString(),
-              status: 'completed',
-              duration: game.access_duration || game.license_duration || order?.access_duration,
-            })
-          );
-        }
+        const rawDuration =
+          game.access_duration ||
+          game.license_duration ||
+          (game as any).plan_duration ||
+          (game as any).duration_days ||
+          order?.access_duration ||
+          'Lifetime';
+
+        saveUnlockedAccess(
+          targetId,
+          game.title,
+          rawDuration,
+          cleanedPhone,
+          order?.order_number || order?.id
+        );
 
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
             new CustomEvent('cpcg_order_unlocked', {
-              detail: order || { game_id: targetId, productId: targetId },
+              detail: order || { game_id: targetId, productId: targetId, isApproved: true },
             })
           );
           window.dispatchEvent(new Event('cpcg_auth_change'));
