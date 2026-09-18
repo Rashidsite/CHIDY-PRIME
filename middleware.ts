@@ -10,14 +10,16 @@ export async function middleware(request: NextRequest) {
     ''
   ).toLowerCase();
 
-  // ── 1. SINGLE MASTER ADMIN HQ REDIRECT ──
-  // If hitting /admin on mirror domains (e.g. chidy-prime.vercel.app), redirect cleanly to Master HQ
-  const isMasterDomain =
+  // ── 1. ADMIN DOMAIN ACCESS ──
+  // Allow /admin on both chidyprimetz.com and chidy-prime.vercel.app
+  const isAllowedAdminDomain =
     host.includes('chidyprimetz.com') ||
+    host.includes('chidy-prime.vercel.app') ||
+    host.includes('vercel.app') ||
     host.includes('localhost') ||
     host.includes('127.0.0.1');
 
-  if (pathname.startsWith('/admin') && !isMasterDomain) {
+  if (pathname.startsWith('/admin') && !isAllowedAdminDomain) {
     const targetUrl = new URL(`https://chidyprimetz.com${pathname}${search}`);
     return NextResponse.redirect(targetUrl, 307);
   }
