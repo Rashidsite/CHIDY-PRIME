@@ -17,7 +17,8 @@ import {
   BellRing,
   X,
   Lock,
-  LogOut
+  LogOut,
+  Trophy
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
@@ -40,6 +41,7 @@ export default function AdminSidebar({
   const links = [
     { href: '/admin/dashboard', label: 'Analytics Dashboard', icon: LayoutDashboard },
     { href: '/admin/popup', label: '📢 Game Popup Ads', icon: BellRing },
+    { href: '/admin/vikosi', label: '⚽ Vikosi vya eFootball', icon: Trophy },
     { href: '/admin/cms/ui', label: '🎨 UI & CMS Controls', icon: Palette },
     { href: '/admin/games', label: 'Game Catalog (CRUD)', icon: Gamepad2 },
     { 

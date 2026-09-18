@@ -1,12 +1,14 @@
 'use client';
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, SlidersHorizontal, Star, AlertCircle, Zap } from 'lucide-react';
+import { X, SlidersHorizontal, Star, AlertCircle, Zap, Trophy, ZoomIn, ArrowUpRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
 import GameMediaThumbnail from './GameMediaThumbnail';
+import SquadImageLightbox from './SquadImageLightbox';
+import { parseSquadData } from '@/lib/efootball-squads';
 
 interface CategoryGamesDrawerProps {
   isOpen: boolean;
@@ -29,6 +31,7 @@ export default function CategoryGamesDrawer({
   unlockedGameIds = new Set(),
 }: CategoryGamesDrawerProps) {
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc' | 'rating'>('newest');
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; strength?: string } | null>(null);
 
   const filteredAndSortedGames = useMemo(() => {
     if (!categoryName) return [];
@@ -64,7 +67,8 @@ export default function CategoryGamesDrawer({
   if (!isOpen || !categoryName) return null;
 
   return (
-    <AnimatePresence>
+    <>
+      <AnimatePresence>
       <div className="fixed inset-0 z-[9999]">
           {/* Backdrop Overlay */}
           <motion.div
@@ -134,6 +138,143 @@ export default function CategoryGamesDrawer({
               {filteredAndSortedGames.length > 0 ? (
                 <>
                   {filteredAndSortedGames.map((game, idx) => {
+                    const isSquad = 
+                      categoryName?.toLowerCase().includes('efootball') || 
+                      categoryName?.toLowerCase().includes('vikosi') || 
+                      game.category?.toLowerCase().includes('efootball') || 
+                      game.category?.toLowerCase().includes('vikosi');
+
+                    if (isSquad) {
+                      const squad = parseSquadData(game);
+                      return (
+                        <motion.div
+                          key={game.id}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.04 }}
+                          className={`group flex flex-col gap-4 p-4 sm:p-5 rounded-3xl bg-[#0F172A] border transition-all ${
+                            squad.is_sold
+                              ? 'border-rose-500/30 opacity-85'
+                              : 'border-blue-500/30 hover:border-blue-500/60 shadow-xl'
+                          }`}
+                        >
+                          {/* Full Uncropped Formation Banner with Pitch Backdrop */}
+                          <div 
+                            className="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-gradient-to-b from-[#0a1c38] via-[#051124] to-[#020712] border border-blue-500/20 group/img cursor-pointer flex items-center justify-center p-2"
+                            onClick={() => setLightboxImage({ url: squad.cover_image, title: squad.title, strength: squad.team_strength })}
+                          >
+                            <Image
+                              src={squad.cover_image}
+                              alt={squad.title}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 600px"
+                              className="object-contain transition-transform duration-500 group-hover/img:scale-[1.02]"
+                            />
+
+                            {/* Badges Over Image */}
+                            <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-2.5 py-1 rounded-xl bg-blue-600/90 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md border border-blue-400/40 shadow-md">
+                                  ⚡ STRENGTH {squad.team_strength}
+                                </span>
+                                <span className="px-2.5 py-1 rounded-xl bg-indigo-600/90 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md border border-indigo-400/40 shadow-md">
+                                  ⚽ EFOOTBALL SQUAD
+                                </span>
+                              </div>
+
+                              <span
+                                className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider backdrop-blur-md border shadow-md ${
+                                  squad.is_sold
+                                    ? 'bg-rose-500/90 text-white border-rose-400/40'
+                                    : 'bg-emerald-500/90 text-white border-emerald-400/40'
+                                }`}
+                              >
+                                {squad.is_sold ? 'SOLD OUT' : 'INAPATIKANA'}
+                              </span>
+                            </div>
+
+                            {/* Bottom Overlay Hint */}
+                            <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-xl bg-slate-950/80 backdrop-blur-md text-[9px] font-black text-blue-300 border border-blue-500/30 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                              <ZoomIn className="w-3 h-3" />
+                              <span>Kuza Picha (Full HD)</span>
+                            </div>
+                          </div>
+
+                          {/* Detail Info */}
+                          <div className="flex-1 flex flex-col justify-between space-y-3">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-black uppercase">
+                                    🛡️ {squad.booster_coaches}
+                                  </span>
+                                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase">
+                                    🔐 {squad.login_type}
+                                  </span>
+                                </div>
+                                {squad.rating && (
+                                  <div className="flex items-center gap-1 text-xs text-amber-400 font-bold">
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                                    <span>{squad.rating}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <Link href={`/games/${game.id}`} onClick={onClose} className="block group/title">
+                                <h3 className="text-sm sm:text-base font-black text-white group-hover/title:text-blue-400 transition-colors uppercase leading-snug tracking-tight">
+                                  {squad.title}
+                                </h3>
+                              </Link>
+
+                              {squad.description && (
+                                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed font-normal">
+                                  {squad.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Price & Action Buttons */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-800/80 pt-3 mt-1">
+                              <div>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">
+                                  BEI YA KIKOSI
+                                </span>
+                                <span className="text-base sm:text-lg font-black text-emerald-400">
+                                  {formatCurrency(squad.price)}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <Link
+                                  href={`/games/${game.id}`}
+                                  onClick={onClose}
+                                  className="min-h-[42px] px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer touch-manipulation active:scale-[0.98]"
+                                >
+                                  <span>Tazama Ndani</span>
+                                </Link>
+
+                                {squad.is_sold ? (
+                                  <div className="min-h-[42px] px-4 py-2.5 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 text-[11px] font-black uppercase tracking-wider flex items-center justify-center">
+                                    SOLD OUT
+                                  </div>
+                                ) : (
+                                  <a
+                                    href={squad.redirect_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="min-h-[42px] px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-blue-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation"
+                                  >
+                                    <span>{squad.button_text || '⚡ NUNUA KIKOSI'}</span>
+                                    <ArrowUpRight className="w-4 h-4" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    }
+
                     const isFree = game.price === 0;
                     const isUnlocked = unlockedGameIds.has(game.id) || isFree;
                     return (
@@ -237,6 +378,18 @@ export default function CategoryGamesDrawer({
             </div>
           </motion.div>
         </div>
-    </AnimatePresence>
+      </AnimatePresence>
+
+      {/* Fullscreen Uncropped Lightbox Zoom */}
+      {lightboxImage && (
+        <SquadImageLightbox
+          isOpen={!!lightboxImage}
+          onClose={() => setLightboxImage(null)}
+          imageUrl={lightboxImage.url}
+          title={lightboxImage.title}
+          teamStrength={lightboxImage.strength}
+        />
+      )}
+    </>
   );
 }

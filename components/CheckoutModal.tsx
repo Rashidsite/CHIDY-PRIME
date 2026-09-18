@@ -66,6 +66,8 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   const [usedGateway, setUsedGateway] = useState<string>('pressopay');
   const [gatewayReference, setGatewayReference] = useState<string | null>(null);
   const [dispatchingHaraka, setDispatchingHaraka] = useState(false);
+  const [pushCount, setPushCount] = useState<number>(1);
+  const [isRepushing, setIsRepushing] = useState<boolean>(false);
 
   const { syncPhoneAuth, profile } = useAuth();
   const isFree = game.price === 0;
@@ -74,6 +76,8 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
   // ── References & Timers ──
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const repushTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pushCountRef = useRef<number>(1);
   const activeChannelRef = useRef<any>(null);
   const activeBroadcastRef = useRef<any>(null);
   const activeUnlockedListenerRef = useRef<any>(null);
@@ -169,6 +173,10 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
     }
+    if (repushTimerRef.current) {
+      clearInterval(repushTimerRef.current);
+      repushTimerRef.current = null;
+    }
     if (activeChannelRef.current) {
       supabase.removeChannel(activeChannelRef.current);
       activeChannelRef.current = null;
@@ -185,6 +193,9 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
   const resetAndClose = () => {
     clearAllTimers();
+    setPushCount(1);
+    pushCountRef.current = 1;
+    setIsRepushing(false);
 
     // For timed (non-lifetime) purchases, remove the game from the unlocked cache
     // so the next click opens STEP_1_FORM (payment prompt) correctly
@@ -223,9 +234,103 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
 
   const handleRetry = () => {
     clearAllTimers();
+    setPushCount(1);
+    pushCountRef.current = 1;
+    setIsRepushing(false);
     setError(null);
     setCountdown(COUNTDOWN_INITIAL_SECONDS);
     setStep('STEP_1_FORM');
+  };
+
+  // Auto-Repush mechanism: sends up to 4 pushes if customer hasn't paid yet
+  const startAutoRepush = (orderId: string, orderNumber: string, phoneToPush: string, orderAmount: number, orderTitle: string) => {
+    if (repushTimerRef.current) {
+      clearInterval(repushTimerRef.current);
+      repushTimerRef.current = null;
+    }
+
+    pushCountRef.current = 1;
+    setPushCount(1);
+
+    // Repush every 13 seconds (attempts 2, 3, 4) until paid or max 4 reached
+    repushTimerRef.current = setInterval(async () => {
+      if (pushCountRef.current >= 4) {
+        if (repushTimerRef.current) {
+          clearInterval(repushTimerRef.current);
+          repushTimerRef.current = null;
+        }
+        return;
+      }
+
+      const nextAttempt = pushCountRef.current + 1;
+      try {
+        console.log(`[Auto-Repush ⚡] Auto sending push #${nextAttempt}/4 to ${phoneToPush}...`);
+        const res = await fetch('/api/checkout/repush', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: orderId,
+            order_number: orderNumber,
+            phone: phoneToPush,
+            amount: orderAmount,
+            title: orderTitle,
+            attempt: nextAttempt,
+          }),
+        });
+        const data = await res.json();
+        if (data?.is_paid && data?.order) {
+          handlePaymentConfirmed(data.order);
+          return;
+        }
+        if (data?.success) {
+          pushCountRef.current = nextAttempt;
+          setPushCount(nextAttempt);
+        }
+      } catch (err) {
+        console.warn('Auto-repush poll error:', err);
+      }
+    }, 13000);
+  };
+
+  const handleManualRepush = async () => {
+    if (isRepushing || pushCountRef.current >= 4) return;
+    setIsRepushing(true);
+    setError(null);
+    const nextAttempt = pushCountRef.current + 1;
+    try {
+      const targetId = activeOrder?.id || localStorage.getItem('cpcg_active_order_id') || '';
+      const targetNumber = activeOrder?.order_number || localStorage.getItem('cpcg_active_order_number') || '';
+      const digitsOnly = phone.replace(/\D/g, '');
+      const internationalPhone = digitsOnly.startsWith('255') ? digitsOnly : '255' + digitsOnly.slice(-9);
+
+      const res = await fetch('/api/checkout/repush', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: targetId,
+          order_number: targetNumber,
+          phone: internationalPhone,
+          amount: game.price,
+          title: game.title,
+          attempt: nextAttempt,
+        }),
+      });
+      const data = await res.json();
+      if (data?.is_paid && data?.order) {
+        handlePaymentConfirmed(data.order);
+        return;
+      }
+      if (data?.success) {
+        pushCountRef.current = nextAttempt;
+        setPushCount(nextAttempt);
+      } else {
+        setError(data?.error || 'Imeshindikana kutuma push nyingine kwa sasa.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Hitilafu ya mtandao wakati wa kutuma push.');
+    } finally {
+      setIsRepushing(false);
+    }
   };
 
   // Start 60s Countdown Timer
@@ -542,6 +647,7 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
           handlePaymentConfirmed(orderResult);
         } else if (orderResult?.id) {
           startPaymentPolling(orderResult.id, orderResult.order_number, data.gatewayReference || '');
+          startAutoRepush(orderResult.id, orderResult.order_number, internationalPhone, game.price, game.title);
         } else {
           setError('Hitilafu ya kuanzisha malipo kwenye simu. Tafadhali bonyeza Jaribu Tena.');
         }
@@ -713,9 +819,15 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
               </div>
 
               <div className="space-y-3 max-w-sm">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  <span>USSD Push Imetumwa Kwenye Simu</span>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                    <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                    <span>USSD Push Imetumwa</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10px] font-black uppercase tracking-wider">
+                    <Zap className="w-3 h-3 text-amber-400 fill-amber-400 animate-bounce" />
+                    <span>Push {pushCount} ya 4</span>
+                  </div>
                 </div>
 
                 <h3 className="text-xl font-black text-white uppercase tracking-tight">
@@ -737,6 +849,9 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
                   <p className="text-[11px] text-slate-300">
                     Kiasi: <span className="text-emerald-400 font-black">{formatCurrency(game.price)}</span> | Mtandao: <span className="text-blue-400 font-black">M-Pesa / Tigo Pesa / Airtel / HaloPesa</span>
                   </p>
+                  <div className="pt-1 text-[11px] text-amber-300/90 font-medium flex items-center justify-center gap-1.5">
+                    <span>⚡ Push inarudiwa hadi mara 4 ukichelewa au ukikosa kuweka PIN.</span>
+                  </div>
                 </div>
 
                 <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
@@ -773,11 +888,32 @@ export default function CheckoutModal({ isOpen, onClose, game, onSuccess }: Chec
               )}
 
               <div className="flex flex-col gap-2.5 w-full mt-1">
+                {pushCount < 4 && (
+                  <button
+                    type="button"
+                    disabled={isRepushing}
+                    onClick={handleManualRepush}
+                    className="w-full min-h-[44px] py-2.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-300 text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    {isRepushing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                        <span>Inatuma Push ya {pushCount + 1} Kwenye Simu...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 fill-amber-300 text-amber-300 animate-pulse" />
+                        <span>Hujaona Push? Tuma Push ya {pushCount + 1}/4 Sasa</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
                 <button
                   type="button"
                   disabled={checkingStatus}
                   onClick={handleManualCheck}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer touch-manipulation disabled:opacity-50"
+                  className="w-full min-h-[44px] py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white text-xs font-black uppercase tracking-wider transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer touch-manipulation disabled:opacity-50"
                 >
                   {checkingStatus ? (
                     <>

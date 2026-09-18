@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Gamepad2, Sparkles, ChevronRight, UserPlus } from 'lucide-react';
+import { Gamepad2, Sparkles, ChevronRight, UserPlus, Trophy } from 'lucide-react';
 
 export interface CategoryItem {
   id: string;
@@ -127,8 +127,16 @@ export default function CategoryGrid({
               {/* Card Header: Title + Game Count */}
               <div className="flex items-center justify-between p-2 sm:p-3 bg-[#0F172A] border-b border-slate-800/80">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
-                    <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg ${
+                    catName.toLowerCase().includes('efootball') || catName.toLowerCase().includes('vikosi')
+                      ? 'bg-gradient-to-tr from-blue-600 to-indigo-600'
+                      : 'bg-blue-600'
+                  } flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform`}>
+                    {catName.toLowerCase().includes('efootball') || catName.toLowerCase().includes('vikosi') ? (
+                      <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    ) : (
+                      <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    )}
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-tight leading-tight truncate group-hover:text-blue-400 transition-colors">
@@ -144,7 +152,9 @@ export default function CategoryGrid({
 
                 <div className="flex items-center gap-1.5 shrink-0 ml-1">
                   <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black whitespace-nowrap bg-slate-900 text-blue-400 border border-slate-800">
-                    {cat?.game_count ?? 12}
+                    {catName.toLowerCase().includes('efootball') || catName.toLowerCase().includes('vikosi')
+                      ? `${cat?.game_count ?? 1} ${Number(cat?.game_count) === 1 ? 'Kikosi' : 'Vikosi'}`
+                      : (cat?.game_count ?? 12)}
                   </span>
                 </div>
               </div>
@@ -169,7 +179,7 @@ export default function CategoryGrid({
               {/* Card Footer: Action Button */}
               <div className="p-2 sm:p-3 bg-[#0F172A] border-t border-slate-800/80 flex items-center justify-between">
                 <span className="text-[9px] sm:text-[11px] font-black uppercase text-blue-400 group-hover:text-blue-300 transition-colors flex items-center gap-1">
-                  <span>Fungua</span>
+                  <span>{catName.toLowerCase().includes('efootball') || catName.toLowerCase().includes('vikosi') ? 'Fungua Vikosi' : 'Fungua'}</span>
                   <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </span>
                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 shadow-glow" />

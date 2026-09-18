@@ -175,7 +175,7 @@ export async function triggerPressoPayCheckout(params: {
       'X-Presso-Signature': signature,
     },
     body,
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(4000),
   });
 
   if (!response.ok) {
@@ -213,7 +213,7 @@ export async function triggerHarakaPayCollect(params: {
       description: params.description || 'Chidy Prime Game Purchase',
       webhook_url: params.webhookUrl || process.env.HARAKAPAY_WEBHOOK_URL || 'https://chidyprimetz.com/api/webhooks/harakapay',
     }),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(6000),
   });
 
   const data = await response.json();

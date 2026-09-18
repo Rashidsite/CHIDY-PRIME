@@ -33,6 +33,37 @@ function normalizePhone(rawPhone?: string | null): string {
   return digits;
 }
 
+// ── Persistent Local Access Cache (survives page navigation instantly) ───────
+const LOCAL_CACHE_KEY = 'cpcg_access_cache_v2';
+
+interface AccessCacheEntry {
+  productId: string;
+  productTitle: string;
+  accessDuration: string;
+  accessExpiresAt: string | null;
+  unlockedAt: string;
+  orderRef?: string;
+}
+
+function readLocalCache(): Record<string, AccessCacheEntry> {
+  if (typeof window === 'undefined') return {};
+  try { return JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '{}'); } catch { return {}; }
+}
+
+function saveCacheEntry(entry: AccessCacheEntry) {
+  if (typeof window === 'undefined') return;
+  try {
+    const cache = readLocalCache();
+    cache[entry.productId] = entry;
+    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(cache));
+  } catch {}
+}
+
+function isCacheEntryActive(entry: AccessCacheEntry): boolean {
+  if (!entry.accessExpiresAt) return true;
+  return new Date(entry.accessExpiresAt).getTime() > Date.now();
+}
+
 export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions = {}) {
   const [purchases, setPurchases] = useState<Map<string, UnlockedPurchase>>(new Map());
   const [loading, setLoading] = useState<boolean>(true);
@@ -60,6 +91,34 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
     setUserPhone(resolved);
   }, [phone]);
 
+  // ── Bootstrap from localStorage cache immediately (no loading flash on navigation) ──
+  useEffect(() => {
+    const cache = readLocalCache();
+    const entries = Object.values(cache).filter(isCacheEntryActive);
+    if (entries.length === 0) return;
+    setPurchases((prev) => {
+      const next = new Map(prev);
+      entries.forEach((entry) => {
+        if (!next.has(entry.productId)) {
+          next.set(entry.productId, {
+            productId: entry.productId,
+            productTitle: entry.productTitle,
+            customerPhone: userPhone,
+            orderRef: entry.orderRef,
+            downloadLinks: [],
+            accessDuration: entry.accessDuration,
+            accessExpiresAt: entry.accessExpiresAt,
+            status: 'active',
+            unlockedAt: entry.unlockedAt,
+          });
+        }
+      });
+      return next;
+    });
+    setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userPhone]);
+
   const fetchPurchases = useCallback(async () => {
     if (!userPhone) {
       setPurchases(new Map());
@@ -71,54 +130,166 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
     try {
       const clean255 = normalizePhone(userPhone);
       const local0 = clean255.startsWith('255') ? '0' + clean255.slice(3) : clean255;
+      const now = new Date().getTime();
+      const map = new Map<string, UnlockedPurchase>();
 
-      const { data, error } = await supabase
+      // ── PRIMARY: Query payment_orders (main payment table used by server.js / checkout) ──
+      const { data: poData } = await supabase
+        .from('payment_orders')
+        .select('id, post_id, phone_number, status, promo_used, created_at, visitor_id')
+        .or(`phone_number.eq.${clean255},phone_number.eq.${local0}`)
+        .in('status', ['approved', 'completed', 'paid'])
+        .order('created_at', { ascending: false });
+
+      // ── Get expiry info from user_access (written by handleSuccessfulPayment in server.js) ──
+      let userAccessMap: Record<string, string | null> = {};
+      if (poData && poData.length > 0) {
+        const visitorIds = [...new Set((poData as any[]).map((o: any) => o.visitor_id).filter(Boolean))];
+        if (visitorIds.length > 0) {
+          const { data: accessData } = await supabase
+            .from('user_access')
+            .select('post_id, expires_at')
+            .in('visitor_id', visitorIds);
+          (accessData || []).forEach((a: any) => {
+            if (a.post_id) userAccessMap[String(a.post_id)] = a.expires_at || null;
+          });
+        }
+
+        // ── Fetch post titles for payment_orders (batch) ──
+        const postIds = [...new Set((poData as any[]).map((o: any) => o.post_id).filter(Boolean))];
+        let postsMap: Record<string, any> = {};
+        if (postIds.length > 0) {
+          const { data: postsData } = await supabase
+            .from('posts')
+            .select('id, title, access_duration, license_duration, duration_days')
+            .in('id', postIds);
+          (postsData || []).forEach((p: any) => { postsMap[String(p.id)] = p; });
+        }
+
+        (poData as any[]).forEach((row: any) => {
+          const prodId = row.post_id;
+          if (!prodId) return;
+
+          const post = postsMap[String(prodId)] || {};
+          const rawDuration =
+            post.access_duration ||
+            post.license_duration ||
+            (post.duration_days ? `${post.duration_days} Days` : null) ||
+            'Lifetime';
+
+          // Prefer user_access expires_at, fallback to duration-based computation
+          const userExp = userAccessMap[String(prodId)];
+          let accessExpiresAt: string | null = null;
+          if (userExp) {
+            accessExpiresAt = userExp;
+          } else {
+            const d = String(rawDuration).toLowerCase().trim();
+            const isLifetime = !d || d === '0' || d.includes('lifetime') || d.includes('maisha');
+            if (!isLifetime) {
+              const created = new Date(row.created_at).getTime();
+              let ms = 0;
+              if (d.includes('30')) ms = 30 * 24 * 3600 * 1000;
+              else if (d.includes('7')) ms = 7 * 24 * 3600 * 1000;
+              else if (d.includes('24')) ms = 24 * 3600 * 1000;
+              else if (d.includes('2')) ms = 2 * 3600 * 1000;
+              if (ms > 0) accessExpiresAt = new Date(created + ms).toISOString();
+            }
+          }
+
+          if (accessExpiresAt && new Date(accessExpiresAt).getTime() < now) return; // expired
+
+          const item: UnlockedPurchase = {
+            id: row.id,
+            productId: String(prodId),
+            productTitle: post.title || 'Premium Game',
+            customerPhone: row.phone_number || clean255,
+            orderRef: row.promo_used,
+            downloadLinks: [],
+            accessDuration: rawDuration,
+            accessExpiresAt,
+            status: 'active',
+            unlockedAt: row.created_at,
+          };
+
+          map.set(String(prodId), item);
+
+          // Persist to local cache
+          saveCacheEntry({
+            productId: String(prodId),
+            productTitle: item.productTitle,
+            accessDuration: rawDuration,
+            accessExpiresAt,
+            unlockedAt: row.created_at,
+            orderRef: row.promo_used,
+          });
+        });
+      }
+
+      // ── FALLBACK: Query orders table (legacy / webhook-written) ──────────
+      const { data: ordersData } = await supabase
         .from('orders')
-        .select('*')
+        .select('id, game_id, product_id, visitor_phone, phone_number, status, access_duration, access_expires_at, order_number, created_at, game_title')
         .or(`visitor_phone.eq.${clean255},visitor_phone.eq.${local0},phone_number.eq.${clean255},phone_number.eq.${local0}`)
         .in('status', ['approved', 'completed', 'paid'])
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.warn('[useProductAccess] Query warning:', error.message);
-        return;
-      }
+      (ordersData || []).forEach((row: any) => {
+        const prodId = row.game_id || row.product_id;
+        if (!prodId || map.has(String(prodId))) return; // skip if already found
 
-      const map = new Map<string, UnlockedPurchase>();
-      const now = new Date().getTime();
-
-      (data || []).forEach((row: any) => {
-        const prodId = row.product_id || row.game_id;
-        if (!prodId) return;
-
-        let isExpired = false;
         if (row.access_expires_at) {
           const expTime = new Date(row.access_expires_at).getTime();
-          if (!isNaN(expTime) && expTime < now) {
-            isExpired = true;
-          }
+          if (!isNaN(expTime) && expTime < now) return; // expired
         }
 
-        const purchaseItem: UnlockedPurchase = {
+        const item: UnlockedPurchase = {
           id: row.id,
           productId: String(prodId),
-          productTitle: row.game_title || row.product_title || 'Premium Game',
-          customerPhone: row.visitor_phone || row.customer_phone || row.phone_number || clean255,
-          orderRef: row.order_number || row.order_reference || row.order_id,
-          downloadLinks: Array.isArray(row.download_links) ? row.download_links : [],
-          downloadToken: row.download_token,
+          productTitle: row.game_title || 'Premium Game',
+          customerPhone: row.visitor_phone || row.phone_number || clean255,
+          orderRef: row.order_number,
+          downloadLinks: [],
           accessDuration: row.access_duration || 'Lifetime',
           accessExpiresAt: row.access_expires_at || null,
-          status: isExpired ? 'expired' : (row.status === 'revoked' ? 'revoked' : 'active'),
-          unlockedAt: row.unlocked_at || row.created_at,
+          status: 'active',
+          unlockedAt: row.created_at,
         };
 
-        map.set(String(prodId), purchaseItem);
+        map.set(String(prodId), item);
+
+        saveCacheEntry({
+          productId: String(prodId),
+          productTitle: item.productTitle,
+          accessDuration: item.accessDuration || 'Lifetime',
+          accessExpiresAt: item.accessExpiresAt || null,
+          unlockedAt: row.created_at,
+          orderRef: row.order_number,
+        });
       });
 
       setPurchases(map);
     } catch (err) {
       console.error('[useProductAccess] Failed to fetch purchases:', err);
+      // On error, ensure local cache is still used
+      const cache = readLocalCache();
+      const entries = Object.values(cache).filter(isCacheEntryActive);
+      if (entries.length > 0) {
+        const map = new Map<string, UnlockedPurchase>();
+        entries.forEach((entry) => {
+          map.set(entry.productId, {
+            productId: entry.productId,
+            productTitle: entry.productTitle,
+            customerPhone: userPhone,
+            orderRef: entry.orderRef,
+            downloadLinks: [],
+            accessDuration: entry.accessDuration,
+            accessExpiresAt: entry.accessExpiresAt,
+            status: 'active',
+            unlockedAt: entry.unlockedAt,
+          });
+        });
+        setPurchases(map);
+      }
     } finally {
       setLoading(false);
     }
@@ -128,7 +299,7 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
     fetchPurchases();
   }, [fetchPurchases]);
 
-  // REALTIME SUPABASE BROADCAST LISTENER
+  // ── REALTIME SUPABASE BROADCAST LISTENER ────────────────────────────────
   useEffect(() => {
     if (!userPhone) return;
     const cleanUserPhone = normalizePhone(userPhone);

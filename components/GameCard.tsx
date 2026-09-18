@@ -8,6 +8,7 @@ import { Star, Crown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useCMSTheme } from './CMSThemeProvider';
 import GameMediaThumbnail from './GameMediaThumbnail';
+import { cleanRedirectUrl } from '@/lib/efootball-squads';
 
 export interface GameProduct {
   id: string;
@@ -87,19 +88,33 @@ export function formatPlanDuration(duration?: string | number, isFree?: boolean)
 export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
   const { getButtonClass, animations } = useCMSTheme();
 
-  const isFree = game.price === 0 && (game.category?.toLowerCase().includes('free') || game.title?.toLowerCase().includes('free'));
-  const isTopRated = (game.rating || 0) >= 4.9;
-  const label = getLabel(game.category);
-  const showUnlocked = isFree || isUnlocked;
-  const rawDuration = game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration;
-  const durationLabel = formatPlanDuration(rawDuration, isFree);
+  const isSquad = (game.category || '').toLowerCase().includes('efootball') || 
+                  (game.category || '').toLowerCase().includes('vikosi') || 
+                  (game.title || '').toLowerCase().includes('kikosi');
 
-  const buttonText = showUnlocked 
-    ? (isFree ? 'DOWNLOAD GAME' : `⬇ PAKUA ${label}`) 
-    : `⚡ NUNUA ${label}`;
+  const isFree = !isSquad && game.price === 0 && (game.category?.toLowerCase().includes('free') || game.title?.toLowerCase().includes('free'));
+  const isTopRated = (game.rating || 0) >= 4.9;
+  const label = isSquad ? 'KIKOSI' : getLabel(game.category);
+  const showUnlocked = isFree || isUnlocked;
+  const rawDuration = isSquad ? '7 Days' : (game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration);
+  const durationLabel = isSquad ? '⚽ EFOOTBALL SQUAD' : formatPlanDuration(rawDuration, isFree);
+
+  const customButtonText = (game as any).links?.[0]?.button_text;
+  const buttonText = isSquad 
+    ? (customButtonText || '⚡ NUNUA KIKOSI')
+    : showUnlocked 
+      ? (isFree ? 'DOWNLOAD GAME' : `⬇ PAKUA ${label}`) 
+      : `⚡ NUNUA ${label}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isSquad) {
+      const redirect = cleanRedirectUrl((game as any).links?.[0]?.url || game.download_url, game.title, game.price);
+      if (redirect && typeof window !== 'undefined') {
+        window.open(redirect, '_blank');
+        return;
+      }
+    }
     if (onBuyNow) {
       onBuyNow(game);
     }
