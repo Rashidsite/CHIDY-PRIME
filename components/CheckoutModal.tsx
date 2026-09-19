@@ -27,6 +27,7 @@ import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { parseUniversalDownloadLinks, ExtractedDownloadLink } from '@/lib/link-parser';
+import { useAuth } from './AuthProvider';
 import { cleanPhoneNumber, formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
 import { calculateDurationExpiry, isGameAccessActive, saveUnlockedAccess, pruneExpiredAccess } from '@/lib/access-duration';
 

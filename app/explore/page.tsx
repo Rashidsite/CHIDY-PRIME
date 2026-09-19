@@ -165,11 +165,9 @@ export default function ExplorePage() {
       const refreshed = cleanAllExpiredAccess();
       setUnlockedGameIds((prev) => {
         if (prev.size !== refreshed.size) return refreshed;
-        let diff = false;
-        for (const id of prev) {
-          if (!refreshed.has(id)) { diff = true; break; }
-        }
-        return diff ? refreshed : prev;
+        const prevArray = Array.from(prev);
+        const hasDiff = prevArray.some((id) => !refreshed.has(id));
+        return hasDiff ? refreshed : prev;
       });
     }, 15000);
 
