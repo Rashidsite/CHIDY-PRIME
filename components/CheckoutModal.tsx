@@ -869,17 +869,6 @@ export default function CheckoutModal({
                 </p>
               </div>
 
-                {checkoutUrl && (
-                  <a
-                    href={checkoutUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider transition-colors text-center shadow-md"
-                  >
-                    👉 LIPA HAPA SELCOM / M-PESA (Njia ya pili)
-                  </a>
-                )}
-
               <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#111827] border border-slate-800 text-xs font-mono font-bold text-slate-300">
                 <Clock className="w-4 h-4 text-blue-400" />
                 <span>Muda uliobaki: </span>
