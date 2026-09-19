@@ -184,13 +184,23 @@ export async function POST(request: Request) {
     const durationDays = parseDurationDays(body.access_duration || body.license_duration);
     const isNewFeed = body.is_new_feed !== undefined ? Boolean(body.is_new_feed) : false;
 
+    // Pack screenshots into image_url JSON if present
+    const finalImageUrl = screenshots.length > 0
+      ? JSON.stringify({
+          image: imageUrl,
+          screenshots,
+          video: youtubeUrl,
+          thumbnail_type: thumbnailType,
+        })
+      : imageUrl;
+
     // 1. Insert into posts table (Primary)
     const insertPayload: Record<string, any> = {
       title,
       price,
       category,
       description,
-      image_url: imageUrl,
+      image_url: finalImageUrl,
       rating,
       youtube_url: youtubeUrl,
       links,
@@ -199,54 +209,31 @@ export async function POST(request: Request) {
       sort_order: 9999,
     };
 
-    if (directPaymentUrl) {
-      insertPayload.direct_payment_url = directPaymentUrl;
-    }
-
-    if (thumbnailFit) {
-      insertPayload.thumbnail_fit = thumbnailFit;
-    }
-
-    if (screenshots.length > 0) {
-      insertPayload.screenshots = screenshots;
-    }
-
     let newPost = null;
-    let { data: pData, error: pErr } = await supabase
-      .from('posts')
-      .insert(insertPayload)
-      .select()
-      .single();
+    let retries = 0;
+    while (retries < 5) {
+      const { data: pData, error: pErr } = await supabase
+        .from('posts')
+        .insert(insertPayload)
+        .select()
+        .single();
 
-    if (pErr) {
-      // Resilient fallback: If column thumbnail_fit, direct_payment_url or screenshots is missing, retry safely
-      if (pErr.message && (pErr.message.includes('thumbnail_fit') || pErr.message.includes('direct_payment_url') || pErr.message.includes('screenshots'))) {
-        delete insertPayload.thumbnail_fit;
-        delete insertPayload.direct_payment_url;
-        if (pErr.message.includes('screenshots')) {
-          delete insertPayload.screenshots;
-          if (screenshots.length > 0) {
-            insertPayload.image_url = JSON.stringify({
-              image: imageUrl,
-              screenshots,
-              video: youtubeUrl,
-              thumbnail_type: thumbnailType,
-            });
-          }
-        }
-        const retryResult = await supabase
-          .from('posts')
-          .insert(insertPayload)
-          .select()
-          .single();
-        if (retryResult.error) throw retryResult.error;
-        pData = retryResult.data;
+      if (!pErr) {
+        newPost = pData;
+        break;
+      }
+
+      console.warn('Insert attempt warning:', pErr.message);
+      const match = pErr.message && pErr.message.match(/Could not find the '([^']+)' column/i);
+      if (match && match[1] && match[1] in insertPayload) {
+        delete insertPayload[match[1]];
+        retries++;
+        continue;
       } else {
         console.error('Error inserting to posts:', pErr);
         throw pErr;
       }
     }
-    newPost = pData;
 
     // 2. If isNewFeed, add to site_settings curated_new_games_feed
     if (newPost?.id && isNewFeed) {
@@ -338,118 +325,103 @@ export async function PUT(request: Request) {
     if (updates.video_url !== undefined || updates.youtube_url !== undefined) {
       postPayload.youtube_url = (updates.video_url || updates.youtube_url).trim();
     }
-    if (updates.screenshots !== undefined) {
-      postPayload.screenshots = Array.isArray(updates.screenshots)
-        ? updates.screenshots.filter((s: any) => typeof s === 'string' && s.trim())
-        : [];
-    }
     if (updates.access_duration !== undefined || updates.license_duration !== undefined) {
       postPayload.duration_days = parseDurationDays(updates.access_duration || updates.license_duration);
     }
-    
-    // Process links array
+
+    // Process cover_image and screenshots into image_url
+    const coverImg = (updates.cover_image || updates.image_url || '').trim();
+    const hasScreenshots = Array.isArray(updates.screenshots);
+    const screens = hasScreenshots
+      ? updates.screenshots.filter((s: any) => typeof s === 'string' && s.trim())
+      : [];
+
+    if (screens.length > 0) {
+      postPayload.image_url = JSON.stringify({
+        image: coverImg || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+        screenshots: screens,
+        video: postPayload.youtube_url || updates.video_url || '',
+        thumbnail_type: updates.thumbnail_type || (postPayload.youtube_url ? 'video' : 'slideshow'),
+      });
+    } else if (coverImg) {
+      postPayload.image_url = coverImg;
+    }
+
+    // Process links array and direct_payment_url / thumbnail_fit
     const directPaymentUrl = updates.direct_payment_url !== undefined ? updates.direct_payment_url.trim() : undefined;
     const thumbnailFit = updates.thumbnail_fit !== undefined ? updates.thumbnail_fit : undefined;
 
+    let targetLinks: any[] | null = null;
     if (Array.isArray(updates.links)) {
-      postPayload.links = updates.links
+      targetLinks = updates.links
         .filter((l: any) => l && l.url && l.url.trim())
         .map((l: any) => ({
           name: (l.name || l.label || 'Download File').trim(),
           url: l.url.trim(),
         }));
     } else if (updates.download_url !== undefined) {
-      postPayload.links = [{ name: 'Download File', url: updates.download_url.trim() }];
+      targetLinks = [{ name: 'Download File', url: updates.download_url.trim() }];
     }
 
-    if (directPaymentUrl !== undefined || thumbnailFit !== undefined) {
-      if (directPaymentUrl !== undefined) {
-        postPayload.direct_payment_url = directPaymentUrl;
-      }
-      if (thumbnailFit !== undefined) {
-        postPayload.thumbnail_fit = thumbnailFit;
-      }
-
-      if (postPayload.links) {
-        if (directPaymentUrl !== undefined) {
-          postPayload.links = postPayload.links.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
-          if (directPaymentUrl) {
-            postPayload.links.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
-          }
-        }
-        if (thumbnailFit !== undefined) {
-          postPayload.links = postPayload.links.filter((l: any) => l && l.name !== 'THUMBNAIL_FIT');
-          if (thumbnailFit) {
-            postPayload.links.push({ name: 'THUMBNAIL_FIT', url: thumbnailFit, value: thumbnailFit });
-          }
-        }
+    if (targetLinks !== null || directPaymentUrl !== undefined || thumbnailFit !== undefined) {
+      let finalLinks: any[] = [];
+      if (targetLinks !== null) {
+        finalLinks = [...targetLinks];
       } else {
         try {
           const { data: currentPost } = await supabase.from('posts').select('links').eq('id', id).single();
-          let existingLinks = Array.isArray(currentPost?.links) ? [...currentPost.links] : [];
-          if (directPaymentUrl !== undefined) {
-            existingLinks = existingLinks.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
-            if (directPaymentUrl) {
-              existingLinks.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
-            }
+          if (Array.isArray(currentPost?.links)) {
+            finalLinks = [...currentPost.links];
           }
-          if (thumbnailFit !== undefined) {
-            existingLinks = existingLinks.filter((l: any) => l && l.name !== 'THUMBNAIL_FIT');
-            if (thumbnailFit) {
-              existingLinks.push({ name: 'THUMBNAIL_FIT', url: thumbnailFit, value: thumbnailFit });
-            }
-          }
-          postPayload.links = existingLinks;
         } catch {}
       }
+
+      if (directPaymentUrl !== undefined) {
+        finalLinks = finalLinks.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
+        if (directPaymentUrl) {
+          finalLinks.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+        }
+      }
+
+      if (thumbnailFit !== undefined) {
+        finalLinks = finalLinks.filter((l: any) => l && l.name !== 'THUMBNAIL_FIT');
+        if (thumbnailFit) {
+          finalLinks.push({ name: 'THUMBNAIL_FIT', url: thumbnailFit, value: thumbnailFit });
+        }
+      }
+
+      postPayload.links = finalLinks;
     }
 
     let updatedPost: any = null;
 
     // Only update posts table if there are postPayload fields to update
     if (Object.keys(postPayload).length > 0) {
-      let { data: pData, error: pErr } = await supabase
-        .from('posts')
-        .update(postPayload)
-        .eq('id', id)
-        .select()
-        .maybeSingle();
+      let retries = 0;
+      while (retries < 5) {
+        const { data: pData, error: pErr } = await supabase
+          .from('posts')
+          .update(postPayload)
+          .eq('id', id)
+          .select()
+          .maybeSingle();
 
-      if (pErr) {
-        // Resilient fallback: If error was missing direct_payment_url, thumbnail_fit or screenshots, retry safely
-        if (pErr.message && (pErr.message.includes('direct_payment_url') || pErr.message.includes('thumbnail_fit') || pErr.message.includes('screenshots'))) {
-          if (pErr.message.includes('direct_payment_url')) {
-            delete postPayload.direct_payment_url;
-          }
-          if (pErr.message.includes('thumbnail_fit')) {
-            delete postPayload.thumbnail_fit;
-          }
-          if (pErr.message.includes('screenshots')) {
-            const screens = postPayload.screenshots || [];
-            delete postPayload.screenshots;
-            if (screens.length > 0) {
-              postPayload.image_url = JSON.stringify({
-                image: postPayload.image_url || updates.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-                screenshots: screens,
-                video: postPayload.youtube_url || updates.video_url || '',
-                thumbnail_type: updates.thumbnail_type || (postPayload.youtube_url ? 'video' : 'slideshow'),
-              });
-            }
-          }
-          const retryRes = await supabase
-            .from('posts')
-            .update(postPayload)
-            .eq('id', id)
-            .select()
-            .maybeSingle();
-          if (retryRes.error) throw retryRes.error;
-          pData = retryRes.data;
+        if (!pErr) {
+          updatedPost = pData;
+          break;
+        }
+
+        console.warn('Update attempt warning:', pErr.message);
+        const match = pErr.message && pErr.message.match(/Could not find the '([^']+)' column/i);
+        if (match && match[1] && match[1] in postPayload) {
+          delete postPayload[match[1]];
+          retries++;
+          continue;
         } else {
           console.error('Error updating posts table:', pErr);
           throw pErr;
         }
       }
-      updatedPost = pData;
     }
 
     // Broadcast instant realtime sync to front-end
