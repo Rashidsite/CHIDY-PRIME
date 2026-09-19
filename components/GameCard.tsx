@@ -99,27 +99,34 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
   const rawDuration = isSquad ? '7 Days' : (game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration);
   const durationLabel = isSquad ? '⚽ EFOOTBALL SQUAD' : formatPlanDuration(rawDuration, isFree);
 
-  // Check active access from local storage caches immediately
+  // Check active access from local storage caches strictly
+  const checkActive = React.useCallback(() => {
+    if (!game?.id) return false;
+    return isGameAccessActive(game.id, rawDuration);
+  }, [game?.id, rawDuration]);
+
   const [localActive, setLocalActive] = useState<boolean>(() => {
-    if (isUnlocked) return true;
-    if (typeof window !== 'undefined' && game?.id) {
-      return isGameAccessActive(game.id, rawDuration);
-    }
-    return false;
+    if (typeof window === 'undefined' || !game?.id) return isUnlocked;
+    return checkActive();
   });
 
   useEffect(() => {
-    if (isUnlocked) {
-      setLocalActive(true);
-      return;
-    }
-    if (game?.id) {
-      const active = isGameAccessActive(game.id, rawDuration);
-      setLocalActive(active);
-    }
-  }, [isUnlocked, game?.id, rawDuration]);
+    setLocalActive(checkActive());
+  }, [checkActive, isUnlocked]);
 
-  // Listen to unlock events & auth changes to refresh card state instantly
+  // Periodic expiration watcher (checks every 15 seconds) so if duration elapses, card locks in real-time
+  useEffect(() => {
+    if (!localActive || isFree) return;
+    const interval = setInterval(() => {
+      const active = checkActive();
+      if (!active) {
+        setLocalActive(false);
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [localActive, isFree, checkActive]);
+
+  // Listen to unlock events, auth changes & expiry events to refresh card state instantly
   useEffect(() => {
     const handleOrderUnlocked = (e: any) => {
       const detail = e?.detail;
@@ -130,25 +137,32 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
     };
 
     const handleAuthChange = () => {
-      if (game?.id) {
-        setLocalActive(isGameAccessActive(game.id, rawDuration));
+      setLocalActive(checkActive());
+    };
+
+    const handleExpired = (e: any) => {
+      const gId = e?.detail?.gameId;
+      if (gId && String(gId) === String(game?.id)) {
+        setLocalActive(false);
       }
     };
 
     if (typeof window !== 'undefined') {
       window.addEventListener('cpcg_order_unlocked', handleOrderUnlocked);
       window.addEventListener('cpcg_auth_change', handleAuthChange);
+      window.addEventListener('cpcg_access_expired', handleExpired);
     }
 
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('cpcg_order_unlocked', handleOrderUnlocked);
         window.removeEventListener('cpcg_auth_change', handleAuthChange);
+        window.removeEventListener('cpcg_access_expired', handleExpired);
       }
     };
-  }, [game?.id, rawDuration]);
+  }, [game?.id, checkActive]);
 
-  const showUnlocked = isFree || isUnlocked || localActive;
+  const showUnlocked = isFree || localActive;
 
   const customButtonText = (game as any).links?.[0]?.button_text;
   const buttonText = isSquad 

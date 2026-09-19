@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { formatTzPhone, toLocalPhone, getPressoPayPaymentStatus, getHarakaPayStatus } from '@/lib/payment-gateway';
 import { parseUniversalDownloadLinks } from '@/lib/link-parser';
 import { fulfillOrderApproval, normalizePhone } from '@/lib/payment-fulfillment';
+import { calculateDurationExpiry } from '@/lib/access-duration';
 
 const STATUS_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -149,9 +150,18 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
 
         if (approvedPo) {
-          order = approvedPo;
-          isCompleted = true;
-          currentStatus = 'approved';
+          const post = approvedPo.posts || {};
+          const rawDur =
+            post.access_duration ||
+            post.plan_duration ||
+            post.duration_days;
+          const exp = calculateDurationExpiry(rawDur, new Date(approvedPo.created_at));
+          const isExpired = exp && new Date(exp).getTime() <= Date.now();
+          if (!isExpired) {
+            order = approvedPo;
+            isCompleted = true;
+            currentStatus = 'approved';
+          }
         }
       } catch {}
     }

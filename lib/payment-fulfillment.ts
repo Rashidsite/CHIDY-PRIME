@@ -22,6 +22,22 @@ export function calculateExpirationDate(duration?: string | number): string {
       now.setFullYear(now.getFullYear() + 10);
       return now.toISOString();
     }
+    if (duration === 2) {
+      now.setHours(now.getHours() + 2); // 2 Hours
+      return now.toISOString();
+    }
+    if (duration === 1 || duration === 24) {
+      now.setHours(now.getHours() + 24); // 24 Hours
+      return now.toISOString();
+    }
+    if (duration === 7) {
+      now.setDate(now.getDate() + 7); // 7 Days
+      return now.toISOString();
+    }
+    if (duration === 30) {
+      now.setDate(now.getDate() + 30); // 30 Days
+      return now.toISOString();
+    }
     now.setDate(now.getDate() + duration);
     return now.toISOString();
   }
@@ -309,12 +325,20 @@ export async function fulfillOrderApproval(params: FulfillOrderParams): Promise<
   const downloadLinks = parseUniversalDownloadLinks(postDetails);
   const primaryDownloadUrl = postDetails.links?.[0]?.url || postDetails.download_url || (downloadLinks?.[0]?.url || '');
 
-  const durationType =
+  let dur =
     params.accessDuration ||
     postDetails.plan_duration ||
     postDetails.access_duration ||
-    postDetails.duration ||
-    'Lifetime';
+    postDetails.duration;
+  if (!dur && postDetails.duration_days !== undefined && postDetails.duration_days !== null) {
+    if (postDetails.duration_days === 2) dur = '2 Hours';
+    else if (postDetails.duration_days === 1 || postDetails.duration_days === 24) dur = '24 Hours';
+    else if (postDetails.duration_days === 7) dur = '7 Days';
+    else if (postDetails.duration_days === 30) dur = '30 Days';
+    else if (postDetails.duration_days === 0) dur = 'Lifetime';
+    else dur = `${postDetails.duration_days} Days`;
+  }
+  const durationType = dur || 'Lifetime';
   const expiresAt = calculateExpirationDate(durationType);
 
   let updatedPromoUsed = targetPaymentOrder?.promo_used || rawOrderNumber;

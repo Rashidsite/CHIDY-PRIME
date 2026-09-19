@@ -27,9 +27,8 @@ import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { parseUniversalDownloadLinks, ExtractedDownloadLink } from '@/lib/link-parser';
-import { useAuth } from './AuthProvider';
 import { cleanPhoneNumber, formatTzPhone, toLocalPhone } from '@/lib/payment-gateway';
-import { calculateDurationExpiry, isGameAccessActive, saveUnlockedAccess } from '@/lib/access-duration';
+import { calculateDurationExpiry, isGameAccessActive, saveUnlockedAccess, pruneExpiredAccess } from '@/lib/access-duration';
 
 export type CheckoutStep = 'STEP_1_FORM' | 'STEP_2_PROCESSING' | 'STEP_3_SUCCESS';
 
@@ -129,11 +128,14 @@ export default function CheckoutModal({
         setFullName(profile.full_name);
       }
 
-      // Check if game is free OR already unlocked with an active duration window
-      const isAlreadyUnlocked =
-        isFree ||
-        isUnlocked ||
-        (game?.id ? isGameAccessActive(game.id, game.access_duration || game.license_duration) : false);
+      // Check if game is free OR already unlocked with an active, non-expired duration window
+      const rawDur =
+        game?.access_duration ||
+        game?.license_duration ||
+        (game as any)?.plan_duration ||
+        (game as any)?.duration_days;
+      const isStillActive = game?.id ? isGameAccessActive(game.id, rawDur) : false;
+      const isAlreadyUnlocked = isFree || isStillActive;
 
       if (isAlreadyUnlocked) {
         // Direct access: immediately render Step 3 Success with full download links
@@ -231,14 +233,7 @@ export default function CheckoutModal({
         );
 
         if (!stillActive) {
-          const savedUnlocked = localStorage.getItem('cpcg_unlocked_games');
-          if (savedUnlocked) {
-            const parsed = JSON.parse(savedUnlocked);
-            if (Array.isArray(parsed)) {
-              const remaining = parsed.filter((id: string) => id !== game.id);
-              localStorage.setItem('cpcg_unlocked_games', JSON.stringify(remaining));
-            }
-          }
+          pruneExpiredAccess(game.id);
         }
       }
     } catch (e) {}

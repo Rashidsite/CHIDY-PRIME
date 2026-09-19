@@ -64,11 +64,33 @@ export async function POST(request: Request) {
         gamePrice = Number(postData.price);
       }
       downloadUrl = postData.links?.[0]?.url || postData.download_url || '';
-      if (postData.duration_days) {
-        durationHours = postData.duration_days * 24;
-        durationType = `${postData.duration_days} Days`;
-      } else if (postData.plan_duration || postData.access_duration) {
+      if (postData.plan_duration || postData.access_duration) {
         durationType = postData.plan_duration || postData.access_duration;
+        const lower = durationType.toLowerCase();
+        if (lower.includes('2 hour') || lower.includes('masaa 2') || lower === '2') durationHours = 2;
+        else if (lower.includes('24 hour') || lower.includes('masaa 24') || lower === '24' || lower === '1') durationHours = 24;
+        else if (lower.includes('7 day') || lower.includes('siku 7') || lower === '7') durationHours = 7 * 24;
+        else if (lower.includes('30 day') || lower.includes('siku 30') || lower === '30') durationHours = 30 * 24;
+      } else if (postData.duration_days !== undefined && postData.duration_days !== null) {
+        if (postData.duration_days === 2) {
+          durationHours = 2;
+          durationType = '2 Hours';
+        } else if (postData.duration_days === 1 || postData.duration_days === 24) {
+          durationHours = 24;
+          durationType = '24 Hours';
+        } else if (postData.duration_days === 7) {
+          durationHours = 7 * 24;
+          durationType = '7 Days';
+        } else if (postData.duration_days === 30) {
+          durationHours = 30 * 24;
+          durationType = '30 Days';
+        } else if (postData.duration_days === 0) {
+          durationHours = 0;
+          durationType = 'Lifetime';
+        } else {
+          durationHours = postData.duration_days * 24;
+          durationType = `${postData.duration_days} Days`;
+        }
       }
     }
 

@@ -15,6 +15,7 @@ import GameCard, { GameProduct } from '@/components/GameCard';
 import CategoryGamesDrawer from '@/components/CategoryGamesDrawer';
 import { CategorySkeleton, HorizontalCarouselSkeleton } from '@/components/SkeletonLoader';
 import { createClient } from '@/lib/supabase/client';
+import { cleanAllExpiredAccess, calculateDurationExpiry, pruneExpiredAccess, isGameAccessActive } from '@/lib/access-duration';
 
 const INITIAL_FALLBACK_GAMES: GameProduct[] = [
   {
@@ -84,13 +85,7 @@ export default function FrontHubPage() {
   const [unlockedGameIds, setUnlockedGameIds] = useState<Set<string>>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem('cpcg_unlocked_games');
-        if (cached) {
-          const ids = JSON.parse(cached);
-          if (Array.isArray(ids) && ids.length > 0) {
-            return new Set(ids.map(String));
-          }
-        }
+        return cleanAllExpiredAccess();
       } catch {}
     }
     return new Set();
@@ -147,43 +142,8 @@ export default function FrontHubPage() {
           setRegisteredName(registeredUser);
         }
 
-        // 1. Immediately read and restore from verified local storage caches
-        const newUnlocked = new Set<string>();
-        try {
-          const cached = localStorage.getItem('cpcg_unlocked_games');
-          if (cached) {
-            const ids: string[] = JSON.parse(cached);
-            if (Array.isArray(ids)) {
-              ids.forEach((id) => newUnlocked.add(String(id)));
-            }
-          }
-        } catch {}
-
-        try {
-          const durStr = localStorage.getItem('cpcg_unlocked_durations');
-          if (durStr) {
-            const durations = JSON.parse(durStr);
-            const now = Date.now();
-            Object.entries(durations).forEach(([gId, entry]: [string, any]) => {
-              if (!entry?.expiresAt || new Date(entry.expiresAt).getTime() > now) {
-                newUnlocked.add(String(gId));
-              }
-            });
-          }
-        } catch {}
-
-        try {
-          const cacheStr = localStorage.getItem('cpcg_access_cache_v2');
-          if (cacheStr) {
-            const cache = JSON.parse(cacheStr);
-            const now = Date.now();
-            Object.entries(cache).forEach(([gId, entry]: [string, any]) => {
-              if (!entry?.accessExpiresAt || new Date(entry.accessExpiresAt).getTime() > now) {
-                newUnlocked.add(String(gId));
-              }
-            });
-          }
-        } catch {}
+        // 1. Immediately read and restore only active (unexpired) local storage caches
+        const newUnlocked = cleanAllExpiredAccess();
 
         if (newUnlocked.size > 0) {
           setUnlockedGameIds(new Set(newUnlocked));
@@ -201,34 +161,53 @@ export default function FrontHubPage() {
         const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
         const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
         const phoneCore = clean.length >= 9 ? clean.slice(-9) : digits;
+        const now = Date.now();
 
-        // 2. Check payment_orders table (Primary)
+        // 2. Check payment_orders table with strict duration validation
         try {
           const { data: legacyData } = await supabase
             .from('payment_orders')
-            .select('post_id')
+            .select('post_id, created_at, posts(id, duration_days, access_duration, plan_duration)')
             .or(`phone_number.eq.${clean},phone_number.eq.${local},phone_number.ilike.%${phoneCore}%`)
             .in('status', ['approved', 'completed', 'paid']);
 
           if (legacyData && legacyData.length > 0) {
             legacyData.forEach((d: any) => {
-              if (d.post_id) newUnlocked.add(String(d.post_id));
+              if (!d.post_id) return;
+              const post = d.posts || {};
+              const rawDur =
+                post.access_duration ||
+                post.plan_duration ||
+                post.duration_days;
+              const exp = calculateDurationExpiry(rawDur, new Date(d.created_at));
+              if (exp && new Date(exp).getTime() <= now) {
+                // EXPIRED! Do NOT unlock!
+                return;
+              }
+              newUnlocked.add(String(d.post_id));
             });
           }
         } catch {}
 
-        // 3. Check orders table (Fallback)
+        // 3. Check orders table with strict duration validation
         try {
           const { data: ordersData } = await supabase
             .from('orders')
-            .select('game_id, product_id')
+            .select('game_id, product_id, created_at, access_duration, access_expires_at')
             .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local},phone_number.ilike.%${phoneCore}%`)
             .in('status', ['approved', 'completed', 'paid']);
 
           if (ordersData && ordersData.length > 0) {
             ordersData.forEach((o: any) => {
-              if (o.game_id) newUnlocked.add(String(o.game_id));
-              if (o.product_id) newUnlocked.add(String(o.product_id));
+              const targetId = o.game_id || o.product_id;
+              if (!targetId) return;
+              if (o.access_expires_at) {
+                if (new Date(o.access_expires_at).getTime() <= now) return; // Expired
+              } else if (o.access_duration) {
+                const exp = calculateDurationExpiry(o.access_duration, new Date(o.created_at));
+                if (exp && new Date(exp).getTime() <= now) return; // Expired
+              }
+              newUnlocked.add(String(targetId));
             });
           }
         } catch {}
@@ -266,14 +245,42 @@ export default function FrontHubPage() {
       }
     };
 
+    const handleAccessExpired = (e: any) => {
+      const gId = e?.detail?.gameId;
+      if (gId) {
+        setUnlockedGameIds((prev) => {
+          const next = new Set(prev);
+          next.delete(String(gId));
+          localStorage.setItem('cpcg_unlocked_games', JSON.stringify(Array.from(next)));
+          return next;
+        });
+      }
+    };
+
+    // Periodic sweep every 15 seconds to purge expired items while page is open
+    const sweepInterval = setInterval(() => {
+      const refreshed = cleanAllExpiredAccess();
+      setUnlockedGameIds((prev) => {
+        if (prev.size !== refreshed.size) return refreshed;
+        let diff = false;
+        for (const id of prev) {
+          if (!refreshed.has(id)) { diff = true; break; }
+        }
+        return diff ? refreshed : prev;
+      });
+    }, 15000);
+
     window.addEventListener('cpcg_auth_change', syncUserAuthAndVault);
     window.addEventListener('cpcg_logout_reset', handleLogout);
     window.addEventListener('cpcg_order_unlocked', handleOrderUnlockedEvent);
+    window.addEventListener('cpcg_access_expired', handleAccessExpired);
 
     return () => {
+      clearInterval(sweepInterval);
       window.removeEventListener('cpcg_auth_change', syncUserAuthAndVault);
       window.removeEventListener('cpcg_logout_reset', handleLogout);
       window.removeEventListener('cpcg_order_unlocked', handleOrderUnlockedEvent);
+      window.removeEventListener('cpcg_access_expired', handleAccessExpired);
     };
   }, [supabase]);
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { calculateDurationExpiry } from '@/lib/access-duration';
 
 export interface UnlockedPurchase {
   id?: string;
@@ -67,27 +68,6 @@ function readLocalCache(): Record<string, AccessCacheEntry> {
             };
           }
         });
-      } catch {}
-    }
-
-    // Merge from cpcg_unlocked_games
-    const unlStr = localStorage.getItem('cpcg_unlocked_games');
-    if (unlStr) {
-      try {
-        const ids: string[] = JSON.parse(unlStr);
-        if (Array.isArray(ids)) {
-          ids.forEach((id) => {
-            if (!cache[id]) {
-              cache[id] = {
-                productId: String(id),
-                productTitle: 'Unlocked Game',
-                accessDuration: 'Lifetime',
-                accessExpiresAt: null,
-                unlockedAt: new Date().toISOString(),
-              };
-            }
-          });
-        }
       } catch {}
     }
 
@@ -218,11 +198,19 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
           if (!prodId) return;
 
           const post = postsMap[String(prodId)] || {};
-          const rawDuration =
+          let dur =
             post.access_duration ||
             post.license_duration ||
-            (post.duration_days ? `${post.duration_days} Days` : null) ||
-            'Lifetime';
+            post.plan_duration;
+          if (!dur && post.duration_days !== undefined && post.duration_days !== null) {
+            if (post.duration_days === 2) dur = '2 Hours';
+            else if (post.duration_days === 1 || post.duration_days === 24) dur = '24 Hours';
+            else if (post.duration_days === 7) dur = '7 Days';
+            else if (post.duration_days === 30) dur = '30 Days';
+            else if (post.duration_days === 0) dur = 'Lifetime';
+            else dur = `${post.duration_days} Days`;
+          }
+          const rawDuration = dur || 'Lifetime';
 
           // Prefer user_access expires_at, fallback to duration-based computation
           const userExp = userAccessMap[String(prodId)];
@@ -230,17 +218,7 @@ export function useProductAccess({ phone, onUnlocked }: UseProductAccessOptions 
           if (userExp) {
             accessExpiresAt = userExp;
           } else {
-            const d = String(rawDuration).toLowerCase().trim();
-            const isLifetime = !d || d === '0' || d.includes('lifetime') || d.includes('maisha');
-            if (!isLifetime) {
-              const created = new Date(row.created_at).getTime();
-              let ms = 0;
-              if (d.includes('30')) ms = 30 * 24 * 3600 * 1000;
-              else if (d.includes('7')) ms = 7 * 24 * 3600 * 1000;
-              else if (d.includes('24')) ms = 24 * 3600 * 1000;
-              else if (d.includes('2')) ms = 2 * 3600 * 1000;
-              if (ms > 0) accessExpiresAt = new Date(created + ms).toISOString();
-            }
+            accessExpiresAt = calculateDurationExpiry(rawDuration, new Date(row.created_at));
           }
 
           if (accessExpiresAt && new Date(accessExpiresAt).getTime() < now) return; // expired
