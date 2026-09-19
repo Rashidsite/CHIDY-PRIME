@@ -29,6 +29,7 @@ export interface GameProduct {
   is_new_feed?: boolean;
   access_duration?: string;
   license_duration?: string;
+  direct_payment_url?: string;
 }
 
 interface GameCardProps {
@@ -180,6 +181,15 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
         return;
       }
     }
+
+    // Direct Payment Link Bypass: If game is not unlocked and admin configured a direct link, open it
+    if (!showUnlocked && game.direct_payment_url && game.direct_payment_url.trim()) {
+      if (typeof window !== 'undefined') {
+        window.open(game.direct_payment_url.trim(), '_blank');
+        return;
+      }
+    }
+
     if (onBuyNow) {
       onBuyNow(game);
     }

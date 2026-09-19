@@ -64,6 +64,19 @@ export async function GET() {
         if (p.status === 'draft' || p.status === 'archived' || p.is_active === false) return;
         seenIds.add(p.id);
         const dur = p.plan_duration || p.access_duration || p.license_duration || formatDurationFromDays(p.duration_days);
+
+        let directPaymentUrl = p.direct_payment_url || '';
+        let cleanLinks: any[] = [];
+        if (Array.isArray(p.links)) {
+          p.links.forEach((l: any) => {
+            if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT')) {
+              if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+            } else if (l && l.url) {
+              cleanLinks.push(l);
+            }
+          });
+        }
+
         merged.push({
           id: p.id,
           title: p.title || 'Untitled Game',
@@ -80,8 +93,9 @@ export async function GET() {
           license_duration: dur || 'Lifetime',
           plan_duration: dur || 'Lifetime',
           duration_days: p.duration_days ?? parseDurationDays(dur),
-          download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url || '',
-          links: Array.isArray(p.links) ? p.links : (p.download_url ? [{ title: 'Main Download', url: p.download_url }] : []),
+          download_url: cleanLinks[0]?.url || p.download_url || '',
+          links: cleanLinks.length > 0 ? cleanLinks : (p.download_url ? [{ title: 'Main Download', url: p.download_url }] : []),
+          direct_payment_url: directPaymentUrl,
           created_at: p.created_at,
           updated_at: p.updated_at,
         });
@@ -112,6 +126,7 @@ export async function GET() {
             duration_days: parseDurationDays(dur),
             download_url: g.download_url || '',
             links: Array.isArray(g.download_links) ? g.download_links : (g.download_url ? [{ title: 'Main Download', url: g.download_url }] : []),
+            direct_payment_url: g.direct_payment_url || '',
             created_at: g.created_at,
             updated_at: g.updated_at,
           });

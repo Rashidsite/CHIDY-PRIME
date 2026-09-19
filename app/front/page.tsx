@@ -368,6 +368,18 @@ export default function FrontHubPage() {
             }
           }
 
+          let directPaymentUrl = p.direct_payment_url || '';
+          let cleanLinks: any[] = [];
+          if (Array.isArray(p.links)) {
+            p.links.forEach((l: any) => {
+              if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT')) {
+                if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+              } else if (l && l.url) {
+                cleanLinks.push(l);
+              }
+            });
+          }
+
           combined.push({
             id: p.id,
             title: p.title || 'Untitled Game',
@@ -383,8 +395,9 @@ export default function FrontHubPage() {
             tags: ['Chidy Prime Mod', 'Tanzania'],
             status: p.status || 'published',
             is_new_feed: Boolean(p.is_new_feed),
-            download_url: (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
-            links: p.links || [],
+            download_url: cleanLinks[0]?.url || (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
+            links: cleanLinks.length > 0 ? cleanLinks : (p.links || []),
+            direct_payment_url: directPaymentUrl,
             access_duration: dur || 'Lifetime',
             license_duration: dur || 'Lifetime',
             plan_duration: dur || 'Lifetime',

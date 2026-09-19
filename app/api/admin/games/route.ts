@@ -57,13 +57,20 @@ export async function GET() {
 
     if (postsData && Array.isArray(postsData)) {
       postsData.forEach((p) => {
-        // Normalize links
+        // Normalize links & extract direct_payment_url
         let linksList: { name: string; url: string }[] = [];
+        let directPaymentUrl = p.direct_payment_url || '';
         if (Array.isArray(p.links)) {
-          linksList = p.links.map((l: any) => ({
-            name: l.name || l.label || 'Download File',
-            url: l.url || '',
-          }));
+          p.links.forEach((l: any) => {
+            if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT' || l.type === 'direct_payment')) {
+              if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+            } else if (l && l.url) {
+              linksList.push({
+                name: l.name || l.label || 'Download File',
+                url: l.url || '',
+              });
+            }
+          });
         } else if (p.download_url) {
           linksList = [{ name: 'Download File', url: p.download_url }];
         }
@@ -117,6 +124,7 @@ export async function GET() {
           video_url: rawVideoUrl,
           download_url: linksList[0]?.url || p.download_url || '',
           links: linksList,
+          direct_payment_url: directPaymentUrl,
           created_at: p.created_at,
           updated_at: p.updated_at,
         });
@@ -145,6 +153,8 @@ export async function POST(request: Request) {
     const screenshots = Array.isArray(body.screenshots) ? body.screenshots.filter((s: any) => typeof s === 'string' && s.trim()) : [];
     const thumbnailType = body.thumbnail_type || (youtubeUrl ? 'video' : screenshots.length > 0 ? 'slideshow' : 'image');
     
+    const directPaymentUrl = body.direct_payment_url?.trim() || '';
+
     // Process Multi-Links
     let links: { name: string; url: string }[] = [];
     if (Array.isArray(body.links) && body.links.length > 0) {
@@ -156,6 +166,10 @@ export async function POST(request: Request) {
         }));
     } else if (body.download_url?.trim()) {
       links = [{ name: 'Download File', url: body.download_url.trim() }];
+    }
+
+    if (directPaymentUrl) {
+      links.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
     }
 
     const durationDays = parseDurationDays(body.access_duration || body.license_duration);
@@ -176,6 +190,10 @@ export async function POST(request: Request) {
       sort_order: 9999,
     };
 
+    if (directPaymentUrl) {
+      insertPayload.direct_payment_url = directPaymentUrl;
+    }
+
     if (screenshots.length > 0) {
       insertPayload.screenshots = screenshots;
     }
@@ -188,17 +206,19 @@ export async function POST(request: Request) {
       .single();
 
     if (pErr) {
-      // If error was missing screenshots column, retry without screenshots column
-      if (pErr.message && pErr.message.includes('screenshots')) {
-        delete insertPayload.screenshots;
-        // Resiliently encode in image_url if multiple media
-        if (screenshots.length > 0) {
-          insertPayload.image_url = JSON.stringify({
-            image: imageUrl,
-            screenshots,
-            video: youtubeUrl,
-            thumbnail_type: thumbnailType,
-          });
+      // Resilient fallback: If column direct_payment_url or screenshots is missing, retry safely
+      if (pErr.message && (pErr.message.includes('direct_payment_url') || pErr.message.includes('screenshots'))) {
+        delete insertPayload.direct_payment_url;
+        if (pErr.message.includes('screenshots')) {
+          delete insertPayload.screenshots;
+          if (screenshots.length > 0) {
+            insertPayload.image_url = JSON.stringify({
+              image: imageUrl,
+              screenshots,
+              video: youtubeUrl,
+              thumbnail_type: thumbnailType,
+            });
+          }
         }
         const retryResult = await supabase
           .from('posts')
@@ -240,6 +260,7 @@ export async function POST(request: Request) {
         cover_image: newPost.image_url,
         access_duration: body.access_duration || 'Lifetime',
         is_new_feed: isNewFeed,
+        direct_payment_url: directPaymentUrl,
         links,
       },
       message: 'Product published successfully',
@@ -312,6 +333,8 @@ export async function PUT(request: Request) {
     }
     
     // Process links array
+    const directPaymentUrl = updates.direct_payment_url !== undefined ? updates.direct_payment_url.trim() : undefined;
+
     if (Array.isArray(updates.links)) {
       postPayload.links = updates.links
         .filter((l: any) => l && l.url && l.url.trim())
@@ -321,6 +344,26 @@ export async function PUT(request: Request) {
         }));
     } else if (updates.download_url !== undefined) {
       postPayload.links = [{ name: 'Download File', url: updates.download_url.trim() }];
+    }
+
+    if (directPaymentUrl !== undefined) {
+      postPayload.direct_payment_url = directPaymentUrl;
+      if (postPayload.links) {
+        postPayload.links = postPayload.links.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
+        if (directPaymentUrl) {
+          postPayload.links.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+        }
+      } else {
+        try {
+          const { data: currentPost } = await supabase.from('posts').select('links').eq('id', id).single();
+          let existingLinks = Array.isArray(currentPost?.links) ? [...currentPost.links] : [];
+          existingLinks = existingLinks.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
+          if (directPaymentUrl) {
+            existingLinks.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+          }
+          postPayload.links = existingLinks;
+        } catch {}
+      }
     }
 
     let updatedPost: any = null;
@@ -335,17 +378,22 @@ export async function PUT(request: Request) {
         .maybeSingle();
 
       if (pErr) {
-        // If error was missing screenshots column, retry without screenshots and encode in image_url
-        if (pErr.message && pErr.message.includes('screenshots')) {
-          const screens = postPayload.screenshots || [];
-          delete postPayload.screenshots;
-          if (screens.length > 0) {
-            postPayload.image_url = JSON.stringify({
-              image: postPayload.image_url || updates.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-              screenshots: screens,
-              video: postPayload.youtube_url || updates.video_url || '',
-              thumbnail_type: updates.thumbnail_type || (postPayload.youtube_url ? 'video' : 'slideshow'),
-            });
+        // Resilient fallback: If error was missing direct_payment_url or screenshots, retry safely
+        if (pErr.message && (pErr.message.includes('direct_payment_url') || pErr.message.includes('screenshots'))) {
+          if (pErr.message.includes('direct_payment_url')) {
+            delete postPayload.direct_payment_url;
+          }
+          if (pErr.message.includes('screenshots')) {
+            const screens = postPayload.screenshots || [];
+            delete postPayload.screenshots;
+            if (screens.length > 0) {
+              postPayload.image_url = JSON.stringify({
+                image: postPayload.image_url || updates.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
+                screenshots: screens,
+                video: postPayload.youtube_url || updates.video_url || '',
+                thumbnail_type: updates.thumbnail_type || (postPayload.youtube_url ? 'video' : 'slideshow'),
+              });
+            }
           }
           const retryRes = await supabase
             .from('posts')
@@ -372,6 +420,7 @@ export async function PUT(request: Request) {
         id,
         ...(updatedPost || {}),
         is_new_feed: Boolean(updates.is_new_feed),
+        direct_payment_url: directPaymentUrl !== undefined ? directPaymentUrl : (updatedPost?.direct_payment_url || ''),
       },
       message: 'Product updated successfully',
     });

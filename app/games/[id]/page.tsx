@@ -87,6 +87,15 @@ export default function GameDetailPage() {
             rawScreenshots = postData.links[0].screenshots;
           }
 
+          let directPaymentUrl = postData.direct_payment_url || '';
+          if (Array.isArray(postData.links)) {
+            postData.links.forEach((l: any) => {
+              if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT')) {
+                if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+              }
+            });
+          }
+
           setGame({
             id: postData.id,
             title: postData.title || 'Untitled Game',
@@ -98,6 +107,7 @@ export default function GameDetailPage() {
             screenshots: rawScreenshots.length > 0 ? rawScreenshots : [rawCover],
             download_url: postData.links?.[0]?.url || postData.download_url || '',
             access_duration: dur || 'Lifetime',
+            direct_payment_url: directPaymentUrl,
             system_req_minimum: {
               os: 'Android / Windows 10 64-Bit',
               cpu: 'Octa-Core / Intel Core i5',
@@ -486,7 +496,13 @@ export default function GameDetailPage() {
                 </span>
               </div>
               <button
-                onClick={() => setCheckoutOpen(true)}
+                onClick={() => {
+                  if (!isUnlocked(gameId) && !isFree && game?.direct_payment_url && game.direct_payment_url.trim()) {
+                    window.open(game.direct_payment_url.trim(), '_blank');
+                    return;
+                  }
+                  setCheckoutOpen(true);
+                }}
                 className={`px-6 py-3 rounded-2xl ${
                   isUnlocked(gameId) || isFree
                     ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'

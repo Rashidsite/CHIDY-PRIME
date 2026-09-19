@@ -55,6 +55,7 @@ export default function AdminGamesPage() {
   const [rating, setRating] = useState('4.8');
   const [status, setStatus] = useState<'published' | 'draft' | 'archived'>('published');
   const [isNewFeed, setIsNewFeed] = useState(false);
+  const [directPaymentUrl, setDirectPaymentUrl] = useState('');
   
   // Form State - Tab 2 Media & Multi-Links
   const [coverImage, setCoverImage] = useState('');
@@ -89,11 +90,19 @@ export default function AdminGamesPage() {
           .select('*')
           .order('created_at', { ascending: false });
         if (postsData) {
-          setGames(postsData.map((p) => ({
-            ...p,
-            cover_image: p.image_url,
-            access_duration: p.duration_days === 30 ? '30 Days' : p.duration_days === 7 ? '7 Days' : p.duration_days === 1 ? '24 Hours' : 'Lifetime',
-          })));
+          setGames(postsData.map((p) => {
+            let directUrl = p.direct_payment_url || '';
+            if (Array.isArray(p.links)) {
+              const dLink = p.links.find((l: any) => l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT'));
+              if (dLink?.url) directUrl = dLink.url;
+            }
+            return {
+              ...p,
+              cover_image: p.image_url,
+              access_duration: p.duration_days === 30 ? '30 Days' : p.duration_days === 7 ? '7 Days' : p.duration_days === 1 ? '24 Hours' : 'Lifetime',
+              direct_payment_url: directUrl,
+            };
+          }));
         }
       }
     } catch (err) {
@@ -137,6 +146,7 @@ export default function AdminGamesPage() {
     setAccessDuration('Lifetime');
     setDescription('');
     setInstallGuide('');
+    setDirectPaymentUrl('');
     setActiveTab('basic');
     setModalOpen(true);
   };
@@ -214,6 +224,13 @@ export default function AdminGamesPage() {
     setAccessDuration(dur || 'Lifetime');
     setDescription(game.description || '');
     setInstallGuide(game.install_guide || game.installation_steps || '');
+
+    let directUrl = game.direct_payment_url || '';
+    if (!directUrl && Array.isArray(game.links)) {
+      const dLink = game.links.find((l: any) => l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT'));
+      if (dLink?.url) directUrl = dLink.url;
+    }
+    setDirectPaymentUrl(directUrl);
     
     setActiveTab('basic');
     setModalOpen(true);
@@ -351,6 +368,7 @@ export default function AdminGamesPage() {
         youtube_url: videoUrl.trim(),
         status,
         is_new_feed: isNewFeed,
+        direct_payment_url: directPaymentUrl.trim(),
       };
 
       const isEdit = !!editingGame?.id;
@@ -532,9 +550,16 @@ export default function AdminGamesPage() {
                   </div>
 
                   <div className="min-w-0 flex-1 space-y-1">
-                    <h3 className="font-bold text-white text-sm leading-snug line-clamp-2">
-                      {g.title}
-                    </h3>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="font-bold text-white text-sm leading-snug line-clamp-2">
+                        {g.title}
+                      </h3>
+                      {g.direct_payment_url && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          ⚡ Direct Link
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="px-2 py-0.5 rounded-md bg-slate-800 text-teal-300 border border-slate-700 text-[10px] font-black uppercase">
                         {g.category}
@@ -672,8 +697,15 @@ export default function AdminGamesPage() {
                           />
                         </div>
                       </td>
-                      <td className="py-3 font-bold text-white max-w-xs truncate pr-3">
-                        {g.title}
+                      <td className="py-3 font-bold text-white max-w-xs pr-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate">{g.title}</span>
+                          {g.direct_payment_url && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30" title={`Direct Link: ${g.direct_payment_url}`}>
+                              ⚡ Direct Link
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3">
                         <span className="px-2.5 py-1 rounded-md bg-slate-800 text-teal-300 border border-slate-700 text-[10px] font-extrabold uppercase">
@@ -997,6 +1029,36 @@ export default function AdminGamesPage() {
                         }`}
                       />
                     </button>
+                  </div>
+
+                  {/* 🔗 Direct Payment Link / Link ya Moja kwa Moja ya Malipo (Optional) */}
+                  <div className="p-3.5 rounded-2xl bg-blue-950/30 border border-blue-800/40 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-black uppercase text-blue-300 tracking-wider text-[11px] flex items-center gap-1.5">
+                        <LinkIcon className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Direct Link ya Malipo au Link ya Nje (Optional)</span>
+                      </label>
+                      {directPaymentUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setDirectPaymentUrl('')}
+                          className="text-[10px] font-bold text-rose-400 hover:underline cursor-pointer"
+                        >
+                          Ondoa Link
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="Mfano: https://selcom.me/... au https://wa.me/... au link yoyote"
+                      value={directPaymentUrl}
+                      onChange={(e) => setDirectPaymentUrl(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-medium focus:outline-none focus:border-blue-500 text-xs placeholder:text-slate-600"
+                    />
+                    <p className="text-[10px] text-slate-400 leading-relaxed font-normal">
+                      💡 <strong className="text-blue-300">Ukiweka link hapa:</strong> Mteja akibonyeza kitufe cha <em>"⚡ NUNUA GAME"</em> ataelekezwa moja kwa moja kwenye link hii kulipia.<br/>
+                      💡 <strong className="text-emerald-300">Ukiacha wazi:</strong> Mfumo utatumia malipo ya kawaida ya mtandao (API) kama kawaida.
+                    </p>
                   </div>
                 </div>
               )}
