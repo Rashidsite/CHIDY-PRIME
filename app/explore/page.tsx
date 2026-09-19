@@ -225,11 +225,14 @@ export default function ExplorePage() {
           }
 
           let directPaymentUrl = p.direct_payment_url || '';
+          let thumbnailFit = p.thumbnail_fit || 'cover';
           let cleanLinks: any[] = [];
           if (Array.isArray(p.links)) {
             p.links.forEach((l: any) => {
               if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT')) {
                 if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+              } else if (l && l.name === 'THUMBNAIL_FIT') {
+                if (!p.thumbnail_fit && (l.value || l.url)) thumbnailFit = l.value || l.url;
               } else if (l && l.url) {
                 cleanLinks.push(l);
               }
@@ -250,6 +253,7 @@ export default function ExplorePage() {
             download_url: cleanLinks[0]?.url || (Array.isArray(p.links) && p.links[0]?.url) || p.download_url,
             links: cleanLinks.length > 0 ? cleanLinks : (p.links || []),
             direct_payment_url: directPaymentUrl,
+            thumbnail_fit: thumbnailFit,
             access_duration: dur || 'Lifetime',
             license_duration: dur || 'Lifetime',
             plan_duration: dur || 'Lifetime',

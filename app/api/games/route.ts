@@ -66,11 +66,14 @@ export async function GET() {
         const dur = p.plan_duration || p.access_duration || p.license_duration || formatDurationFromDays(p.duration_days);
 
         let directPaymentUrl = p.direct_payment_url || '';
+        let thumbnailFit = p.thumbnail_fit || 'cover';
         let cleanLinks: any[] = [];
         if (Array.isArray(p.links)) {
           p.links.forEach((l: any) => {
             if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT')) {
               if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+            } else if (l && l.name === 'THUMBNAIL_FIT') {
+              if (!p.thumbnail_fit && (l.value || l.url)) thumbnailFit = l.value || l.url;
             } else if (l && l.url) {
               cleanLinks.push(l);
             }
@@ -96,6 +99,7 @@ export async function GET() {
           download_url: cleanLinks[0]?.url || p.download_url || '',
           links: cleanLinks.length > 0 ? cleanLinks : (p.download_url ? [{ title: 'Main Download', url: p.download_url }] : []),
           direct_payment_url: directPaymentUrl,
+          thumbnail_fit: thumbnailFit,
           created_at: p.created_at,
           updated_at: p.updated_at,
         });
@@ -127,6 +131,7 @@ export async function GET() {
             download_url: g.download_url || '',
             links: Array.isArray(g.download_links) ? g.download_links : (g.download_url ? [{ title: 'Main Download', url: g.download_url }] : []),
             direct_payment_url: g.direct_payment_url || '',
+            thumbnail_fit: g.thumbnail_fit || 'cover',
             created_at: g.created_at,
             updated_at: g.updated_at,
           });

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
@@ -9,6 +9,7 @@ export interface GameMediaThumbnailProps {
   screenshots?: string[];
   videoUrl?: string;
   thumbnailType?: 'image' | 'slideshow' | 'video' | 'auto';
+  thumbnailFit?: 'contain' | 'cover' | 'top' | string;
   title?: string;
   className?: string;
   sizes?: string;
@@ -53,6 +54,7 @@ export default function GameMediaThumbnail({
   screenshots = [],
   videoUrl = '',
   thumbnailType = 'auto',
+  thumbnailFit = 'cover',
   title = 'Game',
   className = '',
   sizes = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw',
@@ -202,6 +204,35 @@ export default function GameMediaThumbnail({
   }
 
   // 3. SINGLE STATIC IMAGE MODE
+  const fit = (thumbnailFit || 'cover').toLowerCase();
+
+  if (fit === 'contain') {
+    return (
+      <div className={`relative w-full h-full overflow-hidden bg-slate-950 flex items-center justify-center ${className}`}>
+        {/* Ambient blurred backdrop so portrait/tall images seamlessly fill 16:9 cards without harsh empty spaces */}
+        <div
+          className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 scale-125 pointer-events-none"
+          style={{ backgroundImage: `url(${allImages[0]})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-[#0F172A]/40 opacity-70 pointer-events-none" />
+        <Image
+          src={allImages[0]}
+          alt={title}
+          fill
+          quality={85}
+          placeholder="blur"
+          blurDataURL={BLUR_DATA_URL}
+          sizes={sizes}
+          className="object-contain object-center select-none group-hover:scale-[1.03] transition-transform duration-500 ease-out z-[1]"
+          priority={priority}
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
+  const objectFitClass = fit === 'top' ? 'object-cover object-top' : 'object-cover object-center';
+
   return (
     <div className={`relative w-full h-full overflow-hidden bg-slate-900 ${className}`}>
       <Image
@@ -212,7 +243,7 @@ export default function GameMediaThumbnail({
         placeholder="blur"
         blurDataURL={BLUR_DATA_URL}
         sizes={sizes}
-        className="object-cover object-center select-none group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+        className={`${objectFitClass} select-none group-hover:scale-[1.03] transition-transform duration-500 ease-out`}
         priority={priority}
         draggable={false}
       />

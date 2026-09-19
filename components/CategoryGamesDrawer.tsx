@@ -296,6 +296,7 @@ export default function CategoryGamesDrawer({
                             screenshots={game.screenshots}
                             videoUrl={game.video_url || game.youtube_url}
                             thumbnailType={game.thumbnail_type || 'auto'}
+                            thumbnailFit={game.thumbnail_fit || (game as any).thumbnailFit || 'cover'}
                             title={game.title}
                             sizes="(max-width: 640px) 100vw, 150px"
                           />

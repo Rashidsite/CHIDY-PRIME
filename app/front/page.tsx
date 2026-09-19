@@ -369,11 +369,14 @@ export default function FrontHubPage() {
           }
 
           let directPaymentUrl = p.direct_payment_url || '';
+          let thumbnailFit = p.thumbnail_fit || 'cover';
           let cleanLinks: any[] = [];
           if (Array.isArray(p.links)) {
             p.links.forEach((l: any) => {
               if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT')) {
                 if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+              } else if (l && l.name === 'THUMBNAIL_FIT') {
+                if (!p.thumbnail_fit && (l.value || l.url)) thumbnailFit = l.value || l.url;
               } else if (l && l.url) {
                 cleanLinks.push(l);
               }
@@ -389,6 +392,7 @@ export default function FrontHubPage() {
             video_url: rawVideoUrl,
             youtube_url: rawVideoUrl,
             thumbnail_type: thumbnailType,
+            thumbnail_fit: thumbnailFit,
             price: Number(p.price || 0),
             rating: Number(p.rating || 4.9),
             category: p.category || 'Maleo Bus Mods TZ',

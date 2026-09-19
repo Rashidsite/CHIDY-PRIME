@@ -56,6 +56,7 @@ export default function AdminGamesPage() {
   const [status, setStatus] = useState<'published' | 'draft' | 'archived'>('published');
   const [isNewFeed, setIsNewFeed] = useState(false);
   const [directPaymentUrl, setDirectPaymentUrl] = useState('');
+  const [thumbnailFit, setThumbnailFit] = useState<'contain' | 'cover' | 'top'>('cover');
   
   // Form State - Tab 2 Media & Multi-Links
   const [coverImage, setCoverImage] = useState('');
@@ -127,6 +128,18 @@ export default function AdminGamesPage() {
     }
   }, [modalOpen]);
 
+  // Auto-detect portrait/tall images to suggest 'contain' (Picha Nzima) so they don't get cut in half
+  useEffect(() => {
+    if (!coverImage || typeof window === 'undefined' || !coverImage.startsWith('http')) return;
+    const img = new window.Image();
+    img.src = coverImage;
+    img.onload = () => {
+      if (img.naturalHeight > img.naturalWidth * 0.85 && !editingGame?.thumbnail_fit) {
+        setThumbnailFit('contain');
+      }
+    };
+  }, [coverImage, editingGame]);
+
   const handleOpenAdd = () => {
     setEditingGame(null);
     setTitle('');
@@ -147,6 +160,7 @@ export default function AdminGamesPage() {
     setDescription('');
     setInstallGuide('');
     setDirectPaymentUrl('');
+    setThumbnailFit('cover');
     setActiveTab('basic');
     setModalOpen(true);
   };
@@ -231,6 +245,13 @@ export default function AdminGamesPage() {
       if (dLink?.url) directUrl = dLink.url;
     }
     setDirectPaymentUrl(directUrl);
+
+    let tFit = game.thumbnail_fit || 'cover';
+    if (Array.isArray(game.links)) {
+      const fLink = game.links.find((l: any) => l && l.name === 'THUMBNAIL_FIT');
+      if (fLink?.value || fLink?.url) tFit = fLink.value || fLink.url;
+    }
+    setThumbnailFit(tFit === 'contain' || tFit === 'top' ? tFit : 'cover');
     
     setActiveTab('basic');
     setModalOpen(true);
@@ -369,6 +390,7 @@ export default function AdminGamesPage() {
         status,
         is_new_feed: isNewFeed,
         direct_payment_url: directPaymentUrl.trim(),
+        thumbnail_fit: thumbnailFit,
       };
 
       const isEdit = !!editingGame?.id;
@@ -692,6 +714,7 @@ export default function AdminGamesPage() {
                             screenshots={g.screenshots}
                             videoUrl={g.video_url || g.youtube_url}
                             thumbnailType={g.thumbnail_type || 'auto'}
+                            thumbnailFit={g.thumbnail_fit || 'cover'}
                             title={g.title}
                             sizes="60px"
                           />
@@ -1086,6 +1109,7 @@ export default function AdminGamesPage() {
                         screenshots={screenshots.filter(Boolean)}
                         videoUrl={videoUrl}
                         thumbnailType={thumbnailType}
+                        thumbnailFit={thumbnailFit}
                         title={title || 'Product Preview'}
                         sizes="450px"
                       />
@@ -1134,6 +1158,125 @@ export default function AdminGamesPage() {
                       />
                     </div>
                   </div>
+
+                  {/* ── 3 AUTOMATIC THUMBNAIL VARIATION CARDS (QUALITY & SIZING SELECTOR) ── */}
+                  {coverImage && (
+                    <div className="space-y-2.5 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                          <Star className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Chagua Muonekano wa Thumbnail (Machaguzi 3 ya Kipimo &amp; Ubora)</span>
+                        </label>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">
+                          Gusa moja kuweka kama bango
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* Option 1: Picha Nzima (Full Fit / Contain) */}
+                        <div
+                          onClick={() => setThumbnailFit('contain')}
+                          className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 ${
+                            thumbnailFit === 'contain'
+                              ? 'bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-slate-950 border border-slate-800 pointer-events-none">
+                            <GameMediaThumbnail
+                              coverImage={coverImage}
+                              thumbnailFit="contain"
+                              title="Picha Nzima"
+                              sizes="150px"
+                            />
+                            {thumbnailFit === 'contain' && (
+                              <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-emerald-500 text-black text-[8px] font-black uppercase shadow-md flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                <span>Imechaguliwa</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-white">1. Picha Nzima</span>
+                              <span className="text-[9px] font-bold text-emerald-400 uppercase">Full Fit</span>
+                            </div>
+                            <p className="text-[9px] text-slate-400 leading-tight">
+                              Picha yote inaonekana 100% bila kukatwa sehemu yoyote (haiwi nusu).
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Option 2: Bango Kamili (Cover Fill) */}
+                        <div
+                          onClick={() => setThumbnailFit('cover')}
+                          className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 ${
+                            thumbnailFit === 'cover'
+                              ? 'bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-slate-950 border border-slate-800 pointer-events-none">
+                            <GameMediaThumbnail
+                              coverImage={coverImage}
+                              thumbnailFit="cover"
+                              title="Bango Kamili"
+                              sizes="150px"
+                            />
+                            {thumbnailFit === 'cover' && (
+                              <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-emerald-500 text-black text-[8px] font-black uppercase shadow-md flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                <span>Imechaguliwa</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-white">2. Bango Kamili</span>
+                              <span className="text-[9px] font-bold text-blue-400 uppercase">Cover Fill</span>
+                            </div>
+                            <p className="text-[9px] text-slate-400 leading-tight">
+                              Inajaza bango lote la 16:9 edge-to-edge (nzuri kwa picha pana).
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Option 3: Lenga Juu (Top Focus) */}
+                        <div
+                          onClick={() => setThumbnailFit('top')}
+                          className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 ${
+                            thumbnailFit === 'top'
+                              ? 'bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-slate-950 border border-slate-800 pointer-events-none">
+                            <GameMediaThumbnail
+                              coverImage={coverImage}
+                              thumbnailFit="top"
+                              title="Lenga Juu"
+                              sizes="150px"
+                            />
+                            {thumbnailFit === 'top' && (
+                              <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-emerald-500 text-black text-[8px] font-black uppercase shadow-md flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                <span>Imechaguliwa</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-white">3. Lenga Juu</span>
+                              <span className="text-[9px] font-bold text-purple-400 uppercase">Top Focus</span>
+                            </div>
+                            <p className="text-[9px] text-slate-400 leading-tight">
+                              Inalenga sehemu ya juu ili kuzuia kukata kichwa au nembo ya jezi.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* 2. Additional Screenshots / Multi-Image Slideshow Manager */}
                   <div className="space-y-3 p-4 rounded-2xl bg-slate-950 border border-slate-800">

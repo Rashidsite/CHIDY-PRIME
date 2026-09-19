@@ -57,13 +57,16 @@ export async function GET() {
 
     if (postsData && Array.isArray(postsData)) {
       postsData.forEach((p) => {
-        // Normalize links & extract direct_payment_url
+        // Normalize links & extract direct_payment_url & thumbnail_fit
         let linksList: { name: string; url: string }[] = [];
         let directPaymentUrl = p.direct_payment_url || '';
+        let thumbnailFit = p.thumbnail_fit || 'cover';
         if (Array.isArray(p.links)) {
           p.links.forEach((l: any) => {
             if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT' || l.type === 'direct_payment')) {
               if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
+            } else if (l && l.name === 'THUMBNAIL_FIT') {
+              if (l.value || l.url) thumbnailFit = l.value || l.url;
             } else if (l && l.url) {
               linksList.push({
                 name: l.name || l.label || 'Download File',
@@ -125,6 +128,7 @@ export async function GET() {
           download_url: linksList[0]?.url || p.download_url || '',
           links: linksList,
           direct_payment_url: directPaymentUrl,
+          thumbnail_fit: thumbnailFit,
           created_at: p.created_at,
           updated_at: p.updated_at,
         });
@@ -154,9 +158,10 @@ export async function POST(request: Request) {
     const thumbnailType = body.thumbnail_type || (youtubeUrl ? 'video' : screenshots.length > 0 ? 'slideshow' : 'image');
     
     const directPaymentUrl = body.direct_payment_url?.trim() || '';
+    const thumbnailFit = body.thumbnail_fit || 'cover';
 
     // Process Multi-Links
-    let links: { name: string; url: string }[] = [];
+    let links: { name: string; url: string; value?: string }[] = [];
     if (Array.isArray(body.links) && body.links.length > 0) {
       links = body.links
         .filter((l: any) => l && l.url && l.url.trim())
@@ -170,6 +175,10 @@ export async function POST(request: Request) {
 
     if (directPaymentUrl) {
       links.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+    }
+
+    if (thumbnailFit) {
+      links.push({ name: 'THUMBNAIL_FIT', url: thumbnailFit, value: thumbnailFit });
     }
 
     const durationDays = parseDurationDays(body.access_duration || body.license_duration);
@@ -194,6 +203,10 @@ export async function POST(request: Request) {
       insertPayload.direct_payment_url = directPaymentUrl;
     }
 
+    if (thumbnailFit) {
+      insertPayload.thumbnail_fit = thumbnailFit;
+    }
+
     if (screenshots.length > 0) {
       insertPayload.screenshots = screenshots;
     }
@@ -206,8 +219,9 @@ export async function POST(request: Request) {
       .single();
 
     if (pErr) {
-      // Resilient fallback: If column direct_payment_url or screenshots is missing, retry safely
-      if (pErr.message && (pErr.message.includes('direct_payment_url') || pErr.message.includes('screenshots'))) {
+      // Resilient fallback: If column thumbnail_fit, direct_payment_url or screenshots is missing, retry safely
+      if (pErr.message && (pErr.message.includes('thumbnail_fit') || pErr.message.includes('direct_payment_url') || pErr.message.includes('screenshots'))) {
+        delete insertPayload.thumbnail_fit;
         delete insertPayload.direct_payment_url;
         if (pErr.message.includes('screenshots')) {
           delete insertPayload.screenshots;
@@ -261,6 +275,7 @@ export async function POST(request: Request) {
         access_duration: body.access_duration || 'Lifetime',
         is_new_feed: isNewFeed,
         direct_payment_url: directPaymentUrl,
+        thumbnail_fit: thumbnailFit,
         links,
       },
       message: 'Product published successfully',
@@ -334,6 +349,7 @@ export async function PUT(request: Request) {
     
     // Process links array
     const directPaymentUrl = updates.direct_payment_url !== undefined ? updates.direct_payment_url.trim() : undefined;
+    const thumbnailFit = updates.thumbnail_fit !== undefined ? updates.thumbnail_fit : undefined;
 
     if (Array.isArray(updates.links)) {
       postPayload.links = updates.links
@@ -346,20 +362,42 @@ export async function PUT(request: Request) {
       postPayload.links = [{ name: 'Download File', url: updates.download_url.trim() }];
     }
 
-    if (directPaymentUrl !== undefined) {
-      postPayload.direct_payment_url = directPaymentUrl;
+    if (directPaymentUrl !== undefined || thumbnailFit !== undefined) {
+      if (directPaymentUrl !== undefined) {
+        postPayload.direct_payment_url = directPaymentUrl;
+      }
+      if (thumbnailFit !== undefined) {
+        postPayload.thumbnail_fit = thumbnailFit;
+      }
+
       if (postPayload.links) {
-        postPayload.links = postPayload.links.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
-        if (directPaymentUrl) {
-          postPayload.links.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+        if (directPaymentUrl !== undefined) {
+          postPayload.links = postPayload.links.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
+          if (directPaymentUrl) {
+            postPayload.links.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+          }
+        }
+        if (thumbnailFit !== undefined) {
+          postPayload.links = postPayload.links.filter((l: any) => l && l.name !== 'THUMBNAIL_FIT');
+          if (thumbnailFit) {
+            postPayload.links.push({ name: 'THUMBNAIL_FIT', url: thumbnailFit, value: thumbnailFit });
+          }
         }
       } else {
         try {
           const { data: currentPost } = await supabase.from('posts').select('links').eq('id', id).single();
           let existingLinks = Array.isArray(currentPost?.links) ? [...currentPost.links] : [];
-          existingLinks = existingLinks.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
-          if (directPaymentUrl) {
-            existingLinks.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+          if (directPaymentUrl !== undefined) {
+            existingLinks = existingLinks.filter((l: any) => l && l.name !== 'DIRECT_PAYMENT_URL' && l.name !== 'PAYMENT_REDIRECT');
+            if (directPaymentUrl) {
+              existingLinks.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
+            }
+          }
+          if (thumbnailFit !== undefined) {
+            existingLinks = existingLinks.filter((l: any) => l && l.name !== 'THUMBNAIL_FIT');
+            if (thumbnailFit) {
+              existingLinks.push({ name: 'THUMBNAIL_FIT', url: thumbnailFit, value: thumbnailFit });
+            }
           }
           postPayload.links = existingLinks;
         } catch {}
@@ -378,10 +416,13 @@ export async function PUT(request: Request) {
         .maybeSingle();
 
       if (pErr) {
-        // Resilient fallback: If error was missing direct_payment_url or screenshots, retry safely
-        if (pErr.message && (pErr.message.includes('direct_payment_url') || pErr.message.includes('screenshots'))) {
+        // Resilient fallback: If error was missing direct_payment_url, thumbnail_fit or screenshots, retry safely
+        if (pErr.message && (pErr.message.includes('direct_payment_url') || pErr.message.includes('thumbnail_fit') || pErr.message.includes('screenshots'))) {
           if (pErr.message.includes('direct_payment_url')) {
             delete postPayload.direct_payment_url;
+          }
+          if (pErr.message.includes('thumbnail_fit')) {
+            delete postPayload.thumbnail_fit;
           }
           if (pErr.message.includes('screenshots')) {
             const screens = postPayload.screenshots || [];
@@ -421,6 +462,7 @@ export async function PUT(request: Request) {
         ...(updatedPost || {}),
         is_new_feed: Boolean(updates.is_new_feed),
         direct_payment_url: directPaymentUrl !== undefined ? directPaymentUrl : (updatedPost?.direct_payment_url || ''),
+        thumbnail_fit: thumbnailFit !== undefined ? thumbnailFit : (updatedPost?.thumbnail_fit || 'cover'),
       },
       message: 'Product updated successfully',
     });

@@ -30,6 +30,7 @@ export interface GameProduct {
   access_duration?: string;
   license_duration?: string;
   direct_payment_url?: string;
+  thumbnail_fit?: 'contain' | 'cover' | 'top' | string;
 }
 
 interface GameCardProps {
@@ -211,6 +212,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
           screenshots={game.screenshots}
           videoUrl={game.video_url || game.youtube_url}
           thumbnailType={game.thumbnail_type || 'auto'}
+          thumbnailFit={game.thumbnail_fit || (game as any).thumbnailFit || 'cover'}
           title={game.title}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
