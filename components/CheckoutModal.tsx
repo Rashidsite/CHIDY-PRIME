@@ -689,10 +689,10 @@ export default function CheckoutModal({
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
-          initial={{ opacity: 0, y: 16, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -16, scale: 0.97 }}
-          transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
           className="bg-[#0B111E]/95 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-md w-full relative shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] space-y-6 max-h-[92vh] overflow-y-auto overscroll-contain"
         >
 

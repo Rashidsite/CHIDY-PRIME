@@ -90,10 +90,10 @@ export default function RegisterModal({ isOpen, onClose, onSuccess }: RegisterMo
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
           <motion.div
-            initial={{ scale: 0.85, opacity: 0, y: 30 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.85, opacity: 0, y: 30 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.98, opacity: 0 }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-sm rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(16,185,129,0.4)]"
             style={{ background: '#000', border: '2px solid #10b981' }}
           >
