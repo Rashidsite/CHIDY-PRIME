@@ -7,7 +7,7 @@ export interface BottomNavItem {
   badge?: string;
 }
 
-export type BottomNavStyle = 'glassmorphism' | 'obsidian' | 'pill' | 'docked';
+export type BottomNavStyle = 'glassmorphism' | 'obsidian' | 'pill' | 'docked' | 'cyber_neon';
 export type ButtonPreset = 'royal_blue' | 'solid_emerald' | 'cyan_cyberpunk' | 'minimalist_border';
 export type CornerRadius = 'rounded-xl' | 'rounded-2xl' | 'rounded-full' | 'rounded-none';
 
@@ -23,6 +23,7 @@ export interface CMSAnimationConfig {
   shimmer_loading: boolean;
   card_hover_scale: boolean;
   floating_support_pulse: boolean;
+  button_glow_shimmer?: boolean;
 }
 
 export interface CMSThemePresetConfig {
@@ -56,6 +57,7 @@ export const DEFAULT_ANIMATIONS: CMSAnimationConfig = {
   shimmer_loading: true,
   card_hover_scale: true,
   floating_support_pulse: true,
+  button_glow_shimmer: true,
 };
 
 export const DEFAULT_THEME_PRESETS: CMSThemePresetConfig = {

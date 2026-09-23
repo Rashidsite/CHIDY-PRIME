@@ -128,19 +128,19 @@ function FeedCard({
             onClick={handleClick}
             className={`w-full min-h-[44px] py-2 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-md cursor-pointer touch-manipulation ${
               showUnlocked
-                ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30"
-                : "bg-blue-600 hover:bg-blue-500 shadow-blue-600/30"
+                ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 border border-emerald-400"
+                : "bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 btn-gaming-glow shadow-blue-600/40 border border-blue-400/80"
             } text-white`}
           >
             {showUnlocked ? (
               <>
                 <Download className="w-3.5 h-3.5 text-white shrink-0" />
-                <span>{isFree ? "DOWNLOAD" : "PAKUA GAME"}</span>
+                <span className="relative z-10">{isFree ? "DOWNLOAD" : "PAKUA GAME"}</span>
               </>
             ) : (
               <>
-                <Zap className="w-3.5 h-3.5 text-white shrink-0" />
-                <span>NUNUA GAME</span>
+                <Zap className="w-3.5 h-3.5 text-amber-300 icon-spark-pulse shrink-0" />
+                <span className="relative z-10">NUNUA GAME</span>
               </>
             )}
           </button>

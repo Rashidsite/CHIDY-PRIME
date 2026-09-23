@@ -269,11 +269,23 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
           <motion.button
             whileTap={{ scale: 0.94 }}
             onClick={handleCardClick}
-            className={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[44px] flex items-center justify-center text-[10px] sm:text-[11px] shrink-0 transition-all ${
+            className={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[44px] flex items-center justify-center gap-1 text-[10px] sm:text-[11px] shrink-0 transition-all ${
               showUnlocked ? getButtonClass('download') : getButtonClass('buy')
             } cursor-pointer touch-manipulation whitespace-nowrap`}
           >
-            {buttonText}
+            {buttonText.startsWith('⚡') ? (
+              <>
+                <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
+                <span className="relative z-10">{buttonText.replace(/^⚡\s*/, '')}</span>
+              </>
+            ) : buttonText.startsWith('⬇') ? (
+              <>
+                <span className="mr-0.5">⬇</span>
+                <span className="relative z-10">{buttonText.replace(/^⬇\s*/, '')}</span>
+              </>
+            ) : (
+              <span className="relative z-10">{buttonText}</span>
+            )}
           </motion.button>
         </div>
       </div>

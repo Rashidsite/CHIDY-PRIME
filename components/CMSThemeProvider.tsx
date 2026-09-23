@@ -115,16 +115,34 @@ export function CMSThemeProvider({ children }: { children: React.ReactNode }) {
       return base + 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 border border-emerald-400';
     }
 
+    const isGlowEnabled = config.animations?.button_glow_shimmer !== false;
+
     switch (button_preset) {
       case 'solid_emerald':
-        return base + 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 border border-emerald-400';
+        return (
+          base +
+          (isGlowEnabled ? 'btn-gaming-glow-emerald ' : '') +
+          'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 border border-emerald-400'
+        );
       case 'cyan_cyberpunk':
-        return base + 'bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold shadow-cyan-500/40 border border-cyan-300';
+        return (
+          base +
+          (isGlowEnabled ? 'btn-gaming-glow-cyan ' : '') +
+          'bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold shadow-cyan-500/40 border border-cyan-300'
+        );
       case 'minimalist_border':
-        return base + 'bg-slate-900 hover:bg-blue-600 text-blue-400 hover:text-white border-2 border-blue-500/50 hover:border-blue-400 shadow-blue-500/20';
+        return (
+          base +
+          (isGlowEnabled ? 'btn-gaming-glow ' : '') +
+          'bg-slate-900 hover:bg-blue-600 text-blue-400 hover:text-white border-2 border-blue-500/70 hover:border-blue-400 shadow-blue-500/30'
+        );
       case 'royal_blue':
       default:
-        return base + 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 border border-blue-400';
+        return (
+          base +
+          (isGlowEnabled ? 'btn-gaming-glow ' : '') +
+          'bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/40 border border-blue-400/80'
+        );
     }
   };
 

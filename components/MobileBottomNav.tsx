@@ -47,18 +47,21 @@ export default function MobileBottomNav() {
   // Style container variants
   let containerClasses = '';
   switch (bottomNav.style) {
+    case 'cyber_neon':
+      containerClasses = 'fixed bottom-4 inset-x-3 max-w-md mx-auto rounded-full bg-slate-950/95 backdrop-blur-2xl border-2 border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.45),0_10px_35px_rgba(0,0,0,0.9)] z-40 px-2 py-1.5';
+      break;
     case 'obsidian':
-      containerClasses = 'fixed bottom-0 inset-x-0 bg-[#060911] border-t border-slate-800/90 shadow-[0_-10px_30px_rgba(0,0,0,0.85)] z-40';
+      containerClasses = 'fixed bottom-0 inset-x-0 bg-[#050811] border-t border-slate-800/90 shadow-[0_-12px_35px_rgba(0,0,0,0.95)] z-40';
       break;
     case 'pill':
-      containerClasses = 'fixed bottom-4 inset-x-3 max-w-md mx-auto rounded-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/40 shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-40 px-2 py-1.5';
+      containerClasses = 'fixed bottom-4 inset-x-3 max-w-md mx-auto rounded-full bg-slate-900/95 backdrop-blur-xl border border-blue-500/50 shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_20px_rgba(37,99,235,0.25)] z-40 px-2 py-1.5';
       break;
     case 'docked':
-      containerClasses = 'fixed bottom-0 inset-x-0 bg-black border-t border-slate-800 shadow-2xl z-40';
+      containerClasses = 'fixed bottom-0 inset-x-0 bg-slate-950 border-t-2 border-blue-600/70 shadow-[0_-8px_30px_rgba(0,0,0,0.85)] z-40';
       break;
     case 'glassmorphism':
     default:
-      containerClasses = 'fixed bottom-0 inset-x-0 bg-slate-950/85 backdrop-blur-lg border-t border-slate-800/80 shadow-[0_-8px_25px_rgba(0,0,0,0.7)] z-40';
+      containerClasses = 'fixed bottom-0 inset-x-0 bg-slate-950/80 backdrop-blur-2xl border-t border-slate-700/60 shadow-[0_-10px_30px_rgba(0,0,0,0.75)] z-40';
       break;
   }
 

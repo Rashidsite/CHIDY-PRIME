@@ -263,10 +263,11 @@ export default function CategoryGamesDrawer({
                                     href={squad.redirect_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="min-h-[42px] px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-blue-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation"
+                                    className="min-h-[42px] px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white text-[11px] font-black uppercase tracking-wider btn-gaming-glow shadow-lg shadow-blue-600/40 border border-blue-400/70 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation"
                                   >
-                                    <span>{squad.button_text || '⚡ NUNUA KIKOSI'}</span>
-                                    <ArrowUpRight className="w-4 h-4" />
+                                    <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
+                                    <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI').replace(/^⚡\s*/, '')}</span>
+                                    <ArrowUpRight className="w-4 h-4 relative z-10" />
                                   </a>
                                 )}
                               </div>
@@ -347,15 +348,37 @@ export default function CategoryGamesDrawer({
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <motion.button
-                                whileTap={{ scale: 0.94 }}
-                                onClick={() => onBuyNow(game)}
-                                className={`px-5 py-2.5 min-h-[44px] flex items-center justify-center rounded-xl text-[11px] font-black uppercase tracking-wider text-white ${
-                                  isUnlocked ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'
-                                } transition-all cursor-pointer shadow-md touch-manipulation`}
-                              >
-                                {isUnlocked ? '⬇ PAKUA LINK' : isFree ? 'DOWNLOAD GAME' : (game.category?.toLowerCase().includes('mod') || game.category?.toLowerCase().includes('bus') || game.category?.toLowerCase().includes('map')) ? '⚡ NUNUA MOD' : '⚡ NUNUA GAME'}
-                              </motion.button>
+                              {(() => {
+                                const btnTxt = isUnlocked ? '⬇ PAKUA LINK' : isFree ? 'DOWNLOAD GAME' : (game.category?.toLowerCase().includes('mod') || game.category?.toLowerCase().includes('bus') || game.category?.toLowerCase().includes('map')) ? '⚡ NUNUA MOD' : '⚡ NUNUA GAME';
+                                const isBuy = !isUnlocked && !isFree;
+                                return (
+                                  <motion.button
+                                    whileTap={{ scale: 0.94 }}
+                                    onClick={() => onBuyNow(game)}
+                                    className={`px-5 py-2.5 min-h-[44px] flex items-center justify-center gap-1 rounded-xl text-[11px] font-black uppercase tracking-wider text-white ${
+                                      isUnlocked 
+                                        ? 'bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/30 border border-emerald-400' 
+                                        : isBuy
+                                          ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 btn-gaming-glow shadow-lg shadow-blue-600/40 border border-blue-400/80'
+                                          : 'bg-emerald-600 hover:bg-emerald-500 shadow-md border border-emerald-400'
+                                    } transition-all cursor-pointer touch-manipulation whitespace-nowrap`}
+                                  >
+                                    {btnTxt.startsWith('⚡') ? (
+                                      <>
+                                        <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
+                                        <span className="relative z-10">{btnTxt.replace(/^⚡\s*/, '')}</span>
+                                      </>
+                                    ) : btnTxt.startsWith('⬇') ? (
+                                      <>
+                                        <span className="mr-0.5">⬇</span>
+                                        <span className="relative z-10">{btnTxt.replace(/^⬇\s*/, '')}</span>
+                                      </>
+                                    ) : (
+                                      <span className="relative z-10">{btnTxt}</span>
+                                    )}
+                                  </motion.button>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>

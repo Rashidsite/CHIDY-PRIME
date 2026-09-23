@@ -121,3 +121,117 @@ body {
   animation: gameToastSlideDown 0.32s cubic-bezier(0.7, 0, 0.84, 0) forwards;
 }
 
+/* ═════════════════════════════════════════════════════════════════════
+   ANIMATED GLOWING GAMING BUTTONS ("WAKAWAKA" PULSE & SHIMMER SWEEP)
+   ═════════════════════════════════════════════════════════════════════ */
+@keyframes neonPulseGlowBlue {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.45), 0 0 20px rgba(59, 130, 246, 0.25);
+    border-color: rgba(96, 165, 250, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.85), 0 0 35px rgba(96, 165, 250, 0.55), 0 0 50px rgba(37, 99, 235, 0.3);
+    border-color: rgba(147, 197, 253, 0.95);
+  }
+}
+
+@keyframes neonPulseGlowCyan {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.5), 0 0 22px rgba(34, 211, 238, 0.3);
+    border-color: rgba(34, 211, 238, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(6, 182, 212, 0.9), 0 0 38px rgba(34, 211, 238, 0.65), 0 0 55px rgba(6, 182, 212, 0.35);
+    border-color: rgba(165, 243, 252, 1);
+  }
+}
+
+@keyframes neonPulseGlowEmerald {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.45), 0 0 20px rgba(52, 211, 153, 0.25);
+    border-color: rgba(52, 211, 153, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.85), 0 0 35px rgba(52, 211, 153, 0.55);
+    border-color: rgba(167, 243, 208, 0.95);
+  }
+}
+
+@keyframes buttonShimmerSweep {
+  0% {
+    transform: translateX(-160%) skewX(-25deg);
+  }
+  25%, 100% {
+    transform: translateX(280%) skewX(-25deg);
+  }
+}
+
+@keyframes lightningPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 1px #fff);
+  }
+  20% {
+    transform: scale(1.22) rotate(-8deg);
+    filter: drop-shadow(0 0 6px #fde047);
+  }
+  40% {
+    transform: scale(1.08) rotate(4deg);
+    filter: drop-shadow(0 0 4px #67e8f9);
+  }
+  60% {
+    transform: scale(1.18) rotate(-4deg);
+    filter: drop-shadow(0 0 7px #fde047);
+  }
+}
+
+.btn-gaming-glow {
+  position: relative !important;
+  overflow: hidden !important;
+  animation: neonPulseGlowBlue 2.2s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.btn-gaming-glow-cyan {
+  position: relative !important;
+  overflow: hidden !important;
+  animation: neonPulseGlowCyan 2.2s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.btn-gaming-glow-emerald {
+  position: relative !important;
+  overflow: hidden !important;
+  animation: neonPulseGlowEmerald 2.2s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.btn-gaming-glow::after,
+.btn-gaming-glow-cyan::after,
+.btn-gaming-glow-emerald::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0.05) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: buttonShimmerSweep 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 1;
+}
+
+.icon-spark-pulse {
+  display: inline-block;
+  animation: lightningPulse 2.4s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+

@@ -421,11 +421,11 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={(e) => handleCtaClick(e, slide.cta_link)}
-              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-400 shadow-md transition-colors cursor-pointer touch-manipulation"
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider text-white bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 border border-blue-400/80 btn-gaming-glow shadow-xl shadow-blue-600/40 transition-all cursor-pointer touch-manipulation"
             >
-              <Gamepad2 className="w-4 h-4 text-white" />
-              <span>{slide.cta_text || 'Tazama Sasa'}</span>
-              <ArrowRight className="w-4 h-4 text-white" />
+              <Gamepad2 className="w-4 h-4 text-amber-300 icon-spark-pulse shrink-0" />
+              <span className="relative z-10">{slide.cta_text || 'Tazama Sasa'}</span>
+              <ArrowRight className="w-4 h-4 text-white relative z-10" />
             </motion.button>
           </div>
         </div>
@@ -487,10 +487,10 @@ export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 50
           <div className="pt-1.5 flex items-center justify-between">
             <button
               onClick={(e) => handleCtaClick(e, slide.cta_link)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl font-black text-[11px] uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 border border-blue-400 shadow-md transition-colors cursor-pointer touch-manipulation"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl font-black text-[11px] uppercase tracking-wider text-white bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 border border-blue-400/80 btn-gaming-glow shadow-lg shadow-blue-600/40 transition-all cursor-pointer touch-manipulation"
             >
-              <Gamepad2 className="w-4 h-4 text-white" />
-              <span>{slide.cta_text || 'GAME MPYA ➔'}</span>
+              <Gamepad2 className="w-4 h-4 text-amber-300 icon-spark-pulse shrink-0" />
+              <span className="relative z-10">{slide.cta_text || 'GAME MPYA ➔'}</span>
             </button>
 
             {/* Slide Dots on Mobile */}
