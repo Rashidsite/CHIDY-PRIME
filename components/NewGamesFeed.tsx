@@ -7,6 +7,7 @@ import { GameProduct, formatPlanDuration } from "./GameCard";
 import { isGameAccessActive } from "@/lib/access-duration";
 import { Flame, SlidersHorizontal, Search, Zap, Download, CheckCircle2, Star } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useCMSTheme } from "./CMSThemeProvider";
 
 interface NewGamesFeedProps {
   games: GameProduct[];
@@ -33,6 +34,7 @@ function FeedCard({
   onBuyNow?: (game: GameProduct) => void;
   index: number;
 }) {
+  const { getButtonClass } = useCMSTheme();
   const isFree = game.price === 0;
   const rawDuration =
     game.access_duration ||
@@ -126,11 +128,9 @@ function FeedCard({
           {/* Row 2: Full-width action button with 44px min touch target */}
           <button
             onClick={handleClick}
-            className={`w-full min-h-[44px] py-2 rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all shadow-md cursor-pointer touch-manipulation ${
-              showUnlocked
-                ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 border border-emerald-400"
-                : "bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 btn-gaming-glow shadow-blue-600/40 border border-blue-400/80"
-            } text-white`}
+            className={`w-full min-h-[44px] py-2 flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] ${
+              showUnlocked ? getButtonClass('download') : getButtonClass('buy')
+            } cursor-pointer touch-manipulation`}
           >
             {showUnlocked ? (
               <>

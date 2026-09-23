@@ -10,6 +10,7 @@ import GameMediaThumbnail from './GameMediaThumbnail';
 import SquadImageLightbox from './SquadImageLightbox';
 import { parseSquadData } from '@/lib/efootball-squads';
 import { isGameAccessActive } from '@/lib/access-duration';
+import { useCMSTheme } from './CMSThemeProvider';
 
 interface CategoryGamesDrawerProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export default function CategoryGamesDrawer({
   onBuyNow,
   unlockedGameIds = new Set(),
 }: CategoryGamesDrawerProps) {
+  const { getButtonClass } = useCMSTheme();
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc' | 'rating'>('newest');
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; strength?: string } | null>(null);
 
@@ -263,7 +265,7 @@ export default function CategoryGamesDrawer({
                                     href={squad.redirect_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="min-h-[42px] px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white text-[11px] font-black uppercase tracking-wider btn-gaming-glow shadow-lg shadow-blue-600/40 border border-blue-400/70 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation"
+                                    className={`min-h-[42px] px-4 sm:px-5 py-2.5 text-[11px] ${getButtonClass('buy')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation`}
                                   >
                                     <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
                                     <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI').replace(/^⚡\s*/, '')}</span>
@@ -355,13 +357,9 @@ export default function CategoryGamesDrawer({
                                   <motion.button
                                     whileTap={{ scale: 0.94 }}
                                     onClick={() => onBuyNow(game)}
-                                    className={`px-5 py-2.5 min-h-[44px] flex items-center justify-center gap-1 rounded-xl text-[11px] font-black uppercase tracking-wider text-white ${
-                                      isUnlocked 
-                                        ? 'bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/30 border border-emerald-400' 
-                                        : isBuy
-                                          ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 btn-gaming-glow shadow-lg shadow-blue-600/40 border border-blue-400/80'
-                                          : 'bg-emerald-600 hover:bg-emerald-500 shadow-md border border-emerald-400'
-                                    } transition-all cursor-pointer touch-manipulation whitespace-nowrap`}
+                                    className={`px-5 py-2.5 min-h-[44px] flex items-center justify-center gap-1 text-[11px] shrink-0 transition-all ${
+                                      isUnlocked || isFree ? getButtonClass('download') : getButtonClass('buy')
+                                    } cursor-pointer touch-manipulation whitespace-nowrap`}
                                   >
                                     {btnTxt.startsWith('⚡') ? (
                                       <>

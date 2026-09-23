@@ -32,9 +32,11 @@ import { formatCurrency } from '@/lib/utils';
 import { GameProduct, formatPlanDuration } from '@/components/GameCard';
 import { useProductAccess } from '@/hooks/useProductAccess';
 import { parseSquadData, EFootballSquad } from '@/lib/efootball-squads';
+import { useCMSTheme } from '@/components/CMSThemeProvider';
 
 export default function GameDetailPage() {
   const params = useParams();
+  const { getButtonClass } = useCMSTheme();
   const gameId = params.id as string;
 
   const [game, setGame] = useState<any>(null);
@@ -331,10 +333,11 @@ export default function GameDetailPage() {
                     href={squad.redirect_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full min-h-[48px] py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-blue-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation text-center"
+                    className={`w-full min-h-[48px] py-3.5 px-4 text-xs sm:text-sm font-black uppercase tracking-wider ${getButtonClass('buy')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation text-center`}
                   >
-                    <span>{squad.button_text || '⚡ NUNUA KIKOSI SASA'}</span>
-                    <ArrowUpRight className="w-4 h-4" />
+                    <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
+                    <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI SASA').replace(/^⚡\s*/, '')}</span>
+                    <ArrowUpRight className="w-4 h-4 relative z-10" />
                   </a>
                 )}
 
@@ -503,14 +506,16 @@ export default function GameDetailPage() {
                   }
                   setCheckoutOpen(true);
                 }}
-                className={`px-6 py-3 rounded-2xl ${
-                  isUnlocked(gameId) || isFree
-                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
-                    : 'bg-gradient-to-r from-brand-600 via-brand-500 to-accent-cyan shadow-glow hover:scale-105'
-                } text-white text-sm font-bold transition-all flex items-center gap-2 cursor-pointer`}
+                className={`px-6 py-3 text-sm font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                  isUnlocked(gameId) || isFree ? getButtonClass('download') : getButtonClass('buy')
+                }`}
               >
-                {isUnlocked(gameId) || isFree ? <Download className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                <span>{isUnlocked(gameId) ? 'Pakua Sasa (Download)' : isFree ? 'Get Access' : 'Buy Now'}</span>
+                {isUnlocked(gameId) || isFree ? (
+                  <Download className="w-4 h-4 shrink-0" />
+                ) : (
+                  <Zap className="w-4 h-4 text-amber-300 icon-spark-pulse shrink-0" />
+                )}
+                <span className="relative z-10">{isUnlocked(gameId) ? 'Pakua Sasa (Download)' : isFree ? 'Get Access' : 'Buy Now'}</span>
               </button>
             </div>
 
