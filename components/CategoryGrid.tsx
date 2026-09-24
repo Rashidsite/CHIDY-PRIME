@@ -107,8 +107,8 @@ export default function CategoryGrid({
           const rawKey = cat?.id || catName || idx;
           const cardId = `category-card-${String(rawKey).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
           const isOddTotal = (activeList ?? []).length % 2 !== 0;
-          const isLast = idx === (activeList ?? []).length - 1;
-          const isFullSpanMobile = isOddTotal && isLast;
+          const isFirst = idx === 0;
+          const isFullSpanMobile = isOddTotal && isFirst;
 
           return (
             <motion.div
