@@ -11,23 +11,30 @@
 html, body {
   overflow-x: hidden;
   overflow-y: auto !important;
-  touch-action: pan-y !important;
   -webkit-overflow-scrolling: touch;
   height: auto;
   min-height: 100%;
+}
+
+/* Instant 0ms Single-Tap Responsiveness (No 300ms delay, No Double-Touch Bug) */
+a, button, input, select, textarea, [role="button"], .cursor-pointer, .interactive-card, .touch-manipulation {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
 }
 
 body {
   color: var(--foreground);
   background-color: var(--background);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .main-storefront-wrapper {
   overflow-y: visible;
-  touch-action: pan-y !important;
   position: relative;
   z-index: 10;
+  transform: translateZ(0);
 }
 
 /* Glassmorphism utility components */
@@ -232,6 +239,41 @@ body {
   display: inline-block;
   animation: lightningPulse 2.4s ease-in-out infinite;
   will-change: transform, filter;
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   MOBILE PERFORMANCE & INSTANT SINGLE-TOUCH RESOLUTION
+   ═════════════════════════════════════════════════════════════════════ */
+@media (hover: none) and (pointer: coarse) {
+  /* Prevent sticky hover from blocking single-tap activation on mobile */
+  .group:hover .group-hover\:scale-105,
+  .group:hover .group-hover\:scale-110,
+  .group:hover .group-hover\:scale-\[1\.02\],
+  .group:hover .group-hover\:translate-x-0\.5,
+  .hover\:scale-\[1\.02\]:hover,
+  .hover\:scale-105:hover {
+    transform: none !important;
+  }
+
+  /* Instant tactile feedback on touch without lag */
+  button:active, a:active, [role="button"]:active {
+    opacity: 0.88;
+    transform: scale(0.98) !important;
+    transition: transform 0.05s ease !important;
+  }
+
+  /* GPU optimization: Reduce heavy backdrop blur on budget phones */
+  .backdrop-blur-2xl, .backdrop-blur-xl {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+}
+
+/* Hardware-accelerated cards and modals */
+.interactive-card, .game-card-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 

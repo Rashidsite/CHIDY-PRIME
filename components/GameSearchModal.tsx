@@ -236,8 +236,9 @@ export default function GameSearchModal({
               </div>
 
               <button
+                type="button"
                 onClick={onClose}
-                className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer touch-manipulation active:scale-[0.96]"
                 title="Funga"
               >
                 <X className="w-5 h-5" />
@@ -250,9 +251,10 @@ export default function GameSearchModal({
                 const active = selectedFilter === f.id;
                 return (
                   <button
+                    type="button"
                     key={f.id}
                     onClick={() => setSelectedFilter(f.id)}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all duration-150 cursor-pointer touch-manipulation active:scale-[0.96] ${
                       active
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 border border-blue-400 scale-[1.02]'
                         : 'bg-slate-950/90 text-slate-300 border border-slate-800 hover:border-slate-700 hover:text-white'
@@ -294,7 +296,7 @@ export default function GameSearchModal({
                           setQuery(tag);
                           inputRef.current?.focus();
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-slate-800 transition-all flex items-center gap-1.5 group cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-slate-800 transition-all flex items-center gap-1.5 group cursor-pointer touch-manipulation active:scale-[0.96]"
                       >
                         <Search className="w-3 h-3 text-slate-500 group-hover:text-blue-400 transition-colors" />
                         <span>{tag}</span>
@@ -320,7 +322,7 @@ export default function GameSearchModal({
                       <div
                         key={game.id}
                         onClick={() => handleOpenDetails(game)}
-                        className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-blue-500/50 hover:bg-slate-900 transition-all cursor-pointer group"
+                        className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-blue-500/50 hover:bg-slate-900 transition-all cursor-pointer group touch-manipulation active:scale-[0.98]"
                       >
                         <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-950 border border-slate-800">
                           <Image
@@ -380,7 +382,7 @@ export default function GameSearchModal({
                       <div
                         key={game.id}
                         onClick={() => handleOpenDetails(game)}
-                        className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800/90 hover:border-blue-500/60 hover:bg-slate-900 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group cursor-pointer shadow-md"
+                        className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800/90 hover:border-blue-500/60 hover:bg-slate-900 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group cursor-pointer shadow-md touch-manipulation active:scale-[0.99]"
                       >
                         {/* Game info */}
                         <div className="flex items-center gap-3.5 min-w-0">
@@ -444,7 +446,7 @@ export default function GameSearchModal({
                           {unlocked ? (
                             <button
                               onClick={(e) => handleAction(game, e)}
-                              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all cursor-pointer touch-manipulation active:scale-[0.96]"
                             >
                               <CheckCircle2 className="w-4 h-4" />
                               <span>FUNGUA / DOWNLOAD</span>
@@ -452,7 +454,7 @@ export default function GameSearchModal({
                           ) : (
                             <button
                               onClick={(e) => handleAction(game, e)}
-                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-blue-600/30 transition-all cursor-pointer group-hover:scale-105"
+                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg shadow-blue-600/30 transition-all cursor-pointer touch-manipulation active:scale-[0.96]"
                             >
                               <ShoppingCart className="w-3.5 h-3.5" />
                               <span>{isFree ? 'DOWNLOAD' : 'NUNUA SASA'}</span>
@@ -495,7 +497,7 @@ export default function GameSearchModal({
                     href={whatsappRequestUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/30 cursor-pointer"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/30 cursor-pointer touch-manipulation active:scale-[0.96]"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>Omba Game Hili WhatsApp</span>

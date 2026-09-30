@@ -53,7 +53,7 @@ export default function StorefrontSearchBar({
         {/* Interactive Search Bar Trigger */}
         <div
           onClick={() => onOpenSearch('')}
-          className="relative z-10 flex items-center justify-between gap-3 p-2 sm:p-2.5 bg-slate-950/90 border border-slate-800 rounded-2xl hover:border-blue-500/70 hover:shadow-[0_0_25px_rgba(37,99,235,0.25)] transition-all cursor-pointer group"
+          className="relative z-10 flex items-center justify-between gap-3 p-2 sm:p-2.5 bg-slate-950/90 border border-slate-800 rounded-2xl hover:border-blue-500/70 hover:shadow-[0_0_25px_rgba(37,99,235,0.25)] transition-all cursor-pointer group touch-manipulation active:scale-[0.99]"
         >
           <div className="flex items-center gap-3 pl-2 sm:pl-3 flex-1 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
@@ -66,7 +66,7 @@ export default function StorefrontSearchBar({
 
           <button
             type="button"
-            className="px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-600/30 shrink-0 group-hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer"
+            className="px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-600/30 shrink-0 group-hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer touch-manipulation active:scale-[0.96]"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Tafuta</span>
@@ -84,7 +84,7 @@ export default function StorefrontSearchBar({
             <button
               key={idx}
               onClick={() => onOpenSearch(t.query)}
-              className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-slate-800/90 transition-all whitespace-nowrap cursor-pointer shrink-0"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-blue-500/50 hover:bg-slate-800/90 transition-all whitespace-nowrap cursor-pointer shrink-0 touch-manipulation active:scale-[0.96]"
             >
               {t.label}
             </button>

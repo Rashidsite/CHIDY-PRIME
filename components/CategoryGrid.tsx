@@ -69,10 +69,8 @@ export default function CategoryGrid({
   }, []);
 
   const handleCardClick = (catName: string) => {
-    if (isRegistered) {
-      if (onSelectCategory) onSelectCategory(catName || 'Maleo Mods');
-    } else {
-      if (onRegisterClick) onRegisterClick();
+    if (onSelectCategory) {
+      onSelectCategory(catName || 'Maleo Mods');
     }
   };
 
@@ -120,7 +118,7 @@ export default function CategoryGrid({
               onClick={() => handleCardClick(catName)}
               className={`relative z-10 rounded-2xl overflow-hidden bg-[#0F172A] flex flex-col justify-between border scroll-mt-24 ${
                 isSelected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-slate-800'
-              } shadow-lg hover:border-blue-500/60 transition-all duration-300 cursor-pointer group touch-manipulation interactive-card ${
+              } shadow-lg hover:border-blue-500/60 transition-all duration-300 cursor-pointer group touch-manipulation interactive-card active:scale-[0.98] ${
                 isFullSpanMobile ? 'col-span-2 md:col-span-1' : ''
               }`}
             >

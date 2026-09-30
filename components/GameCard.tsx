@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Star, Crown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
@@ -89,6 +90,7 @@ export function formatPlanDuration(duration?: string | number, isFree?: boolean)
 }
 
 export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
+  const router = useRouter();
   const { getButtonClass, animations } = useCMSTheme();
 
   const isSquad = (game.category || '').toLowerCase().includes('efootball') || 
@@ -206,7 +208,10 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
         showUnlocked ? 'border-emerald-500/50 hover:border-emerald-400' : 'border-slate-800/80 hover:border-blue-600/60'
       } shadow-xl transition-all duration-300 interactive-card game-card-accelerated`}
     >
-      <div className="relative aspect-[16/9] aspect-card-16-9 w-full overflow-hidden bg-slate-900 shrink-0">
+      <div 
+        onClick={() => router.push(`/games/${game.id}`)}
+        className="relative aspect-[16/9] aspect-card-16-9 w-full overflow-hidden bg-slate-900 shrink-0 cursor-pointer touch-manipulation"
+      >
         <GameMediaThumbnail
           coverImage={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
           screenshots={game.screenshots}
@@ -238,7 +243,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
 
       <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-2.5 bg-[#0F172A]">
         <div>
-          <Link href={`/games/${game.id}`} className="block group/link">
+          <Link href={`/games/${game.id}`} className="block group/link touch-manipulation">
             <h3 className="text-xs sm:text-sm font-black text-white group-hover/link:text-blue-400 transition-colors line-clamp-1 tracking-tight leading-snug">
               {game.title}
             </h3>
@@ -266,12 +271,12 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
             )}
           </div>
 
-          <motion.button
-            whileTap={{ scale: 0.94 }}
+          <button
+            type="button"
             onClick={handleCardClick}
             className={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[44px] flex items-center justify-center gap-1 text-[10px] sm:text-[11px] shrink-0 transition-all ${
               showUnlocked ? getButtonClass('download') : getButtonClass('buy')
-            } cursor-pointer touch-manipulation whitespace-nowrap`}
+            } cursor-pointer touch-manipulation whitespace-nowrap active:scale-[0.96]`}
           >
             {buttonText.startsWith('⚡') ? (
               <>
@@ -286,7 +291,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
             ) : (
               <span className="relative z-10">{buttonText}</span>
             )}
-          </motion.button>
+          </button>
         </div>
       </div>
     </motion.div>

@@ -146,13 +146,13 @@ export default function Navbar({ onSearchChange, games = [], onOpenSearchModal }
             return (
               <div
                 key={game.id}
-                onMouseDown={(e) => {
+                onClick={(e) => {
                   e.stopPropagation();
                   router.push(`/games/${game.id}`);
                   setSearch('');
                   setShowDropdown(false);
                 }}
-                className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all pointer-events-auto ${
+                className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all pointer-events-auto touch-manipulation active:scale-[0.98] ${
                   isSelected ? 'bg-blue-600 text-white' : 'hover:bg-slate-900 text-white'
                 }`}
               >
