@@ -148,19 +148,32 @@ export default function GameSearchModal({
     return unlockedGameIds && unlockedGameIds.has(id);
   };
 
+  // Sync current search query into URL history without adding new back-stack entries
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const target = query.trim() ? query.trim() : 'open';
+    if (sp.get('search') !== target) {
+      sp.set('search', target);
+      window.history.replaceState({ modal: 'search' }, '', `${window.location.pathname}?${sp.toString()}`);
+    }
+  }, [query, isOpen]);
+
   const handleAction = (game: GameProduct, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     onClose();
     if (onBuyNow) {
       onBuyNow(game);
     } else {
-      router.push(`/games/${game.id}`);
+      const qParam = query.trim() ? encodeURIComponent(query.trim()) : 'open';
+      router.push(`/games/${game.id}?search=${qParam}`);
     }
   };
 
   const handleOpenDetails = (game: GameProduct) => {
     onClose();
-    router.push(`/games/${game.id}`);
+    const qParam = query.trim() ? encodeURIComponent(query.trim()) : 'open';
+    router.push(`/games/${game.id}?search=${qParam}`);
   };
 
   const whatsappRequestUrl = useMemo(() => {

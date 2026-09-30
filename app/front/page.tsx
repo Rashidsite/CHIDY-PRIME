@@ -111,6 +111,57 @@ export default function FrontHubPage() {
   const handleOpenSearchModal = useCallback((initialQ = '') => {
     setSearchModalInitialQuery(initialQ);
     setSearchModalOpen(true);
+
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      const currentParam = sp.get('search');
+      const targetParam = initialQ.trim() ? encodeURIComponent(initialQ.trim()) : 'open';
+      if (currentParam === null) {
+        window.history.pushState({ modal: 'search' }, '', `${window.location.pathname}?search=${targetParam}`);
+      } else if (currentParam !== targetParam) {
+        window.history.replaceState({ modal: 'search' }, '', `${window.location.pathname}?search=${targetParam}`);
+      }
+    }
+  }, []);
+
+  const handleCloseSearchModal = useCallback(() => {
+    setSearchModalOpen(false);
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.has('search')) {
+        sp.delete('search');
+        const newUrl = sp.toString() ? `${window.location.pathname}?${sp.toString()}` : window.location.pathname;
+        window.history.replaceState(null, '', newUrl);
+      }
+    }
+  }, []);
+
+  // Listen to URL search param on initial load and browser Back/Forward buttons (popstate)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const checkSearchParam = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const searchVal = sp.get('search');
+      if (searchVal !== null) {
+        const queryText = (searchVal === '1' || searchVal === 'open') ? '' : searchVal;
+        setSearchModalInitialQuery(queryText);
+        setSearchModalOpen(true);
+      } else {
+        setSearchModalOpen(false);
+      }
+    };
+
+    checkSearchParam();
+
+    const handlePopState = () => {
+      checkSearchParam();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
 
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -1049,7 +1100,7 @@ export default function FrontHubPage() {
       {/* Gaming Spotlight Search Modal */}
       <GameSearchModal
         isOpen={searchModalOpen}
-        onClose={() => setSearchModalOpen(false)}
+        onClose={handleCloseSearchModal}
         games={games}
         onBuyNow={handleBuyNow}
         unlockedGameIds={unlockedGameIds}
