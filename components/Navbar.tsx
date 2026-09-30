@@ -32,9 +32,10 @@ import InstallAppButton from './InstallAppButton';
 interface NavbarProps {
   onSearchChange?: (term: string) => void;
   games?: GameProduct[];
+  onOpenSearchModal?: (query?: string) => void;
 }
 
-export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
+export default function Navbar({ onSearchChange, games = [], onOpenSearchModal }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -245,12 +246,38 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
 
               {/* 2. Quick Search Bar */}
               <div ref={mobileSearchRef} className="relative">
-                <form onSubmit={handleSearchSubmit} className="relative">
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (onOpenSearchModal) {
+                      setMobileOpen(false);
+                      onOpenSearchModal(search);
+                    } else {
+                      handleSearchSubmit(e);
+                    }
+                  }} 
+                  className="relative"
+                >
                   <input
                     type="text"
                     placeholder="Search games, simulator mods..."
                     value={search}
-                    onFocus={() => setShowDropdown(true)}
+                    onClick={() => {
+                      if (onOpenSearchModal) {
+                        setMobileOpen(false);
+                        onOpenSearchModal(search);
+                      } else {
+                        setShowDropdown(true);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (onOpenSearchModal) {
+                        setMobileOpen(false);
+                        onOpenSearchModal(search);
+                      } else {
+                        setShowDropdown(true);
+                      }
+                    }}
                     onChange={(e) => {
                       setSearch(e.target.value);
                       setShowDropdown(true);
@@ -258,7 +285,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                       if (onSearchChange) onSearchChange(e.target.value);
                     }}
                     onKeyDown={(e) => handleKeyDown(e, matchingGames)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 min-h-[44px] text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 min-h-[44px] text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm cursor-pointer"
                   />
                   <Search className="w-3.5 h-3.5 text-slate-300 absolute left-3 top-3.5" />
                 </form>
@@ -380,12 +407,35 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
 
         {/* Global Store Search (Desktop) */}
         <div ref={desktopSearchRef} className="hidden lg:block flex-1 max-w-xs relative pointer-events-auto">
-          <form onSubmit={handleSearchSubmit} className="relative">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (onOpenSearchModal) {
+                onOpenSearchModal(search);
+              } else {
+                handleSearchSubmit(e);
+              }
+            }} 
+            className="relative"
+          >
             <input
               type="text"
               placeholder="Search Maleo Bus Mods, PC Games..."
               value={search}
-              onFocus={() => setShowDropdown(true)}
+              onClick={() => {
+                if (onOpenSearchModal) {
+                  onOpenSearchModal(search);
+                } else {
+                  setShowDropdown(true);
+                }
+              }}
+              onFocus={() => {
+                if (onOpenSearchModal) {
+                  onOpenSearchModal(search);
+                } else {
+                  setShowDropdown(true);
+                }
+              }}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setShowDropdown(true);
@@ -393,7 +443,7 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
                 if (onSearchChange) onSearchChange(e.target.value);
               }}
               onKeyDown={(e) => handleKeyDown(e, matchingGames)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm cursor-pointer"
             />
             <Search className="w-3.5 h-3.5 text-slate-300 absolute left-3 top-3" />
           </form>
@@ -440,8 +490,26 @@ export default function Navbar({ onSearchChange, games = [] }: NavbarProps) {
           )}
         </div>
 
-        {/* Mobile Hamburger Toggle Button — Visible ONLY on Mobile/Tablet (< 1024px) */}
+        {/* Mobile Action Controls — Visible ONLY on Mobile/Tablet (< 1024px) */}
         <div className="flex lg:hidden items-center gap-2 pointer-events-auto">
+          {/* Glowing Mobile Search Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOpenSearchModal) {
+                onOpenSearchModal('');
+              } else if (onSearchChange) {
+                onSearchChange(' ');
+              }
+            }}
+            className="p-2.5 min-w-[44px] min-h-[44px] rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-400 hover:text-white hover:bg-blue-600 transition-all cursor-pointer pointer-events-auto touch-manipulation flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.25)]"
+            aria-label="Tafuta Games"
+            title="Tafuta Games"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
+          {/* Mobile Hamburger Toggle Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();

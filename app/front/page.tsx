@@ -13,6 +13,8 @@ import RegisterModal from '@/components/RegisterModal';
 import CelebrationPopup from '@/components/CelebrationPopup';
 import GameCard, { GameProduct } from '@/components/GameCard';
 import CategoryGamesDrawer from '@/components/CategoryGamesDrawer';
+import StorefrontSearchBar from '@/components/StorefrontSearchBar';
+import GameSearchModal from '@/components/GameSearchModal';
 import { CategorySkeleton, HorizontalCarouselSkeleton } from '@/components/SkeletonLoader';
 import { createClient } from '@/lib/supabase/client';
 import { cleanAllExpiredAccess, calculateDurationExpiry, pruneExpiredAccess, isGameAccessActive } from '@/lib/access-duration';
@@ -101,6 +103,15 @@ export default function FrontHubPage() {
   const [registeredName, setRegisteredName] = useState('');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // ── Gaming Spotlight Search State ──
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [searchModalInitialQuery, setSearchModalInitialQuery] = useState('');
+
+  const handleOpenSearchModal = useCallback((initialQ = '') => {
+    setSearchModalInitialQuery(initialQ);
+    setSearchModalOpen(true);
+  }, []);
 
   const carouselRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -268,10 +279,16 @@ export default function FrontHubPage() {
       });
     }, 15000);
 
+    const handleGlobalSearch = (e: any) => {
+      const q = e?.detail?.query || '';
+      handleOpenSearchModal(q);
+    };
+
     window.addEventListener('cpcg_auth_change', syncUserAuthAndVault);
     window.addEventListener('cpcg_logout_reset', handleLogout);
     window.addEventListener('cpcg_order_unlocked', handleOrderUnlockedEvent);
     window.addEventListener('cpcg_access_expired', handleAccessExpired);
+    window.addEventListener('cpcg_open_search', handleGlobalSearch);
 
     return () => {
       clearInterval(sweepInterval);
@@ -279,6 +296,7 @@ export default function FrontHubPage() {
       window.removeEventListener('cpcg_logout_reset', handleLogout);
       window.removeEventListener('cpcg_order_unlocked', handleOrderUnlockedEvent);
       window.removeEventListener('cpcg_access_expired', handleAccessExpired);
+      window.removeEventListener('cpcg_open_search', handleGlobalSearch);
     };
   }, [supabase]);
 
@@ -839,6 +857,7 @@ export default function FrontHubPage() {
 
       <Navbar
         onSearchChange={(q) => setSearchQuery(q)}
+        onOpenSearchModal={(q) => handleOpenSearchModal(q)}
         games={games}
       />
 
@@ -863,6 +882,12 @@ export default function FrontHubPage() {
             intervalMs={slideshowInterval}
           />
         )}
+
+        {/* ── Storefront Search Bar & Quick Tags ── */}
+        <StorefrontSearchBar
+          onOpenSearch={(q) => handleOpenSearchModal(q)}
+          gameCount={games.length}
+        />
 
         {/* ── Hot & Trending Horizontal Scroll Section ── */}
         {loading ? (
@@ -1019,6 +1044,16 @@ export default function FrontHubPage() {
       <CelebrationPopup
         isVisible={showCelebration}
         userName={registeredName}
+      />
+
+      {/* Gaming Spotlight Search Modal */}
+      <GameSearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        games={games}
+        onBuyNow={handleBuyNow}
+        unlockedGameIds={unlockedGameIds}
+        initialQuery={searchModalInitialQuery}
       />
     </>
   );
