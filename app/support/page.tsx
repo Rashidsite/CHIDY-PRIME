@@ -278,6 +278,13 @@ export default function SupportPage() {
       return;
     }
 
+    const digitsOnly = textToSend.replace(/\D/g, '');
+    let activePhone = userPhone;
+    if (digitsOnly.length >= 9 && digitsOnly.length <= 13) {
+      activePhone = textToSend;
+      setUserPhone(textToSend);
+    }
+
     const userMsg: ChatMessage = {
       id: 'user_' + Date.now(),
       sender: 'user',
@@ -295,7 +302,7 @@ export default function SupportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: textToSend,
-          phone: userPhone,
+          phone: activePhone,
           unpaidAttempts,
         }),
       });
@@ -303,6 +310,10 @@ export default function SupportPage() {
       const data = await res.json();
       setIsTyping(false);
       playChime();
+
+      if (data.userPhone) {
+        setUserPhone(data.userPhone);
+      }
 
       if (data.type === 'lockout' || data.isLocked) {
         const lockoutMs = (data.lockoutMinutes || 60) * 60 * 1000;
@@ -428,7 +439,7 @@ export default function SupportPage() {
 
       <Navbar />
 
-      <main className="fixed inset-x-0 top-16 bottom-[58px] md:bottom-2 z-20 flex flex-col overflow-hidden max-w-4xl mx-auto px-2 sm:px-4 py-1 sm:py-2">
+      <main className="fixed inset-x-0 top-16 bottom-[66px] md:bottom-3 z-20 flex flex-col overflow-hidden max-w-4xl mx-auto px-2 sm:px-4 py-1 sm:py-2">
         <div className="w-full h-full flex flex-col rounded-2xl sm:rounded-3xl bg-slate-900/95 border border-slate-800 shadow-2xl backdrop-blur-xl overflow-hidden">
           
           {/* ── GAMING HUD CHAT HEADER (compact & docked inside card) ── */}

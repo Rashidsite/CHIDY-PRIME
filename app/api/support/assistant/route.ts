@@ -65,8 +65,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // ── INTENT 1: Payment Check / "Nimelipa sijapata" / "Nimekatwa hela" / "Sijapata link" ──
-    const isPaymentCheck = 
+    // ── INTENT 1: Payment Check / Phone Number Submission / "Nimelipa sijapata" ──
+    const cleanedDigitsOnly = trimmedMsg.replace(/\D/g, '');
+    const isPurePhoneInput = cleanedDigitsOnly.length >= 9 && cleanedDigitsOnly.length <= 13;
+    const isExplicitPaymentCheck = 
       lowerMsg.includes('nimelipa') ||
       lowerMsg.includes('sijapata') ||
       lowerMsg.includes('nimekatwa') ||
@@ -75,8 +77,12 @@ export async function POST(request: Request) {
       lowerMsg.includes('muamala') ||
       lowerMsg.includes('order') ||
       lowerMsg.includes('oda') ||
-      lowerMsg.includes('stk') ||
-      (phoneDigits.length >= 9 && (lowerMsg.includes('kagua') || lowerMsg.includes('check') || lowerMsg.includes('namba')));
+      lowerMsg.includes('stk');
+
+    const isPaymentCheck = 
+      isPurePhoneInput || 
+      isExplicitPaymentCheck || 
+      (phoneDigits.length >= 9 && !lowerMsg.includes('nataka') && !lowerMsg.includes('jinsi') && !lowerMsg.includes('vp') && !lowerMsg.includes('mambo'));
 
     if (isPaymentCheck) {
       if (!phoneDigits || phoneDigits.length < 9) {
@@ -87,16 +93,26 @@ export async function POST(request: Request) {
         });
       }
 
-      // Check payment_orders in database
-      const { data: orders } = await supabase
-        .from('payment_orders')
-        .select('id, phone_number, amount, status, created_at, post_id, posts(id, title, category, price, cover_image, download_links, links, video_url, install_guide)')
-        .ilike('phone_number', `%${phoneDigits}%`)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Check both payment_orders and orders in database
+      const [pRes, oRes] = await Promise.all([
+        supabase
+          .from('payment_orders')
+          .select('id, phone_number, amount, status, created_at, post_id, posts(id, title, category, price, cover_image, download_links, links, video_url, install_guide)')
+          .ilike('phone_number', `%${phoneDigits}%`)
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('orders')
+          .select('id, phone_number, amount, status, created_at, post_id, posts(id, title, category, price, cover_image, download_links, links, video_url, install_guide)')
+          .ilike('phone_number', `%${phoneDigits}%`)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ]);
 
-      // Check for approved/completed order within 48h
-      const approvedOrder = (orders || []).find(o => 
+      const orders = [...(pRes.data || []), ...(oRes.data || [])];
+
+      // Check for approved/completed order
+      const approvedOrder = orders.find(o => 
         o.status === 'approved' || o.status === 'completed' || o.status === 'success'
       );
 
@@ -108,7 +124,8 @@ export async function POST(request: Request) {
         return NextResponse.json({
           type: 'verified_order',
           unpaidAttempts: 0, // Reset on successful verification
-          message: `Nimeiona oda yako kaka! Malipo ya game la "${game?.title || 'Game'}" yamethibitishwa safi kabisa ✅. Link yako ya kudownload ipo hapa chini. Kumbuka link hii inafanya kazi ndani ya masaa 24 kuanzia sasa!`,
+          userPhone: activePhone,
+          message: `Nimeiona oda yako ya namba ${activePhone} kaka! Malipo ya game la "${game?.title || 'Game'}" yamethibitishwa safi kabisa ✅. Link yako ya kudownload ipo hapa chini. Kumbuka link hii inafanya kazi ndani ya masaa 24 kuanzia sasa!`,
           order: {
             id: approvedOrder.id,
             gameTitle: game?.title || 'Game',
@@ -123,7 +140,7 @@ export async function POST(request: Request) {
       }
 
       // Check if there was an order attempt (pending or failed)
-      const pendingOrFailedOrder = (orders || []).find(o => 
+      const pendingOrFailedOrder = orders.find(o => 
         o.status === 'pending' || o.status === 'failed' || o.status === 'cancelled'
       );
 
@@ -136,6 +153,7 @@ export async function POST(request: Request) {
           lockoutMinutes,
           message: `⛔ Umejaribu zaidi ya mara ${maxAttempts} bila uthibitisho wa malipo halisi. Sehemu ya msaada imefungwa kwa muda kwa akaunti hii. Tafadhali jaribu tena baada ya saa 1, au wasiliana na Admin WhatsApp ukiwa na ushahidi wa muamala.`,
           unpaidAttempts: nextAttempts,
+          userPhone: activePhone,
         });
       }
 
@@ -143,7 +161,8 @@ export async function POST(request: Request) {
         return NextResponse.json({
           type: 'unpaid_warning',
           unpaidAttempts: nextAttempts,
-          message: `Kaka malipo yako hayajafanikiwa kabisa kwenye mfumo wa mtandao, hivyo tafadhali fanya malipo tena ili upate link mara moja.`,
+          userPhone: activePhone,
+          message: `Kaka malipo ya namba yako (${activePhone}) bado hayajakamilika kwenye mfumo wa mtandao wa simu. Tafadhali lipia tena ili upate link mara moja, au kama umekatwa nitumie SMS ya muamala hapa tuangalie.`,
         });
       }
 
@@ -152,15 +171,21 @@ export async function POST(request: Request) {
         return NextResponse.json({
           type: 'unpaid_attempt',
           unpaidAttempts: nextAttempts,
-          message: `Nimeona ulijaribu kulipia game la "${attemptedGame}", lakini malipo yako hayajafanyika (hayajakamilika kwenye mtandao wa simu), hivyo tafadhali lipia tena.`,
+          userPhone: activePhone,
+          message: `Nimeikagua namba yako (${activePhone}), nimeona ulijaribu kulipia game la "${attemptedGame}", lakini muamala wako bado haujakamilika kwenye mtandao kaka (status: ${pendingOrFailedOrder.status || 'pending'}), hivyo tafadhali lipia tena ili upate link mara moja.`,
         });
       }
 
-      // No record found at all
+      // No record found at all for this phone
       return NextResponse.json({
         type: 'not_found',
         unpaidAttempts: nextAttempts,
-        message: `Kaka sijafanikiwa kuona kumbukumbu yoyote ya malipo kwa namba hiyo (${activePhone}). Hakikisha umetumia namba sahihi uliyolipia, au kama bado hujalipia, chagua game ulilolipenda ulipie ili link ifunguke papo hapo.`,
+        userPhone: activePhone,
+        message: `Kaka nimeikagua namba yako (${activePhone}) kwenye mfumo lakini sijaona kumbukumbu yoyote ya malipo yaliyokamilika ndani ya masaa 24 yaliyopita.\n\nKama umekatwa hela na mtandao wa simu, tafadhali gusa kitufe cha WhatsApp chini ukiwa na SMS ya muamala tukuhudumie papo hapo, au kama bado hujalipia, lipia game ulilolipenda ili link ifunguke mara moja.`,
+        quickActions: [
+          { label: '💬 Wasiliana na WhatsApp (Tuma Risiti)', query: 'whatsapp' },
+          { label: '🎮 Tazama Games Kali za Kulipia', query: 'Nataka game' },
+        ],
       });
     }
 
