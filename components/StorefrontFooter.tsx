@@ -17,8 +17,8 @@ import {
 export default function StorefrontFooter() {
   const pathname = usePathname();
 
-  // Hide footer completely inside Admin Portal
-  if (pathname && pathname.startsWith('/admin')) {
+  // Hide footer completely inside Admin Portal and Support Chat page
+  if (pathname && (pathname.startsWith('/admin') || pathname === '/support')) {
     return null;
   }
 

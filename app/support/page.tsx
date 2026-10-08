@@ -124,6 +124,18 @@ export default function SupportPage() {
     chatEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
 
+  // Lock window & document scroll so Support Page is 100% self-contained app
+  useEffect(() => {
+    const origHtmlOverflow = document.documentElement.style.overflow;
+    const origBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = origHtmlOverflow;
+      document.body.style.overflow = origBodyOverflow;
+    };
+  }, []);
+
   // ── INITIAL LOAD & LOCAL STORAGE RESTORE ──
   useEffect(() => {
     async function loadBgSettings() {
@@ -416,92 +428,85 @@ export default function SupportPage() {
 
       <Navbar />
 
-      <main className="main-storefront-wrapper relative z-10 max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 pb-36">
-        
-        {/* ── GAMING HUD CHAT HEADER ── */}
-        <div className="relative overflow-hidden rounded-3xl bg-slate-900/95 border border-slate-800 p-4 sm:p-5 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3">
+      <main className="fixed inset-x-0 top-16 bottom-[58px] md:bottom-2 z-20 flex flex-col overflow-hidden max-w-4xl mx-auto px-2 sm:px-4 py-1 sm:py-2">
+        <div className="w-full h-full flex flex-col rounded-2xl sm:rounded-3xl bg-slate-900/95 border border-slate-800 shadow-2xl backdrop-blur-xl overflow-hidden">
           
-          <div className="flex items-center gap-3">
-            {/* Chidy Avatar with Pulsing Online Dot */}
-            <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 p-0.5 shadow-[0_0_20px_rgba(37,99,235,0.4)] shrink-0">
-              <div className="w-full h-full rounded-2xl bg-slate-950 flex items-center justify-center overflow-hidden">
-                <Bot className="w-6 h-6 text-cyan-400" />
-              </div>
-              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center">
-                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-              </span>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-black text-white uppercase tracking-tight">
-                  CHIDY SUPPORT <span className="text-cyan-400 font-mono">HQ</span>
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  🟢 Hewani 24/7
+          {/* ── GAMING HUD CHAT HEADER (compact & docked inside card) ── */}
+          <div className="shrink-0 p-3 sm:p-4 border-b border-slate-800/80 bg-slate-950/70 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {/* Chidy Avatar with Pulsing Online Dot */}
+              <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 p-0.5 shadow-[0_0_20px_rgba(37,99,235,0.4)] shrink-0">
+                <div className="w-full h-full rounded-2xl bg-slate-950 flex items-center justify-center overflow-hidden">
+                  <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+                </div>
+                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Msaidizi rasmi wa <strong className="text-slate-200">ChidyPrime x ChidyGaming</strong>
-              </p>
-            </div>
-          </div>
 
-          {/* Controls: Sound & Clear */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
-              title={soundEnabled ? 'Zima Sauti' : 'Washa Sauti'}
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-cyan-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
-            </button>
-
-            <button
-              onClick={handleResetChat}
-              className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
-              title="Safisha kumbukumbu ya chat"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* ── SECURITY LOCKOUT BANNER (if user is locked out) ── */}
-        {lockedUntil && (
-          <div className="rounded-3xl bg-red-950/80 border border-red-500/40 p-5 shadow-2xl backdrop-blur-xl text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/20 text-red-400 border border-red-500/40">
-              <Lock className="w-6 h-6 animate-pulse" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xs sm:text-sm font-black text-white uppercase tracking-tight">
+                    CHIDY SUPPORT <span className="text-cyan-400 font-mono">HQ</span>
+                  </h1>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    🟢 Hewani 24/7
+                  </span>
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+                  Msaidizi rasmi wa <strong className="text-slate-200">ChidyPrime x ChidyGaming</strong>
+                </p>
+              </div>
             </div>
-            <h2 className="text-base font-black text-white uppercase tracking-tight">
-              ⛔ Dawati la Msaada Limefungwa kwa Muda
-            </h2>
-            <p className="text-xs text-red-200 max-w-lg mx-auto font-medium">
-              Umejaribu kudai malipo mara nyingi bila uthibitisho wa muamala halisi. Sehemu hii imefungwa kwa ajili ya usalama.
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-red-500/30 text-red-400 font-mono font-bold text-sm">
-              <Clock className="w-4 h-4 text-red-400 animate-spin" />
-              <span>Muda Uliobaki: {formatTimer(lockRemainingSecs)}</span>
-            </div>
-            <div>
-              <a
-                href="https://wa.me/255655361060?text=Habari%20Admin,%20namba%20yangu%20imefungwa%20kwenye%20support.%20Huu%20hapa%20ushahidi%20wangu%20wa%20malipo..."
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg"
+
+            {/* Controls: Sound & Clear */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+                title={soundEnabled ? 'Zima Sauti' : 'Washa Sauti'}
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>Wasiliana na Admin WhatsApp Ukiwa na Risiti</span>
-              </a>
+                {soundEnabled ? <Volume2 className="w-4 h-4 text-cyan-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+              </button>
+
+              <button
+                onClick={handleResetChat}
+                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+                title="Safisha kumbukumbu ya chat"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
             </div>
           </div>
-        )}
 
-        {/* ── MAIN CHAT VIEWPORT ── */}
-        <div className="rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl flex flex-col h-[65vh] sm:h-[68vh] overflow-hidden">
-          
-          {/* Messages Scroll Area */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          {/* ── SECURITY LOCKOUT BANNER (if user is locked out) ── */}
+          {lockedUntil && (
+            <div className="shrink-0 p-3 sm:p-4 bg-red-950/90 border-b border-red-500/40 text-center space-y-2">
+              <div className="inline-flex items-center gap-2 text-xs font-black text-white uppercase tracking-tight">
+                <Lock className="w-4 h-4 text-red-400 animate-pulse" />
+                <span>⛔ Dawati la Msaada Limefungwa kwa Muda</span>
+              </div>
+              <p className="text-[11px] text-red-200 max-w-lg mx-auto font-medium">
+                Umejaribu kudai malipo mara nyingi bila uthibitisho. Sehemu hii imefungwa kwa ajili ya usalama.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <span className="px-3 py-1 rounded-lg bg-slate-900 border border-red-500/30 text-red-400 font-mono font-bold text-xs">
+                  Muda: {formatTimer(lockRemainingSecs)}
+                </span>
+                <a
+                  href="https://wa.me/255655361060?text=Habari%20Admin,%20namba%20yangu%20imefungwa%20kwenye%20support.%20Huu%20hapa%20ushahidi%20wangu%20wa%20malipo..."
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-wider transition-all"
+                >
+                  WhatsApp Risiti
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* ── MESSAGES SCROLL AREA (Only messages scroll) ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-3.5">
             
             {/* Retention Notice */}
             <div className="text-center">
