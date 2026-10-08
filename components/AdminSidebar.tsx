@@ -19,7 +19,8 @@ import {
   Lock,
   LogOut,
   Trophy,
-  Flame
+  Flame,
+  Bot
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
@@ -41,6 +42,7 @@ export default function AdminSidebar({
 
   const links = [
     { href: '/admin/dashboard', label: 'Analytics Dashboard', icon: LayoutDashboard },
+    { href: '/admin/assistant', label: '🤖 AI Assistant HQ', icon: Bot },
     { href: '/admin/trending', label: '🔥 Hot & Trending', icon: Flame },
     { href: '/admin/popup', label: '📢 Game Popup Ads', icon: BellRing },
     { href: '/admin/vikosi', label: '⚽ Vikosi vya eFootball', icon: Trophy },
