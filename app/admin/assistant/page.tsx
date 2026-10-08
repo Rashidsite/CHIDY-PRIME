@@ -20,7 +20,10 @@ import {
   Clock,
   Loader2,
   HelpCircle,
-  Film
+  Film,
+  Search,
+  Filter,
+  Layers
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -70,6 +73,10 @@ export default function AdminAssistantPage() {
     featured_intl_games: [],
     hidden_video_vault: [],
   });
+
+  // Filter / Search for catalog dropdown
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState('ALL');
+  const [catalogSearch, setCatalogSearch] = useState('');
 
   // Modal / Inputs for adding Games
   const [selectedGameId, setSelectedGameId] = useState('');
@@ -232,6 +239,25 @@ export default function AdminAssistantPage() {
     }));
   };
 
+  // Compute distinct categories from catalog
+  const availableCategories = Array.from(
+    new Set(catalog.map(g => (g.category || 'General').trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
+  // Compute filtered catalog based on category and search query
+  const filteredCatalog = catalog.filter(g => {
+    const matchesCategory =
+      catalogCategoryFilter === 'ALL' ||
+      (g.category || 'General').toLowerCase() === catalogCategoryFilter.toLowerCase();
+    const matchesSearch =
+      !catalogSearch.trim() ||
+      (g.title || '').toLowerCase().includes(catalogSearch.toLowerCase()) ||
+      (g.category || '').toLowerCase().includes(catalogSearch.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const selectedGame = catalog.find(g => g.id === selectedGameId);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#060913] text-slate-400">
@@ -344,20 +370,86 @@ export default function AdminAssistantPage() {
               Mteja akisema &quot;nataka game&quot; au asipojua game la kuchagua, Assistant atamtumia moja kwa moja games hizi zikiwa na maelezo yako na kitufe cha kulipia papo hapo.
             </p>
 
+            {/* Category Filter & Search Bar */}
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>Chuja Game kwa Category au Tafuta kwa Jina:</span>
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Zinazoonekana: <strong className="text-white">{filteredCatalog.length}</strong> kati ya {catalog.length}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Category selector */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                    <Layers className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <select
+                    value={catalogCategoryFilter}
+                    onChange={(e) => {
+                      setCatalogCategoryFilter(e.target.value);
+                      setSelectedGameId(''); // reset selection when category changes
+                    }}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400 font-bold"
+                  >
+                    <option value="ALL">📁 CATEGORY ZOTE ({catalog.length} Games)</option>
+                    {availableCategories.map(cat => {
+                      const count = catalog.filter(g => (g.category || 'General').toUpperCase() === cat.toUpperCase()).length;
+                      return (
+                        <option key={cat} value={cat}>
+                          📂 {cat} ({count})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Search input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                    <Search className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Andika jina la game kutafuta (mf. Maleo, ETS2, FIFA)..."
+                    value={catalogSearch}
+                    onChange={(e) => {
+                      setCatalogSearch(e.target.value);
+                      setSelectedGameId('');
+                    }}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              {/* Select from catalog */}
+              {/* Select from filtered catalog */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-300 uppercase">Chagua Game kwenye Store:</label>
+                <label className="text-xs font-bold text-slate-300 uppercase flex items-center justify-between">
+                  <span>Chagua Game:</span>
+                  {selectedGame && (
+                    <span className="text-[10px] text-cyan-400 font-mono">TSh {Number(selectedGame.price || 0).toLocaleString()}</span>
+                  )}
+                </label>
                 <select
                   value={selectedGameId}
                   onChange={(e) => setSelectedGameId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                 >
-                  <option value="">-- Chagua Game ({catalog.length} Yaliyopo kwenye Duka) --</option>
-                  {catalog.map(g => (
+                  <option value="">
+                    {filteredCatalog.length === 0 
+                      ? '-- Hakuna game lililopatikana --' 
+                      : `-- Chagua Game Hapa (${filteredCatalog.length} Yaliyopo) --`}
+                  </option>
+                  {filteredCatalog.map(g => (
                     <option key={g.id} value={g.id}>
-                      {g.title} ({g.category || 'General'}) - TSh {Number(g.price || 0).toLocaleString()}
+                      {g.title} [{g.category || 'General'}] - TSh {Number(g.price || 0).toLocaleString()}
                     </option>
                   ))}
                 </select>
@@ -389,13 +481,49 @@ export default function AdminAssistantPage() {
               </div>
             </div>
 
-            <button
-              onClick={handleAddGame}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Ongeza Kwenye Kipaumbele</span>
-            </button>
+            {/* Selected Game Preview Card */}
+            {selectedGame && (
+              <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-950 border border-cyan-500/30">
+                <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shrink-0">
+                  {selectedGame.cover_image ? (
+                    <Image src={selectedGame.cover_image} alt={selectedGame.title} fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-600">
+                      <Gamepad2 className="w-5 h-5" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-black text-white truncate">{selectedGame.title}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-black uppercase">
+                      {selectedGame.category || 'General'}
+                    </span>
+                    <span className="text-xs font-black text-emerald-400">
+                      TSh {Number(selectedGame.price || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleAddGame}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0 shadow-lg"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Ongeza Sasa</span>
+                </button>
+              </div>
+            )}
+
+            {!selectedGame && (
+              <button
+                onClick={handleAddGame}
+                disabled={!selectedGameId}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Ongeza Kwenye Kipaumbele</span>
+              </button>
+            )}
           </div>
 
           {/* Section 1: 🇹🇿 Games za Tanzania */}
