@@ -242,10 +242,10 @@ export default function SupportPage() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       quickActions: [
         { label: '🚀 Nimelipa sijapata game', query: 'Nimelipa sijapata game' },
-        { label: '🇹🇿 Mabasi ya Tanzania', query: 'Nataka game la mabasi ya Tanzania' },
-        { label: '⚽ Michezo ya Mpira', query: 'Nataka game la mpira' },
+        { label: '🚌 Mabasi ya Tanzania (Maleo)', query: 'Maleo' },
+        { label: '🚛 ETS2 Tanzania', query: 'ETS2' },
+        { label: '⚽ Michezo ya Mpira', query: 'Mpira' },
         { label: '📺 Jinsi ya Ku-set game', query: 'Nielekeze jinsi ya kuset game' },
-        { label: '💬 Ongea WhatsApp', query: 'whatsapp' },
       ],
     };
     setMessages([welcomeMsg]);
@@ -465,7 +465,7 @@ export default function SupportPage() {
                   </span>
                 </div>
                 <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
-                  Msaidizi rasmi wa <strong className="text-slate-200">ChidyPrime x ChidyGaming</strong>
+                  <strong className="text-slate-200">ChidyPrime x ChidyGaming</strong> • Digital Store
                 </p>
               </div>
             </div>
@@ -549,7 +549,7 @@ export default function SupportPage() {
                   {/* Sender Name & Time */}
                   <div className="flex items-center justify-between gap-4 text-[10px] text-slate-400 font-mono pb-1 border-b border-white/10">
                     <span className="font-bold text-slate-300">
-                      {msg.sender === 'chidy' ? 'Chidy (Admin & Gamer)' : 'Wewe'}
+                      {msg.sender === 'chidy' ? 'Chidy' : 'Wewe'}
                     </span>
                     <span>{msg.timestamp}</span>
                   </div>
@@ -758,15 +758,18 @@ export default function SupportPage() {
               >
                 📺 Jinsi ya Ku-set / Install
               </button>
-              <a
-                href="https://wa.me/255655361060?text=Habari%20Chidy,%20nahitaji%20msaada%20wa..."
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300 hover:text-white text-[11px] font-bold transition-all shrink-0 flex items-center gap-1"
+              <button
+                onClick={() => handleSendMessage('Maleo')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
               >
-                <MessageCircle className="w-3 h-3" />
-                <span>WhatsApp Admin</span>
-              </a>
+                🚌 Maleo Bus Mod TZ
+              </button>
+              <button
+                onClick={() => handleSendMessage('ETS2')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-purple-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                🚛 ETS2 Tanzania
+              </button>
             </div>
 
             {/* Input Form */}

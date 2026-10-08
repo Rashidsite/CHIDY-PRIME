@@ -27,15 +27,25 @@ export async function GET() {
     // Fetch published games catalog for selection dropdowns
     const { data: games } = await supabase
       .from('posts')
-      .select('id, title, category, price, cover_image, description, video_url')
+      .select('id, title, category, price, image_url, description, youtube_url')
       .eq('status', 'published')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(200);
+
+    const mappedCatalog = (games || []).map((g: any) => ({
+      id: g.id,
+      title: g.title,
+      category: g.category || 'Game',
+      price: g.price || 3000,
+      cover_image: g.image_url || '/placeholder.png',
+      description: g.description || '',
+      video_url: g.youtube_url || '',
+    }));
 
     return NextResponse.json({
       success: true,
       config,
-      catalog: games || [],
+      catalog: mappedCatalog,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

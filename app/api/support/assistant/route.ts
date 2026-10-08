@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         type: 'lockout',
         isLocked: true,
         lockoutMinutes,
-        message: `⛔ Umejaribu zaidi ya mara ${maxAttempts} bila uthibitisho wa malipo. Dawati la msaada limefungwa kwa muda kwa akaunti hii kwa ajili ya usalama. Tafadhali jaribu tena baada ya saa 1, au wasiliana na Admin WhatsApp ukiwa na meseji ya muamala.`,
+        message: `⛔ Umejaribu zaidi ya mara ${maxAttempts} bila uthibitisho wa malipo. Dawati la msaada limefungwa kwa muda kwa akaunti hii kwa ajili ya usalama. Tafadhali jaribu tena baada ya saa 1 ukiwa na namba sahihi au fanya malipo ya game lako.`,
         unpaidAttempts,
       });
     }
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const isPaymentCheck = 
       isPurePhoneInput || 
       isExplicitPaymentCheck || 
-      (phoneDigits.length >= 9 && !lowerMsg.includes('nataka') && !lowerMsg.includes('jinsi') && !lowerMsg.includes('vp') && !lowerMsg.includes('mambo'));
+      (phoneDigits.length >= 9 && !lowerMsg.includes('nataka') && !lowerMsg.includes('jinsi') && !lowerMsg.includes('vp') && !lowerMsg.includes('mambo') && !lowerMsg.includes('maleo') && !lowerMsg.includes('ets'));
 
     if (isPaymentCheck) {
       if (!phoneDigits || phoneDigits.length < 9) {
@@ -97,13 +97,13 @@ export async function POST(request: Request) {
       const [pRes, oRes] = await Promise.all([
         supabase
           .from('payment_orders')
-          .select('id, phone_number, amount, status, created_at, post_id, posts(id, title, category, price, cover_image, download_links, links, video_url, install_guide)')
+          .select('id, phone_number, amount, status, created_at, post_id, posts(id, title, category, price, image_url, links, youtube_url, description)')
           .ilike('phone_number', `%${phoneDigits}%`)
           .order('created_at', { ascending: false })
           .limit(5),
         supabase
           .from('orders')
-          .select('id, phone_number, amount, status, created_at, post_id, posts(id, title, category, price, cover_image, download_links, links, video_url, install_guide)')
+          .select('id, phone_number, amount, status, created_at, post_id, posts(id, title, category, price, image_url, links, youtube_url, description)')
           .ilike('phone_number', `%${phoneDigits}%`)
           .order('created_at', { ascending: false })
           .limit(5)
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
 
       if (approvedOrder) {
         const game = (approvedOrder as any).posts;
-        const links = game?.download_links || game?.links || [];
+        const links = game?.links || [];
         const validLinks = Array.isArray(links) ? links : [];
 
         return NextResponse.json({
@@ -129,11 +129,11 @@ export async function POST(request: Request) {
           order: {
             id: approvedOrder.id,
             gameTitle: game?.title || 'Game',
-            coverImage: game?.cover_image || null,
+            coverImage: game?.image_url || null,
             amount: approvedOrder.amount,
             downloadLinks: validLinks,
-            installGuide: game?.install_guide || 'Pakua files, extract kwa kutumia app ya ZArchiver, kisha fuata maelekezo ya kuweka OBB/Data au install APK.',
-            videoUrl: game?.video_url || null,
+            installGuide: game?.description || 'Pakua files, extract kwa kutumia app ya ZArchiver, kisha fuata maelekezo ya kuweka OBB/Data au install APK.',
+            videoUrl: game?.youtube_url || null,
           },
           validHours: 24,
         });
@@ -151,18 +151,9 @@ export async function POST(request: Request) {
           type: 'lockout',
           isLocked: true,
           lockoutMinutes,
-          message: `⛔ Umejaribu zaidi ya mara ${maxAttempts} bila uthibitisho wa malipo halisi. Sehemu ya msaada imefungwa kwa muda kwa akaunti hii. Tafadhali jaribu tena baada ya saa 1, au wasiliana na Admin WhatsApp ukiwa na ushahidi wa muamala.`,
+          message: `⛔ Umejaribu zaidi ya mara ${maxAttempts} bila uthibitisho wa malipo halisi. Sehemu hii imefungwa kwa muda kwa akaunti hii. Tafadhali jaribu tena baada ya saa 1.`,
           unpaidAttempts: nextAttempts,
           userPhone: activePhone,
-        });
-      }
-
-      if (nextAttempts >= 3) {
-        return NextResponse.json({
-          type: 'unpaid_warning',
-          unpaidAttempts: nextAttempts,
-          userPhone: activePhone,
-          message: `Kaka malipo ya namba yako (${activePhone}) bado hayajakamilika kwenye mfumo wa mtandao wa simu. Tafadhali lipia tena ili upate link mara moja, au kama umekatwa nitumie SMS ya muamala hapa tuangalie.`,
         });
       }
 
@@ -172,19 +163,26 @@ export async function POST(request: Request) {
           type: 'unpaid_attempt',
           unpaidAttempts: nextAttempts,
           userPhone: activePhone,
-          message: `Nimeikagua namba yako (${activePhone}), nimeona ulijaribu kulipia game la "${attemptedGame}", lakini muamala wako bado haujakamilika kwenye mtandao kaka (status: ${pendingOrFailedOrder.status || 'pending'}), hivyo tafadhali lipia tena ili upate link mara moja.`,
+          message: `Nimeikagua namba yako (${activePhone}), nimeona ulijaribu kulipia game la "${attemptedGame}", lakini muamala wako bado haujakamilika kwenye mtandao kaka (status: ${pendingOrFailedOrder.status || 'pending'}).\n\nJe, ungependa nikutumie kadi ya game hilo ulipie tena sasa hivi hapa hapa upate link mara moja?`,
+          quickActions: [
+            { label: `💳 Lipia Tena: ${attemptedGame}`, query: attemptedGame },
+            { label: '🚌 Nataka Game la Mabasi', query: 'Maleo' },
+            { label: '🎮 Tazama Games Kali', query: 'Nataka game' },
+          ],
         });
       }
 
-      // No record found at all for this phone
+      // No record found at all for this phone: ask which game they were trying to buy!
       return NextResponse.json({
-        type: 'not_found',
+        type: 'unpaid_ask_game',
         unpaidAttempts: nextAttempts,
         userPhone: activePhone,
-        message: `Kaka nimeikagua namba yako (${activePhone}) kwenye mfumo lakini sijaona kumbukumbu yoyote ya malipo yaliyokamilika ndani ya masaa 24 yaliyopita.\n\nKama umekatwa hela na mtandao wa simu, tafadhali gusa kitufe cha WhatsApp chini ukiwa na SMS ya muamala tukuhudumie papo hapo, au kama bado hujalipia, lipia game ulilolipenda ili link ifunguke mara moja.`,
+        message: `Kaka nimeikagua namba yako (${activePhone}) kwenye mfumo lakini sijaona muamala wowote uliokamilika kwa sasa.\n\nJe, ulikuwa unajaribu kulipia game gani kaka (mfano: Maleo Bus, ETS2 Tanzania, au game lingine)? Niambie hapa hapa nikutumie uweze kulipia na kupata link mara moja! 🔥`,
         quickActions: [
-          { label: '💬 Wasiliana na WhatsApp (Tuma Risiti)', query: 'whatsapp' },
-          { label: '🎮 Tazama Games Kali za Kulipia', query: 'Nataka game' },
+          { label: '🚌 Maleo Bus Mod TZ', query: 'Maleo' },
+          { label: '🚛 ETS2 Tanzania', query: 'ETS2' },
+          { label: '⚽ Michezo ya Mpira', query: 'Mpira' },
+          { label: '🔥 Games Zote Kali', query: 'Nataka game' },
         ],
       });
     }
@@ -225,24 +223,23 @@ export async function POST(request: Request) {
         });
       }
 
-      // Check if recent game or mentioned game has a video_url in database
+      // Check if recent game or mentioned game has a youtube_url in database
       let gameWithVideo = null;
       if (recentGameId) {
         const { data: g } = await supabase
           .from('posts')
-          .select('id, title, video_url, install_guide')
+          .select('id, title, youtube_url, description')
           .eq('id', recentGameId)
           .maybeSingle();
-        if (g?.video_url) gameWithVideo = g;
+        if (g?.youtube_url) gameWithVideo = g;
       }
 
       if (!gameWithVideo) {
-        // Search by words in posts
         const { data: matchedGames } = await supabase
           .from('posts')
-          .select('id, title, video_url, install_guide')
+          .select('id, title, youtube_url, description')
           .eq('status', 'published')
-          .not('video_url', 'is', null)
+          .not('youtube_url', 'is', null)
           .limit(10);
 
         gameWithVideo = (matchedGames || []).find(g => {
@@ -251,14 +248,14 @@ export async function POST(request: Request) {
         });
       }
 
-      if (gameWithVideo && gameWithVideo.video_url) {
+      if (gameWithVideo && gameWithVideo.youtube_url) {
         return NextResponse.json({
           type: 'tutorial_video',
           message: `Kaka video ya jinsi ya ku-set "${gameWithVideo.title}" ipo tayari! Bonyeza hapa chini utazame video kamili kutoka YouTube uone hatua kwa hatua:`,
           tutorial: {
             title: `Jinsi ya Ku-set: ${gameWithVideo.title}`,
-            videoUrl: gameWithVideo.video_url,
-            instructions: gameWithVideo.install_guide || 'Fuata hatua kwenye video, fungua ZArchiver kuhamisha folda la OBB/Data kisha install APK.',
+            videoUrl: gameWithVideo.youtube_url,
+            instructions: gameWithVideo.description || 'Fuata hatua kwenye video, fungua ZArchiver kuhamisha folda la OBB/Data kisha install APK.',
           },
           unpaidAttempts,
         });
@@ -275,12 +272,63 @@ export async function POST(request: Request) {
       });
     }
 
-    // ── INTENT 3: Specific Game Search (e.g. "nataka game la tanzania la mabasi", "nataka gta", "fifa") ──
-    const searchTerms = ['mabasi', 'bus', 'tanzania', 'bongo', 'maleo', 'gta', 'fifa', 'efootball', 'pes', 'truck', 'racing', 'ppsspp', 'mod', 'simba', 'yanga'];
+    // ── INTENT 3: Bus / Maleo / ETS2 / Tanzania Specific Search ──
+    const isBusOrMaleo = 
+      lowerMsg.includes('maleo') || 
+      lowerMsg.includes('ets2') || 
+      lowerMsg.includes('ets') || 
+      lowerMsg.includes('basi') || 
+      lowerMsg.includes('mabasi') || 
+      lowerMsg.includes('bus');
+
+    if (isBusOrMaleo) {
+      // First check if admin defined priority featured tz games
+      const tzFeatured = config.featured_tz_games || [];
+      const priorityBus = tzFeatured.filter((g: any) => {
+        const t = (g.title || '').toLowerCase();
+        const c = (g.category || '').toLowerCase();
+        return t.includes('bus') || t.includes('maleo') || t.includes('ets') || c.includes('bus') || c.includes('maleo');
+      });
+
+      if (priorityBus.length > 0) {
+        return NextResponse.json({
+          type: 'game_cards',
+          message: `Haya hapa michezo mikali zaidi ya mabasi na simulator (Maleo / ETS2) kaka! Chagua unalolitaka hapa chini, lipia papo hapo na link yako ya kudownload inafunguka mara moja ndani ya chat! 🔥🚌`,
+          games: priorityBus.slice(0, 4),
+          unpaidAttempts,
+        });
+      }
+
+      // Query database for Maleo / Bus / ETS2
+      const { data: busPosts } = await supabase
+        .from('posts')
+        .select('id, title, category, price, image_url, description')
+        .eq('status', 'published')
+        .or('title.ilike.%maleo%,title.ilike.%bus%,title.ilike.%ets%,category.ilike.%maleo%,category.ilike.%bus%')
+        .limit(4);
+
+      if (busPosts && busPosts.length > 0) {
+        return NextResponse.json({
+          type: 'game_cards',
+          message: `Haya hapa michezo mikali zaidi ya mabasi na simulator (Maleo / ETS2) kaka! Chagua unalolitaka hapa chini, lipia papo hapo na link yako ya kudownload inafunguka mara moja ndani ya chat! 🔥🚌`,
+          games: busPosts.map(g => ({
+            id: g.id,
+            title: g.title,
+            category: g.category,
+            price: g.price || 3000,
+            cover_image: g.image_url || '/placeholder.png',
+            description: g.description,
+          })),
+          unpaidAttempts,
+        });
+      }
+    }
+
+    // ── INTENT 4: General Game Search by Title or Keywords ──
+    const searchTerms = ['tanzania', 'bongo', 'gta', 'fifa', 'efootball', 'pes', 'truck', 'racing', 'ppsspp', 'mod', 'simba', 'yanga', 'god of war', 'car'];
     const matchedTerm = searchTerms.find(term => lowerMsg.includes(term));
 
     if (matchedTerm || (lowerMsg.includes('nataka') && lowerMsg.replace('nataka', '').trim().length > 2)) {
-      // Clean query
       const cleanKeyword = lowerMsg
         .replace(/nataka/g, '')
         .replace(/game/g, '')
@@ -289,11 +337,11 @@ export async function POST(request: Request) {
         .replace(/ya/g, '')
         .trim();
 
-      const queryTerm = cleanKeyword.length >= 2 ? cleanKeyword : (matchedTerm || 'tanzania');
+      const queryTerm = cleanKeyword.length >= 2 ? cleanKeyword : (matchedTerm || 'game');
 
       const { data: matchedPosts } = await supabase
         .from('posts')
-        .select('id, title, category, price, cover_image, description')
+        .select('id, title, category, price, image_url, description')
         .eq('status', 'published')
         .or(`title.ilike.%${queryTerm}%,category.ilike.%${queryTerm}%,description.ilike.%${queryTerm}%`)
         .limit(4);
@@ -307,7 +355,7 @@ export async function POST(request: Request) {
             title: g.title,
             category: g.category,
             price: g.price || 3000,
-            cover_image: g.cover_image,
+            cover_image: g.image_url || '/placeholder.png',
             description: g.description,
           })),
           unpaidAttempts,
@@ -315,7 +363,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // ── INTENT 4: General "nataka game" / "Games gani kali zipo?" / Hajui game gani ──
+    // ── INTENT 5: General "nataka game" / "Games gani kali zipo?" / Hajui game gani ──
     const isGeneralGameRequest = 
       lowerMsg === 'nataka game' ||
       lowerMsg === 'mna games gani' ||
@@ -330,23 +378,28 @@ export async function POST(request: Request) {
       const tzGames = config.featured_tz_games || [];
       const intlGames = config.featured_intl_games || [];
 
-      // If admin has set up featured games, use them!
       let gamesToShow = [...tzGames, ...intlGames];
 
-      // If empty, fetch top 4 games from database automatically
       if (gamesToShow.length === 0) {
         const { data: fallbackGames } = await supabase
           .from('posts')
-          .select('id, title, category, price, cover_image, description')
+          .select('id, title, category, price, image_url, description')
           .eq('status', 'published')
           .order('created_at', { ascending: false })
           .limit(4);
-        gamesToShow = fallbackGames || [];
+        gamesToShow = (fallbackGames || []).map(g => ({
+          id: g.id,
+          title: g.title,
+          category: g.category,
+          price: g.price || 3000,
+          cover_image: g.image_url || '/placeholder.png',
+          description: g.description,
+        }));
       }
 
       return NextResponse.json({
         type: 'recommendations',
-        message: `Unataka game gani kaka? Au unapendelea mashabiki wa aina gani (mfano mpira wa miguu, mabasi/malori ya Tanzania, vita, au racing)?\n\nHapa chini nimekuwekea michezo mikali zaidi yenye kipaumbele hivi sasa, unaweza kuchagua na kulipia papo hapo:`,
+        message: `Unataka game gani kaka? Au unapendelea mashabiki wa aina gani (mfano mpira wa miguu, mabasi ya Tanzania, vita, au racing)?\n\nHapa chini nimekuwekea michezo mikali zaidi yenye kipaumbele hivi sasa, unaweza kuchagua na kulipia papo hapo:`,
         tzGames: tzGames.length ? tzGames : gamesToShow.filter(g => (g.category || '').toLowerCase().includes('tz') || (g.title || '').toLowerCase().includes('tanzania')),
         intlGames: intlGames.length ? intlGames : gamesToShow.filter(g => !(g.category || '').toLowerCase().includes('tz') && !(g.title || '').toLowerCase().includes('tanzania')),
         allFeatured: gamesToShow.slice(0, 6),
@@ -354,7 +407,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // ── INTENT 5: Street Slang / Salutations ("vp", "oa", "oya", "kaka", "niaje", "mambo", "bro", "mkuu") ──
+    // ── INTENT 6: Street Slang / Salutations ("vp", "oa", "oya", "kaka", "niaje", "mambo", "bro", "mkuu") ──
     const isGreeting = 
       lowerMsg === 'vp' ||
       lowerMsg === 'vipi' ||
@@ -373,7 +426,7 @@ export async function POST(request: Request) {
 
     if (isGreeting) {
       const greetings = [
-        `Oya kaka! Mambo ni moto kabisa 🔥 Karibu sana ChidyPrime x ChidyGaming HQ. Niambie leo nikusaidie nini: unatafuta game kali, umekwama kwenye malipo au unahitaji link yako?`,
+        `Oya kaka! Mambo ni moto kabisa 🔥 Karibu sana ChidyPrime x ChidyGaming HQ. Niambie leo nikusaidie nini: unatafuta game kali ya mabasi/mpira, umekwama kwenye malipo au unahitaji link yako?`,
         `Niaje brother! Nipo hewani kukuhudumia. Niambie unahitaji mchongo gani leo kwenye ulimwengu wa games? 🎮`,
         `Kaka salama kabisa! Karibu kijiweni kwa Chidy. Unataka game gani au una changamoto gani ya malipo nikusaidie papo hapo?`,
       ];
@@ -384,23 +437,23 @@ export async function POST(request: Request) {
         message: randomGreeting,
         quickActions: [
           { label: '🚀 Nimelipa sijapata game', query: 'Nimelipa sijapata game' },
-          { label: '🇹🇿 Games za Mabasi ya Tanzania', query: 'Nataka game la mabasi ya Tanzania' },
-          { label: '⚽ Michezo ya Mpira (eFootball/FIFA)', query: 'Nataka game la mpira' },
+          { label: '🚌 Mabasi ya Tanzania (Maleo/ETS2)', query: 'Maleo' },
+          { label: '⚽ Michezo ya Mpira (eFootball/FIFA)', query: 'Mpira' },
           { label: '📺 Nielekeze jinsi ya ku-set game', query: 'Nielekeze jinsi ya kuset game' },
         ],
         unpaidAttempts,
       });
     }
 
-    // ── FALLBACK / CHAT BOT CONVERSATIONAL RESPONSE ──
+    // ── FALLBACK ──
     return NextResponse.json({
       type: 'conversational',
-      message: `Nimekuelewa vizuri bro! Nambie kama unatafuta game lolote mahususi (mfano mabasi ya Tanzania, FIFA, GTA), au kama umekwama kwenye malipo nipe namba yako ya simu nikuthibitishie chap. Pia nipo tayari kukuelekeza jinsi ya ku-install game lolote! 🎮🔥`,
+      message: `Nimekuelewa vizuri bro! Nambie kama unatafuta game lolote mahususi (mfano mabasi ya Tanzania, Maleo, ETS2, FIFA, GTA), au kama umekwama kwenye malipo nipe namba yako ya simu nikuthibitishie chap. Pia nipo tayari kukuelekeza jinsi ya ku-install game lolote! 🎮🔥`,
       quickActions: [
         { label: '🚀 Kagua Oda Yangu', query: 'Nimelipa sijapata game' },
+        { label: '🚌 Mabasi ya Tanzania', query: 'Maleo' },
         { label: '🎮 Nionyeshe Games Kali', query: 'Nataka game' },
         { label: '📺 Jinsi ya Ku-install', query: 'Nielekeze jinsi ya kuset' },
-        { label: '💬 Ongea WhatsApp', query: 'whatsapp' },
       ],
       unpaidAttempts,
     });
@@ -409,7 +462,7 @@ export async function POST(request: Request) {
     console.error('Assistant API Error:', error);
     return NextResponse.json({
       type: 'error',
-      message: 'Samahani kaka, mtandao umegonga kidogo. Naomba uandike tena ujumbe wako au kama umekwama gusa hapa chini tuwasiliane WhatsApp.',
+      message: 'Samahani kaka, mtandao umegonga kidogo. Naomba uandike tena ujumbe wako au namba yako ya simu nikuthibitishie mara moja.',
     }, { status: 500 });
   }
 }

@@ -354,7 +354,7 @@ export default function AdminAssistantPage() {
                   onChange={(e) => setSelectedGameId(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                 >
-                  <option value="">-- Chagua Game --</option>
+                  <option value="">-- Chagua Game ({catalog.length} Yaliyopo kwenye Duka) --</option>
                   {catalog.map(g => (
                     <option key={g.id} value={g.id}>
                       {g.title} ({g.category || 'General'}) - TSh {Number(g.price || 0).toLocaleString()}
