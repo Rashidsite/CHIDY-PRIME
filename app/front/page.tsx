@@ -13,7 +13,6 @@ import RegisterModal from '@/components/RegisterModal';
 import CelebrationPopup from '@/components/CelebrationPopup';
 import GameCard, { GameProduct } from '@/components/GameCard';
 import CategoryGamesDrawer from '@/components/CategoryGamesDrawer';
-import StorefrontSearchBar from '@/components/StorefrontSearchBar';
 import GameSearchModal from '@/components/GameSearchModal';
 import { CategorySkeleton, HorizontalCarouselSkeleton } from '@/components/SkeletonLoader';
 import { createClient } from '@/lib/supabase/client';
@@ -976,12 +975,6 @@ export default function FrontHubPage() {
             intervalMs={slideshowInterval}
           />
         )}
-
-        {/* ── Storefront Search Bar & Quick Tags ── */}
-        <StorefrontSearchBar
-          onOpenSearch={(q) => handleOpenSearchModal(q)}
-          gameCount={games.length}
-        />
 
         {/* ── Hot & Trending Horizontal Scroll Section ── */}
         {loading ? (
