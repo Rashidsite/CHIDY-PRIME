@@ -158,14 +158,24 @@ export async function POST(request: Request) {
       }
 
       if (pendingOrFailedOrder) {
-        const attemptedGame = (pendingOrFailedOrder as any).posts?.title || 'ulilochagua';
+        const attemptedGameObj = (pendingOrFailedOrder as any).posts;
+        const attemptedGameTitle = attemptedGameObj?.title || 'ulilochagua';
+        const cardGame = attemptedGameObj ? [{
+          id: attemptedGameObj.id,
+          title: attemptedGameObj.title,
+          category: attemptedGameObj.category,
+          price: attemptedGameObj.price || 3000,
+          cover_image: attemptedGameObj.image_url || '/placeholder.png',
+          description: attemptedGameObj.description,
+        }] : undefined;
+
         return NextResponse.json({
           type: 'unpaid_attempt',
           unpaidAttempts: nextAttempts,
           userPhone: activePhone,
-          message: `Nimeikagua namba yako (${activePhone}), nimeona ulijaribu kulipia game la "${attemptedGame}", lakini muamala wako bado haujakamilika kwenye mtandao kaka (status: ${pendingOrFailedOrder.status || 'pending'}).\n\nJe, ungependa nikutumie kadi ya game hilo ulipie tena sasa hivi hapa hapa upate link mara moja?`,
+          message: `Nimeikagua namba yako (${activePhone}), nimeona ulijaribu kulipia game la "${attemptedGameTitle}", lakini muamala wako bado haujakamilika kwenye mtandao kaka (status: ${pendingOrFailedOrder.status || 'pending'}).\n\nHapa chini nimekuwekea kadi ya game hilo ulipie tena sasa hivi hapa hapa upate link mara moja:`,
+          games: cardGame,
           quickActions: [
-            { label: `💳 Lipia Tena: ${attemptedGame}`, query: attemptedGame },
             { label: '🚌 Nataka Game la Mabasi', query: 'Maleo' },
             { label: '🎮 Tazama Games Kali', query: 'Nataka game' },
           ],
@@ -272,8 +282,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // ── INTENT 3: Bus / Maleo / ETS2 / Tanzania Specific Search ──
-    const isBusOrMaleo = 
+    // ── INTENT 3: Tanzania Games / Mabasi / Maleo / ETS2 Specific Search ──
+    const isTzOrBusOrMaleo = 
+      lowerMsg.includes('tanzania') ||
+      lowerMsg.includes('bongo') ||
       lowerMsg.includes('maleo') || 
       lowerMsg.includes('ets2') || 
       lowerMsg.includes('ets') || 
@@ -281,36 +293,43 @@ export async function POST(request: Request) {
       lowerMsg.includes('mabasi') || 
       lowerMsg.includes('bus');
 
-    if (isBusOrMaleo) {
-      // First check if admin defined priority featured tz games
+    if (isTzOrBusOrMaleo) {
+      // 1. Check if admin configured featured Tanzania games
       const tzFeatured = config.featured_tz_games || [];
-      const priorityBus = tzFeatured.filter((g: any) => {
-        const t = (g.title || '').toLowerCase();
-        const c = (g.category || '').toLowerCase();
-        return t.includes('bus') || t.includes('maleo') || t.includes('ets') || c.includes('bus') || c.includes('maleo');
-      });
+      if (tzFeatured.length > 0) {
+        // If user specifically asked for Maleo/bus, prioritize matching items first
+        let listToShow = [...tzFeatured];
+        if (lowerMsg.includes('maleo') || lowerMsg.includes('basi') || lowerMsg.includes('bus') || lowerMsg.includes('ets')) {
+          const busMatches = tzFeatured.filter((g: any) => {
+            const t = (g.title || '').toLowerCase();
+            const c = (g.category || '').toLowerCase();
+            return t.includes('bus') || t.includes('maleo') || t.includes('ets') || c.includes('bus') || c.includes('maleo');
+          });
+          if (busMatches.length > 0) {
+            listToShow = [...busMatches, ...tzFeatured.filter((g: any) => !busMatches.includes(g))];
+          }
+        }
 
-      if (priorityBus.length > 0) {
         return NextResponse.json({
           type: 'game_cards',
-          message: `Haya hapa michezo mikali zaidi ya mabasi na simulator (Maleo / ETS2) kaka! Chagua unalolitaka hapa chini, lipia papo hapo na link yako ya kudownload inafunguka mara moja ndani ya chat! 🔥🚌`,
-          games: priorityBus.slice(0, 4),
+          message: `Haya hapa michezo mikali zaidi ya Tanzania (Mabasi, Malori & Mods) kaka! Chagua unalolitaka hapa chini, lipia papo hapo na link yako ya kudownload inafunguka mara moja ndani ya chat! 🔥🇹🇿`,
+          games: listToShow.slice(0, 6),
           unpaidAttempts,
         });
       }
 
-      // Query database for Maleo / Bus / ETS2
+      // Fallback query database for Tanzania / Maleo / Bus / ETS2
       const { data: busPosts } = await supabase
         .from('posts')
         .select('id, title, category, price, image_url, description')
         .eq('status', 'published')
-        .or('title.ilike.%maleo%,title.ilike.%bus%,title.ilike.%ets%,category.ilike.%maleo%,category.ilike.%bus%')
-        .limit(4);
+        .or('title.ilike.%maleo%,title.ilike.%bus%,title.ilike.%ets%,category.ilike.%maleo%,category.ilike.%bus%,category.ilike.%tanzania%')
+        .limit(6);
 
       if (busPosts && busPosts.length > 0) {
         return NextResponse.json({
           type: 'game_cards',
-          message: `Haya hapa michezo mikali zaidi ya mabasi na simulator (Maleo / ETS2) kaka! Chagua unalolitaka hapa chini, lipia papo hapo na link yako ya kudownload inafunguka mara moja ndani ya chat! 🔥🚌`,
+          message: `Haya hapa michezo mikali ya Tanzania na Mabasi (Maleo / ETS2) kaka! Chagua unalolitaka hapa chini, lipia papo hapo na link yako ya kudownload inafunguka mara moja ndani ya chat! 🔥🚌`,
           games: busPosts.map(g => ({
             id: g.id,
             title: g.title,
@@ -324,27 +343,71 @@ export async function POST(request: Request) {
       }
     }
 
-    // ── INTENT 4: General Game Search by Title or Keywords ──
-    const searchTerms = ['tanzania', 'bongo', 'gta', 'fifa', 'efootball', 'pes', 'truck', 'racing', 'ppsspp', 'mod', 'simba', 'yanga', 'god of war', 'car'];
+    // ── INTENT 4: General "nataka game" / Priority Games / Hajui game gani ──
+    const isGeneralGameRequest = 
+      lowerMsg === 'nataka game' ||
+      lowerMsg === 'nataka games' ||
+      lowerMsg === 'mna games gani' ||
+      lowerMsg === 'games' ||
+      lowerMsg === 'mchezo' ||
+      lowerMsg.includes('games kali') ||
+      lowerMsg.includes('nionyeshe games') ||
+      lowerMsg.includes('sijui game') ||
+      lowerMsg.includes('pendekeza') ||
+      lowerMsg.includes('tazama games');
+
+    if (isGeneralGameRequest) {
+      const tzGames = config.featured_tz_games || [];
+      const intlGames = config.featured_intl_games || [];
+      let gamesToShow = [...tzGames, ...intlGames];
+
+      if (gamesToShow.length === 0) {
+        const { data: fallbackGames } = await supabase
+          .from('posts')
+          .select('id, title, category, price, image_url, description')
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+          .limit(6);
+        gamesToShow = (fallbackGames || []).map(g => ({
+          id: g.id,
+          title: g.title,
+          category: g.category,
+          price: g.price || 3000,
+          cover_image: g.image_url || '/placeholder.png',
+          description: g.description,
+        }));
+      }
+
+      return NextResponse.json({
+        type: 'game_cards',
+        message: `Hizi hapa games kali za kipaumbele kaka! Chagua unalolipenda hapa chini, lipia papo hapo upate link zako za kudownload mara moja: 🔥🎮`,
+        games: gamesToShow.slice(0, 6),
+        unpaidAttempts,
+      });
+    }
+
+    // ── INTENT 5: Specific Game Keyword Search (GTA, FIFA, eFootball, GOW, etc.) ──
+    const searchTerms = ['gta', 'fifa', 'efootball', 'pes', 'truck', 'racing', 'ppsspp', 'mod', 'simba', 'yanga', 'god of war', 'car', 'football'];
     const matchedTerm = searchTerms.find(term => lowerMsg.includes(term));
 
-    if (matchedTerm || (lowerMsg.includes('nataka') && lowerMsg.replace('nataka', '').trim().length > 2)) {
-      const cleanKeyword = lowerMsg
-        .replace(/nataka/g, '')
-        .replace(/game/g, '')
-        .replace(/la/g, '')
-        .replace(/za/g, '')
-        .replace(/ya/g, '')
-        .trim();
+    const cleanKeyword = lowerMsg
+      .replace(/nataka/g, '')
+      .replace(/games?/g, '')
+      .replace(/mchezo/g, '')
+      .replace(/la/g, '')
+      .replace(/za/g, '')
+      .replace(/ya/g, '')
+      .trim();
 
-      const queryTerm = cleanKeyword.length >= 2 ? cleanKeyword : (matchedTerm || 'game');
+    if (matchedTerm || cleanKeyword.length >= 2) {
+      const queryTerm = cleanKeyword.length >= 2 ? cleanKeyword : (matchedTerm || '');
 
       const { data: matchedPosts } = await supabase
         .from('posts')
         .select('id, title, category, price, image_url, description')
         .eq('status', 'published')
         .or(`title.ilike.%${queryTerm}%,category.ilike.%${queryTerm}%,description.ilike.%${queryTerm}%`)
-        .limit(4);
+        .limit(6);
 
       if (matchedPosts && matchedPosts.length > 0) {
         return NextResponse.json({
@@ -361,50 +424,6 @@ export async function POST(request: Request) {
           unpaidAttempts,
         });
       }
-    }
-
-    // ── INTENT 5: General "nataka game" / "Games gani kali zipo?" / Hajui game gani ──
-    const isGeneralGameRequest = 
-      lowerMsg === 'nataka game' ||
-      lowerMsg === 'mna games gani' ||
-      lowerMsg === 'games' ||
-      lowerMsg === 'mchezo' ||
-      lowerMsg.includes('games kali') ||
-      lowerMsg.includes('nionyeshe games') ||
-      lowerMsg.includes('sijui game') ||
-      lowerMsg.includes('pendekeza');
-
-    if (isGeneralGameRequest) {
-      const tzGames = config.featured_tz_games || [];
-      const intlGames = config.featured_intl_games || [];
-
-      let gamesToShow = [...tzGames, ...intlGames];
-
-      if (gamesToShow.length === 0) {
-        const { data: fallbackGames } = await supabase
-          .from('posts')
-          .select('id, title, category, price, image_url, description')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-          .limit(4);
-        gamesToShow = (fallbackGames || []).map(g => ({
-          id: g.id,
-          title: g.title,
-          category: g.category,
-          price: g.price || 3000,
-          cover_image: g.image_url || '/placeholder.png',
-          description: g.description,
-        }));
-      }
-
-      return NextResponse.json({
-        type: 'recommendations',
-        message: `Unataka game gani kaka? Au unapendelea mashabiki wa aina gani (mfano mpira wa miguu, mabasi ya Tanzania, vita, au racing)?\n\nHapa chini nimekuwekea michezo mikali zaidi yenye kipaumbele hivi sasa, unaweza kuchagua na kulipia papo hapo:`,
-        tzGames: tzGames.length ? tzGames : gamesToShow.filter(g => (g.category || '').toLowerCase().includes('tz') || (g.title || '').toLowerCase().includes('tanzania')),
-        intlGames: intlGames.length ? intlGames : gamesToShow.filter(g => !(g.category || '').toLowerCase().includes('tz') && !(g.title || '').toLowerCase().includes('tanzania')),
-        allFeatured: gamesToShow.slice(0, 6),
-        unpaidAttempts,
-      });
     }
 
     // ── INTENT 6: Street Slang / Salutations ("vp", "oa", "oya", "kaka", "niaje", "mambo", "bro", "mkuu") ──

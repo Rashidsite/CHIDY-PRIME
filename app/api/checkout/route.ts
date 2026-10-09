@@ -49,12 +49,15 @@ export async function POST(request: Request) {
     let postData: any = null;
     if (game_id) {
       const isUuid = typeof game_id === 'string' && game_id.includes('-') && game_id.length === 36;
-      const { data } = await supabase
+      const { data, error: postErr } = await supabase
         .from('posts')
-        .select('id, title, price, links, download_url, duration_days, plan_duration, access_duration, category')
+        .select('id, title, price, links, duration_days, category, image_url, description')
         .or(isUuid ? `id.eq.${game_id}` : `title.ilike.%${game_id}%`)
         .limit(1)
         .maybeSingle();
+      if (postErr) {
+        console.warn('[Checkout ⚡] Warning fetching post data:', postErr.message);
+      }
       postData = data;
     }
 

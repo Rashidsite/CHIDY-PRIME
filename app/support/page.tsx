@@ -272,12 +272,6 @@ export default function SupportPage() {
       return;
     }
 
-    // Direct WhatsApp escape
-    if (textToSend.toLowerCase() === 'whatsapp') {
-      window.open('https://wa.me/255655361060?text=Habari%20Chidy,%20nahitaji%20msaada%20wa%20huduma%20ya%20games...', '_blank');
-      return;
-    }
-
     const digitsOnly = textToSend.replace(/\D/g, '');
     let activePhone = userPhone;
     if (digitsOnly.length >= 9 && digitsOnly.length <= 13) {
@@ -357,7 +351,7 @@ export default function SupportPage() {
       const errorMsg: ChatMessage = {
         id: 'bot_err_' + Date.now(),
         sender: 'chidy',
-        text: 'Mtandao umesumbua kidogo kaka. Hebu jaribu tena au gusa kitufe cha WhatsApp chini tuwasiliane moja kwa moja.',
+        text: 'Mtandao umesumbua kidogo kaka. Hebu jaribu tena kutuma ujumbe wako nikuthibitishie chap!',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -402,15 +396,18 @@ export default function SupportPage() {
 
       setPayStatusText('Ombi la STK Push limetumwa! Tafadhali weka namba yako ya siri kwenye simu.');
 
+      const checkoutUrl = data.checkoutUrl || data.order?.checkoutUrl;
+
       // Notify in chat
       const notifMsg: ChatMessage = {
         id: 'bot_pay_' + Date.now(),
         sender: 'chidy',
-        text: `Nimetuma STK Push ya TSh ${Number(paymentModalGame.price).toLocaleString()} kwenye simu yako (${payPhone}) kwa ajili ya game la "${paymentModalGame.title}". Weka PIN yako sasa kisha ubonyeze kitufe cha "Nimelipa" hapa chini nikutumie link mara moja! 🔥`,
+        text: `Nimetuma ombi la malipo (STK Push) ya TSh ${Number(paymentModalGame.price).toLocaleString()} kwenye simu yako (${payPhone}) kwa ajili ya game la "${paymentModalGame.title}".\n\nWeka PIN yako sasa kwenye simu yako, kisha bonyeza kitufe cha "✅ Tayari Nimelipa" hapa chini nikutumie link za game mara moja! 🔥${checkoutUrl ? '\n\nKama hujapata ujumbe wa PIN, unaweza pia kulipia kupitia ukurasa huu salama wa mtandao hapa chini:' : ''}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        channelUrl: checkoutUrl || undefined,
         quickActions: [
           { label: '✅ Tayari Nimelipa (Thibitisha Sasa)', query: `Nimelipa ${payPhone}` },
-          { label: '💬 Msaada WhatsApp', query: 'whatsapp' },
+          { label: '🔄 Namba Nyingine / Lipia Tena', query: paymentModalGame.title },
         ],
       };
       setMessages(prev => [...prev, notifMsg]);
@@ -501,17 +498,9 @@ export default function SupportPage() {
                 Umejaribu kudai malipo mara nyingi bila uthibitisho. Sehemu hii imefungwa kwa ajili ya usalama.
               </p>
               <div className="flex items-center justify-center gap-3">
-                <span className="px-3 py-1 rounded-lg bg-slate-900 border border-red-500/30 text-red-400 font-mono font-bold text-xs">
-                  Muda: {formatTimer(lockRemainingSecs)}
+                <span className="px-3 py-1.5 rounded-lg bg-slate-900 border border-red-500/30 text-red-400 font-mono font-bold text-xs">
+                  Muda uliobaki: {formatTimer(lockRemainingSecs)}
                 </span>
-                <a
-                  href="https://wa.me/255655361060?text=Habari%20Admin,%20namba%20yangu%20imefungwa%20kwenye%20support.%20Huu%20hapa%20ushahidi%20wangu%20wa%20malipo..."
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-wider transition-all"
-                >
-                  WhatsApp Risiti
-                </a>
               </div>
             </div>
           )}
@@ -592,7 +581,7 @@ export default function SupportPage() {
                           ))
                         ) : (
                           <div className="text-[11px] text-amber-400">
-                            Download link inatengenezwa. Kama haijatokea gusa kitufe cha WhatsApp chini tukutumie papo hapo!
+                            Download link inatengenezwa. Tafadhali andika ujumbe wowote hapa chini nikutumie tena fasta!
                           </div>
                         )}
                       </div>

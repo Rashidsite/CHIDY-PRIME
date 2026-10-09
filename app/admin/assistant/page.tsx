@@ -122,14 +122,15 @@ export default function AdminAssistantPage() {
   }, []);
 
   // Save Config
-  const handleSaveConfig = async () => {
+  const handleSaveConfig = async (configToSave?: AssistantConfig) => {
+    const payload = configToSave || config;
     setSaving(true);
     setSavedSuccess(false);
     try {
       const res = await fetch('/api/admin/assistant-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config }),
+        body: JSON.stringify({ config: payload }),
       });
       const data = await res.json();
       if (data.success) {
@@ -145,7 +146,7 @@ export default function AdminAssistantPage() {
     }
   };
 
-  // Add Game to Priority
+  // Add Game to Priority (auto-saves immediately)
   const handleAddGame = () => {
     if (!selectedGameId) {
       alert('Tafadhali chagua game kwenye orodha!');
@@ -164,27 +165,32 @@ export default function AdminAssistantPage() {
       customNote: gameCustomNote.trim() || undefined,
     };
 
+    let updatedConfig: AssistantConfig;
+
     if (gameTargetSection === 'tz') {
       const exists = config.featured_tz_games.some(g => g.id === found.id);
       if (exists) {
         alert('Game hili tayari lipo kwenye orodha ya Tanzania!');
         return;
       }
-      setConfig(prev => ({
-        ...prev,
-        featured_tz_games: [...prev.featured_tz_games, newGame],
-      }));
+      updatedConfig = {
+        ...config,
+        featured_tz_games: [...config.featured_tz_games, newGame],
+      };
     } else {
       const exists = config.featured_intl_games.some(g => g.id === found.id);
       if (exists) {
         alert('Game hili tayari lipo kwenye orodha ya Kimataifa!');
         return;
       }
-      setConfig(prev => ({
-        ...prev,
-        featured_intl_games: [...prev.featured_intl_games, newGame],
-      }));
+      updatedConfig = {
+        ...config,
+        featured_intl_games: [...config.featured_intl_games, newGame],
+      };
     }
+
+    setConfig(updatedConfig);
+    handleSaveConfig(updatedConfig);
 
     // Reset inputs
     setSelectedGameId('');
@@ -192,17 +198,20 @@ export default function AdminAssistantPage() {
   };
 
   const handleRemoveGame = (id: string, section: 'tz' | 'intl') => {
+    let updatedConfig: AssistantConfig;
     if (section === 'tz') {
-      setConfig(prev => ({
-        ...prev,
-        featured_tz_games: prev.featured_tz_games.filter(g => g.id !== id),
-      }));
+      updatedConfig = {
+        ...config,
+        featured_tz_games: config.featured_tz_games.filter(g => g.id !== id),
+      };
     } else {
-      setConfig(prev => ({
-        ...prev,
-        featured_intl_games: prev.featured_intl_games.filter(g => g.id !== id),
-      }));
+      updatedConfig = {
+        ...config,
+        featured_intl_games: config.featured_intl_games.filter(g => g.id !== id),
+      };
     }
+    setConfig(updatedConfig);
+    handleSaveConfig(updatedConfig);
   };
 
   // Add Hidden Video to Vault
@@ -220,10 +229,13 @@ export default function AdminAssistantPage() {
       instructions: videoInstructions.trim() || undefined,
     };
 
-    setConfig(prev => ({
-      ...prev,
-      hidden_video_vault: [newVideo, ...prev.hidden_video_vault],
-    }));
+    const updatedConfig = {
+      ...config,
+      hidden_video_vault: [newVideo, ...config.hidden_video_vault],
+    };
+
+    setConfig(updatedConfig);
+    handleSaveConfig(updatedConfig);
 
     // Reset inputs
     setVideoTitle('');
@@ -233,10 +245,12 @@ export default function AdminAssistantPage() {
   };
 
   const handleRemoveVideo = (id: string) => {
-    setConfig(prev => ({
-      ...prev,
-      hidden_video_vault: prev.hidden_video_vault.filter(v => v.id !== id),
-    }));
+    const updatedConfig = {
+      ...config,
+      hidden_video_vault: config.hidden_video_vault.filter(v => v.id !== id),
+    };
+    setConfig(updatedConfig);
+    handleSaveConfig(updatedConfig);
   };
 
   // Compute distinct categories from catalog
