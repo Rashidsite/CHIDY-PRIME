@@ -18,6 +18,13 @@ import GameSearchModal from '@/components/GameSearchModal';
 import { CategorySkeleton, HorizontalCarouselSkeleton } from '@/components/SkeletonLoader';
 import { createClient } from '@/lib/supabase/client';
 import { cleanAllExpiredAccess, calculateDurationExpiry, pruneExpiredAccess, isGameAccessActive } from '@/lib/access-duration';
+import {
+  getCachedStorefrontData,
+  setCachedStorefrontData,
+  hasCachedStorefrontGames,
+  updateCachedGame,
+  removeCachedGame,
+} from '@/lib/client-cache';
 
 const INITIAL_FALLBACK_GAMES: GameProduct[] = [
   {
@@ -57,14 +64,16 @@ const INITIAL_FALLBACK_GAMES: GameProduct[] = [
 
 export default function FrontHubPage() {
   const supabase = useMemo(() => createClient(), []);
-  const [games, setGames] = useState<GameProduct[]>([]);
-  const [slides, setSlides] = useState<Slide[]>([]);
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const initialCachedSf = typeof window !== 'undefined' ? getCachedStorefrontData() : null;
+
+  const [games, setGames] = useState<GameProduct[]>(() => (initialCachedSf?.games && initialCachedSf.games.length > 0 ? initialCachedSf.games : []));
+  const [slides, setSlides] = useState<Slide[]>(() => (initialCachedSf?.slides && initialCachedSf.slides.length > 0 ? initialCachedSf.slides : []));
+  const [categories, setCategories] = useState<CategoryItem[]>(() => (initialCachedSf?.categories && initialCachedSf.categories.length > 0 ? initialCachedSf.categories : []));
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [checkoutGame, setCheckoutGame] = useState<GameProduct | null>(null);
-  const [slideshowInterval, setSlideshowInterval] = useState<number>(5000);
-  const [bgSettings, setBgSettings] = useState<{ enabled: boolean; image_url: string; opacity: number }>({
+  const [slideshowInterval, setSlideshowInterval] = useState<number>(() => initialCachedSf?.slideshowInterval || 5000);
+  const [bgSettings, setBgSettings] = useState<{ enabled: boolean; image_url: string; opacity: number }>(() => initialCachedSf?.bgSettings || {
     enabled: true,
     image_url: '/game_controller_bg.jpg',
     opacity: 0.45,
@@ -76,7 +85,7 @@ export default function FrontHubPage() {
     mode: 'manual' | 'auto';
     game_ids: string[];
     max_items: number;
-  }>({
+  }>(() => initialCachedSf?.trendingConfig || {
     enabled: true,
     title: '🔥 Hot & Trending Games',
     subtitle: 'Michezo inayopendwa zaidi sasa hivi',
@@ -93,8 +102,8 @@ export default function FrontHubPage() {
     return new Set();
   });
 
-  // Loading & Category Drawer States
-  const [loading, setLoading] = useState(true);
+  // Loading starts as FALSE if cached games already exist!
+  const [loading, setLoading] = useState<boolean>(() => !(initialCachedSf?.games && initialCachedSf.games.length > 0));
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [selectedDrawerCategory, setSelectedDrawerCategory] = useState<string | null>(null);
 
@@ -376,8 +385,8 @@ export default function FrontHubPage() {
     setTimeout(() => setShowCelebration(false), 3000);
   };
 
-  const loadStorefrontData = useCallback(async (isInitial = false) => {
-    if (isInitial) setLoading(true);
+  const loadStorefrontData = useCallback(async (showLoader = false) => {
+    if (showLoader) setLoading(true);
     try {
       // Fetch Real Products / Games from Supabase 'posts' table
       let postsData: any[] | null = null;
@@ -479,8 +488,10 @@ export default function FrontHubPage() {
       }
 
       // Fallback if no games in database to populate initial setup
-      setGames(combined.length > 0 ? combined : INITIAL_FALLBACK_GAMES);
+      const finalGames = combined.length > 0 ? combined : INITIAL_FALLBACK_GAMES;
+      setGames(finalGames);
 
+      let loadedSlides: Slide[] | undefined;
       // Load CMS Hero Slides (with dual-layer fallback)
       try {
         const res = await fetch('/api/admin/cms/slides');
@@ -489,12 +500,14 @@ export default function FrontHubPage() {
           const activeSlides = data.slides.filter((s: any) => s.is_active !== false);
           if (activeSlides.length > 0) {
             setSlides(activeSlides);
+            loadedSlides = activeSlides;
           }
         }
       } catch (err) {
         console.error('Failed to load slides:', err);
       }
 
+      let loadedCategories: CategoryItem[] | undefined;
       // Load CMS Category Cards
       try {
         const { data: categoriesData, error } = await supabase
@@ -530,11 +543,13 @@ export default function FrontHubPage() {
             };
           });
           setCategories(merged);
+          loadedCategories = merged;
         }
       } catch (err) {
         console.error('Failed to load categories:', err);
       }
 
+      let loadedBg: any;
       // Load Store Background Settings
       try {
         const { data: settingsData, error } = await supabase
@@ -543,16 +558,18 @@ export default function FrontHubPage() {
           .eq('key', 'custom_background')
           .single();
         if (!error && settingsData?.value) {
-          setBgSettings({
+          loadedBg = {
             enabled: settingsData.value.enabled ?? true,
             image_url: settingsData.value.image_url || '/game_controller_bg.jpg',
             opacity: settingsData.value.opacity ?? 0.45,
-          });
+          };
+          setBgSettings(loadedBg);
         }
       } catch (err) {
         console.error('Failed to load custom background:', err);
       }
 
+      let loadedInterval: number | undefined;
       // Load Slideshow Duration Settings
       try {
         const { data: slideshowData, error } = await supabase
@@ -567,11 +584,13 @@ export default function FrontHubPage() {
           else if (unit === 'minutes') ms = duration * 60 * 1000;
           else if (unit === 'days') ms = duration * 24 * 60 * 60 * 1000;
           setSlideshowInterval(ms);
+          loadedInterval = ms;
         }
       } catch (err) {
         console.error('Failed to load slideshow interval:', err);
       }
 
+      let loadedTrending: any;
       // Load Custom Trending Games Settings
       try {
         const { data: trendingData, error } = await supabase
@@ -582,34 +601,54 @@ export default function FrontHubPage() {
         if (!error && trendingData?.value) {
           const val = trendingData.value;
           if (Array.isArray(val)) {
+            loadedTrending = {
+              enabled: true,
+              title: '🔥 Hot & Trending Games',
+              subtitle: 'Michezo inayopendwa zaidi sasa hivi',
+              mode: 'manual',
+              game_ids: val,
+              max_items: 8,
+            };
             setTrendingConfig((prev) => ({
               ...prev,
               game_ids: val,
               enabled: true,
             }));
           } else if (typeof val === 'object' && val !== null) {
-            setTrendingConfig({
+            loadedTrending = {
               enabled: val.enabled !== false,
               title: val.title || '🔥 Hot & Trending Games',
               subtitle: val.subtitle || 'Michezo inayopendwa zaidi sasa hivi',
               mode: val.mode || 'manual',
               game_ids: Array.isArray(val.game_ids) ? val.game_ids : [],
               max_items: Number(val.max_items) || 8,
-            });
+            };
+            setTrendingConfig(loadedTrending);
           }
         }
       } catch (err) {
         console.error('Failed to load trending games:', err);
       }
+
+      // Synchronize entire fresh payload to client cache for 0ms loads
+      setCachedStorefrontData({
+        games: finalGames,
+        ...(loadedSlides ? { slides: loadedSlides } : {}),
+        ...(loadedCategories ? { categories: loadedCategories } : {}),
+        ...(loadedBg ? { bgSettings: loadedBg } : {}),
+        ...(loadedInterval !== undefined ? { slideshowInterval: loadedInterval } : {}),
+        ...(loadedTrending ? { trendingConfig: loadedTrending } : {}),
+      });
     } catch (err) {
       console.error('Failed to load storefront CMS data:', err);
     } finally {
-      if (isInitial) setLoading(false);
+      if (showLoader) setLoading(false);
     }
   }, [supabase]);
 
   useEffect(() => {
-    loadStorefrontData(true);
+    const hasCache = hasCachedStorefrontGames();
+    loadStorefrontData(!hasCache);
 
     // ── HELPER TO NORMALIZE REALTIME GAME PAYLOAD ──
     const formatRealtimeGame = (raw: any): GameProduct => {
@@ -661,11 +700,13 @@ export default function FrontHubPage() {
         if (isLive) {
           const newGame = formatRealtimeGame(payload.new);
           setGames((prev) => [newGame, ...prev.filter((g) => g.id !== newGame.id)]);
+          updateCachedGame(newGame);
         }
       } else if (payload.eventType === 'UPDATE' && payload.new) {
         const isLive = payload.new.status !== 'draft' && payload.new.status !== 'archived' && payload.new.status !== 'hidden' && payload.new.is_active !== false;
         if (!isLive) {
           setGames((prev) => prev.filter((g) => g.id !== payload.new.id));
+          removeCachedGame(payload.new.id);
         } else {
           const updatedGame = formatRealtimeGame(payload.new);
           setGames((prev) => {
@@ -673,9 +714,11 @@ export default function FrontHubPage() {
             if (!exists) return [updatedGame, ...prev];
             return prev.map((g) => (g.id === updatedGame.id ? { ...g, ...updatedGame } : g));
           });
+          updateCachedGame(updatedGame);
         }
       } else if (payload.eventType === 'DELETE' && payload.old) {
         setGames((prev) => prev.filter((g) => g.id !== payload.old.id));
+        removeCachedGame(payload.old.id);
       }
     };
 

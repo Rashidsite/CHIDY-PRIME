@@ -14,6 +14,7 @@ interface NewGamesFeedProps {
   onBuyNow?: (game: GameProduct) => void;
   unlockedGameIds?: Set<string>;
   onBack?: () => void;
+  loading?: boolean;
 }
 
 const BLUR_DATA_URL =
@@ -155,6 +156,7 @@ export default function NewGamesFeed({
   onBuyNow,
   unlockedGameIds = new Set(),
   onBack,
+  loading = false,
 }: NewGamesFeedProps) {
   const [sortBy, setSortBy] = useState<"newest" | "rating" | "price-asc" | "price-desc">("newest");
   const [search, setSearch] = useState("");
@@ -208,7 +210,9 @@ export default function NewGamesFeed({
               </span>
             </div>
             <p className="text-[10px] text-blue-400 font-bold mt-0.5">
-              {filteredAndSortedGames.length} Michezo na Mods maalum zilizochaguliwa
+              {loading && filteredAndSortedGames.length === 0
+                ? "Inapakia michezo..."
+                : `${filteredAndSortedGames.length} Michezo na Mods maalum zilizochaguliwa`}
             </p>
           </div>
         </div>
@@ -241,7 +245,23 @@ export default function NewGamesFeed({
       </div>
 
       {/* Game Grid */}
-      {filteredAndSortedGames.length === 0 ? (
+      {loading && filteredAndSortedGames.length === 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={`feed-skeleton-${i}`}
+              className="flex flex-col rounded-2xl overflow-hidden bg-[#0F172A] border border-slate-800/80 shadow-xl animate-pulse"
+            >
+              <div className="aspect-[16/9] w-full bg-slate-800/60" />
+              <div className="p-2.5 sm:p-3 flex flex-col gap-2">
+                <div className="h-3 w-3/4 bg-slate-800/80 rounded" />
+                <div className="h-2.5 w-1/2 bg-slate-800/60 rounded" />
+                <div className="h-8 w-full bg-slate-800/70 rounded-xl mt-2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredAndSortedGames.length === 0 ? (
         <div className="text-center py-16 px-4 bg-slate-900/40 rounded-3xl border border-slate-800 space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-md">
             <Flame className="w-6 h-6" />

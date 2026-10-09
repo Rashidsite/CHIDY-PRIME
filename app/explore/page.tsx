@@ -9,6 +9,7 @@ import CheckoutModal from '@/components/CheckoutModal';
 import CelebrationPopup from '@/components/CelebrationPopup';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
 import { GameProduct } from '@/components/GameCard';
+import { getCachedExploreGames, setCachedExploreGames, getCachedStorefrontData } from '@/lib/client-cache';
 
 const INITIAL_FALLBACK_GAMES: GameProduct[] = [
   {
@@ -50,8 +51,19 @@ const INITIAL_FALLBACK_GAMES: GameProduct[] = [
 ];
 
 export default function ExplorePage() {
-  const [games, setGames] = useState<GameProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [games, setGames] = useState<GameProduct[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = getCachedExploreGames();
+      if (cached && cached.length > 0) return cached;
+      const sf = getCachedStorefrontData();
+      if (sf?.games && sf.games.length > 0) {
+        const curated = sf.games.filter((g) => g.is_new_feed);
+        if (curated.length > 0) return curated;
+      }
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => games.length === 0);
   const [checkoutGame, setCheckoutGame] = useState<GameProduct | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [unlockedGameIds, setUnlockedGameIds] = useState<Set<string>>(() => {
@@ -261,6 +273,7 @@ export default function ExplorePage() {
         });
 
         setGames(formattedGames);
+        setCachedExploreGames(formattedGames);
       }
     } catch (err) {
       console.error('Failed to load explore games:', err);
@@ -334,6 +347,7 @@ export default function ExplorePage() {
       <main className="main-storefront-wrapper relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
         <NewGamesFeed
           games={games}
+          loading={loading}
           onBuyNow={handleBuyNow}
           unlockedGameIds={unlockedGameIds}
         />
