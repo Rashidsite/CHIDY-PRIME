@@ -14,6 +14,7 @@ import CelebrationPopup from '@/components/CelebrationPopup';
 import GameCard, { GameProduct } from '@/components/GameCard';
 import CategoryGamesDrawer from '@/components/CategoryGamesDrawer';
 import GameSearchModal from '@/components/GameSearchModal';
+import GamingWelcomeCurtain from '@/components/GamingWelcomeCurtain';
 import { CategorySkeleton, HorizontalCarouselSkeleton } from '@/components/SkeletonLoader';
 import { createClient } from '@/lib/supabase/client';
 import { cleanAllExpiredAccess, calculateDurationExpiry, pruneExpiredAccess, isGameAccessActive } from '@/lib/access-duration';
@@ -103,6 +104,7 @@ export default function FrontHubPage() {
 
   // Loading starts as FALSE if cached games already exist!
   const [loading, setLoading] = useState<boolean>(() => !(initialCachedSf?.games && initialCachedSf.games.length > 0));
+  const [curtainActive, setCurtainActive] = useState<boolean>(true);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [selectedDrawerCategory, setSelectedDrawerCategory] = useState<string | null>(null);
 
@@ -942,6 +944,14 @@ export default function FrontHubPage() {
 
   return (
     <>
+      {curtainActive && (
+        <GamingWelcomeCurtain
+          isLoading={loading}
+          minDisplayTimeMs={2200}
+          onFinish={() => setCurtainActive(false)}
+        />
+      )}
+
       <BackgroundOverlay
         imageUrl={bgSettings.image_url}
         opacity={bgSettings.opacity}
