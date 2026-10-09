@@ -947,7 +947,7 @@ export default function FrontHubPage() {
       {curtainActive && (
         <GamingWelcomeCurtain
           isLoading={loading}
-          minDisplayTimeMs={2200}
+          minDisplayTimeMs={1800}
           onFinish={() => setCurtainActive(false)}
         />
       )}

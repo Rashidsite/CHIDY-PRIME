@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Gamepad2, Sparkles, Flame, ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 
 interface GamingWelcomeCurtainProps {
-  isLoading: boolean;
+  isLoading?: boolean;
   minDisplayTimeMs?: number;
   onFinish?: () => void;
 }
@@ -18,107 +18,120 @@ const GAMING_STATUS_STEPS = [
 ];
 
 export default function GamingWelcomeCurtain({
-  isLoading,
-  minDisplayTimeMs = 2200,
+  isLoading = false,
+  minDisplayTimeMs = 1800,
   onFinish,
 }: GamingWelcomeCurtainProps) {
   const [visible, setVisible] = useState(true);
-  const [progress, setProgress] = useState(18);
+  const [progress, setProgress] = useState(15);
   const [statusStep, setStatusStep] = useState(0);
-  const mountTimeRef = useRef<number>(Date.now());
-  const finishedRef = useRef<boolean>(false);
+
+  const hasExitedRef = useRef(false);
+  const onFinishRef = useRef(onFinish);
+  const isLoadingRef = useRef(isLoading);
+  const mountTimeRef = useRef(Date.now());
+
+  // Keep refs up-to-date without triggering re-runs of the timer effect
+  useEffect(() => {
+    onFinishRef.current = onFinish;
+  });
 
   useEffect(() => {
-    // Progress increment timer
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev < 92) {
-          const step = Math.floor(Math.random() * 8) + 4;
-          return Math.min(prev + step, 92);
-        }
-        return prev;
-      });
-    }, 130);
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
-    // Dynamic message cycling
-    const messageInterval = setInterval(() => {
-      setStatusStep((prev) => (prev + 1) % GAMING_STATUS_STEPS.length);
-    }, 600);
+  // Guaranteed dismiss function - can never be cancelled by re-renders
+  const triggerDismiss = useRef(() => {
+    if (hasExitedRef.current) return;
+    hasExitedRef.current = true;
+
+    setProgress(100);
+    setStatusStep(GAMING_STATUS_STEPS.length - 1);
+
+    // Short pause so user sees 100% done, then animate curtain slide up
+    setTimeout(() => {
+      setVisible(false);
+      // Wait for framer-motion exit animation (800ms) to complete before unmounting from parent
+      setTimeout(() => {
+        if (onFinishRef.current) {
+          onFinishRef.current();
+        }
+      }, 850);
+    }, 280);
+  });
+
+  // Dedicated self-contained timer that NEVER gets cancelled on refresh or re-render
+  useEffect(() => {
+    // 1. Progress smooth increment
+    const progressTimer = setInterval(() => {
+      if (hasExitedRef.current) {
+        clearInterval(progressTimer);
+        return;
+      }
+      setProgress((prev) => {
+        if (prev >= 95) return 95;
+        const add = Math.floor(Math.random() * 8) + 4;
+        return Math.min(prev + add, 95);
+      });
+    }, 90);
+
+    // 2. Status message cycling
+    const messageTimer = setInterval(() => {
+      if (hasExitedRef.current) {
+        clearInterval(messageTimer);
+        return;
+      }
+      setStatusStep((prev) => (prev + 1) % (GAMING_STATUS_STEPS.length - 1));
+    }, 450);
+
+    // 3. Periodic check for completion:
+    // Dismisses when minDisplayTimeMs has elapsed AND loading is done,
+    // OR at absolute max limit (2400ms) to GUARANTEE it NEVER freezes on refresh!
+    const checkCompletionTimer = setInterval(() => {
+      const elapsed = Date.now() - mountTimeRef.current;
+      const isPastMinTime = elapsed >= minDisplayTimeMs;
+      const isPastHardLimit = elapsed >= 2400; // Hard fallback guarantee: never freeze!
+
+      if (!hasExitedRef.current) {
+        if ((isPastMinTime && !isLoadingRef.current) || isPastHardLimit) {
+          clearInterval(checkCompletionTimer);
+          clearInterval(progressTimer);
+          clearInterval(messageTimer);
+          triggerDismiss.current();
+        }
+      }
+    }, 100);
 
     return () => {
-      clearInterval(progressInterval);
-      clearInterval(messageInterval);
+      clearInterval(progressTimer);
+      clearInterval(messageTimer);
+      clearInterval(checkCompletionTimer);
     };
-  }, []);
+  }, [minDisplayTimeMs]);
 
-  // Handle dismissal once loading finishes AND minDisplayTimeMs has passed
-  useEffect(() => {
-    if (finishedRef.current) return;
-
-    let exitTimer: NodeJS.Timeout;
-
-    const triggerExit = () => {
-      if (finishedRef.current) return;
-      finishedRef.current = true;
-      setProgress(100);
-      setStatusStep(GAMING_STATUS_STEPS.length - 1);
-
-      exitTimer = setTimeout(() => {
-        setVisible(false);
-        if (onFinish) onFinish();
-      }, 450);
-    };
-
-    if (!isLoading) {
-      const elapsed = Date.now() - mountTimeRef.current;
-      const remainingTime = Math.max(0, minDisplayTimeMs - elapsed);
-
-      const delayTimer = setTimeout(() => {
-        triggerExit();
-      }, remainingTime);
-
-      return () => {
-        clearTimeout(delayTimer);
-        clearTimeout(exitTimer);
-      };
-    } else {
-      // Fallback maximum safety: after 6 seconds, never stay stuck even on slow network
-      const maxSafetyTimeout = setTimeout(() => {
-        triggerExit();
-      }, 6000);
-
-      return () => {
-        clearTimeout(maxSafetyTimeout);
-        clearTimeout(exitTimer);
-      };
-    }
-  }, [isLoading, minDisplayTimeMs, onFinish]);
-
-  const handleSkip = () => {
-    if (finishedRef.current) return;
-    finishedRef.current = true;
-    setProgress(100);
-    setVisible(false);
-    if (onFinish) onFinish();
+  const handleSkipNow = () => {
+    triggerDismiss.current();
   };
 
   const ActiveIcon = GAMING_STATUS_STEPS[statusStep]?.icon || Gamepad2;
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {visible && (
         <motion.div
-          key="gaming-curtain"
-          initial={{ opacity: 1 }}
+          key="gaming-welcome-curtain"
+          initial={{ opacity: 1, y: 0 }}
           exit={{
             opacity: 0,
             y: '-100%',
             transition: {
-              duration: 0.8,
-              ease: [0.77, 0, 0.175, 1], // Cinematic curtain slide-up
+              duration: 0.75,
+              ease: [0.77, 0, 0.175, 1], // Cinematic smooth curtain slide up
             },
           }}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#070b14] overflow-hidden select-none px-4"
+          className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#070b14] overflow-hidden select-none px-4 ${
+            !visible ? 'pointer-events-none' : ''
+          }`}
         >
           {/* Cyber Ambient Glowing Lights */}
           <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse" />
@@ -210,7 +223,7 @@ export default function GamingWelcomeCurtain({
                 <motion.div
                   className="h-full bg-gradient-to-r from-blue-600 via-cyan-400 to-emerald-400 rounded-full relative overflow-hidden shadow-[0_0_12px_rgba(34,211,238,0.8)]"
                   style={{ width: `${progress}%` }}
-                  transition={{ ease: 'easeOut', duration: 0.2 }}
+                  transition={{ ease: 'easeOut', duration: 0.15 }}
                 >
                   {/* High speed shimmer highlight */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_1.5s_infinite]" />
@@ -241,11 +254,12 @@ export default function GamingWelcomeCurtain({
 
             {/* Quick Skip Button */}
             <motion.button
+              type="button"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              onClick={handleSkip}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-300 transition-colors py-1.5 px-3 rounded-lg hover:bg-slate-900/60"
+              onClick={handleSkipNow}
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-300 transition-colors py-1.5 px-3 rounded-lg hover:bg-slate-900/60 cursor-pointer active:scale-95"
             >
               <span>Ingia Uwanjani Moja kwa Moja</span>
               <ArrowRight className="w-3.5 h-3.5" />
