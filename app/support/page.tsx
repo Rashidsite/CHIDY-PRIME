@@ -89,6 +89,7 @@ export default function SupportPage() {
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [lockRemainingSecs, setLockRemainingSecs] = useState<number>(0);
   const [userPhone, setUserPhone] = useState('');
+  const [isCheckingUnlock, setIsCheckingUnlock] = useState(false);
 
   // Payment Modal State
   const [paymentModalGame, setPaymentModalGame] = useState<any | null>(null);
@@ -182,6 +183,10 @@ export default function SupportPage() {
           if (parsed.lockedUntil && parsed.lockedUntil > now) {
             setLockedUntil(parsed.lockedUntil);
             setLockRemainingSecs(Math.ceil((parsed.lockedUntil - now) / 1000));
+            // Check immediately if customer has paid since being locked
+            if (parsed.userPhone) {
+              checkPaymentUnlock(parsed.userPhone);
+            }
           }
           return;
         }
@@ -230,9 +235,67 @@ export default function SupportPage() {
     return () => clearInterval(interval);
   }, [lockedUntil]);
 
+  // Periodic Auto-Unlock check when user is locked out
+  useEffect(() => {
+    if (!lockedUntil || !userPhone) return;
+
+    // Check automatically every 6 seconds if payment has arrived
+    const interval = setInterval(() => {
+      checkPaymentUnlock(userPhone);
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [lockedUntil, userPhone]);
+
   useEffect(() => {
     scrollToBottom(true);
   }, [messages, isTyping]);
+
+  // ── CHECK PAYMENT UNLOCK (API Call) ──
+  const checkPaymentUnlock = async (phoneToCheck?: string) => {
+    const targetPhone = phoneToCheck || userPhone;
+    if (!targetPhone || targetPhone.replace(/\D/g, '').length < 9) return;
+
+    try {
+      setIsCheckingUnlock(true);
+      const res = await fetch(`/api/support/assistant?phone=${encodeURIComponent(targetPhone)}`);
+      const data = await res.json();
+      setIsCheckingUnlock(false);
+
+      if (data.unlocked && data.order) {
+        // Unlock immediately!
+        setLockedUntil(null);
+        setLockRemainingSecs(0);
+        setUnpaidAttempts(0);
+
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.lockedUntil = null;
+            parsed.unpaidAttempts = 0;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+          }
+        } catch {}
+
+        playChime();
+
+        const unlockMsg: ChatMessage = {
+          id: 'bot_unlock_' + Date.now(),
+          sender: 'chidy',
+          text: data.message || '🎉 Hongera kaka! Malipo yako yamethibitishwa. Dawati la msaada limefunguliwa mara moja!',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'verified_order',
+          order: data.order,
+        };
+
+        setMessages(prev => [...prev, unlockMsg]);
+      }
+    } catch (err) {
+      setIsCheckingUnlock(false);
+      console.warn('Unlock check error:', err);
+    }
+  };
 
   const initWelcomeChat = () => {
     const welcomeMsg: ChatMessage = {
@@ -245,6 +308,7 @@ export default function SupportPage() {
         { label: '🚌 Mabasi ya Tanzania (Maleo)', query: 'Maleo' },
         { label: '🚛 ETS2 Tanzania', query: 'ETS2' },
         { label: '⚽ Michezo ya Mpira', query: 'Mpira' },
+        { label: '🎮 Games za Bure (Free)', query: 'Game za bure zipo' },
         { label: '📺 Jinsi ya Ku-set game', query: 'Nielekeze jinsi ya kuset game' },
       ],
     };
@@ -268,7 +332,7 @@ export default function SupportPage() {
     if (!textToSend || isTyping) return;
 
     if (lockedUntil && Date.now() < lockedUntil) {
-      alert('Dawati la msaada limefungwa kwa muda. Tafadhali subiri muda uliowekwa umalizike.');
+      alert('Dawati la msaada limefungwa kwa muda. Unaweza kuendelea kununua game dukani, na ukishalipia dirisha hili litafunguka mara moja!');
       return;
     }
 
@@ -278,6 +342,22 @@ export default function SupportPage() {
       activePhone = textToSend;
       setUserPhone(textToSend);
     }
+
+    // ONLY pass phone if this message is explicitly asking about payment OR contains digits
+    const lower = textToSend.toLowerCase();
+    const isExplicitPayCheck = 
+      digitsOnly.length >= 9 ||
+      lower.includes('nimelipa') ||
+      lower.includes('sijapata') ||
+      lower.includes('muamala') ||
+      lower.includes('nimekatwa') ||
+      lower.includes('nimetuma') ||
+      lower.includes('thibitisha') ||
+      lower.includes('stk') ||
+      lower.includes('oda') ||
+      lower.includes('order');
+
+    const phoneToSend = isExplicitPayCheck ? activePhone : '';
 
     const userMsg: ChatMessage = {
       id: 'user_' + Date.now(),
@@ -296,7 +376,7 @@ export default function SupportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: textToSend,
-          phone: activePhone,
+          phone: phoneToSend,
           unpaidAttempts,
         }),
       });
@@ -307,6 +387,13 @@ export default function SupportPage() {
 
       if (data.userPhone) {
         setUserPhone(data.userPhone);
+      }
+
+      // If verified order, unlock if previously locked & reset counter!
+      if (data.type === 'verified_order') {
+        setLockedUntil(null);
+        setLockRemainingSecs(0);
+        setUnpaidAttempts(0);
       }
 
       if (data.type === 'lockout' || data.isLocked) {
@@ -489,18 +576,45 @@ export default function SupportPage() {
 
           {/* ── SECURITY LOCKOUT BANNER (if user is locked out) ── */}
           {lockedUntil && (
-            <div className="shrink-0 p-3 sm:p-4 bg-red-950/90 border-b border-red-500/40 text-center space-y-2">
+            <div className="shrink-0 p-3 sm:p-4 bg-red-950/90 border-b border-red-500/40 text-center space-y-2.5">
               <div className="inline-flex items-center gap-2 text-xs font-black text-white uppercase tracking-tight">
                 <Lock className="w-4 h-4 text-red-400 animate-pulse" />
                 <span>⛔ Dawati la Msaada Limefungwa kwa Muda</span>
               </div>
-              <p className="text-[11px] text-red-200 max-w-lg mx-auto font-medium">
-                Umejaribu kudai malipo mara nyingi bila uthibitisho. Sehemu hii imefungwa kwa ajili ya usalama.
+              <p className="text-[11px] text-red-200 max-w-lg mx-auto font-medium leading-relaxed">
+                Umejaribu kudai malipo mara nyingi bila uthibitisho. Unaweza kuendelea kununua game dukani kamakawaida, na ukishalipia dirisha la msaada litafunguka mara moja!
               </p>
-              <div className="flex items-center justify-center gap-3">
-                <span className="px-3 py-1.5 rounded-lg bg-slate-900 border border-red-500/30 text-red-400 font-mono font-bold text-xs">
-                  Muda uliobaki: {formatTimer(lockRemainingSecs)}
+              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+                <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-red-500/30 text-red-400 font-mono font-bold text-xs flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Muda: {formatTimer(lockRemainingSecs)}</span>
                 </span>
+
+                <Link
+                  href="/"
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                >
+                  <Gamepad2 className="w-3.5 h-3.5" />
+                  <span>🛍️ Nenda Dukani Kununua Game</span>
+                </Link>
+
+                <button
+                  onClick={() => checkPaymentUnlock()}
+                  disabled={isCheckingUnlock}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/30 transition-all cursor-pointer"
+                >
+                  {isCheckingUnlock ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Inakagua malipo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>🔄 Nimelipia (Fungua Dawati)</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
