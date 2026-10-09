@@ -728,25 +728,65 @@ export default function SupportPage() {
                             )}
                           </div>
 
-                          <div className="flex-1 min-w-0 space-y-0.5">
+                          <div className="flex-1 min-w-0 space-y-1">
                             <h4 className="text-xs font-black text-white truncate">{g.title}</h4>
-                            <p className="text-[11px] font-bold text-cyan-400">
-                              TSh {Number(g.price || 0).toLocaleString()}
-                            </p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {Number(g.price || 0) === 0 ? (
+                                <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                                  BURE / FREE 🎁
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-bold text-cyan-400">
+                                  TSh {Number(g.price || 0).toLocaleString()}
+                                </span>
+                              )}
+                              {g.category && (
+                                <span className="text-[9px] uppercase font-bold text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded truncate max-w-[140px]">
+                                  📁 {g.category}
+                                </span>
+                              )}
+                            </div>
+                            {g.description && (
+                              <p className="text-[10px] text-slate-400 truncate line-clamp-1">
+                                {g.description}
+                              </p>
+                            )}
                             {g.customNote && (
-                              <p className="text-[10px] text-slate-400 italic truncate">
+                              <p className="text-[10px] text-amber-400 italic truncate">
                                 {g.customNote}
                               </p>
                             )}
                           </div>
 
-                          <button
-                            onClick={() => handleOpenPayment(g)}
-                            className="px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-[10px] uppercase tracking-wider shadow-md shrink-0 transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5"
-                          >
-                            <CreditCard className="w-3 h-3" />
-                            <span>Lipia Sasa</span>
-                          </button>
+                          {Number(g.price || 0) === 0 ? (
+                            (g.download_url || (g.links && g.links[0]?.url)) ? (
+                              <a
+                                href={g.download_url || (g.links && g.links[0]?.url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-[10px] uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>Pakua Bure</span>
+                              </a>
+                            ) : (
+                              <button
+                                onClick={() => handleSendMessage(`Nataka link ya ${g.title}`)}
+                                className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>Pakua Bure</span>
+                              </button>
+                            )
+                          ) : (
+                            <button
+                              onClick={() => handleOpenPayment(g)}
+                              className="px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-[10px] uppercase tracking-wider shadow-md shrink-0 transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5"
+                            >
+                              <CreditCard className="w-3 h-3" />
+                              <span>Lipia Sasa</span>
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -838,40 +878,52 @@ export default function SupportPage() {
             {/* Quick Action Chips bar */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-nowrap">
               <button
+                onClick={() => handleSendMessage('Kuna category gani')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-blue-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                📁 Categories Zote
+              </button>
+              <button
+                onClick={() => handleSendMessage('Game za bure zipo')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                🆓 Games za Bure (Free)
+              </button>
+              <button
+                onClick={() => handleSendMessage('Nataka game')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                🎮 Games za Kipaumbele
+              </button>
+              <button
+                onClick={() => handleSendMessage('Maleo Bus Mode TZ')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                🚌 Mabasi ya Tanzania
+              </button>
+              <button
+                onClick={() => handleSendMessage('Football Games')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                ⚽ Michezo ya Mpira
+              </button>
+              <button
+                onClick={() => handleSendMessage('PS2 Games')}
+                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
+              >
+                🎮 PS2 Games Simuni
+              </button>
+              <button
                 onClick={() => handleSendMessage('Nimelipa sijapata game')}
                 className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-amber-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
               >
                 🚀 Nimelipa Sijapata Game
               </button>
               <button
-                onClick={() => handleSendMessage('Nataka game')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🎮 Games Kali za Kipaumbele
-              </button>
-              <button
-                onClick={() => handleSendMessage('Nataka game la mabasi ya Tanzania')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🇹🇿 Mabasi ya Tanzania
-              </button>
-              <button
                 onClick={() => handleSendMessage('Nielekeze jinsi ya kuset game')}
                 className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
               >
                 📺 Jinsi ya Ku-set / Install
-              </button>
-              <button
-                onClick={() => handleSendMessage('Maleo')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🚌 Maleo Bus Mod TZ
-              </button>
-              <button
-                onClick={() => handleSendMessage('ETS2')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-purple-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🚛 ETS2 Tanzania
               </button>
             </div>
 
