@@ -63,6 +63,13 @@ interface ChatMessage {
     instructions?: string;
   };
   channelUrl?: string;
+  manualPayment?: {
+    vodacomTill?: string;
+    tigoTill?: string;
+    registeredName?: string;
+    whatsappUrl?: string;
+    whatsappNumber?: string;
+  };
   quickActions?: Array<{ label: string; query: string }>;
 }
 
@@ -428,6 +435,7 @@ export default function SupportPage() {
         games: data.games || (data.allFeatured ? data.allFeatured : undefined),
         tutorial: data.tutorial,
         channelUrl: data.channelUrl,
+        manualPayment: data.manualPayment,
         quickActions: data.quickActions,
       };
 
@@ -835,17 +843,82 @@ export default function SupportPage() {
                     </div>
                   )}
 
+                  {/* ── CARD: MANUAL LIPA NAMBA & WHATSAPP BUTTON ── */}
+                  {msg.manualPayment && (
+                    <div className="mt-3 p-3.5 rounded-xl bg-slate-900 border border-emerald-500/40 space-y-3 shadow-lg">
+                      <div className="flex items-center gap-2 text-emerald-400 font-black text-xs uppercase tracking-wide">
+                        <CreditCard className="w-4 h-4 shrink-0" />
+                        <span>Chagua Mojawapo ya Namba za Malipo:</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                        {/* Vodacom Till */}
+                        <div className="p-3 rounded-xl bg-black/60 border border-slate-800 space-y-1">
+                          <div className="text-[10px] text-rose-400 font-bold uppercase tracking-wider flex items-center justify-between">
+                            <span>🔴 Vodacom Lipa (Till)</span>
+                            <span className="text-[9px] text-slate-400">CHIDYPRIME</span>
+                          </div>
+                          <div className="text-white font-black text-base tracking-widest py-0.5">
+                            {msg.manualPayment.vodacomTill || '354049107'}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-sans">
+                            Jina: <strong className="text-slate-300">{msg.manualPayment.registeredName || 'RASHID SALUM RASHID'}</strong>
+                          </div>
+                        </div>
+
+                        {/* Tigo Till */}
+                        <div className="p-3 rounded-xl bg-black/60 border border-slate-800 space-y-1">
+                          <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider flex items-center justify-between">
+                            <span>🔵 Tigo Lipa (Till)</span>
+                            <span className="text-[9px] text-slate-400">CHIDYPRIME</span>
+                          </div>
+                          <div className="text-white font-black text-base tracking-widest py-0.5">
+                            {msg.manualPayment.tigoTill || '43135388'}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-sans">
+                            Jina: <strong className="text-slate-300">{msg.manualPayment.registeredName || 'RASHID SALUM RASHID'}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Direct WhatsApp Button */}
+                      <a
+                        href={msg.manualPayment.whatsappUrl || 'https://wa.me/255655361060?text=Habari%20Admin%20CHIDYPRIME,%20nimeshafanya%20malipo%20ya%20game%20kupitia%20Lipa%20Namba.%20Naomba%20kufunguliwa.'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer no-underline"
+                      >
+                        <MessageCircle className="w-4 h-4 fill-black" />
+                        <span>Fungua WhatsApp ya Admin (0655361060)</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                      </a>
+                    </div>
+                  )}
+
                   {/* Quick Action Chips inside bot message */}
                   {msg.quickActions && msg.quickActions.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800/80">
                       {msg.quickActions.map((qa, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleSendMessage(qa.query)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-blue-500 text-slate-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer"
-                        >
-                          {qa.label}
-                        </button>
+                        qa.query.startsWith('http') ? (
+                          <a
+                            key={i}
+                            href={qa.query}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600/20 border border-emerald-500/50 hover:bg-emerald-600 text-emerald-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer no-underline flex items-center gap-1"
+                          >
+                            <span>{qa.label}</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        ) : (
+                          <button
+                            key={i}
+                            onClick={() => handleSendMessage(qa.query)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-blue-500 text-slate-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer"
+                          >
+                            {qa.label}
+                          </button>
+                        )
                       ))}
                     </div>
                   )}

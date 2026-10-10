@@ -271,9 +271,66 @@ export async function POST(request: Request) {
     const cleanedDigitsOnly = trimmedMsg.replace(/\D/g, '');
     const isPurePhoneInput = cleanedDigitsOnly.length >= 9 && cleanedDigitsOnly.length <= 13;
 
-    // Explicit payment query words
+    // ── PRIORITY INTENT 0: Failed to Pay / Ask for Payment Number / Manual Payment ──
+    const failedPaymentKeywords = [
+      'nimeshindwa', 'kushindwa', 'shindwa', 'nimeshindwa kulipia', 'nimeshindwa kulipa',
+      'naomba namba ya malipo', 'namba ya malipo', 'namba ya kulipa', 'namba ya kulipia',
+      'naomba namba', 'lipa namba', 'till number', 'till', 'namba ya simu ya kulipa',
+      'namba za malipo', 'kulipa kawaida', 'malipo ya kawaida', 'sijapata ussd', 'ussd haiji',
+      'stk haiji', 'pin haitokei', 'sijapata pin', 'pesa haitoki', 'hela haitoki',
+      'nimekwama kulipa', 'nimekwama kulipia', 'tatizo la malipo', 'changamoto ya malipo'
+    ];
+    const isFailedPayment = failedPaymentKeywords.some(kw => lowerMsg.includes(kw));
+
+    const confirmedManualPaidKeywords = [
+      'nimeshalipa kwa lipa namba', 'nimeshalipa kwenye lipa namba',
+      'nimelipa kwa lipa namba', 'nimetuma kwa lipa namba',
+      'tayari nimeshatuma kwa lipa namba'
+    ];
+    const isConfirmedManualPaid = confirmedManualPaidKeywords.some(kw => lowerMsg.includes(kw));
+
+    if (isConfirmedManualPaid) {
+      return NextResponse.json({
+        type: 'manual_payment_confirmed',
+        message: `Hongera sana kwa kufanya malipo brother! 🎉\n\nIli tukufungulie game lako haraka bila kuchelewa, tafadhali bofya kitufe cha WhatsApp hapa chini uje moja kwa moja kwenye WhatsApp ya Admin wetu (0655361060). Tuma ujumbe wako wa muamala (SMS ya malipo) ili akaunti yako iwashwe mara moja! ⚡🎮`,
+        manualPayment: {
+          vodacomTill: '354049107',
+          tigoTill: '43135388',
+          registeredName: 'RASHID SALUM RASHID',
+          whatsappUrl: 'https://wa.me/255655361060?text=Habari%20Admin%20CHIDYPRIME,%20nimeshafanya%20malipo%20ya%20game%20kupitia%20Lipa%20Namba.%20Naomba%20kufunguliwa.',
+          whatsappNumber: '0655361060'
+        },
+        quickActions: [
+          { label: '📲 Nenda WhatsApp (0655361060)', query: 'https://wa.me/255655361060' },
+          { label: '🔎 Kagua Oda Yangu', query: 'Kagua oda yangu' }
+        ],
+        unpaidAttempts,
+      });
+    }
+
+    if (isFailedPayment) {
+      return NextResponse.json({
+        type: 'manual_payment_info',
+        message: `Pole sana bro kwa changamoto! 🤝\n\nUmekwama wapi au unakutana na changamoto gani? (Mfano: Hujapata ujumbe wa PIN/USSD kwenye simu, salio halitoshi, au mtandao umegoma?)\n\nKama mfumo wa kawaida umekataa au haujapata USSD push, unaweza kulipia moja kwa moja kwa mojawapo ya Lipa Namba zetu hizi hapa:\n\n🔴 VODACOM LIPA NAMBA: 354049107\n🔵 TIGO LIPA NAMBA: 43135388\n👤 Jina la Usajili: RASHID SALUM RASHID (CHIDYPRIME)\n\n📌 Ukishafanya malipo kwenye mojawapo ya namba hizo, bonyeza kitufe cha WhatsApp hapa chini uje kwangu moja kwa moja ukiwa na ujumbe wa muamala nikufungulie game papo hapo! 🎮🔥`,
+        manualPayment: {
+          vodacomTill: '354049107',
+          tigoTill: '43135388',
+          registeredName: 'RASHID SALUM RASHID',
+          whatsappUrl: 'https://wa.me/255655361060?text=Habari%20Admin%20CHIDYPRIME,%20nimeshafanya%20malipo%20ya%20game%20kupitia%20Lipa%20Namba.%20Naomba%20kufunguliwa.',
+          whatsappNumber: '0655361060'
+        },
+        quickActions: [
+          { label: '✅ Nimeshalipa kwa Lipa Namba', query: 'Nimeshalipa kwa lipa namba' },
+          { label: '📲 Wasiliana WhatsApp (0655361060)', query: 'https://wa.me/255655361060' },
+          { label: '📵 Sijapata PIN kwenye simu', query: 'Sijapata PIN kwenye simu' }
+        ],
+        unpaidAttempts,
+      });
+    }
+
+    // Explicit payment query words (for checking existing orders)
     const explicitPaymentKeywords = [
-      'nimelipa', 'sijapata', 'nimekatwa', 'kulipia', 'nimetuma',
+      'nimelipa', 'sijapata', 'nimekatwa', 'nimetuma',
       'muamala', 'oda yangu', 'kagua oda', 'status ya oda', 'thibitisha malipo',
       'hela imetoka', 'pesa imetoka', 'nimeingiza pin', 'namba yangu ni',
       'mbona sijapata', 'nimeshalipa', 'stk', 'order'
