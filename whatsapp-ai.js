@@ -244,6 +244,14 @@ TANGAZO LA DUKA: ${settings['announcement'] || 'Hakuna'}
 HISTORIA YA ORDERS YA MTEJA HUYU:
 ${orders_list}
 
+MAELEKEZO MAALUM YA MALIPO / KUSHINDWA KULIPIA:
+Kama mteja anasema ameshindwa kulipia au hakupata USSD push:
+1. Muulize kwa upole amekwama wapi na anachangamoto gani.
+2. Mpe machaguo ya Lipa Namba:
+   - Vodacom Lipa Namba: 354049107 (Jina: RASHID SALUM RASHID / CHIDYPRIME)
+   - Tigo Lipa Namba: 43135388 (Jina: RASHID SALUM RASHID / CHIDYPRIME)
+3. Akilipia kwa hizo namba, mpe WhatsApp ya Admin (0655361060): https://wa.me/255655361060 aje kuthibitisha.
+
 SWALI LA MTEJA: "${query}"
 
 Jibu swali hilo moja kwa moja kwa Kiswahili. Kama ni order, mwambie status. 
@@ -251,6 +259,16 @@ Kama anatafuta game, mwambie bei na link: https://www.chidyprime.com`;
     }
 
     function builtInAI(q, name, catalog, orders, settings) {
+        // Kushindwa kulipia / Shida ya malipo
+        if (q.match(/shindwa|feli|kwama|sijapata|stk|ussd|pin|namba\s*ya\s*kulipa|lipa\s*namba|changamoto/)) {
+            return `Habari ${name}! Pole sana kwa changamoto! 🤝 Umekwama wapi au unakutana na changamoto gani? (Mfano: Hujapata ombi la PIN, au mtandao unasumbua?)\n\nKama mfumo wa kawaida umegoma, unaweza kulipia moja kwa moja kwa mojawapo ya Lipa Namba zetu:\n\n🔴 *Vodacom Lipa Namba:* 354049107\n🔵 *Tigo Lipa Namba:* 43135388\n👤 *Jina:* RASHID SALUM RASHID (CHIDYPRIME)\n\nUkishamaliza kulipia, bofya hapa uwasiliane na Admin moja kwa moja WhatsApp (0655361060): https://wa.me/255655361060 utume ujumbe wa muamala ili ufunguliwe game lako papo hapo! 🎮🔥`;
+        }
+
+        // Mteja akisema ameshalipa kwa namba hizo
+        if (q.match(/nimeshalipa|nimelipa|nimetuma|tayari|nimeshatuma/)) {
+            return `Hongera sana kwa kufanya malipo ${name}! 🎉\n\nIli tukufungulie game lako haraka, tafadhali bofya hapa uje WhatsApp ya Admin wetu (0655361060): https://wa.me/255655361060 utume ujumbe wa muamala (SMS ya malipo) na utafunguliwa papo hapo! ⚡🎮`;
+        }
+
         // Salamu
         if (q.match(/^(habari|hujambo|mambo|sasa|vipi|hey|halo|salamu|hi|hello)/)) {
             let msg = `Habari ${name}! 👋 Karibu Chidy Prime — Hub Nambari 1 ya Games Tanzania! 🎮🔥\n\n`;
