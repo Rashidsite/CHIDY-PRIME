@@ -957,6 +957,7 @@ export default function FrontHubPage() {
       const fc = (cat?.name || '').toLowerCase().replace(/s$/i, '').trim();
       const count = (games ?? []).filter((g) => {
         if (!g?.category) return false;
+        const gc = String(g.category).toLowerCase().replace(/s$/i, '').trim();
         const isLiveTvMatch =
           (gc.replace(/_/g, ' ') === fc.replace(/_/g, ' ')) ||
           (gc.includes('live') && fc.includes('live'));
