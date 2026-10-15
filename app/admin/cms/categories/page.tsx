@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import ImgBBUploadModal from '@/components/ImgBBUploadModal';
-import { Plus, Trash2, Layers, Eye, EyeOff, X, Pencil } from 'lucide-react';
+import { Plus, Trash2, Layers, Eye, EyeOff, X, Pencil, Gamepad2, Trophy, ChevronRight, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function AdminCmsCategoriesPage() {
@@ -17,8 +17,8 @@ export default function AdminCmsCategoriesPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [badgeText, setBadgeText] = useState('HOT MODS');
-  const [sortOrder, setSortOrder] = useState('0');
+  const [badgeText, setBadgeText] = useState('MODS & GAMES');
+  const [sortOrder, setSortOrder] = useState('1');
   const [submitting, setSubmitting] = useState(false);
 
   const supabase = createClient();
@@ -46,14 +46,31 @@ export default function AdminCmsCategoriesPage() {
         }
       } catch (e) {}
 
-      // 3. Merge metadata with categories
+      // 3. Fetch published games to count games per category
+      let gamesData: any[] = [];
+      try {
+        const { data: gData } = await supabase
+          .from('games')
+          .select('id, category');
+        if (gData) gamesData = gData;
+      } catch (e) {}
+
+      // 4. Merge metadata & count with categories
       const merged = (categoriesData || []).map((cat: any) => {
         const meta = metadata[cat.name] || {};
+        const fc = (cat.name || '').toLowerCase().replace(/s$/i, '').trim();
+        const count = gamesData.filter((g: any) => {
+          if (!g.category) return false;
+          const gc = String(g.category).toLowerCase().replace(/s$/i, '').trim();
+          return gc === fc || gc.includes(fc) || fc.includes(gc);
+        }).length;
+
         return {
           ...cat,
           image_url: meta.image_url || '',
           description: meta.description || '',
           badge_text: meta.badge_text || 'MODS & GAMES',
+          game_count: count,
         };
       });
 
@@ -71,10 +88,10 @@ export default function AdminCmsCategoriesPage() {
 
   const handleOpenAdd = () => {
     setName('');
-    setDescription('');
+    setDescription('Magemu ya Tanzania yanapatikana kwenye hii category');
     setImageUrl('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop');
-    setBadgeText('HOT MODS');
-    setSortOrder('0');
+    setBadgeText('MODS & GAMES');
+    setSortOrder(String(categories.length + 1));
     setModalMode('add');
     setEditingId(null);
     setOldName('');
@@ -85,8 +102,8 @@ export default function AdminCmsCategoriesPage() {
     setName(c.name || '');
     setDescription(c.description || '');
     setImageUrl(c.image_url || '');
-    setBadgeText(c.badge_text || 'HOT MODS');
-    setSortOrder(String(c.display_order || 0));
+    setBadgeText(c.badge_text || 'MODS & GAMES');
+    setSortOrder(String(c.display_order ?? 0));
     setModalMode('edit');
     setEditingId(c.id);
     setOldName(c.name || '');
@@ -97,37 +114,27 @@ export default function AdminCmsCategoriesPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      let savedCategory = null;
-
       if (modalMode === 'edit') {
-        // 1. Update basic columns in categories table
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('categories')
           .update({
             name,
             display_order: Number(sortOrder),
           })
-          .eq('id', editingId)
-          .select()
-          .single();
+          .eq('id', editingId);
         if (error) throw error;
-        savedCategory = data;
       } else {
-        // 1. Insert into categories table
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('categories')
           .insert({
             name,
             display_order: Number(sortOrder),
             is_visible: true,
-          })
-          .select()
-          .single();
+          });
         if (error) throw error;
-        savedCategory = data;
       }
 
-      // 2. Load and update category_metadata JSON in store_settings
+      // Load and update category_metadata JSON in store_settings
       let metadata: any = {};
       try {
         const { data: settingsData } = await supabase
@@ -142,7 +149,6 @@ export default function AdminCmsCategoriesPage() {
 
       const newMetadata = { ...metadata };
       const oldCategoryKey = oldName || name;
-      const oldMeta = metadata[oldCategoryKey] || {};
 
       const newMeta = {
         image_url: imageUrl,
@@ -150,7 +156,6 @@ export default function AdminCmsCategoriesPage() {
         badge_text: badgeText,
       };
 
-      // Handle rename: remove old key
       if (modalMode === 'edit' && oldCategoryKey && oldCategoryKey !== name) {
         delete newMetadata[oldCategoryKey];
       }
@@ -179,22 +184,17 @@ export default function AdminCmsCategoriesPage() {
         .eq('id', id);
       if (error) throw error;
       fetchCategories();
-    } catch (err) {
-      alert('Toggle visible failed');
+    } catch (err: any) {
+      alert(err.message || 'Failed to update visibility');
     }
   };
 
   const handleDeleteCategory = async (id: string, catName: string) => {
-    if (!confirm(`Are you sure you want to delete category "${catName}"?`)) return;
+    if (!confirm(`Una uhakika unataka kufuta Category Slider ya "${catName}"?`)) return;
     try {
-      // 1. Delete from categories table
-      const { error: deleteError } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
-      if (deleteError) throw deleteError;
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
 
-      // 2. Clean up metadata
       let metadata: any = {};
       try {
         const { data: settingsData } = await supabase
@@ -221,139 +221,241 @@ export default function AdminCmsCategoriesPage() {
     }
   };
 
+  const isModalSquad =
+    name.toLowerCase().includes('efootball') ||
+    name.toLowerCase().includes('vikosi') ||
+    name.toLowerCase().includes('football');
+
   return (
     <div className="space-y-8 max-w-7xl">
-      
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3 uppercase">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3 uppercase">
             <Layers className="w-8 h-8 text-blue-500" />
-            <span>CMS: Category Cards & Filtering Control</span>
+            <span>CMS: Category Sliders & Storefront Sections</span>
           </h1>
           <p className="text-sm font-semibold text-slate-300 mt-1">
-            Manage category cards displayed on the storefront home page. Edit names, cover art, badges, and display ordering.
+            Dhibiti Category Slideshows zinazoonekana kwenye ukurasa wa mbele. Panga mpangilio (Display Order), rekebisha Jina, Subtitle, na uone idadi ya games zilizopo.
           </p>
         </div>
 
         <button
           onClick={handleOpenAdd}
-          className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold uppercase shadow-md flex items-center gap-2 shrink-0"
+          className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-extrabold uppercase shadow-md flex items-center gap-2 shrink-0 transition-all cursor-pointer"
         >
           <Plus className="w-5 h-5" />
-          <span>Add New Category</span>
+          <span>Ongeza Category Mpya</span>
         </button>
       </div>
 
       {loading ? (
-        <div className="text-slate-400 font-bold uppercase text-xs animate-pulse">Loading Categories...</div>
+        <div className="text-slate-400 font-bold uppercase text-xs animate-pulse p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl">
+          Inapakia Category Sliders...
+        </div>
       ) : (
-        <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-card">
+        <div className="p-4 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-card">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-300 font-extrabold uppercase tracking-wider text-xs">
-                  <th className="pb-3.5">Cover Art</th>
-                  <th className="pb-3.5">Category Name</th>
-                  <th className="pb-3.5">Badge & Description</th>
-                  <th className="pb-3.5">Display Order</th>
+                  <th className="pb-3.5 pl-2">Display Order</th>
+                  <th className="pb-3.5">Storefront Slider Header (Preview)</th>
+                  <th className="pb-3.5">Michezo</th>
                   <th className="pb-3.5">Visibility</th>
-                  <th className="pb-3.5">Actions</th>
+                  <th className="pb-3.5 text-right pr-2">Vitendo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80 text-slate-200 font-medium">
-                {categories.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="py-4">
-                      <div className="relative w-20 h-14 rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
-                        {c.image_url ? (
-                          <Image src={c.image_url} alt={c.name} fill className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-950 text-slate-600 text-xs">No image</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 font-extrabold text-white max-w-xs truncate text-base">{c.name}</td>
-                    <td className="py-4">
-                      <span className="px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold text-xs uppercase block w-fit mb-1">
-                        {c.badge_text || 'CATEGORY'}
-                      </span>
-                      <span className="text-xs text-slate-300 font-medium line-clamp-1">{c.description}</span>
-                    </td>
-                    <td className="py-4 font-extrabold text-slate-300">{c.display_order ?? 0}</td>
-                    <td className="py-4">
-                      <button
-                        onClick={() => handleToggleVisible(c.id, c.is_visible)}
-                        className={`px-3 py-1.5 rounded-lg font-extrabold text-xs uppercase flex items-center gap-1.5 border ${
-                          c.is_visible
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
-                        }`}
-                      >
-                        {c.is_visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                        <span>{c.is_visible ? 'Visible' : 'Hidden'}</span>
-                      </button>
-                    </td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-2">
+                {categories.map((c) => {
+                  const isSquad =
+                    c.name.toLowerCase().includes('efootball') ||
+                    c.name.toLowerCase().includes('vikosi') ||
+                    c.name.toLowerCase().includes('football');
+
+                  return (
+                    <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
+                      {/* Display Order */}
+                      <td className="py-4 pl-2 font-black text-slate-400">
+                        <span className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-xs font-black text-blue-400">
+                          #{c.display_order ?? 0}
+                        </span>
+                      </td>
+
+                      {/* Storefront Slider Header Preview */}
+                      <td className="py-4 max-w-md">
+                        <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 shadow-sm">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${
+                              isSquad ? 'bg-gradient-to-tr from-blue-600 to-indigo-600' : 'bg-blue-600'
+                            }`}>
+                              {isSquad ? <Trophy className="w-4 h-4 text-white" /> : <Gamepad2 className="w-4 h-4 text-white" />}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-black text-white uppercase truncate">
+                                {c.name}
+                              </h4>
+                              <p className="text-[10px] text-blue-400 font-bold truncate mt-0.5">
+                                {c.description || `${c.game_count || 0} Michezo Inapatikana`}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md bg-blue-600/15 border border-blue-500/30 text-blue-400 shrink-0 flex items-center gap-1">
+                            Angalia Zote ({c.game_count || 0}) <ChevronRight className="w-3 h-3" />
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Michezo Count Badge */}
+                      <td className="py-4">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-black whitespace-nowrap bg-blue-600/10 text-blue-400 border border-blue-500/30">
+                          {isSquad ? `${c.game_count || 0} Vikosi` : `${c.game_count || 0} Games`}
+                        </span>
+                      </td>
+
+                      {/* Visibility Toggle */}
+                      <td className="py-4">
                         <button
-                          onClick={() => handleOpenEdit(c)}
-                          className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                          title="Edit Category"
+                          onClick={() => handleToggleVisible(c.id, c.is_visible)}
+                          className={`px-3 py-1.5 rounded-xl font-black text-xs uppercase flex items-center gap-1.5 border transition-all cursor-pointer ${
+                            c.is_visible
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                          }`}
                         >
-                          <Pencil className="w-4 h-4" />
+                          {c.is_visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                          <span>{c.is_visible ? 'Inaonekana' : 'Imejificha'}</span>
                         </button>
-                        <button
-                          onClick={() => handleDeleteCategory(c.id, c.name)}
-                          className="p-2.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                          title="Delete Category"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-4 text-right pr-2">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenEdit(c)}
+                            className="p-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors cursor-pointer"
+                            title="Hariri Category"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(c.id, c.name)}
+                            className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer"
+                            title="Futa Category"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
+      {/* Add / Edit Category Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-[99999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full relative shadow-card space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full relative shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-lg font-black text-white uppercase">
-                {modalMode === 'edit' ? 'Edit Storefront Category Card' : 'Add Storefront Category Card'}
+              <h3 className="text-base sm:text-lg font-black text-white uppercase flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-blue-400" />
+                <span>{modalMode === 'edit' ? 'Hariri Category Slider' : 'Ongeza Category Slider Mpya'}</span>
               </h3>
-              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-white p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Live Interactive Storefront Preview Box */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-black uppercase text-blue-400 tracking-wider">
+                Live Storefront Preview:
+              </span>
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 shadow-inner">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    isModalSquad ? 'bg-gradient-to-tr from-blue-600 to-indigo-600' : 'bg-blue-600'
+                  }`}>
+                    {isModalSquad ? <Trophy className="w-4 h-4 text-white" /> : <Gamepad2 className="w-4 h-4 text-white" />}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs sm:text-sm font-black text-white uppercase truncate">
+                      {name || 'JINA LA CATEGORY'}
+                    </h4>
+                    <p className="text-[10px] text-blue-400 font-bold truncate mt-0.5">
+                      {description || 'Magemu yanapatikana kwenye hii category'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl bg-blue-600/15 border border-blue-500/30 text-blue-400 shrink-0 flex items-center gap-1">
+                  Angalia Zote ➔
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleSaveCategory} className="space-y-4 text-sm">
               <div>
-                <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Category Name</label>
+                <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Category Name (Jina la Category)</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Maleo Bus Mods TZ"
+                  placeholder="mfano: TANZANIA GAMES au MALEO BUS MODE TZ"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold text-sm focus:border-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Cover Art Image (ImgBB Hosted)</label>
+                <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">
+                  Slider Subtitle / Maelezo Mafupi (Yanaonekana kwenye Header ya Slider)
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="mfano: MAGEMU YA TANZANIA YANAPATIKANA KWENYE HII CATEGORY"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-semibold focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Display Order (Nafasi)</label>
+                  <input
+                    type="number"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500 font-medium">Nambari ndogo inaanza juu</span>
+                </div>
+                <div>
+                  <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Badge Tag</label>
+                  <input
+                    type="text"
+                    value={badgeText}
+                    onChange={(e) => setBadgeText(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Cover Art (Picha ya Droo ya Michezo)</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="url"
-                    required
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs truncate"
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs truncate focus:border-blue-500 focus:outline-none"
+                    placeholder="https://i.ibb.co/..."
                   />
                   <ImgBBUploadModal
                     onUploadSuccess={(url) => setImageUrl(url)}
@@ -362,44 +464,12 @@ export default function AdminCmsCategoriesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Badge Tag</label>
-                  <input
-                    type="text"
-                    value={badgeText}
-                    onChange={(e) => setBadgeText(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Display Order</label>
-                  <input
-                    type="number"
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-bold"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-slate-300 mb-1.5 text-xs">Description</label>
-                <textarea
-                  rows={2}
-                  placeholder="Category description..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-white text-sm"
-                />
-              </div>
-
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold uppercase tracking-wider shadow-md transition-colors text-sm"
+                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-black uppercase tracking-wider shadow-md transition-all text-sm cursor-pointer disabled:opacity-50 mt-2"
               >
-                {submitting ? 'Saving...' : modalMode === 'edit' ? 'Update Category Card' : 'Save Category Card'}
+                {submitting ? 'Inahifadhi...' : modalMode === 'edit' ? 'Hifadhi Mabadiliko ya Slider' : 'Tengeneza Category Slider'}
               </button>
             </form>
           </div>
