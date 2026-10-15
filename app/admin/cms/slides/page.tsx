@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import ImgBBUploadModal from '@/components/ImgBBUploadModal';
-import { Plus, Trash2, Sliders, Eye, EyeOff, Save, X, Edit3, ArrowUp, ArrowDown, Sparkles, Loader2, Play } from 'lucide-react';
+import { Plus, Trash2, Sliders, Eye, EyeOff, Save, X, Edit3, ArrowUp, ArrowDown, Sparkles, Loader2, Play, Power, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
 
 const getYouTubeId = (url: string): string | null => {
   if (!url) return null;
@@ -136,6 +137,18 @@ export default function AdminCmsSlidesPage() {
   const [slides, setSlides] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Master Slideshow Switch State
+  const [slideshowEnabled, setSlideshowEnabled] = useState(true);
+  const [togglingMaster, setTogglingMaster] = useState(false);
+  const [slideshowDuration, setSlideshowDuration] = useState(5);
+  const [slideshowUnit, setSlideshowUnit] = useState<'seconds' | 'minutes'>('seconds');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
   // Modal States (Add / Edit / Delete Confirmation)
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
@@ -156,11 +169,24 @@ export default function AdminCmsSlidesPage() {
   const fetchSlides = async () => {
     setLoading(true);
     try {
+      // 1. Fetch slides
       const res = await fetch('/api/admin/cms/slides');
       const data = await res.json();
       if (data.success && Array.isArray(data.slides)) {
         const sorted = [...data.slides].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         setSlides(sorted);
+      }
+
+      // 2. Fetch master slideshow settings
+      const settingsRes = await fetch('/api/admin/settings');
+      const settingsData = await settingsRes.json();
+      if (settingsData?.settings?.slideshow_settings) {
+        const ss = settingsData.settings.slideshow_settings;
+        if (ss.enabled !== undefined) {
+          setSlideshowEnabled(Boolean(ss.enabled));
+        }
+        if (ss.duration) setSlideshowDuration(Number(ss.duration));
+        if (ss.unit) setSlideshowUnit(ss.unit);
       }
     } catch (err) {
       console.error('Failed to fetch slides:', err);
@@ -172,6 +198,45 @@ export default function AdminCmsSlidesPage() {
   useEffect(() => {
     fetchSlides();
   }, []);
+
+  const handleToggleMasterSlideshow = async () => {
+    const nextVal = !slideshowEnabled;
+    setSlideshowEnabled(nextVal);
+    setTogglingMaster(true);
+    try {
+      const payload = {
+        duration: slideshowDuration,
+        unit: slideshowUnit,
+        enabled: nextVal,
+      };
+
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: 'slideshow_settings',
+          value: payload,
+        }),
+      });
+
+      // Direct fallback to Supabase for 100% sync
+      try {
+        const supabase = createClient();
+        await supabase.from('site_settings').upsert({ key: 'slideshow_settings', value: payload }, { onConflict: 'key' });
+        await supabase.from('store_settings').upsert({ key: 'slideshow_settings', value: payload }, { onConflict: 'key' });
+      } catch (e) {}
+
+      if (!res.ok) throw new Error('Failed to update slideshow switch');
+
+      showToast(nextVal ? '✅ Slideshow Imewashwa na ipo Hewani Storefront!' : '🛑 Slideshow Imezimwa Kabisa Storefront!');
+    } catch (err: any) {
+      console.error('Error toggling master slideshow:', err);
+      setSlideshowEnabled(!nextVal); // revert
+      alert(err.message || 'Imeshindikana kubadilisha hali ya slideshow. Tafadhali jaribu tena.');
+    } finally {
+      setTogglingMaster(false);
+    }
+  };
 
   const openAddModal = () => {
     setEditingSlideId(null);
@@ -252,17 +317,25 @@ export default function AdminCmsSlidesPage() {
   };
 
   const handleToggleActive = async (id: string, currentActive: boolean) => {
+    const nextState = !currentActive;
     // Optimistic state update
     setSlides((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, is_active: !currentActive } : s))
+      prev.map((s) => (s.id === id ? { ...s, is_active: nextState } : s))
     );
 
     try {
       await fetch('/api/admin/cms/slides', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, is_active: !currentActive }),
+        body: JSON.stringify({ id, is_active: nextState }),
       });
+
+      try {
+        const supabase = createClient();
+        await supabase.from('slides').update({ is_active: nextState }).eq('id', id);
+      } catch (e) {}
+
+      showToast(nextState ? '✅ Banner imewekwa ACTIVE (Inaonekana)!' : '👁️ Banner imewekwa HIDDEN (Imezimwa)!');
     } catch (err) {
       fetchSlides();
     }
@@ -333,6 +406,87 @@ export default function AdminCmsSlidesPage() {
           <Plus className="w-4 h-4" />
           <span>Add New Hero Banner</span>
         </button>
+      </div>
+
+      {/* ── TOAST NOTIFICATION ── */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            className="fixed top-6 right-6 z-[999999] px-5 py-3 rounded-2xl bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs font-black shadow-2xl flex items-center gap-2 backdrop-blur-md"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{toastMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MASTER HERO SLIDESHOW STOREFRONT ON/OFF CONTROL ── */}
+      <div className={`p-6 sm:p-7 rounded-3xl border transition-all duration-300 shadow-2xl relative overflow-hidden ${
+        slideshowEnabled 
+          ? 'bg-slate-900/90 border-blue-500/30 shadow-[0_0_35px_rgba(37,99,235,0.12)]' 
+          : 'bg-rose-950/20 border-rose-500/30 shadow-[0_0_35px_rgba(244,63,94,0.1)]'
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          
+          {/* Left: Icon & Explanations */}
+          <div className="flex items-start sm:items-center gap-4">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border transition-all shadow-md ${
+              slideshowEnabled
+                ? 'bg-blue-600/20 border-blue-500/40 text-blue-400'
+                : 'bg-rose-600/20 border-rose-500/40 text-rose-400'
+            }`}>
+              <Power className={`w-7 h-7 ${slideshowEnabled ? 'text-blue-400' : 'text-rose-400'}`} />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h3 className="text-base sm:text-lg font-black text-white tracking-tight uppercase">
+                  Muonekano wa Slideshow Kwenye Storefront
+                </h3>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-sm ${
+                  slideshowEnabled
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${slideshowEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                  <span>{slideshowEnabled ? 'SLIDESHOW IPO ACTIVE (HEWANI)' : 'SLIDESHOW IMEZIMWA (HIDDEN)'}</span>
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 font-semibold max-w-2xl leading-relaxed">
+                {slideshowEnabled
+                  ? 'Slideshow inaonekana juu ya ukurasa wa mbele (Storefront). Wateja wanaona mabanner yaliyo active hapa chini.'
+                  : '⚠️ Slideshow imezimwa kabisa kwenye ukurasa wa mbele! Hakuna slide yoyote (ikiwemo ETS 2 au mabanner yote) itakayoonekana, na michezo itapanda moja kwa moja juu.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Master Switch Action */}
+          <div className="flex items-center gap-3 self-start md:self-auto shrink-0">
+            <button
+              type="button"
+              disabled={togglingMaster}
+              onClick={handleToggleMasterSlideshow}
+              className={`px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2.5 transition-all shadow-xl cursor-pointer touch-manipulation disabled:opacity-50 ${
+                slideshowEnabled
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/30 border border-rose-500/50'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30 border border-emerald-500/50'
+              }`}
+            >
+              {togglingMaster ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : slideshowEnabled ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+              <span>{slideshowEnabled ? 'ZIMA SLIDESHOW SASA' : 'WASHA SLIDESHOW'}</span>
+            </button>
+          </div>
+
+        </div>
       </div>
 
       {/* Hero Banners Table Section */}

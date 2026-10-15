@@ -40,6 +40,18 @@ export async function broadcastStorefrontChange(
       // Ignore
     }
 
+    // 2b. Order-updates-storefront channel (storefront listener)
+    try {
+      const chOrder = supabase.channel('order-updates-storefront');
+      await chOrder.send({
+        type: 'broadcast',
+        event: eventType,
+        payload,
+      });
+    } catch (e) {
+      // Ignore
+    }
+
     // 3. Dedicated channel for popup ads
     if (eventType === 'GAME_POPUP_UPDATED') {
       try {

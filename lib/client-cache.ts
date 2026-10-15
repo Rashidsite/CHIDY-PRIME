@@ -11,6 +11,7 @@ export interface CachedStorefrontData {
   bgSettings?: any;
   trendingConfig?: any;
   slideshowInterval?: number;
+  slideshowEnabled?: boolean;
   timestamp?: number;
 }
 
@@ -66,7 +67,7 @@ export function setCachedStorefrontData(data: Partial<CachedStorefrontData>) {
     ...data,
     timestamp: Date.now(),
   };
-  memoryCache.set(SF_CACHE_KEY, { data: merged, timestamp: merged.timestamp });
+  memoryCache.set(SF_CACHE_KEY, { data: merged, timestamp: merged.timestamp || Date.now() });
   safeStorageSet(SF_CACHE_KEY, merged);
 }
 

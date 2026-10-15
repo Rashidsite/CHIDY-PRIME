@@ -73,6 +73,7 @@ export default function FrontHubPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [checkoutGame, setCheckoutGame] = useState<GameProduct | null>(null);
   const [slideshowInterval, setSlideshowInterval] = useState<number>(() => initialCachedSf?.slideshowInterval || 5000);
+  const [slideshowEnabled, setSlideshowEnabled] = useState<boolean>(() => initialCachedSf?.slideshowEnabled !== false);
   const [bgSettings, setBgSettings] = useState<{ enabled: boolean; image_url: string; opacity: number }>(() => initialCachedSf?.bgSettings || {
     enabled: true,
     image_url: '/game_controller_bg.jpg',
@@ -497,12 +498,10 @@ export default function FrontHubPage() {
       try {
         const res = await fetch('/api/admin/cms/slides');
         const data = await res.json();
-        if (data.success && Array.isArray(data.slides) && data.slides.length > 0) {
+        if (data.success && Array.isArray(data.slides)) {
           const activeSlides = data.slides.filter((s: any) => s.is_active !== false);
-          if (activeSlides.length > 0) {
-            setSlides(activeSlides);
-            loadedSlides = activeSlides;
-          }
+          setSlides(activeSlides);
+          loadedSlides = activeSlides;
         }
       } catch (err) {
         console.error('Failed to load slides:', err);
@@ -571,7 +570,8 @@ export default function FrontHubPage() {
       }
 
       let loadedInterval: number | undefined;
-      // Load Slideshow Duration Settings
+      let loadedSlideshowEnabled: boolean | undefined;
+      // Load Slideshow Duration & Visibility Settings
       try {
         const { data: slideshowData, error } = await supabase
           .from('site_settings')
@@ -579,13 +579,17 @@ export default function FrontHubPage() {
           .eq('key', 'slideshow_settings')
           .single();
         if (!error && slideshowData?.value) {
-          const { duration, unit } = slideshowData.value;
+          const { duration, unit, enabled } = slideshowData.value;
           let ms = 5000;
           if (unit === 'seconds') ms = duration * 1000;
           else if (unit === 'minutes') ms = duration * 60 * 1000;
           else if (unit === 'days') ms = duration * 24 * 60 * 60 * 1000;
           setSlideshowInterval(ms);
           loadedInterval = ms;
+          if (enabled !== undefined) {
+            setSlideshowEnabled(Boolean(enabled));
+            loadedSlideshowEnabled = Boolean(enabled);
+          }
         }
       } catch (err) {
         console.error('Failed to load slideshow interval:', err);
@@ -634,10 +638,11 @@ export default function FrontHubPage() {
       // Synchronize entire fresh payload to client cache for 0ms loads
       setCachedStorefrontData({
         games: finalGames,
-        ...(loadedSlides ? { slides: loadedSlides } : {}),
+        slides: loadedSlides ?? [],
         ...(loadedCategories ? { categories: loadedCategories } : {}),
         ...(loadedBg ? { bgSettings: loadedBg } : {}),
         ...(loadedInterval !== undefined ? { slideshowInterval: loadedInterval } : {}),
+        ...(loadedSlideshowEnabled !== undefined ? { slideshowEnabled: loadedSlideshowEnabled } : {}),
         ...(loadedTrending ? { trendingConfig: loadedTrending } : {}),
       });
     } catch (err) {
@@ -847,6 +852,20 @@ export default function FrontHubPage() {
               opacity: setting.value.opacity ?? 0.45,
             });
           }
+          if (setting?.key === 'slideshow_settings' && setting.value) {
+            if (setting.value.enabled !== undefined) {
+              setSlideshowEnabled(Boolean(setting.value.enabled));
+            }
+            if (setting.value.duration) {
+              const dur = Number(setting.value.duration);
+              const unit = setting.value.unit || 'seconds';
+              let ms = 5000;
+              if (unit === 'seconds') ms = dur * 1000;
+              else if (unit === 'minutes') ms = dur * 60 * 1000;
+              else if (unit === 'days') ms = dur * 24 * 60 * 60 * 1000;
+              setSlideshowInterval(ms);
+            }
+          }
           if (setting?.key === 'trending_games' && setting.value) {
             const val = setting.value;
             if (Array.isArray(val)) {
@@ -866,6 +885,13 @@ export default function FrontHubPage() {
               });
             }
           }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'SLIDES_UPDATED' },
+        () => {
+          loadStorefrontData(false);
         }
       )
       .subscribe();
@@ -979,12 +1005,12 @@ export default function FrontHubPage() {
         {/* Hero Slideshow Section */}
         {loading ? (
           <div className="w-full h-[340px] bg-slate-900 border border-slate-800 animate-pulse rounded-3xl" />
-        ) : (
+        ) : slideshowEnabled && slides.length > 0 ? (
           <HeroSlideshow 
-            slides={slides.length > 0 ? slides : undefined} 
+            slides={slides} 
             intervalMs={slideshowInterval}
           />
-        )}
+        ) : null}
 
         {/* ── Hot & Trending Horizontal Scroll Section ── */}
         {loading ? (

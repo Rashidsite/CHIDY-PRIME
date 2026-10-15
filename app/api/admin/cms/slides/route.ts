@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { broadcastStorefrontChange } from '@/lib/realtime-broadcast';
 
 // Helper to check if error is table missing error
 function isMissingTableError(err: any): boolean {
@@ -100,11 +101,13 @@ export async function POST(req: NextRequest) {
         const currentSlides = await getSlidesFromSettings();
         const updated = [...currentSlides, newSlide];
         await saveSlidesToSettings(updated);
+        await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'create', slide: newSlide });
         return NextResponse.json({ success: true, slide: newSlide });
       }
       throw error;
     }
 
+    await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'create', slide: data || newSlide });
     return NextResponse.json({ success: true, slide: data || newSlide });
   } catch (err: any) {
     if (isMissingTableError(err)) {
@@ -118,6 +121,7 @@ export async function POST(req: NextRequest) {
         };
         const updated = [...currentSlides, newSlide];
         await saveSlidesToSettings(updated);
+        await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'create', slide: newSlide });
         return NextResponse.json({ success: true, slide: newSlide });
       } catch (e: any) {
         return NextResponse.json({ success: false, error: e.message }, { status: 500 });
@@ -148,11 +152,13 @@ export async function PATCH(req: NextRequest) {
         const currentSlides = await getSlidesFromSettings();
         const updated = currentSlides.map((s) => (s.id === id ? { ...s, ...updates } : s));
         await saveSlidesToSettings(updated);
+        await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'update', id, updates });
         return NextResponse.json({ success: true });
       }
       throw error;
     }
 
+    await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'update', id, updates });
     return NextResponse.json({ success: true, slide: data });
   } catch (err: any) {
     if (isMissingTableError(err)) {
@@ -161,6 +167,7 @@ export async function PATCH(req: NextRequest) {
       const currentSlides = await getSlidesFromSettings();
       const updated = currentSlides.map((s) => (s.id === id ? { ...s, ...updates } : s));
       await saveSlidesToSettings(updated);
+      await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'update', id, updates });
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -182,11 +189,13 @@ export async function DELETE(req: NextRequest) {
         const currentSlides = await getSlidesFromSettings();
         const updated = currentSlides.filter((s) => s.id !== id);
         await saveSlidesToSettings(updated);
+        await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'delete', id });
         return NextResponse.json({ success: true, message: 'Slide deleted successfully' });
       }
       throw error;
     }
 
+    await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'delete', id });
     return NextResponse.json({ success: true, message: 'Slide deleted successfully' });
   } catch (err: any) {
     if (isMissingTableError(err)) {
@@ -195,6 +204,7 @@ export async function DELETE(req: NextRequest) {
       const currentSlides = await getSlidesFromSettings();
       const updated = currentSlides.filter((s) => s.id !== id);
       await saveSlidesToSettings(updated);
+      await broadcastStorefrontChange('SLIDES_UPDATED', { action: 'delete', id });
       return NextResponse.json({ success: true, message: 'Slide deleted successfully' });
     }
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

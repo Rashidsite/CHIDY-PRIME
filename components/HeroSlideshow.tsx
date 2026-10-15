@@ -305,10 +305,19 @@ interface HeroSlideshowProps {
   onCtaClick?: (link?: string, slide?: Slide) => void;
 }
 
-export default function HeroSlideshow({ slides = DEFAULT_SLIDES, intervalMs = 5000, onCtaClick }: HeroSlideshowProps) {
+export default function HeroSlideshow({ slides, intervalMs = 5000, onCtaClick }: HeroSlideshowProps) {
   const router = useRouter();
   const { getButtonClass } = useCMSTheme();
+
+  // If explicitly passed an empty array (e.g. all slides hidden or disabled), hide completely!
+  if (Array.isArray(slides) && slides.length === 0) {
+    return null;
+  }
+
   const activeSlides = Array.isArray(slides) && slides.length > 0 ? slides : DEFAULT_SLIDES;
+  if (!activeSlides || activeSlides.length === 0) {
+    return null;
+  }
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 

@@ -23,6 +23,7 @@ export default function AdminSettingsPage() {
   const [bgOpacity, setBgOpacity] = useState(0.45);
   const [slideshowDuration, setSlideshowDuration] = useState(5);
   const [slideshowUnit, setSlideshowUnit] = useState<'seconds' | 'minutes'>('seconds');
+  const [slideshowEnabled, setSlideshowEnabled] = useState(true);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -48,6 +49,7 @@ export default function AdminSettingsPage() {
         if (ss) {
           setSlideshowDuration(ss.duration || 5);
           setSlideshowUnit(ss.unit || 'seconds');
+          setSlideshowEnabled(ss.enabled !== false);
         }
       }
     } catch (err) {
@@ -89,6 +91,7 @@ export default function AdminSettingsPage() {
       const ssPayload = {
         duration: Number(slideshowDuration),
         unit: slideshowUnit,
+        enabled: slideshowEnabled,
       };
 
       // 1. Save custom_background
@@ -119,6 +122,14 @@ export default function AdminSettingsPage() {
       await supabase
         .from('store_settings')
         .upsert({ key: 'custom_background', value: bgPayload }, { onConflict: 'key' });
+
+      await supabase
+        .from('site_settings')
+        .upsert({ key: 'slideshow_settings', value: ssPayload }, { onConflict: 'key' });
+
+      await supabase
+        .from('store_settings')
+        .upsert({ key: 'slideshow_settings', value: ssPayload }, { onConflict: 'key' });
 
       setSaved(true);
       setTimeout(() => setSaved(false), 3500);
@@ -314,17 +325,39 @@ export default function AdminSettingsPage() {
 
         {/* ── Slideshow Duration Section ── */}
         <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-xl shadow-2xl space-y-4">
-          <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-sm">
-              <Clock className="w-5 h-5" />
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-sm">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white uppercase tracking-tight">
+                  Hero Slideshow Display &amp; Speed
+                </h3>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                  Washa au zima muonekano wa Hero Slideshow na rekebisha muda wa kubadilika.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-black text-white uppercase tracking-tight">
-                Hero Slideshow Speed &amp; Autoplay Interval
-              </h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                Set how frequently the front exclusive banners rotate.
-              </p>
+
+            {/* Slideshow Master Toggle Switch */}
+            <div className="flex items-center gap-3">
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                slideshowEnabled 
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+              }`}>
+                {slideshowEnabled ? 'Active (Hewani)' : 'Imezimwa (Hidden)'}
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={slideshowEnabled}
+                  onChange={(e) => setSlideshowEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-12 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
+              </label>
             </div>
           </div>
 
