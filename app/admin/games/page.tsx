@@ -40,6 +40,7 @@ interface DownloadLinkItem {
 
 export default function AdminGamesPage() {
   const [games, setGames] = useState<any[]>([]);
+  const [dbCategories, setDbCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -80,6 +81,20 @@ export default function AdminGamesPage() {
   const fetchGames = async () => {
     setLoading(true);
     try {
+      // 1. Fetch official categories from DB
+      try {
+        const { data: catData } = await supabase
+          .from('categories')
+          .select('name')
+          .order('display_order', { ascending: true });
+        if (catData && catData.length > 0) {
+          const names = catData.map((c: any) => c.name).filter(Boolean);
+          if (names.length > 0) setDbCategories(names);
+        }
+      } catch (catErr) {
+        console.error('Failed to load categories:', catErr);
+      }
+
       const res = await fetch('/api/admin/games');
       const data = await res.json();
       if (data.success && Array.isArray(data.games)) {
@@ -447,24 +462,24 @@ export default function AdminGamesPage() {
     return '♾️ Lifetime';
   };
 
-  const PRESET_CATEGORIES = [
+  const OFFICIAL_CATEGORIES = [
+    'TANZANIA GAMES',
     'MALEO BUS MODE TZ',
     'MALEO MAP MODE TZ',
-    'TANZANIA GAMES',
-    'PC Games',
-    'PS2 GAMES KWENYE SIMU',
+    'PREMIUM GAMES.',
     'FOOTBALL GAMES',
-    'MALEO BUS SKIN',
-    'Mods',
-    'Action',
-    'Racing',
-    'WORLD GAMES',
+    'VIKOSI VYA EFOOTBALL',
+    'FREE GAMES.',
     'FAVORITE GAMES',
+    'WORLD GAMES',
+    'PS2 GAMES KWENYE SIMU',
+    'PC/COMPUTER GAMES',
+    'GAMES TOOLS',
+    'MALEO BUS SKIN',
+    'JINSI YA KUSET VIDEOS',
   ];
 
-  const categoriesAvailable = Array.from(
-    new Set([...PRESET_CATEGORIES, ...games.map((g) => g.category).filter(Boolean)])
-  );
+  const categoriesAvailable = dbCategories.length > 0 ? dbCategories : OFFICIAL_CATEGORIES;
 
   const filtered = games.filter((g) => {
     const matchesSearch =
@@ -951,9 +966,12 @@ export default function AdminGamesPage() {
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
                       >
-                        {PRESET_CATEGORIES.map((cat) => (
+                        {categoriesAvailable.map((cat) => (
                           <option key={cat} value={cat}>{cat}</option>
                         ))}
+                        {category && !categoriesAvailable.includes(category) && category !== 'CUSTOM' && (
+                          <option value={category}>{category}</option>
+                        )}
                         <option value="CUSTOM">+ Custom Category Name...</option>
                       </select>
                     </div>
