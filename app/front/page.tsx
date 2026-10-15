@@ -1042,12 +1042,16 @@ export default function FrontHubPage() {
                 </div>
               </div>
 
-              {/* Touch-swipe horizontal container with scroll containment and boundary locking */}
+              {/* Touch-swipe horizontal container with smooth scrolling */}
               <div
                 ref={carouselRef}
                 onScroll={updateScrollBoundaries}
-                className="category-slider-track flex gap-4 sm:gap-5 overflow-x-auto py-2 px-1 snap-x snap-mandatory touch-pan-x"
-                style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+                className="category-slider-track flex gap-3.5 sm:gap-4 overflow-x-auto py-1 px-0.5 no-scrollbar scroll-smooth"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  scrollBehavior: 'smooth',
+                  contain: 'layout style',
+                }}
               >
                 {(trendingGames ?? []).map((game, idx) => (
                   <div key={game?.id || idx} className="game-card-item w-[260px] sm:w-[280px] shrink-0 snap-start">

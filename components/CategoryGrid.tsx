@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
-import { Gamepad2, ChevronRight, ChevronLeft, Trophy, ArrowRight, Sparkles } from 'lucide-react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { Gamepad2, ChevronRight, ChevronLeft, Trophy, ArrowRight } from 'lucide-react';
 import GameCard, { GameProduct } from '@/components/GameCard';
 
 export interface CategoryItem {
@@ -24,8 +24,8 @@ interface CategoryGridProps {
   unlockedGameIds?: Set<string>;
 }
 
-// ── Single Category Slider Row ──
-function CategoryRow({
+// ── Single Category Slider Row (Memoized & Hardware-Accelerated) ──
+const CategoryRow = React.memo(function CategoryRow({
   category,
   games,
   onBuyNow,
@@ -41,15 +41,22 @@ function CategoryRow({
   const carouselRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const updateScrollBoundaries = () => {
-    if (!carouselRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-    setCanScrollLeft(scrollLeft > 10);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
-  };
+  // Debounced boundary check to NEVER block touch or scroll gestures
+  const handleScroll = useCallback(() => {
+    if (scrollTimeoutRef.current) return;
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        setCanScrollLeft(scrollLeft > 15);
+        setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 15);
+      }
+      scrollTimeoutRef.current = null;
+    }, 120);
+  }, []);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = useCallback((direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
     const clientWidth = carouselRef.current.clientWidth || 300;
     const delta = direction === 'left' ? -clientWidth * 0.75 : clientWidth * 0.75;
@@ -57,37 +64,46 @@ function CategoryRow({
       left: delta,
       behavior: 'smooth',
     });
-    setTimeout(updateScrollBoundaries, 350);
-  };
+    setTimeout(() => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        setCanScrollLeft(scrollLeft > 15);
+        setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 15);
+      }
+    }, 350);
+  }, []);
 
-  // Kikomo cha michezo 8 kwa kila slide kama alivyoomba mteja
-  const displayGames = games.slice(0, 8);
+  // Kikomo cha michezo 8 kwa kila slide
+  const displayGames = useMemo(() => games.slice(0, 8), [games]);
   const totalCount = games.length;
   const catName = category.name || 'Category';
 
-  const isSquad =
-    catName.toLowerCase().includes('efootball') ||
-    catName.toLowerCase().includes('vikosi') ||
-    catName.toLowerCase().includes('football');
+  const isSquad = useMemo(() => {
+    const lower = catName.toLowerCase();
+    return lower.includes('efootball') || lower.includes('vikosi') || lower.includes('football');
+  }, [catName]);
 
   return (
-    <div className="w-full space-y-4">
+    <div 
+      className="w-full space-y-3.5 transform-gpu"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '0 340px' }}
+    >
       {/* Category Header Bar */}
-      <div className="flex items-center justify-between p-3.5 sm:p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-lg">
+      <div className="flex items-center justify-between p-3 sm:p-4 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-md">
         {/* Left: Icon + Title + Count */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md ${
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
               isSquad ? 'bg-gradient-to-tr from-blue-600 to-indigo-600' : 'bg-blue-600'
             }`}
           >
-            {isSquad ? <Trophy className="w-5 h-5 text-white" /> : <Gamepad2 className="w-5 h-5 text-white" />}
+            {isSquad ? <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm sm:text-lg font-black text-white tracking-tight uppercase leading-tight truncate">
+            <h2 className="text-xs sm:text-base font-black text-white tracking-tight uppercase leading-tight truncate">
               {catName}
             </h2>
-            <p className="text-[11px] sm:text-xs text-blue-400 font-bold mt-0.5 truncate">
+            <p className="text-[10px] sm:text-xs text-blue-400 font-bold mt-0.5 truncate">
               {category.description ||
                 `${totalCount} ${
                   isSquad
@@ -106,14 +122,14 @@ function CategoryRow({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onSelectCategory?.(catName)}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider bg-blue-600/15 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 hover:border-blue-500 transition-all duration-200 flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer touch-manipulation"
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider bg-blue-600/15 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 hover:border-blue-500 transition-colors flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer touch-manipulation"
             title={`Angalia michezo yote ya ${catName}`}
           >
             <span>Angalia Zote</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-[10px] font-bold">
+            <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-[9px] sm:text-[10px] font-bold">
               {totalCount}
             </span>
-            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
 
           {/* Navigation Arrows for desktop */}
@@ -121,10 +137,10 @@ function CategoryRow({
             <button
               onClick={() => scroll('left')}
               disabled={!canScrollLeft}
-              className={`w-9 h-9 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+              className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-opacity shadow-sm ${
                 canScrollLeft
                   ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer active:scale-90'
-                  : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'
+                  : 'text-slate-600 opacity-20 pointer-events-none cursor-not-allowed'
               }`}
               aria-label="Scroll left"
             >
@@ -133,10 +149,10 @@ function CategoryRow({
             <button
               onClick={() => scroll('right')}
               disabled={!canScrollRight}
-              className={`w-9 h-9 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+              className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-opacity shadow-sm ${
                 canScrollRight
                   ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer active:scale-90'
-                  : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'
+                  : 'text-slate-600 opacity-20 pointer-events-none cursor-not-allowed'
               }`}
               aria-label="Scroll right"
             >
@@ -146,15 +162,23 @@ function CategoryRow({
         </div>
       </div>
 
-      {/* Horizontal Slider Track (Touch-swipe & Smooth-scroll) */}
+      {/* Horizontal Slider Track: High Performance, Zero Sticky Drag */}
       <div
         ref={carouselRef}
-        onScroll={updateScrollBoundaries}
-        className="category-slider-track flex gap-4 sm:gap-5 overflow-x-auto py-2 px-1 snap-x snap-mandatory touch-pan-x no-scrollbar"
-        style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+        onScroll={handleScroll}
+        className="category-slider-track flex gap-3.5 sm:gap-4 overflow-x-auto py-1 px-0.5 no-scrollbar scroll-smooth"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          scrollBehavior: 'smooth',
+          contain: 'layout style',
+        }}
       >
         {displayGames.map((game, idx) => (
-          <div key={game?.id || idx} className="game-card-item w-[260px] sm:w-[280px] shrink-0 snap-start">
+          <div 
+            key={game?.id || idx} 
+            className="game-card-item w-[250px] sm:w-[275px] shrink-0"
+            style={{ contain: 'layout style paint' }}
+          >
             <GameCard
               game={game}
               onBuyNow={onBuyNow}
@@ -164,13 +188,13 @@ function CategoryRow({
           </div>
         ))}
 
-        {/* Call to action "Angalia Zote" Card at the end of the 8 games */}
+        {/* Call to action "Angalia Zote" Card at the end */}
         <div
           onClick={() => onSelectCategory?.(catName)}
-          className="w-[180px] sm:w-[220px] shrink-0 snap-start flex flex-col justify-center items-center p-5 rounded-2xl bg-gradient-to-b from-slate-900 to-blue-950/40 border border-slate-800 hover:border-blue-500/60 shadow-lg text-center cursor-pointer group transition-all duration-300 active:scale-98 select-none"
+          className="w-[170px] sm:w-[210px] shrink-0 flex flex-col justify-center items-center p-5 rounded-2xl bg-gradient-to-b from-slate-900 to-blue-950/40 border border-slate-800 hover:border-blue-500/60 shadow-md text-center cursor-pointer group transition-colors duration-200 select-none active:scale-95 touch-manipulation"
         >
-          <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 transition-all shadow-md">
-            <ArrowRight className="w-6 h-6 text-blue-400 group-hover:text-white transition-colors" />
+          <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center mb-2.5 group-hover:scale-105 group-hover:bg-blue-600 transition-all shadow-sm">
+            <ArrowRight className="w-5 h-5 text-blue-400 group-hover:text-white transition-colors" />
           </div>
           <span className="text-xs sm:text-sm font-black text-white uppercase tracking-tight">
             Angalia Zote
@@ -179,16 +203,16 @@ function CategoryRow({
             {totalCount} {isSquad ? 'Vikosi' : 'Michezo'}
           </span>
           <span className="mt-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-sm group-hover:bg-blue-500 transition-colors">
-            Fungua Orodha ➔
+            Fungua List ➔
           </span>
         </div>
 
-        {/* Spacer at the end */}
-        <div className="w-4 sm:w-6 shrink-0" />
+        {/* Spacer */}
+        <div className="w-3 shrink-0" />
       </div>
     </div>
   );
-}
+});
 
 // ── Main CategoryGrid Section ──
 export default function CategoryGrid({
@@ -198,7 +222,7 @@ export default function CategoryGrid({
   onBuyNow,
   unlockedGameIds,
 }: CategoryGridProps) {
-  // Panga michezo kulingana na Category zao
+  // Panga michezo kulingana na Category zao (Memoized)
   const categoryGroups = useMemo(() => {
     const activeCats = Array.isArray(categories) && categories.length > 0 ? categories : [];
     const catMap: Record<string, { category: CategoryItem; games: GameProduct[] }> = {};
@@ -261,7 +285,7 @@ export default function CategoryGrid({
   }
 
   return (
-    <section id="category-vault-section" className="w-full space-y-10 relative z-10 scroll-mt-24">
+    <section id="category-vault-section" className="w-full space-y-8 sm:space-y-10 relative z-10 scroll-mt-24">
       {categoryGroups.map(({ category, games: catGames }) => (
         <CategoryRow
           key={category.id || category.name}

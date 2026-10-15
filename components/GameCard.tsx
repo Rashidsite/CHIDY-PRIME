@@ -89,7 +89,7 @@ export function formatPlanDuration(duration?: string | number, isFree?: boolean)
   return `⏳ UFIKIAJI: ${clean.toUpperCase()}`;
 }
 
-export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
+const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnlocked = false }: GameCardProps) {
   const router = useRouter();
   const { getButtonClass, animations } = useCMSTheme();
 
@@ -199,14 +199,10 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3), ease: 'easeOut' }}
-      whileHover={animations.card_hover_scale ? { y: -5 } : undefined}
-      className={`group relative flex flex-col rounded-2xl overflow-hidden bg-[#0F172A] border ${
+    <div
+      className={`group relative flex flex-col rounded-2xl overflow-hidden bg-[#0F172A] border transform-gpu ${
         showUnlocked ? 'border-emerald-500/50 hover:border-emerald-400' : 'border-slate-800/80 hover:border-blue-600/60'
-      } shadow-xl transition-all duration-300 interactive-card game-card-accelerated`}
+      } shadow-xl transition-all duration-200 interactive-card game-card-accelerated`}
     >
       <div 
         onClick={() => router.push(`/games/${game.id}`)}
@@ -216,7 +212,7 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
           coverImage={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
           screenshots={game.screenshots}
           videoUrl={game.video_url || game.youtube_url}
-          thumbnailType={game.thumbnail_type || 'auto'}
+          thumbnailType={game.thumbnail_type === 'video' || game.thumbnail_type === 'slideshow' ? game.thumbnail_type : 'image'}
           thumbnailFit={game.thumbnail_fit || (game as any).thumbnailFit || 'cover'}
           title={game.title}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -294,6 +290,8 @@ export default function GameCard({ game, onBuyNow, index = 0, isUnlocked = false
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
-}
+});
+
+export default GameCard;
