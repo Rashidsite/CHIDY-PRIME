@@ -356,7 +356,7 @@ export default function CheckoutModal({
       setCountdown((prev) => {
         if (prev <= 1) {
           if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-          setError('Muda wa kuthibitisha malipo umekwisha. Tafadhali bonyeza Hakiki Malipo au Jaribu Tena.');
+          setError('Muda wa kusubiri malipo umekwisha. Tafadhali bonyeza Jaribu Tena.');
           return 0;
         }
         return prev - 1;
@@ -536,7 +536,7 @@ export default function CheckoutModal({
 
       if (attempts >= maxAttempts) {
         clearAllTimers();
-        setError('Muda wa kusubiri malipo umekwisha. Kama umeweka PIN tafadhali bonyeza Hakiki Malipo.');
+        setError('Muda wa kusubiri malipo umekwisha. Tafadhali bonyeza Jaribu Tena.');
       }
     }, 2000);
   };
@@ -908,57 +908,7 @@ export default function CheckoutModal({
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  disabled={checkingStatus}
-                  onClick={handleManualCheck}
-                  className="w-full min-h-[44px] py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white text-xs font-black uppercase tracking-wider transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer touch-manipulation disabled:opacity-50"
-                >
-                  {checkingStatus ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Inahakiki Kwenye Mtandao...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      <span>🔎 HAKIKI MALIPO (VERIFY PAYMENT)</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Manual Lipa Namba & WhatsApp Fallback */}
-                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-left space-y-2 mt-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 fill-emerald-400 text-emerald-400" />
-                      Umeshindwa Kulipia? Tumia Lipa Namba
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                    <div className="p-2 rounded-xl bg-black/40 border border-slate-800">
-                      <div className="text-[10px] text-rose-400 font-bold">VODACOM LIPA</div>
-                      <div className="text-white font-black text-sm tracking-wide">354049107</div>
-                      <div className="text-[9px] text-slate-400">RASHID SALUM</div>
-                    </div>
-                    <div className="p-2 rounded-xl bg-black/40 border border-slate-800">
-                      <div className="text-[10px] text-blue-400 font-bold">TIGO LIPA</div>
-                      <div className="text-white font-black text-sm tracking-wide">43135388</div>
-                      <div className="text-[9px] text-slate-400">RASHID SALUM</div>
-                    </div>
-                  </div>
-                  <a
-                    href="https://wa.me/255655361060?text=Habari%20Admin%20CHIDYPRIME,%20nimeshafanya%20malipo%20ya%20game%20kupitia%20Lipa%20Namba.%20Naomba%20kufunguliwa."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer no-underline shadow-sm"
-                  >
-                    <MessageCircle className="w-4 h-4 fill-black" />
-                    <span>Nimeshalipa — Thibitisha WhatsApp (0655361060)</span>
-                  </a>
-                </div>
-
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
                     onClick={handleRetry}
