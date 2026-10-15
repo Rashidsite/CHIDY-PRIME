@@ -957,8 +957,13 @@ export default function FrontHubPage() {
       const fc = (cat?.name || '').toLowerCase().replace(/s$/i, '').trim();
       const count = (games ?? []).filter((g) => {
         if (!g?.category) return false;
-        const gc = String(g.category).toLowerCase().replace(/s$/i, '').trim();
-        return gc === fc || gc.includes(fc) || fc.includes(gc);
+        const isLiveTvMatch =
+          (gc.replace(/_/g, ' ') === fc.replace(/_/g, ' ')) ||
+          (gc.includes('live') && fc.includes('live'));
+        const isVideoMatch =
+          (gc === 'video' && fc.includes('video')) ||
+          (fc === 'video' && gc.includes('video'));
+        return gc === fc || gc.includes(fc) || fc.includes(gc) || isLiveTvMatch || isVideoMatch;
       }).length;
 
       return {

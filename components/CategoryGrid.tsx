@@ -236,35 +236,37 @@ export default function CategoryGrid({
     });
 
     // 2. Weka kila game kwenye category yake
+    // 2. Weka kila game kwenye category yake inayolingana
     (games || []).forEach((game) => {
       if (!game || !game.category) return;
       const gameCat = String(game.category).trim();
       const gameCatNorm = gameCat.toLowerCase().replace(/s$/i, '').trim();
 
-      let matched = false;
       const keys = Object.keys(catMap);
       for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        if (key === gameCatNorm || key.includes(gameCatNorm) || gameCatNorm.includes(key)) {
+        const isLiveTvMatch =
+          (gameCatNorm.replace(/_/g, ' ') === key.replace(/_/g, ' ')) ||
+          (gameCatNorm.includes('live') && key.includes('live'));
+        const isVideoMatch =
+          (gameCatNorm === 'video' && key.includes('video')) ||
+          (key === 'video' && gameCatNorm.includes('video'));
+
+        if (
+          key === gameCatNorm ||
+          key.includes(gameCatNorm) ||
+          gameCatNorm.includes(key) ||
+          isLiveTvMatch ||
+          isVideoMatch
+        ) {
           catMap[key].games.push(game);
-          matched = true;
           break;
         }
       }
 
-      // Kama game ina category mpya ambayo haipo kwenye catMap, itengenezee category yake papo hapo
-      if (!matched && gameCatNorm) {
-        catMap[gameCatNorm] = {
-          category: {
-            id: `cat-${gameCatNorm}`,
-            name: gameCat,
-            image_url: game.cover_image || '',
-            game_count: 0,
-            description: `Michezo ya ${gameCat}`,
-          },
-          games: [game],
-        };
-      }
+      // STRICT CMS VISIBILITY ENFORCEMENT:
+      // If a category is marked IMEJIFICHA in Admin CMS or not approved,
+      // it will NOT be in catMap, and will NOT spawn a rogue slider on storefront!
     });
 
     // 3. Onyesha zile tu zenye angalau mchezo 1

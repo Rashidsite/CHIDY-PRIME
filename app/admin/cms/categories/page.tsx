@@ -49,10 +49,15 @@ export default function AdminCmsCategoriesPage() {
       // 3. Fetch published games to count games per category
       let gamesData: any[] = [];
       try {
-        const { data: gData } = await supabase
-          .from('games')
-          .select('id, category');
-        if (gData) gamesData = gData;
+        const { data: pData } = await supabase
+          .from('posts')
+          .select('id, category, status');
+        if (pData && pData.length > 0) {
+          gamesData = pData.filter((p: any) => p.status !== 'draft' && p.status !== 'archived');
+        } else {
+          const { data: gData } = await supabase.from('games').select('id, category');
+          if (gData) gamesData = gData;
+        }
       } catch (e) {}
 
       // 4. Merge metadata & count with categories
@@ -62,7 +67,13 @@ export default function AdminCmsCategoriesPage() {
         const count = gamesData.filter((g: any) => {
           if (!g.category) return false;
           const gc = String(g.category).toLowerCase().replace(/s$/i, '').trim();
-          return gc === fc || gc.includes(fc) || fc.includes(gc);
+          const isLiveTvMatch =
+            (gc.replace(/_/g, ' ') === fc.replace(/_/g, ' ')) ||
+            (gc.includes('live') && fc.includes('live'));
+          const isVideoMatch =
+            (gc === 'video' && fc.includes('video')) ||
+            (fc === 'video' && gc.includes('video'));
+          return gc === fc || gc.includes(fc) || fc.includes(gc) || isLiveTvMatch || isVideoMatch;
         }).length;
 
         return {
