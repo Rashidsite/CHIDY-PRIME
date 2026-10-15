@@ -1094,18 +1094,15 @@ export default function FrontHubPage() {
           ) : (
             <CategoryGrid
               categories={categoryListWithCounts}
+              games={games}
+              onBuyNow={handleBuyNow}
+              unlockedGameIds={unlockedGameIds}
               selectedCategory={selectedCategory}
               isRegistered={isRegistered}
               onRegisterClick={() => setShowRegisterModal(true)}
               onSelectCategory={(catName) => {
                 setSelectedDrawerCategory(catName);
                 setCategoryDrawerOpen(true);
-                if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-                  const sectionEl = document.getElementById('category-vault-section');
-                  if (sectionEl) {
-                    sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }
               }}
             />
           )
