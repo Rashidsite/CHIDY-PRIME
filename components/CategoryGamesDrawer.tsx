@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, SlidersHorizontal, Star, AlertCircle, Zap, Trophy, ZoomIn, ArrowUpRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { X, SlidersHorizontal, Star, AlertCircle, Zap, Trophy, ZoomIn, ArrowUpRight, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { GameProduct, formatPlanDuration } from './GameCard';
 import { formatCurrency } from '@/lib/utils';
 import GameMediaThumbnail from './GameMediaThumbnail';
@@ -242,63 +242,29 @@ export default function CategoryGamesDrawer({
                               )}
                             </div>
 
-                            {/* Price & Action Buttons */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-800/80 pt-3 mt-1">
-                              <div>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">
-                                  BEI YA KIKOSI
-                                </span>
-                                <span className="text-base sm:text-lg font-black text-emerald-400">
-                                  {formatCurrency(squad.price)}
+                            {/* Badges & Action Buttons */}
+                            <div className="flex items-center justify-between gap-3 border-t border-slate-800/80 pt-3 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[9px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                  <span>VERIFIED SQUAD</span>
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <Link
-                                  href={`/games/${game.id}`}
-                                  onClick={onClose}
-                                  className="min-h-[42px] px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer touch-manipulation active:scale-[0.98]"
-                                >
-                                  <span>Tazama Ndani</span>
-                                </Link>
-
                                 {squad.is_sold ? (
-                                  <div className="min-h-[42px] px-4 py-2.5 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 text-[11px] font-black uppercase tracking-wider flex items-center justify-center">
+                                  <div className="min-h-[42px] px-4 py-2 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 text-[11px] font-black uppercase tracking-wider flex items-center justify-center">
                                     SOLD OUT
                                   </div>
-                                ) : unlockedGameIds.has(game.id) ? (
+                                ) : (
                                   <Link
                                     href={`/games/${game.id}`}
                                     onClick={onClose}
-                                    className={`min-h-[42px] px-4 sm:px-5 py-2.5 text-[11px] ${getButtonClass('download')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation`}
+                                    className="min-h-[42px] px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 border border-blue-400/30 cursor-pointer touch-manipulation active:scale-[0.98]"
                                   >
-                                    <span className="mr-0.5">⬇</span>
-                                    <span className="relative z-10">PAKUA KIKOSI</span>
+                                    <span>TAZAMA KIKOSI</span>
+                                    <ArrowRight className="w-3.5 h-3.5 text-blue-200" />
                                   </Link>
-                                ) : squad.payment_mode === 'direct' && squad.redirect_url ? (
-                                  <a
-                                    href={squad.redirect_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`min-h-[42px] px-4 sm:px-5 py-2.5 text-[11px] ${getButtonClass('buy')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation`}
-                                  >
-                                    <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
-                                    <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI').replace(/^⚡\s*/, '')}</span>
-                                    <ArrowUpRight className="w-4 h-4 relative z-10" />
-                                  </a>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      onClose();
-                                      if (onBuyNow) onBuyNow(game);
-                                    }}
-                                    className={`min-h-[42px] px-4 sm:px-5 py-2.5 text-[11px] ${getButtonClass('buy')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation`}
-                                  >
-                                    <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
-                                    <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI').replace(/^⚡\s*/, '')}</span>
-                                    <Zap className="w-3.5 h-3.5 relative z-10" />
-                                  </button>
                                 )}
                               </div>
                             </div>
@@ -341,8 +307,9 @@ export default function CategoryGamesDrawer({
                                 <span className="px-2 py-0.5 rounded bg-blue-600/10 text-blue-400 border border-blue-600/20 text-[9px] font-black uppercase tracking-wider">
                                   {game.category}
                                 </span>
-                                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-black uppercase tracking-wider">
-                                  {formatPlanDuration(game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days, isFree)}
+                                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                  <ShieldCheck className="w-2.5 h-2.5" />
+                                  <span>TESTED 100%</span>
                                 </span>
                               </div>
                               {game.rating && (
@@ -362,49 +329,33 @@ export default function CategoryGamesDrawer({
                             )}
                           </div>
 
-                          {/* Price and CTAs */}
-                          <div className="flex items-center justify-between border-t border-slate-800/80 pt-3 mt-3 sm:mt-0">
-                            <div>
-                              <span className="text-[8px] font-bold text-slate-400 uppercase block tracking-wider">
-                                BEI YA GAME
-                              </span>
-                              <span className="text-sm font-extrabold text-white">
-                                {isFree ? (
-                                  <span className="text-emerald-400 font-black">BURE / FREE</span>
-                                ) : (
-                                  formatCurrency(game.price)
-                                )}
+                          {/* Badges and CTAs */}
+                          <div className="flex items-center justify-between border-t border-slate-800/80 pt-3 mt-3 sm:mt-0 gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[9px] font-black text-blue-400 uppercase tracking-wider">
+                                {isUnlocked ? 'TAYARI IPO WAZI' : 'FULL VERSION'}
                               </span>
                             </div>
 
                             <div className="flex items-center gap-2">
-                              {(() => {
-                                const btnTxt = isUnlocked ? '⬇ PAKUA LINK' : isFree ? 'DOWNLOAD GAME' : (game.category?.toLowerCase().includes('mod') || game.category?.toLowerCase().includes('bus') || game.category?.toLowerCase().includes('map')) ? '⚡ NUNUA MOD' : '⚡ NUNUA GAME';
-                                const isBuy = !isUnlocked && !isFree;
-                                return (
-                                  <motion.button
-                                    whileTap={{ scale: 0.94 }}
-                                    onClick={() => onBuyNow(game)}
-                                    className={`px-5 py-2.5 min-h-[44px] flex items-center justify-center gap-1 text-[11px] shrink-0 transition-all ${
-                                      isUnlocked || isFree ? getButtonClass('download') : getButtonClass('buy')
-                                    } cursor-pointer touch-manipulation whitespace-nowrap`}
-                                  >
-                                    {btnTxt.startsWith('⚡') ? (
-                                      <>
-                                        <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
-                                        <span className="relative z-10">{btnTxt.replace(/^⚡\s*/, '')}</span>
-                                      </>
-                                    ) : btnTxt.startsWith('⬇') ? (
-                                      <>
-                                        <span className="mr-0.5">⬇</span>
-                                        <span className="relative z-10">{btnTxt.replace(/^⬇\s*/, '')}</span>
-                                      </>
-                                    ) : (
-                                      <span className="relative z-10">{btnTxt}</span>
-                                    )}
-                                  </motion.button>
-                                );
-                              })()}
+                              {isUnlocked ? (
+                                <Link
+                                  href={`/games/${game.id}`}
+                                  onClick={onClose}
+                                  className={`px-4 py-2 min-h-[42px] flex items-center justify-center gap-1.5 text-[11px] font-black uppercase rounded-xl ${getButtonClass('download')} cursor-pointer touch-manipulation whitespace-nowrap active:scale-[0.96]`}
+                                >
+                                  <span>⬇ PAKUA GAME</span>
+                                </Link>
+                              ) : (
+                                <Link
+                                  href={`/games/${game.id}`}
+                                  onClick={onClose}
+                                  className="px-4 py-2 min-h-[42px] rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 border border-blue-400/30 transition-all active:scale-[0.96] shrink-0 touch-manipulation"
+                                >
+                                  <span>TAZAMA GAME</span>
+                                  <ArrowRight className="w-3.5 h-3.5 text-blue-200" />
+                                </Link>
+                              )}
                             </div>
                           </div>
                         </div>

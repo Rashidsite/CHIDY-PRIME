@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { GameProduct, formatPlanDuration } from "./GameCard";
 import { isGameAccessActive } from "@/lib/access-duration";
-import { Flame, SlidersHorizontal, Search, Zap, Download, CheckCircle2, Star } from "lucide-react";
+import { Flame, SlidersHorizontal, Search, Zap, Download, CheckCircle2, Star, ShieldCheck, ArrowRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useCMSTheme } from "./CMSThemeProvider";
 
@@ -108,43 +108,48 @@ function FeedCard({
           </p>
         )}
 
-        {/* Footer: Vertical Stack — ISOLATED FIX FOR 2-COLUMN OVERLAP */}
-        <div className="flex flex-col gap-1.5 mt-auto pt-2 border-t border-slate-800/80 w-full">
-          {/* Row 1: Duration label + Price */}
-          <div className="flex items-center justify-between w-full gap-1 min-w-0">
-            <span className="text-[9px] sm:text-[10px] font-black text-purple-400 uppercase tracking-wider leading-none truncate flex-1 min-w-0">
-              {durationLabel}
-            </span>
-            {showUnlocked ? (
-              <span className="text-[10px] font-black text-emerald-400 tracking-wide uppercase shrink-0">
-                {isFree ? "FREE" : "UNLOCKED"}
-              </span>
-            ) : (
-              <span className="text-[11px] sm:text-xs font-black text-white leading-none shrink-0">
-                {formatCurrency(game.price)}
-              </span>
-            )}
-          </div>
-
-          {/* Row 2: Full-width action button with 44px min touch target */}
-          <button
-            onClick={handleClick}
-            className={`w-full min-h-[44px] py-2 flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] ${
-              showUnlocked ? getButtonClass('download') : getButtonClass('buy')
-            } cursor-pointer touch-manipulation`}
-          >
-            {showUnlocked ? (
-              <>
+        {/* Footer: Vertical Stack */}
+        <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-slate-800/80 w-full">
+          {showUnlocked ? (
+            <>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[10px] font-black text-emerald-400 tracking-wide uppercase flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span>{isFree ? "FREE DOWNLOAD" : "UNLOCKED"}</span>
+                </span>
+              </div>
+              <button
+                onClick={handleClick}
+                className={`w-full min-h-[42px] py-2 flex items-center justify-center gap-1.5 text-[11px] font-black uppercase rounded-xl ${getButtonClass('download')} cursor-pointer touch-manipulation`}
+              >
                 <Download className="w-3.5 h-3.5 text-white shrink-0" />
-                <span className="relative z-10">{isFree ? "DOWNLOAD" : "PAKUA GAME"}</span>
-              </>
-            ) : (
-              <>
-                <Zap className="w-3.5 h-3.5 text-amber-300 icon-spark-pulse shrink-0" />
-                <span className="relative z-10">NUNUA GAME</span>
-              </>
-            )}
-          </button>
+                <span>{isFree ? "DOWNLOAD" : "PAKUA GAME"}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Row 1: Badges */}
+              <div className="flex items-center gap-1.5 flex-wrap w-full">
+                <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[9px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  <span>{game.category?.toLowerCase().includes('mod') || game.category?.toLowerCase().includes('bus') ? 'OFFLINE MOD' : 'ANDROID / PC'}</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-0.5">
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  <span>TESTED</span>
+                </span>
+              </div>
+
+              {/* Row 2: Action Button */}
+              <Link
+                href={`/games/${game.id}`}
+                className="w-full min-h-[42px] py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 border border-blue-400/30 transition-all active:scale-[0.96] touch-manipulation"
+              >
+                <span>TAZAMA GAME</span>
+                <ArrowRight className="w-3.5 h-3.5 text-blue-200" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>

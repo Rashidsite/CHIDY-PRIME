@@ -631,8 +631,9 @@ export default function GameDetailPage() {
 
             <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-[11px] uppercase font-bold text-purple-400 block mb-0.5">
-                  {formatPlanDuration(game.access_duration || game.license_duration, isFree)}
+                <span className="text-[11px] uppercase font-bold text-emerald-400 flex items-center gap-1.5 mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span>UPATIKANAJI WA PAPO HAPO</span>
                 </span>
                 <span className="text-2xl font-black text-white">
                   {isUnlocked(gameId) ? (

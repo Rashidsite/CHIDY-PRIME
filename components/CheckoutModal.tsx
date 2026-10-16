@@ -729,8 +729,9 @@ export default function CheckoutModal({
                   <h4 className="text-xs sm:text-sm font-black text-white truncate mt-0.5">
                     {game.title}
                   </h4>
-                  <span className="inline-block mt-1 text-[10px] text-emerald-400 font-black">
-                    {formatPlanDuration(game.access_duration || game.license_duration, isFree)}
+                  <span className="inline-flex items-center gap-1.5 mt-1 text-[10px] text-emerald-400 font-black uppercase">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>UPATIKANAJI WA PAPO HAPO</span>
                   </span>
                 </div>
                 <div className="text-right shrink-0">
@@ -1004,10 +1005,11 @@ export default function CheckoutModal({
 
                 <div className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-2.5">
                   <span className="text-slate-400 font-bold uppercase text-[10px] flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-purple-400" /> Muda wa Ufikiaji
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Hali ya Huduma
                   </span>
-                  <span className="text-purple-300 font-black">
-                    {formatPlanDuration(game.access_duration || game.license_duration || activeOrder?.access_duration, isFree)}
+                  <span className="text-emerald-400 font-black uppercase text-[10px] flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>IMETHIBITISHWA PAPO HAPO</span>
                   </span>
                 </div>
 

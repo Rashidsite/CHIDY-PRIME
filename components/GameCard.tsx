@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, Crown, CheckCircle2 } from 'lucide-react';
+import { Star, Crown, CheckCircle2, ShieldCheck, ArrowRight, Download } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useCMSTheme } from './CMSThemeProvider';
 import GameMediaThumbnail from './GameMediaThumbnail';
@@ -263,42 +263,52 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
         </div>
 
         <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
-          <div className="min-w-0">
-            <span className="text-[9px] sm:text-[10px] uppercase font-black text-purple-400 tracking-wider block leading-none mb-1 whitespace-nowrap">
-              {durationLabel}
-            </span>
-            {showUnlocked ? (
-              <span className="text-xs font-black text-emerald-400 tracking-wide uppercase">UNLOCKED</span>
-            ) : isFree ? (
-              <span className="text-xs font-black text-emerald-400 tracking-wide">FREE</span>
-            ) : (
-              <span className="text-xs sm:text-sm font-black text-white leading-none whitespace-nowrap">
-                {formatCurrency(game.price)}
-              </span>
-            )}
-          </div>
+          {showUnlocked ? (
+            <>
+              <div className="min-w-0">
+                <span className="text-[10px] font-black text-emerald-400 tracking-wide uppercase flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span>{isFree ? 'FREE DOWNLOAD' : 'TAYARI IPO WAZI'}</span>
+                </span>
+              </div>
 
-          <button
-            type="button"
-            onClick={handleCardClick}
-            className={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[44px] flex items-center justify-center gap-1 text-[10px] sm:text-[11px] shrink-0 transition-all ${
-              showUnlocked ? getButtonClass('download') : getButtonClass('buy')
-            } cursor-pointer touch-manipulation whitespace-nowrap active:scale-[0.96]`}
-          >
-            {buttonText.startsWith('⚡') ? (
-              <>
-                <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
-                <span className="relative z-10">{buttonText.replace(/^⚡\s*/, '')}</span>
-              </>
-            ) : buttonText.startsWith('⬇') ? (
-              <>
-                <span className="mr-0.5">⬇</span>
-                <span className="relative z-10">{buttonText.replace(/^⬇\s*/, '')}</span>
-              </>
-            ) : (
-              <span className="relative z-10">{buttonText}</span>
-            )}
-          </button>
+              <button
+                type="button"
+                onClick={handleCardClick}
+                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[42px] flex items-center justify-center gap-1.5 text-[11px] ${getButtonClass('download')} cursor-pointer touch-manipulation whitespace-nowrap active:scale-[0.96]`}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="relative z-10 font-black">{isFree ? 'DOWNLOAD' : 'PAKUA GAME'}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Sifa za Haraka (Gaming Spec & Trust Badges) */}
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25 text-[9px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
+                    <span className="truncate max-w-[85px] sm:max-w-[110px]">
+                      {isSquad ? 'EFOOTBALL' : (game.category?.toLowerCase().includes('mod') || game.category?.toLowerCase().includes('bus') ? 'OFFLINE MOD' : 'ANDROID / PC')}
+                    </span>
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-0.5">
+                    <ShieldCheck className="w-2.5 h-2.5 shrink-0" />
+                    <span>TESTED</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Batan ya Nje: TAZAMA GAME inayofungua ndani bila kuonyesha Nunua nje */}
+              <Link
+                href={`/games/${game.id}`}
+                className="px-3 sm:px-3.5 py-2 sm:py-2.5 min-h-[42px] rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 border border-blue-400/30 transition-all active:scale-[0.96] shrink-0 touch-manipulation group/btn"
+              >
+                <span className="relative z-10">{isSquad ? 'TAZAMA KIKOSI' : 'TAZAMA GAME'}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-blue-200 group-hover/btn:translate-x-0.5 transition-transform" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>
