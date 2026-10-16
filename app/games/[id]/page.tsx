@@ -602,14 +602,27 @@ export default function GameDetailPage() {
         {/* Hero Product Banner */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Cover Image */}
-          <div className="lg:col-span-7 relative aspect-[16/10] w-full rounded-3xl overflow-hidden border border-glass-border shadow-glass bg-slate-900">
+          {/* Cover Image — Full uncropped view with ambient backdrop */}
+          <div className="lg:col-span-7 relative aspect-[4/3] sm:aspect-[16/10] min-h-[300px] sm:min-h-[420px] w-full rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-gradient-to-b from-[#0a1c38] via-[#051124] to-[#020712] flex items-center justify-center p-2 sm:p-4 group">
+            {/* Ambient blurred backdrop so portrait/square images fill frame beautifully without cut-offs */}
+            <div className="absolute inset-0 overflow-hidden opacity-35 pointer-events-none">
+              <Image
+                src={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
+                alt=""
+                fill
+                className="object-cover filter blur-2xl scale-125"
+                aria-hidden="true"
+              />
+            </div>
+
+            {/* Foreground Full Uncropped Image */}
             <Image
               src={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
               alt={game.title}
               fill
               priority
-              className="object-cover object-center"
+              sizes="(max-width: 1024px) 100vw, 750px"
+              className="object-contain relative z-10 transition-transform duration-500 group-hover:scale-[1.02]"
             />
           </div>
 
@@ -653,7 +666,7 @@ export default function GameDetailPage() {
                   }
                   setCheckoutOpen(true);
                 }}
-                className={`px-6 py-3 text-sm font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-6 py-3.5 text-sm sm:text-base font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer rounded-2xl shadow-lg active:scale-95 touch-manipulation ${
                   isUnlocked(gameId) || isFree ? getButtonClass('download') : getButtonClass('buy')
                 }`}
               >
@@ -662,7 +675,9 @@ export default function GameDetailPage() {
                 ) : (
                   <Zap className="w-4 h-4 text-amber-300 icon-spark-pulse shrink-0" />
                 )}
-                <span className="relative z-10">{isUnlocked(gameId) ? 'Pakua Sasa (Download)' : isFree ? 'Get Access' : 'Buy Now'}</span>
+                <span className="relative z-10 font-black">
+                  {isUnlocked(gameId) ? 'PAKUA GAME' : isFree ? 'PAKUA BURE' : 'NUNUA GAME'}
+                </span>
               </button>
             </div>
 

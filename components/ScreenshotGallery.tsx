@@ -25,16 +25,26 @@ export default function ScreenshotGallery({ screenshots }: ScreenshotGalleryProp
           <button
             key={idx}
             onClick={() => setSelectedIndex(idx)}
-            className="group relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-brand-500 transition-all focus:outline-none"
+            className="group relative aspect-video rounded-xl overflow-hidden bg-slate-900/90 border border-slate-800 hover:border-blue-500 transition-all focus:outline-none flex items-center justify-center p-1"
           >
+            {/* Ambient subtle blur */}
+            <div className="absolute inset-0 overflow-hidden opacity-25 pointer-events-none">
+              <Image
+                src={url}
+                alt=""
+                fill
+                className="object-cover filter blur-lg scale-125"
+                aria-hidden="true"
+              />
+            </div>
             <Image
               src={url}
               alt={`Screenshot ${idx + 1}`}
               fill
               sizes="(max-width: 640px) 50vw, 25vw"
-              className="object-cover group-hover:scale-105 transition-transform"
+              className="object-contain relative z-10 group-hover:scale-105 transition-transform"
             />
-            <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
               <Maximize2 className="w-5 h-5 text-white" />
             </div>
           </button>
