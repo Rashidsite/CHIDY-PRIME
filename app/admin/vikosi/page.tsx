@@ -76,20 +76,43 @@ export default function AdminVikosiPage() {
 
   const supabase = useMemo(() => createClient(), []);
 
-  // Fetch only squad posts
+  // Fetch squad posts reliably via Server API & direct fallback
   const fetchSquads = async () => {
     setLoading(true);
     try {
+      // 1. Primary: Server-side API endpoint using Service Role (immune to browser RLS/adblockers)
+      try {
+        const res = await fetch('/api/admin/vikosi');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.squads)) {
+          setSquads(json.squads);
+          setLoading(false);
+          return;
+        }
+      } catch (apiErr) {
+        console.warn('API /api/admin/vikosi fetch failed, falling back to direct client:', apiErr);
+      }
+
+      // 2. Fallback: Direct Supabase client query with broad category & title matching
       const { data, error } = await supabase
         .from('posts')
         .select('*')
-        .ilike('category', '%efootball%')
+        .or('category.ilike.%vikosi%,category.ilike.%efootball%')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
-        const parsed = data.map((item: any) => parseSquadData(item));
+        const squadPosts = data.filter((p: any) => {
+          const cat = (p.category || '').toLowerCase();
+          const title = (p.title || '').toLowerCase();
+          if (cat.includes('vikosi')) return true;
+          if (cat.includes('efootball') && !cat.includes('football games')) return true;
+          if (title.includes('kikosi')) return true;
+          return false;
+        });
+
+        const parsed = squadPosts.map((item: any) => parseSquadData(item));
         setSquads(parsed);
       }
     } catch (err) {
@@ -267,21 +290,34 @@ export default function AdminVikosiPage() {
         sort_order: 1,
       };
 
-      if (editingSquad?.id) {
-        // Update
-        const { error } = await supabase
-          .from('posts')
-          .update(postPayload)
-          .eq('id', editingSquad.id);
+      let saved = false;
+      try {
+        const method = editingSquad?.id ? 'PUT' : 'POST';
+        const bodyPayload = editingSquad?.id ? { id: editingSquad.id, ...postPayload } : postPayload;
+        const res = await fetch('/api/admin/vikosi', {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyPayload),
+        });
+        const json = await res.json();
+        if (json.success) saved = true;
+      } catch (apiErr) {
+        console.warn('API save fallback:', apiErr);
+      }
 
-        if (error) throw error;
-      } else {
-        // Insert
-        const { error } = await supabase
-          .from('posts')
-          .insert(postPayload);
-
-        if (error) throw error;
+      if (!saved) {
+        if (editingSquad?.id) {
+          const { error } = await supabase
+            .from('posts')
+            .update(postPayload)
+            .eq('id', editingSquad.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('posts')
+            .insert(postPayload);
+          if (error) throw error;
+        }
       }
 
       // Broadcast changes for zero reload update
@@ -299,7 +335,6 @@ export default function AdminVikosiPage() {
     }
   };
 
-
   // Toggle Sold Out status
   const handleToggleSold = async (squad: EFootballSquad) => {
     setActionLoadingId(squad.id);
@@ -315,15 +350,30 @@ export default function AdminVikosiPage() {
         button_text: nextSold ? 'KIKOSI KIMEKWISHA (SOLD OUT)' : '⚡ NUNUA KIKOSI SASA',
       };
 
-      const { error } = await supabase
-        .from('posts')
-        .update({
-          status: nextSold ? 'archived' : 'published',
-          links: updatedLinks,
-        })
-        .eq('id', squad.id);
+      const updateData = {
+        status: nextSold ? 'archived' : 'published',
+        links: updatedLinks,
+      };
 
-      if (error) throw error;
+      let done = false;
+      try {
+        const res = await fetch('/api/admin/vikosi', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: squad.id, ...updateData }),
+        });
+        const json = await res.json();
+        if (json.success) done = true;
+      } catch {}
+
+      if (!done) {
+        const { error } = await supabase
+          .from('posts')
+          .update(updateData)
+          .eq('id', squad.id);
+        if (error) throw error;
+      }
+
       await fetchSquads();
     } catch (err: any) {
       console.error('Error toggling sold status:', err);
@@ -341,12 +391,21 @@ export default function AdminVikosiPage() {
 
     setActionLoadingId(id);
     try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', id);
+      let deleted = false;
+      try {
+        const res = await fetch(`/api/admin/vikosi?id=${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) deleted = true;
+      } catch {}
 
-      if (error) throw error;
+      if (!deleted) {
+        const { error } = await supabase
+          .from('posts')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+      }
+
       await fetchSquads();
     } catch (err: any) {
       console.error('Error deleting squad:', err);
