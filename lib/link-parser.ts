@@ -25,6 +25,19 @@ export function parseUniversalDownloadLinks(gameOrPost: any): ExtractedDownloadL
 
   if (rawLinks.length > 0) {
     rawLinks.forEach((l: any, idx: number) => {
+      // Skip non-download links like metadata, payment redirects, or thumbnail fit
+      if (l && typeof l === 'object') {
+        const nameUpper = String(l.name || l.label || '').toUpperCase();
+        if (
+          nameUpper === 'PAYMENT_REDIRECT' ||
+          nameUpper === 'DIRECT_PAYMENT_URL' ||
+          nameUpper === 'SQUAD_METADATA' ||
+          nameUpper === 'THUMBNAIL_FIT' ||
+          l.type === 'direct_payment'
+        ) {
+          return;
+        }
+      }
       const url = typeof l === 'string' ? l : (l.url || l.link || l.href);
       if (url && typeof url === 'string' && url.trim().startsWith('http')) {
         const { type, provider } = detectType(url);

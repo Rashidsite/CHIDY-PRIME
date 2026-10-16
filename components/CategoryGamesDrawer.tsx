@@ -266,7 +266,16 @@ export default function CategoryGamesDrawer({
                                   <div className="min-h-[42px] px-4 py-2.5 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 text-[11px] font-black uppercase tracking-wider flex items-center justify-center">
                                     SOLD OUT
                                   </div>
-                                ) : (
+                                ) : unlockedGameIds.has(game.id) ? (
+                                  <Link
+                                    href={`/games/${game.id}`}
+                                    onClick={onClose}
+                                    className={`min-h-[42px] px-4 sm:px-5 py-2.5 text-[11px] ${getButtonClass('download')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation`}
+                                  >
+                                    <span className="mr-0.5">⬇</span>
+                                    <span className="relative z-10">PAKUA KIKOSI</span>
+                                  </Link>
+                                ) : squad.payment_mode === 'direct' && squad.redirect_url ? (
                                   <a
                                     href={squad.redirect_url}
                                     target="_blank"
@@ -277,6 +286,19 @@ export default function CategoryGamesDrawer({
                                     <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI').replace(/^⚡\s*/, '')}</span>
                                     <ArrowUpRight className="w-4 h-4 relative z-10" />
                                   </a>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      onClose();
+                                      if (onBuyNow) onBuyNow(game);
+                                    }}
+                                    className={`min-h-[42px] px-4 sm:px-5 py-2.5 text-[11px] ${getButtonClass('buy')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer touch-manipulation`}
+                                  >
+                                    <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
+                                    <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI').replace(/^⚡\s*/, '')}</span>
+                                    <Zap className="w-3.5 h-3.5 relative z-10" />
+                                  </button>
                                 )}
                               </div>
                             </div>

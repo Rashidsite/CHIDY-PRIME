@@ -9,7 +9,7 @@ import { Star, Crown, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useCMSTheme } from './CMSThemeProvider';
 import GameMediaThumbnail from './GameMediaThumbnail';
-import { cleanRedirectUrl } from '@/lib/efootball-squads';
+import { cleanRedirectUrl, parseSquadData } from '@/lib/efootball-squads';
 import { isGameAccessActive } from '@/lib/access-duration';
 
 export interface GameProduct {
@@ -170,7 +170,7 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
 
   const customButtonText = (game as any).links?.[0]?.button_text;
   const buttonText = isSquad 
-    ? (customButtonText || '⚡ NUNUA KIKOSI')
+    ? (showUnlocked ? '⬇ PAKUA KIKOSI' : (customButtonText || '⚡ NUNUA KIKOSI'))
     : showUnlocked 
       ? (isFree ? 'DOWNLOAD GAME' : `⬇ PAKUA ${label}`) 
       : `⚡ NUNUA ${label}`;
@@ -178,9 +178,20 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isSquad) {
-      const redirect = cleanRedirectUrl((game as any).links?.[0]?.url || game.download_url, game.title, game.price);
-      if (redirect && typeof window !== 'undefined') {
-        window.open(redirect, '_blank');
+      if (showUnlocked) {
+        router.push(`/games/${game.id}`);
+        return;
+      }
+      const parsedSquad = parseSquadData(game);
+      if (parsedSquad.payment_mode === 'direct' && parsedSquad.redirect_url) {
+        if (typeof window !== 'undefined') {
+          window.open(parsedSquad.redirect_url, '_blank');
+          return;
+        }
+      }
+      // If push mode or no direct redirect, open automated checkout modal
+      if (onBuyNow) {
+        onBuyNow(game);
         return;
       }
     }

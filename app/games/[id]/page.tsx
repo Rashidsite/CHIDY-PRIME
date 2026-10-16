@@ -31,7 +31,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { GameProduct, formatPlanDuration } from '@/components/GameCard';
 import { useProductAccess } from '@/hooks/useProductAccess';
-import { parseSquadData, EFootballSquad } from '@/lib/efootball-squads';
+import { parseSquadData, EFootballSquad, generateWhatsAppLink } from '@/lib/efootball-squads';
 import { useCMSTheme } from '@/components/CMSThemeProvider';
 
 export default function GameDetailPage() {
@@ -323,12 +323,17 @@ export default function GameDetailPage() {
                   </span>
                 </div>
 
-                {/* Primary Buy Button with Direct Redirect */}
+                {/* Primary Buy Button or Unlocked / Download Action */}
                 {squad.is_sold ? (
                   <div className="w-full min-h-[48px] py-3.5 px-4 rounded-2xl bg-rose-600/20 border border-rose-500/40 text-rose-400 text-xs font-black uppercase tracking-wider text-center flex items-center justify-center">
                     KIKOSI HIKI KIMEKWISHA NUNULIWA (SOLD OUT)
                   </div>
-                ) : (
+                ) : isUnlocked(gameId) ? (
+                  <div className="w-full min-h-[48px] py-3.5 px-4 rounded-2xl bg-emerald-600 text-white text-xs sm:text-sm font-black uppercase tracking-wider text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>KIKOSI KIMEFUNGULIWA (UNLOCKED)</span>
+                  </div>
+                ) : squad.payment_mode === 'direct' && squad.redirect_url ? (
                   <a
                     href={squad.redirect_url}
                     target="_blank"
@@ -339,12 +344,22 @@ export default function GameDetailPage() {
                     <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI SASA').replace(/^⚡\s*/, '')}</span>
                     <ArrowUpRight className="w-4 h-4 relative z-10" />
                   </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutOpen(true)}
+                    className={`w-full min-h-[48px] py-3.5 px-4 text-xs sm:text-sm font-black uppercase tracking-wider ${getButtonClass('buy')} hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation text-center`}
+                  >
+                    <span className="icon-spark-pulse text-amber-300 text-xs">⚡</span>
+                    <span className="relative z-10">{(squad.button_text || '⚡ NUNUA KIKOSI SASA').replace(/^⚡\s*/, '')}</span>
+                    <Zap className="w-4 h-4 relative z-10" />
+                  </button>
                 )}
 
                 {/* Secondary Direct WhatsApp Contact */}
                 {!squad.is_sold && (
                   <a
-                    href={squad.redirect_url}
+                    href={squad.redirect_url || generateWhatsAppLink('255655361060', squad.title, squad.price)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-[0.98] text-center"
@@ -354,6 +369,58 @@ export default function GameDetailPage() {
                   </a>
                 )}
               </div>
+
+              {/* Download Links Section for Squad (if unlocked or provided) */}
+              {squad.download_links && squad.download_links.length > 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+                      <Download className="w-4 h-4" />
+                      <span>{isUnlocked(gameId) ? 'Faili za Kupakua (Download Links)' : 'Faili Zilizomo Kwenye Kikosi Hiki'}</span>
+                    </span>
+                    {isUnlocked(gameId) && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase border border-emerald-500/30">
+                        Tayari Ziko Wazi
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    {squad.download_links.map((dl, idx) => (
+                      isUnlocked(gameId) ? (
+                        <a
+                          key={idx}
+                          href={dl.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-400 text-white transition-all group"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                              <Download className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-xs font-bold">{dl.name || `Download File #${idx + 1}`}</span>
+                          </div>
+                          <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                        </a>
+                      ) : (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-slate-300 text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-500">📁</span>
+                            <span className="font-semibold">{dl.name || `Kikosi Data #${idx + 1}`}</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                            🔒 Baada ya Kulipia
+                          </span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Guarantees & Safe Transfer */}
               <div className="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
@@ -427,6 +494,26 @@ export default function GameDetailPage() {
             imageUrl={activeGalleryImg || squad.cover_image}
             title={squad.title}
             teamStrength={squad.team_strength}
+          />
+        )}
+
+        {/* Checkout Modal for Automated Push */}
+        {squad && (
+          <CheckoutModal
+            isOpen={checkoutOpen}
+            onClose={() => setCheckoutOpen(false)}
+            game={{
+              id: squad.id,
+              title: squad.title,
+              price: squad.price,
+              cover_image: squad.cover_image,
+              category: squad.category,
+              access_duration: '7 Days',
+            }}
+            isUnlocked={isUnlocked(gameId)}
+            onSuccess={() => {
+              refreshAccess();
+            }}
           />
         )}
       </>

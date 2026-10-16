@@ -24,7 +24,8 @@ import {
   HelpCircle,
   Share2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import ImgBBUploadModal from '@/components/ImgBBUploadModal';
 import { createClient } from '@/lib/supabase/client';
@@ -52,8 +53,17 @@ export default function AdminVikosiPage() {
   const [coverImage, setCoverImage] = useState('https://i.ibb.co/XZzgkBfx/664335.jpg');
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [newScreenshotUrl, setNewScreenshotUrl] = useState('');
+  
+  // Payment Mode: 'push' (USSD Mobile Push) vs 'direct' (Redirect URL / WhatsApp)
+  const [paymentMode, setPaymentMode] = useState<'push' | 'direct'>('push');
   const [redirectUrl, setRedirectUrl] = useState('');
   const [buttonText, setButtonText] = useState('⚡ NUNUA KIKOSI SASA');
+
+  // Multi-Download Links for Squad
+  const [downloadLinks, setDownloadLinks] = useState<{ name: string; url: string }[]>([
+    { name: 'Kikosi Data / OBB', url: '' },
+  ]);
+
   const [teamStrength, setTeamStrength] = useState('3150+');
   const [boosterCoaches, setBoosterCoaches] = useState('Makocha 6 wenye Booster');
   const [epicsCount, setEpicsCount] = useState('14 Epics / Showtime');
@@ -101,8 +111,12 @@ export default function AdminVikosiPage() {
     setCoverImage('https://i.ibb.co/XZzgkBfx/664335.jpg');
     setScreenshots([]);
     setNewScreenshotUrl('');
-    setRedirectUrl(generateWhatsAppLink('255655361060'));
+    setPaymentMode('push');
+    setRedirectUrl('');
     setButtonText('⚡ NUNUA KIKOSI SASA');
+    setDownloadLinks([
+      { name: 'Kikosi Data / OBB', url: '' },
+    ]);
     setTeamStrength('3150+');
     setBoosterCoaches('Makocha 6 wenye Booster');
     setEpicsCount('14 Epics / Showtime');
@@ -123,8 +137,22 @@ export default function AdminVikosiPage() {
     setCoverImage(squad.cover_image);
     setScreenshots(squad.screenshots || []);
     setNewScreenshotUrl('');
-    setRedirectUrl(squad.redirect_url);
+    
+    // Resolve payment mode
+    const mode = squad.payment_mode || (squad.redirect_url ? 'direct' : 'push');
+    setPaymentMode(mode);
+    setRedirectUrl(squad.redirect_url || '');
     setButtonText(squad.button_text || '⚡ NUNUA KIKOSI SASA');
+
+    // Resolve download links
+    if (squad.download_links && squad.download_links.length > 0) {
+      setDownloadLinks(squad.download_links.map((dl) => ({ name: dl.name, url: dl.url })));
+    } else if (squad.download_url) {
+      setDownloadLinks([{ name: 'Kikosi Data / OBB', url: squad.download_url }]);
+    } else {
+      setDownloadLinks([{ name: 'Kikosi Data / OBB', url: '' }]);
+    }
+
     setTeamStrength(squad.team_strength || '3150+');
     setBoosterCoaches(squad.booster_coaches || 'Makocha 6 wenye Booster');
     setEpicsCount(squad.epics_count || '14 Epics');
@@ -142,6 +170,27 @@ export default function AdminVikosiPage() {
     const numPrice = Number(price) || 0;
     const link = generateWhatsAppLink('255655361060', title || 'Kikosi cha eFootball', numPrice);
     setRedirectUrl(link);
+  };
+
+  // Download Link Helpers
+  const handleAddDownloadLink = (presetName = 'Kikosi Data / OBB') => {
+    setDownloadLinks((prev) => [...prev, { name: presetName, url: '' }]);
+  };
+
+  const handleRemoveDownloadLink = (index: number) => {
+    if (downloadLinks.length <= 1) {
+      setDownloadLinks([{ name: 'Kikosi Data / OBB', url: '' }]);
+      return;
+    }
+    setDownloadLinks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateDownloadLink = (index: number, field: 'name' | 'url', value: string) => {
+    setDownloadLinks((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
   };
 
   // Add extra screenshot
@@ -167,27 +216,41 @@ export default function AdminVikosiPage() {
       return;
     }
 
+    if (paymentMode === 'direct' && !redirectUrl.trim()) {
+      alert('Tafadhali weka Link ya Kudirect (au bofya "Tengeneza WhatsApp Link") kwa kuwa umechagua Direct Redirect Link.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const numPrice = Number(price) || 0;
       const numRating = Number(rating) || 4.8;
-      const finalRedirect = cleanRedirectUrl(redirectUrl, title, numPrice);
+      const finalRedirect = paymentMode === 'direct' ? cleanRedirectUrl(redirectUrl, title, numPrice) : '';
+
+      // Clean download links
+      const cleanDownloads = downloadLinks
+        .filter((l) => l.url && l.url.trim())
+        .map((l) => ({
+          name: l.name.trim() || 'Kikosi Data / Download',
+          url: l.url.trim(),
+        }));
 
       // Structure metadata in links[0]
-      const linkPayload = [
-        {
-          name: 'PAYMENT_REDIRECT',
-          url: finalRedirect,
-          button_text: buttonText.trim() || '⚡ NUNUA KIKOSI SASA',
-          team_strength: teamStrength.trim() || '3000+',
-          booster_coaches: boosterCoaches.trim() || 'Makocha Wenye Booster',
-          epics_count: epicsCount.trim() || 'Epics & Showtime',
-          login_type: loginType.trim() || 'Konami ID Safi',
-          platform: platform.trim() || 'Mobile (Android & iOS)',
-          is_sold: isSold,
-          screenshots,
-        },
-      ];
+      const metaItem = {
+        name: paymentMode === 'direct' ? 'PAYMENT_REDIRECT' : 'SQUAD_METADATA',
+        payment_mode: paymentMode,
+        url: finalRedirect,
+        button_text: buttonText.trim() || '⚡ NUNUA KIKOSI SASA',
+        team_strength: teamStrength.trim() || '3000+',
+        booster_coaches: boosterCoaches.trim() || 'Makocha Wenye Booster',
+        epics_count: epicsCount.trim() || 'Epics & Showtime',
+        login_type: loginType.trim() || 'Konami ID Safi',
+        platform: platform.trim() || 'Mobile (Android & iOS)',
+        is_sold: isSold,
+        screenshots,
+      };
+
+      const linkPayload = [metaItem, ...cleanDownloads];
 
       const postPayload: any = {
         title: title.trim(),
@@ -197,6 +260,8 @@ export default function AdminVikosiPage() {
         image_url: coverImage.trim(),
         rating: numRating,
         status: isSold ? 'archived' : status,
+        download_url: cleanDownloads[0]?.url || '',
+        direct_payment_url: finalRedirect,
         links: linkPayload,
         duration_days: 7,
         sort_order: 1,
@@ -233,6 +298,7 @@ export default function AdminVikosiPage() {
       setSubmitting(false);
     }
   };
+
 
   // Toggle Sold Out status
   const handleToggleSold = async (squad: EFootballSquad) => {
@@ -499,18 +565,31 @@ export default function AdminVikosiPage() {
                     <div>
                       <span className="text-[8px] font-bold text-slate-400 uppercase block tracking-wider">BEI YA KIKOSI</span>
                       <span className="text-base font-black text-emerald-400">{formatCurrency(squad.price)}</span>
+                      {squad.download_links && squad.download_links.length > 0 && (
+                        <span className="text-[9px] text-blue-400 font-bold flex items-center gap-1 mt-0.5">
+                          <Download className="w-3 h-3 text-blue-400" />
+                          <span>{squad.download_links.length} {squad.download_links.length === 1 ? 'Download Link' : 'Download Links'}</span>
+                        </span>
+                      )}
                     </div>
 
-                    <a
-                      href={squad.redirect_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-[10px] font-bold transition-colors"
-                      title="Jaribu link ya kudirect"
-                    >
-                      <span>Jaribu Link</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </a>
+                    {squad.payment_mode === 'direct' && squad.redirect_url ? (
+                      <a
+                        href={squad.redirect_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-[10px] font-bold transition-colors"
+                        title="Jaribu link ya kudirect"
+                      >
+                        <span>Direct Link</span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                        <Smartphone className="w-3 h-3" />
+                        <span>Push ya Simu</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Action Buttons */}
@@ -686,55 +765,126 @@ export default function AdminVikosiPage() {
                 )}
               </div>
 
-              {/* Direct Redirect Link & CTA Button */}
+              {/* Payment Mode Selector & CTA Button */}
               <div className="space-y-4 pt-2 border-t border-slate-800/80">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-blue-400 uppercase tracking-wider">
-                    3. Batan ya Kulipia & Link ya Kudirect
+                  <h3 className="text-xs font-black text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>3. Mfumo wa Malipo (Payment & Checkout Mode)</span>
                   </h3>
+                </div>
+
+                {/* Mode Selector Tabs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={handleGenerateWhatsAppLink}
-                    className="inline-flex items-center gap-1 text-[11px] py-1 px-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 font-bold transition-all cursor-pointer"
+                    onClick={() => setPaymentMode('push')}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                      paymentMode === 'push'
+                        ? 'bg-blue-600/15 border-blue-500 text-white shadow-lg shadow-blue-500/10'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
                   >
-                    <MessageSquare className="w-3 h-3" />
-                    <span>Tengeneza WhatsApp Link Papo Hapo</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5 text-white">
+                        <Smartphone className="w-4 h-4 text-emerald-400" />
+                        <span>Push ya Kawaida (Automated)</span>
+                      </span>
+                      {paymentMode === 'push' && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Mteja anaweka namba ya simu (M-Pesa, Tigopesa, Airtel, Halopesa) na kupata ujumbe wa USSD push wa kulipia papo hapo kwenye tovuti.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentMode('direct');
+                      if (!redirectUrl) handleGenerateWhatsAppLink();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                      paymentMode === 'direct'
+                        ? 'bg-blue-600/15 border-blue-500 text-white shadow-lg shadow-blue-500/10'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5 text-white">
+                        <ExternalLink className="w-4 h-4 text-blue-400" />
+                        <span>Direct Redirect Link</span>
+                      </span>
+                      {paymentMode === 'direct' && (
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Mteja anapelekwa moja kwa moja kwenye link ya WhatsApp au Payment Gateway ya nje uliyoweka.
+                    </p>
                   </button>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-300 uppercase block mb-1">
-                      Link ya Kudirect (WhatsApp Link au Payment Gateway) *
-                    </label>
+                {/* Conditional Fields based on Payment Mode */}
+                {paymentMode === 'direct' ? (
+                  <div className="space-y-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <label className="text-[11px] font-bold text-slate-300 uppercase">
+                        Link ya Kudirect (WhatsApp Link au Gateway ya Nje) *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleGenerateWhatsAppLink}
+                        className="inline-flex items-center gap-1 text-[10px] py-1 px-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 font-bold transition-all cursor-pointer"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        <span>Tengeneza WhatsApp Link</span>
+                      </button>
+                    </div>
+
                     <div className="relative">
                       <ExternalLink className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
-                        required
+                        required={paymentMode === 'direct'}
                         placeholder="https://wa.me/255655361060?text=... au link ya malipo"
                         value={redirectUrl}
                         onChange={(e) => setRedirectUrl(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
                       />
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className="text-[10px] text-slate-400">
                       Mteja akibofya kitufe cha kulipia kwenye kadi ya kikosi au ukurasa wa ndani, atapelekwa moja kwa moja kwenye link hii.
                     </p>
                   </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-300 uppercase block mb-1">
-                      Maandishi ya Batan (Button CTA Text)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="⚡ NUNUA KIKOSI SASA"
-                      value={buttonText}
-                      onChange={(e) => setButtonText(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                    />
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <span className="font-bold text-emerald-300 uppercase tracking-wide block">
+                        Push ya Kawaida Imewezeshwa
+                      </span>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        Mteja atalipia kwa M-Pesa, Tigopesa, Airtel Money au Halopesa kupitia popup ya checkout kwenye tovuti. Baada ya kulipia, taarifa za kikosi na link za download zitaonekana mara moja!
+                      </p>
+                    </div>
                   </div>
+                )}
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-300 uppercase block mb-1">
+                    Maandishi ya Batan (Button CTA Text)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="⚡ NUNUA KIKOSI SASA"
+                    value={buttonText}
+                    onChange={(e) => setButtonText(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
                 </div>
               </div>
 
@@ -827,7 +977,102 @@ export default function AdminVikosiPage() {
                 </div>
               </div>
 
-              {/* Extra Screenshots Gallery */}
+              {/* Section 5: Download Links Manager */}
+              <div className="space-y-4 pt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Download className="w-3.5 h-3.5" />
+                      <span>5. Sehemu ya Kuweka Link za Download (Faili za Kikosi)</span>
+                    </h3>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Weka link za kupakua faili za kikosi hiki (k.m. OBB, APK, Patch, Google Drive, Mediafire, Mega, au Maelekezo). Baada ya mteja kulipia, ataona link hizi za kupakua.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddDownloadLink('Download File')}
+                    className="inline-flex items-center gap-1 text-[11px] py-1.5 px-3 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white font-bold transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Ongeza Link</span>
+                  </button>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase mr-1">Violezo vya Haraka:</span>
+                  {[
+                    'Kikosi Data (OBB / Save)',
+                    'eFootball APK Mod',
+                    'Google Drive Link',
+                    'MediaFire Link',
+                    'Mega.nz Mirror',
+                    'Maelekezo ya Akaunti',
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => handleAddDownloadLink(preset)}
+                      className="text-[9px] font-black uppercase px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Links Rows */}
+                <div className="space-y-2.5">
+                  {downloadLinks.map((link, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-center gap-2.5"
+                    >
+                      <div className="w-full sm:w-1/3">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">
+                          Jina la Link #{idx + 1}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="k.m. Kikosi Data OBB"
+                          value={link.name}
+                          onChange={(e) => handleUpdateDownloadLink(idx, 'name', e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div className="w-full sm:flex-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">
+                          URL ya Kupakua (Link)
+                        </label>
+                        <div className="relative">
+                          <Download className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="url"
+                            placeholder="https://drive.google.com/... au mediafire.com/..."
+                            value={link.url}
+                            onChange={(e) => handleUpdateDownloadLink(idx, 'url', e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="w-full sm:w-auto flex justify-end self-end sm:self-auto sm:pt-4">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDownloadLink(idx)}
+                          className="p-2 rounded-xl bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-800 transition-colors cursor-pointer"
+                          title="Futa Link Hii"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 6. Extra Screenshots Gallery */}
               <div className="space-y-3 pt-2 border-t border-slate-800/80">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold text-slate-300 uppercase">

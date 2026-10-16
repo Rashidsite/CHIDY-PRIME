@@ -1,3 +1,8 @@
+export interface SquadDownloadLink {
+  name: string;
+  url: string;
+}
+
 export interface EFootballSquad {
   id: string;
   title: string;
@@ -8,6 +13,7 @@ export interface EFootballSquad {
   category: string;
   status: 'published' | 'draft' | 'archived';
   is_sold: boolean;
+  payment_mode: 'push' | 'direct';
   redirect_url: string;
   button_text: string;
   team_strength: string;
@@ -16,6 +22,8 @@ export interface EFootballSquad {
   login_type: string;
   platform: string;
   screenshots: string[];
+  download_url?: string;
+  download_links: SquadDownloadLink[];
   created_at?: string;
   raw_links?: any[];
 }
@@ -27,13 +35,15 @@ export interface EFootballSquad {
  * - "https://wa.me/255655361060"
  * - "0655361060" -> converts to wa.me link with prefilled text
  * - "https://mypaymentgateway.com/pay"
+ * - Returns empty string "" if no valid URL/phone is present.
  */
 export function cleanRedirectUrl(rawUrl?: string, squadTitle?: string, squadPrice?: number): string {
   if (!rawUrl || typeof rawUrl !== 'string') {
-    return generateWhatsAppLink('255655361060', squadTitle, squadPrice);
+    return '';
   }
 
   const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
 
   // 1. Extract any http(s) URL inside the text
   const urlMatch = trimmed.match(/https?:\/\/[^\s]+/i);
@@ -52,12 +62,12 @@ export function cleanRedirectUrl(rawUrl?: string, squadTitle?: string, squadPric
     return generateWhatsAppLink(digitsOnly, squadTitle, squadPrice);
   }
 
-  // Fallback: return as is if valid or default WhatsApp
+  // 4. Starts with http / https
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed;
   }
 
-  return generateWhatsAppLink('255655361060', squadTitle, squadPrice);
+  return '';
 }
 
 /**
@@ -89,7 +99,8 @@ export function parseSquadData(post: any): EFootballSquad {
       category: 'VIKOSI VYA EFOOTBALL',
       status: 'published',
       is_sold: false,
-      redirect_url: generateWhatsAppLink('255655361060'),
+      payment_mode: 'push',
+      redirect_url: '',
       button_text: '⚡ NUNUA KIKOSI SASA',
       team_strength: '3000+',
       booster_coaches: 'Makocha Wenye Booster',
@@ -97,12 +108,72 @@ export function parseSquadData(post: any): EFootballSquad {
       login_type: 'Konami ID Safi',
       platform: 'Mobile (Android & iOS)',
       screenshots: [],
+      download_links: [],
     };
   }
 
-  // 1. Check metadata stored inside links[0] or JSON
+  // 1. Separate metadata link from download links
   const links = Array.isArray(post.links) ? post.links : [];
-  const primaryLink = links[0] || {};
+  let metaLink: any = null;
+  const downloadLinks: SquadDownloadLink[] = [];
+
+  links.forEach((l: any) => {
+    if (!l) return;
+    const nameUpper = String(l.name || l.label || '').toUpperCase();
+    if (
+      nameUpper === 'PAYMENT_REDIRECT' ||
+      nameUpper === 'SQUAD_METADATA' ||
+      nameUpper === 'DIRECT_PAYMENT_URL' ||
+      nameUpper === 'THUMBNAIL_FIT' ||
+      l.type === 'direct_payment'
+    ) {
+      if (!metaLink && (nameUpper === 'PAYMENT_REDIRECT' || nameUpper === 'SQUAD_METADATA')) {
+        metaLink = l;
+      }
+    } else {
+      const url = typeof l === 'string' ? l : (l.url || l.link || l.href);
+      if (url && typeof url === 'string' && url.trim().startsWith('http')) {
+        downloadLinks.push({
+          name: (typeof l === 'object' && (l.name || l.label || l.title)) || 'Download File',
+          url: url.trim(),
+        });
+      }
+    }
+  });
+
+  if (!metaLink && links[0]) {
+    // If links[0] has metadata properties, treat as metaLink
+    if (links[0].team_strength || links[0].button_text || links[0].payment_mode) {
+      metaLink = links[0];
+    }
+  }
+  const primaryLink = metaLink || {};
+
+  // Check direct download_url field
+  if (post.download_url && typeof post.download_url === 'string' && post.download_url.trim().startsWith('http')) {
+    const dUrl = post.download_url.trim();
+    if (!downloadLinks.some(dl => dl.url === dUrl)) {
+      downloadLinks.unshift({
+        name: 'Kikosi Data / OBB',
+        url: dUrl,
+      });
+    }
+  }
+
+  // Check download_links field on post if present
+  if (Array.isArray(post.download_links)) {
+    post.download_links.forEach((dl: any) => {
+      const url = typeof dl === 'string' ? dl : dl?.url;
+      if (url && typeof url === 'string' && url.trim().startsWith('http')) {
+        if (!downloadLinks.some(existing => existing.url === url.trim())) {
+          downloadLinks.push({
+            name: (typeof dl === 'object' && dl.name) || 'Download File',
+            url: url.trim(),
+          });
+        }
+      }
+    });
+  }
 
   let rawCover = post.image_url || post.cover_image || 'https://i.ibb.co/XZzgkBfx/664335.jpg';
   let rawScreenshots: string[] = [];
@@ -166,8 +237,25 @@ export function parseSquadData(post: any): EFootballSquad {
     rawDesc.toLowerCase().includes('kimeuzwa')
   );
 
-  const rawUrl = primaryLink.url || post.download_url || '';
-  const redirectUrl = cleanRedirectUrl(rawUrl, rawTitle, price);
+  // 3. Resolve Payment Mode & Redirect URL
+  const rawDirectUrl = post.direct_payment_url || (primaryLink.name === 'PAYMENT_REDIRECT' ? primaryLink.url : '') || '';
+  const cleanedRedirect = cleanRedirectUrl(rawDirectUrl, rawTitle, price);
+
+  let paymentMode: 'push' | 'direct' = 'push';
+  if (primaryLink.payment_mode === 'direct' || post.payment_mode === 'direct') {
+    paymentMode = 'direct';
+  } else if (primaryLink.payment_mode === 'push' || post.payment_mode === 'push') {
+    paymentMode = 'push';
+  } else {
+    // If not explicitly set, determine by presence of direct URL
+    if (cleanedDirect && cleanedDirect.trim()) {
+      paymentMode = 'direct';
+    } else {
+      paymentMode = 'push';
+    }
+  }
+
+  const redirectUrl = paymentMode === 'direct' ? cleanedRedirect : '';
   const buttonText = primaryLink.button_text || (isSold ? 'KIKOSI KIMEKWISHA (SOLD OUT)' : '⚡ NUNUA KIKOSI SASA');
 
   return {
@@ -180,6 +268,7 @@ export function parseSquadData(post: any): EFootballSquad {
     category: post.category || 'VIKOSI VYA EFOOTBALL',
     status: isSold ? 'archived' : (post.status === 'draft' ? 'draft' : 'published'),
     is_sold: isSold,
+    payment_mode: paymentMode,
     redirect_url: redirectUrl,
     button_text: buttonText,
     team_strength: strength,
@@ -188,6 +277,8 @@ export function parseSquadData(post: any): EFootballSquad {
     login_type: loginType,
     platform,
     screenshots: rawScreenshots,
+    download_url: downloadLinks[0]?.url || post.download_url || '',
+    download_links: downloadLinks,
     created_at: post.created_at,
     raw_links: links,
   };
