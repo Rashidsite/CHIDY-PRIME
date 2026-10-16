@@ -43,14 +43,39 @@ export async function GET() {
   }
 }
 
+function sanitizePostsPayload(data: any) {
+  const allowed = [
+    'title',
+    'description',
+    'image_url',
+    'rating',
+    'youtube_url',
+    'links',
+    'status',
+    'price',
+    'category',
+    'duration_days',
+    'sort_order',
+    'scheduled_at'
+  ];
+  const sanitized: any = {};
+  for (const key of allowed) {
+    if (data[key] !== undefined) {
+      sanitized[key] = data[key];
+    }
+  }
+  return sanitized;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const sanitized = sanitizePostsPayload(body);
     const supabase = createAdminClient();
 
     const { error, data } = await supabase
       .from('posts')
-      .insert(body)
+      .insert(sanitized)
       .select()
       .single();
 
@@ -67,15 +92,16 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { id, ...updateFields } = body;
+    const { id } = body;
     if (!id) {
       return NextResponse.json({ success: false, error: 'Squad ID is required' }, { status: 400 });
     }
 
+    const sanitized = sanitizePostsPayload(body);
     const supabase = createAdminClient();
     const { error, data } = await supabase
       .from('posts')
-      .update(updateFields)
+      .update(sanitized)
       .eq('id', id)
       .select()
       .single();

@@ -283,8 +283,6 @@ export default function AdminVikosiPage() {
         image_url: coverImage.trim(),
         rating: numRating,
         status: isSold ? 'archived' : status,
-        download_url: cleanDownloads[0]?.url || '',
-        direct_payment_url: finalRedirect,
         links: linkPayload,
         duration_days: 7,
         sort_order: 1,
@@ -300,7 +298,11 @@ export default function AdminVikosiPage() {
           body: JSON.stringify(bodyPayload),
         });
         const json = await res.json();
-        if (json.success) saved = true;
+        if (json.success) {
+          saved = true;
+        } else {
+          console.warn('API /api/admin/vikosi returned error:', json.error);
+        }
       } catch (apiErr) {
         console.warn('API save fallback:', apiErr);
       }
