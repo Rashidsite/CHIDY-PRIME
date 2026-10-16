@@ -1,81 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
 import { 
-  Headphones, 
-  Send, 
-  Sparkles, 
-  Bot, 
-  User, 
-  Gamepad2, 
-  CheckCircle2, 
-  AlertTriangle, 
-  ExternalLink, 
-  Download, 
-  Youtube, 
   MessageCircle, 
-  Clock, 
-  ShieldAlert, 
+  Headphones, 
   ShieldCheck, 
-  Volume2, 
-  VolumeX, 
-  RotateCcw,
-  CreditCard,
-  Loader2,
-  Lock,
-  Phone,
-  ChevronRight
+  Zap, 
+  Gamepad2, 
+  ArrowLeft, 
+  Clock, 
+  CheckCircle2, 
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { formatCurrency } from '@/lib/utils';
-
-interface ChatMessage {
-  id: string;
-  sender: 'chidy' | 'user';
-  text: string;
-  timestamp: string;
-  type?: 'text' | 'verified_order' | 'game_cards' | 'recommendations' | 'tutorial_video' | 'general_tutorial' | 'warning' | 'lockout' | 'need_phone';
-  order?: {
-    id: string;
-    gameTitle: string;
-    coverImage?: string | null;
-    amount: number | string;
-    downloadLinks: Array<{ name?: string; url?: string; title?: string }>;
-    installGuide?: string;
-    videoUrl?: string | null;
-  };
-  games?: Array<{
-    id: string;
-    title: string;
-    category?: string;
-    price: number | string;
-    cover_image?: string;
-    description?: string;
-    customNote?: string;
-  }>;
-  tutorial?: {
-    title: string;
-    videoUrl: string;
-    instructions?: string;
-  };
-  channelUrl?: string;
-  manualPayment?: {
-    vodacomTill?: string;
-    tigoTill?: string;
-    registeredName?: string;
-    whatsappUrl?: string;
-    whatsappNumber?: string;
-  };
-  quickActions?: Array<{ label: string; query: string }>;
-}
-
-const STORAGE_KEY = 'cpcg_support_chat_v2';
-const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours
-const TWO_DAYS_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 export default function SupportPage() {
   const [bgSettings, setBgSettings] = useState<{
@@ -88,63 +29,13 @@ export default function SupportPage() {
     opacity: 0.45,
   });
 
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [unpaidAttempts, setUnpaidAttempts] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
-  const [lockRemainingSecs, setLockRemainingSecs] = useState<number>(0);
-  const [userPhone, setUserPhone] = useState('');
-  const [isCheckingUnlock, setIsCheckingUnlock] = useState(false);
-
-  // Payment Modal State
-  const [paymentModalGame, setPaymentModalGame] = useState<any | null>(null);
-  const [payPhone, setPayPhone] = useState('');
-  const [isPaying, setIsPaying] = useState(false);
-  const [payStatusText, setPayStatusText] = useState('');
-
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  const whatsappNumber = '255655361060';
+  const whatsappDisplay = '+255 655 361 060';
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+    'Habari Chidy, nahitaji msaada kuhusu huduma za ChidyPrime x ChidyGaming.'
+  )}`;
 
-  // Play audio chime
-  const playChime = () => {
-    if (!soundEnabled) return;
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.35);
-    } catch {}
-  };
-
-  // Scroll to bottom
-  const scrollToBottom = (smooth = true) => {
-    chatEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
-  };
-
-  // Lock window & document scroll so Support Page is 100% self-contained app
-  useEffect(() => {
-    const origHtmlOverflow = document.documentElement.style.overflow;
-    const origBodyOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = origHtmlOverflow;
-      document.body.style.overflow = origBodyOverflow;
-    };
-  }, []);
-
-  // ── INITIAL LOAD & LOCAL STORAGE RESTORE ──
   useEffect(() => {
     async function loadBgSettings() {
       try {
@@ -161,365 +52,11 @@ export default function SupportPage() {
           });
         }
       } catch (err) {
-        console.warn('Background settings warning:', err);
+        console.warn('Background settings load error:', err);
       }
     }
     loadBgSettings();
-
-    // Check saved chat session
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const now = Date.now();
-        const age = now - (parsed.createdAt || now);
-
-        // Expire after 48 hours (siku 2)
-        if (age >= TWO_DAYS_MS) {
-          localStorage.removeItem(STORAGE_KEY);
-          initWelcomeChat();
-          return;
-        }
-
-        // Restore chat if within 24h
-        if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
-          setMessages(parsed.messages);
-          setUnpaidAttempts(parsed.unpaidAttempts || 0);
-          setUserPhone(parsed.userPhone || '');
-
-          if (parsed.lockedUntil && parsed.lockedUntil > now) {
-            setLockedUntil(parsed.lockedUntil);
-            setLockRemainingSecs(Math.ceil((parsed.lockedUntil - now) / 1000));
-            // Check immediately if customer has paid since being locked
-            if (parsed.userPhone) {
-              checkPaymentUnlock(parsed.userPhone);
-            }
-          }
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not restore chat history:', e);
-    }
-
-    initWelcomeChat();
-  }, [supabase]);
-
-  // Save to localStorage whenever messages or attempts change
-  useEffect(() => {
-    if (messages.length === 0) return;
-    try {
-      const existing = localStorage.getItem(STORAGE_KEY);
-      const parsed = existing ? JSON.parse(existing) : null;
-      const createdAt = parsed?.createdAt || Date.now();
-
-      const payload = {
-        createdAt,
-        lastUpdated: Date.now(),
-        messages,
-        unpaidAttempts,
-        lockedUntil,
-        userPhone,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch {}
-  }, [messages, unpaidAttempts, lockedUntil, userPhone]);
-
-  // Lockout Countdown timer
-  useEffect(() => {
-    if (!lockedUntil) return;
-    const interval = setInterval(() => {
-      const diff = Math.ceil((lockedUntil - Date.now()) / 1000);
-      if (diff <= 0) {
-        setLockedUntil(null);
-        setLockRemainingSecs(0);
-        setUnpaidAttempts(0);
-        clearInterval(interval);
-      } else {
-        setLockRemainingSecs(diff);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [lockedUntil]);
-
-  // Periodic Auto-Unlock check when user is locked out
-  useEffect(() => {
-    if (!lockedUntil || !userPhone) return;
-
-    // Check automatically every 6 seconds if payment has arrived
-    const interval = setInterval(() => {
-      checkPaymentUnlock(userPhone);
-    }, 6000);
-
-    return () => clearInterval(interval);
-  }, [lockedUntil, userPhone]);
-
-  useEffect(() => {
-    scrollToBottom(true);
-  }, [messages, isTyping]);
-
-  // ── CHECK PAYMENT UNLOCK (API Call) ──
-  const checkPaymentUnlock = async (phoneToCheck?: string) => {
-    const targetPhone = phoneToCheck || userPhone;
-    if (!targetPhone || targetPhone.replace(/\D/g, '').length < 9) return;
-
-    try {
-      setIsCheckingUnlock(true);
-      const res = await fetch(`/api/support/assistant?phone=${encodeURIComponent(targetPhone)}`);
-      const data = await res.json();
-      setIsCheckingUnlock(false);
-
-      if (data.unlocked && data.order) {
-        // Unlock immediately!
-        setLockedUntil(null);
-        setLockRemainingSecs(0);
-        setUnpaidAttempts(0);
-
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            parsed.lockedUntil = null;
-            parsed.unpaidAttempts = 0;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-          }
-        } catch {}
-
-        playChime();
-
-        const unlockMsg: ChatMessage = {
-          id: 'bot_unlock_' + Date.now(),
-          sender: 'chidy',
-          text: data.message || '🎉 Hongera kaka! Malipo yako yamethibitishwa. Dawati la msaada limefunguliwa mara moja!',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'verified_order',
-          order: data.order,
-        };
-
-        setMessages(prev => [...prev, unlockMsg]);
-      }
-    } catch (err) {
-      setIsCheckingUnlock(false);
-      console.warn('Unlock check error:', err);
-    }
-  };
-
-  const initWelcomeChat = () => {
-    const welcomeMsg: ChatMessage = {
-      id: 'welcome_' + Date.now(),
-      sender: 'chidy',
-      text: 'Oya gamer! Karibu sana HQ ya ChidyPrime x ChidyGaming 🎮 Naitwa Chidy, nipo hapa kuhakikisha unacheza bila chenga. Niambie kaka, umekwama wapi au unahitaji mchongo gani leo?',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      quickActions: [
-        { label: '🚀 Nimelipa sijapata game', query: 'Nimelipa sijapata game' },
-        { label: '🚌 Mabasi ya Tanzania (Maleo)', query: 'Maleo' },
-        { label: '🚛 ETS2 Tanzania', query: 'ETS2' },
-        { label: '⚽ Michezo ya Mpira', query: 'Mpira' },
-        { label: '🎮 Games za Bure (Free)', query: 'Game za bure zipo' },
-        { label: '📺 Jinsi ya Ku-set game', query: 'Nielekeze jinsi ya kuset game' },
-      ],
-    };
-    setMessages([welcomeMsg]);
-    setTimeout(() => playChime(), 500);
-  };
-
-  // Reset chat memory
-  const handleResetChat = () => {
-    if (confirm('Je, una uhakika unataka kusafisha kumbukumbu ya chat na kuanza upya?')) {
-      localStorage.removeItem(STORAGE_KEY);
-      setLockedUntil(null);
-      setUnpaidAttempts(0);
-      initWelcomeChat();
-    }
-  };
-
-  // Send message to Assistant API
-  const handleSendMessage = async (customText?: string) => {
-    const textToSend = (customText || inputText).trim();
-    if (!textToSend || isTyping) return;
-
-    if (lockedUntil && Date.now() < lockedUntil) {
-      alert('Dawati la msaada limefungwa kwa muda. Unaweza kuendelea kununua game dukani, na ukishalipia dirisha hili litafunguka mara moja!');
-      return;
-    }
-
-    const digitsOnly = textToSend.replace(/\D/g, '');
-    let activePhone = userPhone;
-    if (digitsOnly.length >= 9 && digitsOnly.length <= 13) {
-      activePhone = textToSend;
-      setUserPhone(textToSend);
-    }
-
-    // ONLY pass phone if this message is explicitly asking about payment OR contains digits
-    const lower = textToSend.toLowerCase();
-    const isExplicitPayCheck = 
-      digitsOnly.length >= 9 ||
-      lower.includes('nimelipa') ||
-      lower.includes('sijapata') ||
-      lower.includes('muamala') ||
-      lower.includes('nimekatwa') ||
-      lower.includes('nimetuma') ||
-      lower.includes('thibitisha') ||
-      lower.includes('stk') ||
-      lower.includes('oda') ||
-      lower.includes('order');
-
-    const phoneToSend = isExplicitPayCheck ? activePhone : '';
-
-    const userMsg: ChatMessage = {
-      id: 'user_' + Date.now(),
-      sender: 'user',
-      text: textToSend,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    setInputText('');
-    setIsTyping(true);
-
-    try {
-      const res = await fetch('/api/support/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: textToSend,
-          phone: phoneToSend,
-          unpaidAttempts,
-        }),
-      });
-
-      const data = await res.json();
-      setIsTyping(false);
-      playChime();
-
-      if (data.userPhone) {
-        setUserPhone(data.userPhone);
-      }
-
-      // If verified order, unlock if previously locked & reset counter!
-      if (data.type === 'verified_order') {
-        setLockedUntil(null);
-        setLockRemainingSecs(0);
-        setUnpaidAttempts(0);
-      }
-
-      if (data.type === 'lockout' || data.isLocked) {
-        const lockoutMs = (data.lockoutMinutes || 60) * 60 * 1000;
-        const lockTarget = Date.now() + lockoutMs;
-        setLockedUntil(lockTarget);
-        setLockRemainingSecs(Math.ceil(lockoutMs / 1000));
-        setUnpaidAttempts(data.unpaidAttempts || 5);
-
-        const lockMsg: ChatMessage = {
-          id: 'bot_' + Date.now(),
-          sender: 'chidy',
-          text: data.message,
-          type: 'lockout',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessages(prev => [...prev, lockMsg]);
-        return;
-      }
-
-      if (data.unpaidAttempts !== undefined) {
-        setUnpaidAttempts(data.unpaidAttempts);
-      }
-
-      const botReply: ChatMessage = {
-        id: 'bot_' + Date.now(),
-        sender: 'chidy',
-        text: data.message || 'Nimekupata kaka!',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: data.type,
-        order: data.order,
-        games: data.games || (data.allFeatured ? data.allFeatured : undefined),
-        tutorial: data.tutorial,
-        channelUrl: data.channelUrl,
-        manualPayment: data.manualPayment,
-        quickActions: data.quickActions,
-      };
-
-      setMessages(prev => [...prev, botReply]);
-
-    } catch (err) {
-      setIsTyping(false);
-      const errorMsg: ChatMessage = {
-        id: 'bot_err_' + Date.now(),
-        sender: 'chidy',
-        text: 'Mtandao umesumbua kidogo kaka. Hebu jaribu tena kutuma ujumbe wako nikuthibitishie chap!',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    }
-  };
-
-  // Trigger in-chat payment
-  const handleOpenPayment = (game: any) => {
-    setPaymentModalGame(game);
-    setPayPhone(userPhone || '');
-    setPayStatusText('');
-  };
-
-  const handleExecutePayment = async () => {
-    if (!payPhone || payPhone.length < 9) {
-      alert('Tafadhali ingiza namba sahihi ya simu ya kulipia!');
-      return;
-    }
-
-    setIsPaying(true);
-    setPayStatusText('Inatuma namba ya siri (STK Push) kwenye simu yako...');
-    setUserPhone(payPhone);
-
-    try {
-      const res = await fetch('/api/payment/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          game_id: paymentModalGame.id,
-          visitor_phone: payPhone,
-          customer_name: 'Mteja wa Chidy Support',
-          payment_gateway: 'pressopay',
-        }),
-      });
-
-      const data = await res.json();
-      if (!data.success && data.error) {
-        alert(data.error || 'Imeshindwa kutuma ombi la malipo');
-        setIsPaying(false);
-        return;
-      }
-
-      setPayStatusText('Ombi la STK Push limetumwa! Tafadhali weka namba yako ya siri kwenye simu.');
-
-      const checkoutUrl = data.checkoutUrl || data.order?.checkoutUrl;
-
-      // Notify in chat
-      const notifMsg: ChatMessage = {
-        id: 'bot_pay_' + Date.now(),
-        sender: 'chidy',
-        text: `Nimetuma ombi la malipo (STK Push) ya TSh ${Number(paymentModalGame.price).toLocaleString()} kwenye simu yako (${payPhone}) kwa ajili ya game la "${paymentModalGame.title}".\n\nWeka PIN yako sasa kwenye simu yako, kisha bonyeza kitufe cha "✅ Tayari Nimelipa" hapa chini nikutumie link za game mara moja! 🔥${checkoutUrl ? '\n\nKama hujapata ujumbe wa PIN, unaweza pia kulipia kupitia ukurasa huu salama wa mtandao hapa chini:' : ''}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        channelUrl: checkoutUrl || undefined,
-        quickActions: [
-          { label: '✅ Tayari Nimelipa (Thibitisha Sasa)', query: `Nimelipa ${payPhone}` },
-          { label: '🔄 Namba Nyingine / Lipia Tena', query: paymentModalGame.title },
-        ],
-      };
-      setMessages(prev => [...prev, notifMsg]);
-      setPaymentModalGame(null);
-      setIsPaying(false);
-
-    } catch (err: any) {
-      alert(err.message || 'Hitilafu ya malipo');
-      setIsPaying(false);
-    }
-  };
-
-  const formatTimer = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
+  }, []);
 
   return (
     <>
@@ -531,586 +68,111 @@ export default function SupportPage() {
 
       <Navbar />
 
-      <main className="fixed inset-x-0 top-16 bottom-[66px] md:bottom-3 z-20 flex flex-col overflow-hidden max-w-4xl mx-auto px-2 sm:px-4 py-1 sm:py-2">
-        <div className="w-full h-full flex flex-col rounded-2xl sm:rounded-3xl bg-slate-900/95 border border-slate-800 shadow-2xl backdrop-blur-xl overflow-hidden">
-          
-          {/* ── GAMING HUD CHAT HEADER (compact & docked inside card) ── */}
-          <div className="shrink-0 p-3 sm:p-4 border-b border-slate-800/80 bg-slate-950/70 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              {/* Chidy Avatar with Pulsing Online Dot */}
-              <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 p-0.5 shadow-[0_0_20px_rgba(37,99,235,0.4)] shrink-0">
-                <div className="w-full h-full rounded-2xl bg-slate-950 flex items-center justify-center overflow-hidden">
-                  <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
-                </div>
-                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950 flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                </span>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xs sm:text-sm font-black text-white uppercase tracking-tight">
-                    CHIDY SUPPORT <span className="text-cyan-400 font-mono">HQ</span>
-                  </h1>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    🟢 Hewani 24/7
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
-                  <strong className="text-slate-200">ChidyPrime x ChidyGaming</strong> • Digital Store
-                </p>
-              </div>
-            </div>
-
-            {/* Controls: Sound & Clear */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
-                title={soundEnabled ? 'Zima Sauti' : 'Washa Sauti'}
-              >
-                {soundEnabled ? <Volume2 className="w-4 h-4 text-cyan-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
-              </button>
-
-              <button
-                onClick={handleResetChat}
-                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
-                title="Safisha kumbukumbu ya chat"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* ── SECURITY LOCKOUT BANNER (if user is locked out) ── */}
-          {lockedUntil && (
-            <div className="shrink-0 p-3 sm:p-4 bg-red-950/90 border-b border-red-500/40 text-center space-y-2.5">
-              <div className="inline-flex items-center gap-2 text-xs font-black text-white uppercase tracking-tight">
-                <Lock className="w-4 h-4 text-red-400 animate-pulse" />
-                <span>⛔ Dawati la Msaada Limefungwa kwa Muda</span>
-              </div>
-              <p className="text-[11px] text-red-200 max-w-lg mx-auto font-medium leading-relaxed">
-                Umejaribu kudai malipo mara nyingi bila uthibitisho. Unaweza kuendelea kununua game dukani kamakawaida, na ukishalipia dirisha la msaada litafunguka mara moja!
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
-                <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-red-500/30 text-red-400 font-mono font-bold text-xs flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Muda: {formatTimer(lockRemainingSecs)}</span>
-                </span>
-
-                <Link
-                  href="/"
-                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
-                >
-                  <Gamepad2 className="w-3.5 h-3.5" />
-                  <span>🛍️ Nenda Dukani Kununua Game</span>
-                </Link>
-
-                <button
-                  onClick={() => checkPaymentUnlock()}
-                  disabled={isCheckingUnlock}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/30 transition-all cursor-pointer"
-                >
-                  {isCheckingUnlock ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Inakagua malipo...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>🔄 Nimelipia (Fungua Dawati)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── MESSAGES SCROLL AREA (Only messages scroll) ── */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-3.5">
+      <main className="relative z-20 min-h-[calc(100vh-64px)] flex items-center justify-center px-3 sm:px-6 py-6 sm:py-12">
+        <div className="w-full max-w-2xl mx-auto">
+          {/* Main Card */}
+          <div className="relative rounded-3xl bg-slate-900/90 border border-slate-800/90 shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl overflow-hidden p-6 sm:p-10 text-center">
             
-            {/* Retention Notice */}
-            <div className="text-center">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 text-[10px] text-slate-400 border border-slate-700/60 font-mono">
-                <Clock className="w-3 h-3 text-cyan-400" />
-                <span>Kumbukumbu ya chat na link za games zinahifadhiwa kwa saa 24</span>
+            {/* Top Glow Accent */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-24 bg-emerald-500/15 blur-3xl pointer-events-none rounded-full" />
+
+            {/* Status Header Pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm font-black uppercase tracking-wider mb-6">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
               </span>
+              <span>HEWANI WHATSAPP 24/7</span>
             </div>
 
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-2.5 sm:gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {/* Bot Avatar */}
-                {msg.sender === 'chidy' && (
-                  <div className="w-8 h-8 rounded-xl bg-blue-600/30 border border-blue-500/40 text-cyan-400 flex items-center justify-center shrink-0 self-start shadow-md mt-1">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                )}
-
-                {/* Message Body */}
-                <div className={`max-w-[85%] sm:max-w-[75%] space-y-2.5 ${
-                  msg.sender === 'user'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 sm:p-3.5 rounded-2xl rounded-tr-none shadow-lg'
-                    : 'bg-slate-950/80 border border-slate-800 text-slate-200 p-3 sm:p-4 rounded-2xl rounded-tl-none shadow-md'
-                }`}>
-                  
-                  {/* Sender Name & Time */}
-                  <div className="flex items-center justify-between gap-4 text-[10px] text-slate-400 font-mono pb-1 border-b border-white/10">
-                    <span className="font-bold text-slate-300">
-                      {msg.sender === 'chidy' ? 'Chidy' : 'Wewe'}
-                    </span>
-                    <span>{msg.timestamp}</span>
-                  </div>
-
-                  {/* Main Text */}
-                  <p className="text-xs sm:text-sm font-medium leading-relaxed whitespace-pre-line">
-                    {msg.text}
-                  </p>
-
-                  {/* ── CARD: VERIFIED ORDER & 24H DOWNLOAD LINKS ── */}
-                  {msg.order && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-slate-900 border border-emerald-500/40 space-y-3 shadow-lg">
-                      <div className="flex items-center gap-2 text-emerald-400 font-black text-xs uppercase tracking-wide">
-                        <CheckCircle2 className="w-4 h-4 shrink-0" />
-                        <span>Malipo Yamethibitishwa: {msg.order.gameTitle}</span>
-                      </div>
-
-                      <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 font-medium flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 shrink-0 animate-pulse" />
-                        <span>Link hizi zinafanya kazi ndani ya <strong>masaa 24</strong> kuanzia sasa!</span>
-                      </div>
-
-                      {/* Download Buttons */}
-                      <div className="space-y-1.5 pt-1">
-                        {msg.order.downloadLinks && msg.order.downloadLinks.length > 0 ? (
-                          msg.order.downloadLinks.map((link, idx) => (
-                            <a
-                              key={idx}
-                              href={link.url || '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-between shadow-md transition-all cursor-pointer"
-                            >
-                              <span className="flex items-center gap-2 truncate">
-                                <Download className="w-4 h-4 shrink-0" />
-                                <span className="truncate">{link.name || link.title || `Pakua Game Part ${idx + 1}`}</span>
-                              </span>
-                              <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                            </a>
-                          ))
-                        ) : (
-                          <div className="text-[11px] text-amber-400">
-                            Download link inatengenezwa. Tafadhali andika ujumbe wowote hapa chini nikutumie tena fasta!
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Installation Guide */}
-                      {msg.order.installGuide && (
-                        <div className="text-[11px] text-slate-300 pt-2 border-t border-slate-800 space-y-1">
-                          <span className="font-bold text-cyan-400 uppercase tracking-wide text-[10px]">Maelekezo ya Ku-set:</span>
-                          <p className="italic">{msg.order.installGuide}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ── CARD: GAME RECOMMENDATIONS / PRIORITY CARDS WITH IN-CHAT BUY ── */}
-                  {msg.games && msg.games.length > 0 && (
-                    <div className="mt-3 grid grid-cols-1 gap-2.5 pt-1">
-                      {msg.games.map((g) => (
-                        <div
-                          key={g.id}
-                          className="rounded-xl bg-slate-900 border border-slate-800 p-3 flex gap-3 items-center justify-between group hover:border-blue-500/50 transition-all shadow-md"
-                        >
-                          <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-slate-950 shrink-0 border border-slate-800">
-                            {g.cover_image ? (
-                              <Image src={g.cover_image} alt={g.title} fill className="object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-slate-600">
-                                <Gamepad2 className="w-5 h-5" />
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <h4 className="text-xs font-black text-white truncate">{g.title}</h4>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {Number(g.price || 0) === 0 ? (
-                                <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
-                                  BURE / FREE 🎁
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-bold text-cyan-400">
-                                  TSh {Number(g.price || 0).toLocaleString()}
-                                </span>
-                              )}
-                              {g.category && (
-                                <span className="text-[9px] uppercase font-bold text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded truncate max-w-[140px]">
-                                  📁 {g.category}
-                                </span>
-                              )}
-                            </div>
-                            {g.description && (
-                              <p className="text-[10px] text-slate-400 truncate line-clamp-1">
-                                {g.description}
-                              </p>
-                            )}
-                            {g.customNote && (
-                              <p className="text-[10px] text-amber-400 italic truncate">
-                                {g.customNote}
-                              </p>
-                            )}
-                          </div>
-
-                          {Number(g.price || 0) === 0 ? (
-                            (g.download_url || (g.links && g.links[0]?.url)) ? (
-                              <a
-                                href={g.download_url || (g.links && g.links[0]?.url)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-[10px] uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
-                              >
-                                <Download className="w-3 h-3" />
-                                <span>Pakua Bure</span>
-                              </a>
-                            ) : (
-                              <button
-                                onClick={() => handleSendMessage(`Nataka link ya ${g.title}`)}
-                                className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
-                              >
-                                <Download className="w-3 h-3" />
-                                <span>Pakua Bure</span>
-                              </button>
-                            )
-                          ) : (
-                            <button
-                              onClick={() => handleOpenPayment(g)}
-                              className="px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-[10px] uppercase tracking-wider shadow-md shrink-0 transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5"
-                            >
-                              <CreditCard className="w-3 h-3" />
-                              <span>Lipia Sasa</span>
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* ── CARD: TUTORIAL VIDEO ── */}
-                  {msg.tutorial && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-slate-900 border border-red-500/30 space-y-2.5 shadow-md">
-                      <div className="flex items-center gap-2 text-red-400 font-black text-xs">
-                        <Youtube className="w-4 h-4 shrink-0 text-red-500" />
-                        <span>{msg.tutorial.title}</span>
-                      </div>
-
-                      <a
-                        href={msg.tutorial.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full py-2.5 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                      >
-                        <Youtube className="w-4 h-4 fill-white" />
-                        <span>Tazama Video Kamili YouTube</span>
-                        <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-                      </a>
-
-                      {msg.tutorial.instructions && (
-                        <p className="text-[11px] text-slate-300 italic pt-1 border-t border-slate-800">
-                          {msg.tutorial.instructions}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ── CARD: GENERAL CHANNEL FALLBACK ── */}
-                  {msg.channelUrl && (
-                    <div className="mt-3 pt-2 border-t border-slate-800">
-                      <a
-                        href={msg.channelUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full py-2.5 px-3 rounded-lg bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-600 hover:text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
-                      >
-                        <Youtube className="w-4 h-4" />
-                        <span>Fungua YouTube Channel ya ChidyGaming</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  )}
-
-                  {/* ── CARD: MANUAL LIPA NAMBA & WHATSAPP BUTTON ── */}
-                  {msg.manualPayment && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-slate-900 border border-emerald-500/40 space-y-3 shadow-lg">
-                      <div className="flex items-center gap-2 text-emerald-400 font-black text-xs uppercase tracking-wide">
-                        <CreditCard className="w-4 h-4 shrink-0" />
-                        <span>Chagua Mojawapo ya Namba za Malipo:</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
-                        {/* Vodacom Till */}
-                        <div className="p-3 rounded-xl bg-black/60 border border-slate-800 space-y-1">
-                          <div className="text-[10px] text-rose-400 font-bold uppercase tracking-wider flex items-center justify-between">
-                            <span>🔴 Vodacom Lipa (Till)</span>
-                            <span className="text-[9px] text-slate-400">CHIDYPRIME</span>
-                          </div>
-                          <div className="text-white font-black text-base tracking-widest py-0.5">
-                            {msg.manualPayment.vodacomTill || '354049107'}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-sans">
-                            Jina: <strong className="text-slate-300">{msg.manualPayment.registeredName || 'RASHID SALUM RASHID'}</strong>
-                          </div>
-                        </div>
-
-                        {/* Tigo Till */}
-                        <div className="p-3 rounded-xl bg-black/60 border border-slate-800 space-y-1">
-                          <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider flex items-center justify-between">
-                            <span>🔵 Tigo Lipa (Till)</span>
-                            <span className="text-[9px] text-slate-400">CHIDYPRIME</span>
-                          </div>
-                          <div className="text-white font-black text-base tracking-widest py-0.5">
-                            {msg.manualPayment.tigoTill || '43135388'}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-sans">
-                            Jina: <strong className="text-slate-300">{msg.manualPayment.registeredName || 'RASHID SALUM RASHID'}</strong>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Direct WhatsApp Button */}
-                      <a
-                        href={msg.manualPayment.whatsappUrl || 'https://wa.me/255655361060?text=Habari%20Admin%20CHIDYPRIME,%20nimeshafanya%20malipo%20ya%20game%20kupitia%20Lipa%20Namba.%20Naomba%20kufunguliwa.'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-3 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer no-underline"
-                      >
-                        <MessageCircle className="w-4 h-4 fill-black" />
-                        <span>Fungua WhatsApp ya Admin (0655361060)</span>
-                        <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Quick Action Chips inside bot message */}
-                  {msg.quickActions && msg.quickActions.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-800/80">
-                      {msg.quickActions.map((qa, i) => (
-                        qa.query.startsWith('http') ? (
-                          <a
-                            key={i}
-                            href={qa.query}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2.5 py-1 rounded-lg bg-emerald-600/20 border border-emerald-500/50 hover:bg-emerald-600 text-emerald-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer no-underline flex items-center gap-1"
-                          >
-                            <span>{qa.label}</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
-                        ) : (
-                          <button
-                            key={i}
-                            onClick={() => handleSendMessage(qa.query)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-blue-500 text-slate-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer"
-                          >
-                            {qa.label}
-                          </button>
-                        )
-                      ))}
-                    </div>
-                  )}
-
-                </div>
+            {/* Glowing WhatsApp Icon Avatar */}
+            <div className="mx-auto relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-emerald-600 via-green-500 to-teal-400 p-1 shadow-[0_0_35px_rgba(16,185,129,0.45)] mb-6">
+              <div className="w-full h-full rounded-[22px] bg-slate-950 flex items-center justify-center">
+                <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-400" />
               </div>
-            ))}
-
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="flex gap-2.5 items-center">
-                <div className="w-8 h-8 rounded-xl bg-blue-600/30 border border-blue-500/40 text-cyan-400 flex items-center justify-center shrink-0 shadow-md">
-                  <Bot className="w-4 h-4 animate-bounce" />
-                </div>
-                <div className="bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-md">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse [animation-delay:0.2s]" />
-                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse [animation-delay:0.4s]" />
-                  <span className="text-[11px] text-slate-400 font-mono ml-1">Chidy anaandika...</span>
-                </div>
-              </div>
-            )}
-
-            <div ref={chatEndRef} />
-          </div>
-
-          {/* ── CHAT INPUT FOOTER ── */}
-          <div className="p-3 sm:p-4 bg-slate-950 border-t border-slate-800 space-y-2.5">
-            
-            {/* Quick Action Chips bar */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-nowrap">
-              <button
-                onClick={() => handleSendMessage('Kuna category gani')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-blue-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                📁 Categories Zote
-              </button>
-              <button
-                onClick={() => handleSendMessage('Game za bure zipo')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🆓 Games za Bure (Free)
-              </button>
-              <button
-                onClick={() => handleSendMessage('Nataka game')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🎮 Games za Kipaumbele
-              </button>
-              <button
-                onClick={() => handleSendMessage('Maleo Bus Mode TZ')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🚌 Mabasi ya Tanzania
-              </button>
-              <button
-                onClick={() => handleSendMessage('Football Games')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                ⚽ Michezo ya Mpira
-              </button>
-              <button
-                onClick={() => handleSendMessage('PS2 Games')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🎮 PS2 Games Simuni
-              </button>
-              <button
-                onClick={() => handleSendMessage('Nimelipa sijapata game')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-amber-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                🚀 Nimelipa Sijapata Game
-              </button>
-              <button
-                onClick={() => handleSendMessage('Nielekeze jinsi ya kuset game')}
-                className="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white text-[11px] font-bold transition-all cursor-pointer shrink-0"
-              >
-                📺 Jinsi ya Ku-set / Install
-              </button>
             </div>
 
-            {/* Input Form */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                disabled={!!lockedUntil || isTyping}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder={lockedUntil ? 'Dawati limefungwa kwa muda...' : 'Andika ujumbe wako hapa (mfano: namba ya simu, jina la game, vp, niaje)...'}
-                className="flex-1 bg-slate-900 border border-slate-700 focus:border-cyan-500 rounded-2xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none transition-all placeholder:text-slate-500 disabled:opacity-50"
-              />
+            {/* Title */}
+            <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight uppercase mb-2">
+              DAWATI LA MSAADA <span className="text-emerald-400">WHATSAPP</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 font-medium mb-6">
+              <strong className="text-slate-200">ChidyPrime × ChidyGaming</strong> • Official Help Desk
+            </p>
 
-              <button
-                type="submit"
-                disabled={!inputText.trim() || !!lockedUntil || isTyping}
-                className="p-3 sm:px-5 sm:py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 transition-all transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2"
+            {/* Maelezo Machache (Concise friendly explanation) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-slate-300 text-xs sm:text-sm leading-relaxed text-center sm:text-left space-y-2 mb-8">
+              <p>
+                Karibu sana gamer! Naitwa <strong className="text-white">Chidy</strong>. Kama umekwama kupakua au ku-set mchezo wako, unahitaji msaada kuhusu malipo, au unataka kuulizia game lolote, wasiliana nami moja kwa moja kupitia WhatsApp.
+              </p>
+              <p className="text-emerald-400 font-semibold text-xs sm:text-sm">
+                💬 Nitazungumza nawe moja kwa moja WhatsApp kukusaidia papo hapo bila chenga!
+              </p>
+            </div>
+
+            {/* SINGLE PROMINENT WHATSAPP BUTTON */}
+            <div className="mb-8">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 sm:py-5 rounded-2xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 text-slate-950 font-black uppercase text-sm sm:text-base tracking-wider shadow-[0_0_35px_rgba(16,185,129,0.4)] hover:shadow-[0_0_45px_rgba(16,185,129,0.65)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
               >
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:inline">Tuma</span>
-              </button>
-            </form>
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded-xl bg-slate-950/20 text-slate-950">
+                    <MessageCircle className="w-6 h-6 fill-slate-950" />
+                  </div>
+                  <div className="text-left">
+                    <div className="leading-tight">WASILIANA NASI WHATSAPP</div>
+                    <div className="text-[11px] sm:text-xs font-bold opacity-80 font-mono tracking-normal lowercase">
+                      {whatsappDisplay} • Bonyeza kuanza chat
+                    </div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 ml-1 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </a>
+            </div>
+
+            {/* Quick Benefits / Assurance */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-800/80 text-left">
+              <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2.5">
+                <Zap className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-[11px] font-bold text-white uppercase">Majibu ya Haraka</h4>
+                  <p className="text-[10px] text-slate-400">Tunajibu meseji yako moja kwa moja bila foleni.</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2.5">
+                <Gamepad2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-[11px] font-bold text-white uppercase">Msaada wa Kuset</h4>
+                  <p className="text-[10px] text-slate-400">Maelekezo rahisi ya kuweka game kwenye simu au PC.</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-[11px] font-bold text-white uppercase">Uhakiki wa Malipo</h4>
+                  <p className="text-[10px] text-slate-400">Tuma screenshot ya malipo utatuliwe mara moja.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Back Link */}
+            <div className="mt-8 pt-4">
+              <Link
+                href="/front"
+                className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors py-2 px-4 rounded-xl hover:bg-slate-800/50"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Rudi Kwenye Duka (Store)</span>
+              </Link>
+            </div>
+
           </div>
         </div>
-
-        {/* ── IN-CHAT PAYMENT MODAL / DRAWER ── */}
-        {paymentModalGame && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center">
-                    <CreditCard className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tight">
-                      Lipiа Game Hapa Hapa
-                    </h3>
-                    <p className="text-xs text-slate-400 font-medium">{paymentModalGame.title}</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setPaymentModalGame(null)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                <span className="text-xs text-slate-400 font-bold uppercase">Bei ya Game:</span>
-                <span className="text-base font-black text-cyan-400">
-                  TSh {Number(paymentModalGame.price).toLocaleString()}
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-300 uppercase">
-                  Weka Namba ya Simu ya Malipo (M-Pesa, Tigo, Airtel, Halo):
-                </label>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    placeholder="07xxxxxxxx au 06xxxxxxxx"
-                    value={payPhone}
-                    onChange={(e) => setPayPhone(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono"
-                  />
-                  <Phone className="w-4 h-4 text-slate-500 absolute right-3 top-3.5" />
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  Ujumbe wa siri (STK Push) utatokea moja kwa moja kwenye simu yako kuingiza PIN.
-                </p>
-              </div>
-
-              {payStatusText && (
-                <div className="p-3 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-medium flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                  <span>{payStatusText}</span>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentModalGame(null)}
-                  className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all cursor-pointer"
-                >
-                  Ghairi
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExecutePayment}
-                  disabled={isPaying || !payPhone}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  {isPaying ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                  <span>{isPaying ? 'Inatuma...' : 'Tuma Malipo'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
       </main>
     </>
   );
