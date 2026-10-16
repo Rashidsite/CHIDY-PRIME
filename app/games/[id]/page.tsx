@@ -54,15 +54,70 @@ export default function GameDetailPage() {
       if (!gameId) return;
       setLoading(true);
       try {
-        // Query posts table directly (Single source of truth)
-        const { data: postData, error } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('id', gameId)
-          .maybeSingle();
+        let postData: any = null;
 
-        if (error) {
-          console.warn('Game fetch warning:', error.message);
+        // 1. Primary: Direct Supabase client query
+        try {
+          const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('id', gameId)
+            .maybeSingle();
+
+          if (!error && data) {
+            postData = data;
+          }
+        } catch (sbErr) {
+          console.warn('Direct supabase fetch failed, trying API fallback:', sbErr);
+        }
+
+        // 2. Fallback: Server API /api/admin/vikosi if not found yet
+        if (!postData) {
+          try {
+            const vRes = await fetch('/api/admin/vikosi');
+            const vJson = await vRes.json();
+            if (vJson.success && Array.isArray(vJson.squads)) {
+              const matchedSquad = vJson.squads.find((s: any) => s.id === gameId);
+              if (matchedSquad) {
+                setSquad(matchedSquad);
+                setGame({
+                  id: matchedSquad.id,
+                  title: matchedSquad.title,
+                  description: matchedSquad.description,
+                  cover_image: matchedSquad.cover_image,
+                  price: matchedSquad.price,
+                  rating: matchedSquad.rating,
+                  category: matchedSquad.category,
+                  screenshots: matchedSquad.screenshots?.length ? matchedSquad.screenshots : [matchedSquad.cover_image],
+                  download_url: matchedSquad.download_url,
+                  access_duration: 'Lifetime',
+                  direct_payment_url: matchedSquad.redirect_url,
+                  system_req_minimum: {
+                    os: 'Android / iOS',
+                    cpu: 'Octa-Core',
+                    ram: '4 GB RAM',
+                    gpu: 'Adreno / Mali',
+                    storage: '4 GB free space',
+                  },
+                });
+                return;
+              }
+            }
+          } catch {}
+        }
+
+        // 3. Fallback: /api/games endpoint
+        if (!postData) {
+          try {
+            const gRes = await fetch('/api/games');
+            const gJson = await gRes.json();
+            if (gJson.success && Array.isArray(gJson.games)) {
+              const matchedGame = gJson.games.find((g: any) => g.id === gameId);
+              if (matchedGame) {
+                postData = matchedGame;
+              }
+            }
+          } catch {}
         }
 
         if (postData) {
@@ -72,8 +127,12 @@ export default function GameDetailPage() {
             (postData.title || '').toLowerCase().includes('kikosi');
 
           if (isSquadItem) {
-            const parsedSquad = parseSquadData(postData);
-            setSquad(parsedSquad);
+            try {
+              const parsedSquad = parseSquadData(postData);
+              setSquad(parsedSquad);
+            } catch (err) {
+              console.error('Error parsing squad data:', err);
+            }
           }
 
           let dur = postData.plan_duration || postData.access_duration || postData.license_duration;
@@ -141,7 +200,7 @@ export default function GameDetailPage() {
     );
   }
 
-  if (!game) {
+  if (!game && !squad) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white p-4 space-y-4">
         <h2 className="text-2xl font-bold">Kikosi au Game Halijapatikana</h2>

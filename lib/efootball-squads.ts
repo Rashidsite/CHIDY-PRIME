@@ -248,7 +248,7 @@ export function parseSquadData(post: any): EFootballSquad {
     paymentMode = 'push';
   } else {
     // If not explicitly set, determine by presence of direct URL
-    if (cleanedDirect && cleanedDirect.trim()) {
+    if (cleanedRedirect && cleanedRedirect.trim()) {
       paymentMode = 'direct';
     } else {
       paymentMode = 'push';
