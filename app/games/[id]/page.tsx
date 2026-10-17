@@ -148,17 +148,23 @@ export default function GameDetailPage() {
             rawScreenshots = postData.links[0].screenshots;
           }
 
+          let directPaymentUrl = postData.direct_payment_url || '';
           let cleanDownloads: { name: string; url: string }[] = [];
           if (Array.isArray(postData.links)) {
             postData.links.forEach((l: any) => {
               if (!l) return;
               const nameUpper = String(l.name || l.label || '').toUpperCase();
               if (
-                nameUpper !== 'PAYMENT_REDIRECT' &&
-                nameUpper !== 'DIRECT_PAYMENT_URL' &&
+                nameUpper === 'PAYMENT_REDIRECT' ||
+                nameUpper === 'DIRECT_PAYMENT_URL' ||
+                l.type === 'direct_payment'
+              ) {
+                if (!directPaymentUrl && (l.url || l.link)) {
+                  directPaymentUrl = (l.url || l.link).trim();
+                }
+              } else if (
                 nameUpper !== 'THUMBNAIL_FIT' &&
-                nameUpper !== 'SQUAD_METADATA' &&
-                l.type !== 'direct_payment'
+                nameUpper !== 'SQUAD_METADATA'
               ) {
                 const url = typeof l === 'string' ? l : (l.url || l.link);
                 if (url && typeof url === 'string' && url.trim().startsWith('http')) {
