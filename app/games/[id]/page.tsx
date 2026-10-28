@@ -45,6 +45,10 @@ export default function GameDetailPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeGalleryImg, setActiveGalleryImg] = useState<string | null>(null);
+  const [coverAspect, setCoverAspect] = useState<number | null>(null);
+  const [isPortrait, setIsPortrait] = useState<boolean>(false);
+  const [squadCoverAspect, setSquadCoverAspect] = useState<number | null>(null);
+  const [isPortraitSquad, setIsPortraitSquad] = useState<boolean>(false);
 
   const supabase = useMemo(() => createClient(), []);
   const { isUnlocked, refresh: refreshAccess } = useProductAccess();
@@ -282,7 +286,12 @@ export default function GameDetailPage() {
             {/* Left Col: Full Uncropped Squad Formation Display with Stadium Backdrop */}
             <div className="lg:col-span-7 space-y-4">
               <div 
-                className="relative aspect-[4/3] sm:aspect-[16/10] w-full rounded-3xl overflow-hidden border border-blue-500/30 shadow-[0_0_40px_rgba(37,99,235,0.2)] bg-gradient-to-b from-[#0a1c38] via-[#051124] to-[#020712] p-2 flex items-center justify-center group cursor-pointer"
+                className={`relative rounded-3xl overflow-hidden border border-blue-500/30 shadow-[0_0_40px_rgba(37,99,235,0.2)] bg-gradient-to-b from-[#0a1c38] via-[#051124] to-[#020712] p-2 flex items-center justify-center group cursor-pointer transition-all duration-300 ${
+                  isPortraitSquad
+                    ? 'w-full max-w-sm sm:max-w-md mx-auto aspect-[3/4] sm:aspect-[4/5] max-h-[75vh]'
+                    : 'w-full aspect-[16/10] sm:aspect-[16/9]'
+                }`}
+                style={squadCoverAspect ? { aspectRatio: `${squadCoverAspect}` } : undefined}
                 onClick={() => setLightboxOpen(true)}
               >
                 <Image
@@ -291,6 +300,14 @@ export default function GameDetailPage() {
                   fill
                   priority
                   sizes="(max-width: 1024px) 100vw, 700px"
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    if (img.naturalWidth && img.naturalHeight) {
+                      const ratio = img.naturalWidth / img.naturalHeight;
+                      setSquadCoverAspect(ratio);
+                      setIsPortraitSquad(ratio < 0.95);
+                    }
+                  }}
                   className="object-contain transition-transform duration-500 group-hover:scale-[1.02]"
                 />
 
@@ -650,7 +667,12 @@ export default function GameDetailPage() {
           {/* Left Col: Full Uncropped Cover Display with Stadium/Gaming Backdrop */}
           <div className="lg:col-span-7 space-y-4">
             <div 
-              className="relative aspect-[4/3] sm:aspect-[16/10] w-full rounded-3xl overflow-hidden border border-blue-500/30 shadow-[0_0_40px_rgba(37,99,235,0.2)] bg-gradient-to-b from-[#0a1c38] via-[#051124] to-[#020712] p-2 flex items-center justify-center group cursor-pointer"
+              className={`relative rounded-3xl overflow-hidden border border-blue-500/30 shadow-[0_0_40px_rgba(37,99,235,0.2)] bg-gradient-to-b from-[#0a1c38] via-[#051124] to-[#020712] p-2 flex items-center justify-center group cursor-pointer transition-all duration-300 ${
+                isPortrait
+                  ? 'w-full max-w-sm sm:max-w-md mx-auto aspect-[3/4] sm:aspect-[4/5] max-h-[75vh]'
+                  : 'w-full aspect-[16/10] sm:aspect-[16/9]'
+              }`}
+              style={coverAspect ? { aspectRatio: `${coverAspect}` } : undefined}
               onClick={() => {
                 setActiveGalleryImg(game.cover_image);
                 setLightboxOpen(true);
@@ -674,6 +696,14 @@ export default function GameDetailPage() {
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 750px"
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  if (img.naturalWidth && img.naturalHeight) {
+                    const ratio = img.naturalWidth / img.naturalHeight;
+                    setCoverAspect(ratio);
+                    setIsPortrait(ratio < 0.95);
+                  }
+                }}
                 className="object-contain relative z-10 transition-transform duration-500 group-hover:scale-[1.02]"
               />
 
