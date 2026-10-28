@@ -105,7 +105,16 @@ export default function FrontHubPage() {
 
   // Loading starts as FALSE if cached games already exist!
   const [loading, setLoading] = useState<boolean>(() => !(initialCachedSf?.games && initialCachedSf.games.length > 0));
-  const [curtainActive, setCurtainActive] = useState<boolean>(true);
+  const [curtainActive, setCurtainActive] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !sessionStorage.getItem('chidy_curtain_shown');
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [selectedDrawerCategory, setSelectedDrawerCategory] = useState<string | null>(null);
 
@@ -979,8 +988,13 @@ export default function FrontHubPage() {
       {curtainActive && (
         <GamingWelcomeCurtain
           isLoading={loading}
-          minDisplayTimeMs={1800}
-          onFinish={() => setCurtainActive(false)}
+          minDisplayTimeMs={1300}
+          onFinish={() => {
+            setCurtainActive(false);
+            try {
+              sessionStorage.setItem('chidy_curtain_shown', 'true');
+            } catch {}
+          }}
         />
       )}
 
