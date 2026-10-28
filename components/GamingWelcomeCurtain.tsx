@@ -13,12 +13,13 @@ interface GamingWelcomeCurtainProps {
 const GAMING_STATUS_STEPS = [
   'Inaandaa uwanja wako wa michezo...',
   'Inapakia games na mods kali...',
-  'Kila kitu kiko tayari...',
+  'Inakagua muunganisho salama...',
+  'Kila kitu kiko tayari! Karibu uwanjani...',
 ];
 
 export default function GamingWelcomeCurtain({
   isLoading = false,
-  minDisplayTimeMs = 1300,
+  minDisplayTimeMs = 4500, // 4.5 seconds for attention
   onFinish,
 }: GamingWelcomeCurtainProps) {
   const [visible, setVisible] = useState(true);
@@ -44,6 +45,7 @@ export default function GamingWelcomeCurtain({
     try {
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('chidy_curtain_shown', 'true');
+        document.documentElement.classList.add('hide-curtain');
       }
     } catch {}
 
@@ -56,24 +58,24 @@ export default function GamingWelcomeCurtain({
           onFinishRef.current();
         }
       }, 700);
-    }, 200);
+    }, 250);
   });
 
   useEffect(() => {
-    // 1. Status message cycling
+    // 1. Status message cycling every 1.1s so all 4 messages show nicely over ~4.5 seconds
     const messageTimer = setInterval(() => {
       if (hasExitedRef.current) {
         clearInterval(messageTimer);
         return;
       }
       setStatusStep((prev) => (prev + 1) % GAMING_STATUS_STEPS.length);
-    }, 450);
+    }, 1100);
 
-    // 2. Completion check
+    // 2. Completion check: wait 4500ms, hard limit 5000ms
     const checkCompletionTimer = setInterval(() => {
       const elapsed = Date.now() - mountTimeRef.current;
       const isPastMinTime = elapsed >= minDisplayTimeMs;
-      const isPastHardLimit = elapsed >= 1800;
+      const isPastHardLimit = elapsed >= 5000;
 
       if (!hasExitedRef.current) {
         if ((isPastMinTime && !isLoadingRef.current) || isPastHardLimit) {
@@ -98,6 +100,7 @@ export default function GamingWelcomeCurtain({
     <AnimatePresence mode="wait">
       {visible && (
         <motion.div
+          id="gaming-welcome-curtain"
           key="gaming-welcome-curtain"
           initial={{ opacity: 1, y: 0 }}
           exit={{
@@ -160,7 +163,7 @@ export default function GamingWelcomeCurtain({
               Uwanja Mkuu wa Michezo & Mods Tanzania
             </motion.p>
 
-            {/* Option 3: Modern Pulse Dots & Equalizer */}
+            {/* Modern Pulse Dots & Equalizer */}
             <div className="flex items-center justify-center gap-2.5 my-6">
               {[0, 1, 2, 3].map((i) => (
                 <motion.span

@@ -64,6 +64,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark scroll-smooth">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(sessionStorage.getItem('chidy_curtain_shown')){document.documentElement.classList.add('hide-curtain');}}catch(e){}`,
+          }}
+        />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://dykkgqyrhgjtosifkpmn.supabase.co" />
         <link rel="dns-prefetch" href="https://dykkgqyrhgjtosifkpmn.supabase.co" />
