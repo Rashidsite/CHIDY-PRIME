@@ -829,21 +829,8 @@ export default function GameDetailPage() {
                   className={`w-full min-h-[50px] py-3.5 px-6 text-sm sm:text-base font-black uppercase tracking-wider ${getButtonClass('buy')} hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation text-center rounded-2xl shadow-xl`}
                 >
                   <Zap className="w-5 h-5 text-amber-300 icon-spark-pulse shrink-0" />
-                  <span className="relative z-10 font-black">{isFree ? 'PAKUA BURE' : 'NUNUA GAME'}</span>
+                  <span className="relative z-10 font-black">{isFree ? 'PAKUA BURE' : 'BONYEZA HAPA KUNUNUA GAME'}</span>
                 </button>
-              )}
-
-              {/* Secondary Direct WhatsApp Contact */}
-              {!isUnlocked(gameId) && !isFree && (
-                <a
-                  href={`https://wa.me/255655361060?text=${encodeURIComponent(`Habari Chidy Prime, nahitaji msaada wa kununua game ya: ${game.title} (TSh ${game.price.toLocaleString()})`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation active:scale-[0.98] text-center"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Wasiliana na Admin WhatsApp Moja kwa Moja</span>
-                </a>
               )}
             </div>
 
@@ -946,7 +933,7 @@ export default function GameDetailPage() {
                 <span className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-black flex items-center justify-center shrink-0">1</span>
                 <div>
                   <strong className="text-white block font-bold">Lipa kwa Simu:</strong>
-                  <span>Bonyeza kitufe cha <strong>"NUNUA GAME"</strong> hapo juu na weka namba yako ya simu kulipia kwa M-Pesa, Tigo, Airtel au Halopesa.</span>
+                  <span>Bonyeza kitufe cha <strong>"BONYEZA HAPA KUNUNUA GAME"</strong> hapo juu na weka namba yako ya simu kulipia kwa M-Pesa, Tigo, Airtel au Halopesa.</span>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-950 border border-slate-800">
