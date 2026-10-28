@@ -706,34 +706,6 @@ export default function GameDetailPage() {
                 <span>BOFYA KUKUZA PICHA (FULL HD ZOOM)</span>
               </div>
             </div>
-
-            {/* In-Game Screenshots Strip with Horizontal Scroll */}
-            {allScreenshots.length > 1 && (
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                    <span>PICHA ZA NDANI YA MCHEZO (SCREENSHOTS):</span>
-                  </span>
-                  <span className="text-[10px] text-slate-500">Bofya kukuza</span>
-                </div>
-
-                <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-700">
-                  {allScreenshots.map((shot: string, idx: number) => (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        setActiveGalleryImg(shot);
-                        setLightboxOpen(true);
-                      }}
-                      className="relative w-24 h-16 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 shrink-0 cursor-pointer hover:border-blue-400 transition-colors p-0.5"
-                    >
-                      <Image src={shot} alt={`Picha ${idx + 1}`} fill className="object-contain" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Col: Game Specs & Direct Purchase Action Card */}
