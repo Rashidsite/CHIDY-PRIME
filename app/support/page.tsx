@@ -24,7 +24,9 @@ import {
   Phone,
   Lock,
   Check,
-  Share2
+  Share2,
+  ReceiptCheck,
+  Tag
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { 
@@ -45,6 +47,16 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Sparkles,
 };
 
+interface PaidOrderDetails {
+  id: string;
+  order_number?: string;
+  game_title?: string;
+  amount?: number;
+  phone?: string;
+  customer_name?: string;
+  created_at?: string;
+}
+
 export default function SupportPage() {
   const [config, setConfig] = useState<SupportConfig>(DEFAULT_SUPPORT_CONFIG);
   const [bgSettings, setBgSettings] = useState<{
@@ -59,6 +71,8 @@ export default function SupportPage() {
 
   const [hasPaidOrder, setHasPaidOrder] = useState<boolean | null>(null);
   const [checkingOrders, setCheckingOrders] = useState(true);
+  const [latestOrder, setLatestOrder] = useState<PaidOrderDetails | null>(null);
+  const [userName, setUserName] = useState<string>('');
   const [showUnpaidModal, setShowUnpaidModal] = useState(false);
   
   // Phone verification state for users who paid as guest
@@ -107,21 +121,36 @@ export default function SupportPage() {
         console.warn('Support config load error:', err);
       }
 
-      // 3. Check User Orders Status
+      // 3. Check User Orders Status & Load latest purchase details
       try {
         setCheckingOrders(true);
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
+          const userMeta = session.user.user_metadata || {};
+          const detectedName = userMeta.full_name || userMeta.name || userMeta.username || session.user.email?.split('@')[0] || '';
+          setUserName(detectedName);
+
           const { data: paidOrders, error } = await supabase
             .from('orders')
-            .select('id, status')
+            .select('*')
             .eq('user_id', session.user.id)
             .in('status', ['paid', 'completed', 'approved'])
+            .order('created_at', { ascending: false })
             .limit(1);
 
           if (!error && paidOrders && paidOrders.length > 0) {
+            const ord = paidOrders[0];
             setHasPaidOrder(true);
+            setLatestOrder({
+              id: ord.id,
+              order_number: ord.order_number,
+              game_title: ord.game_title || ord.post_title || ord.title || 'Game ya ChidyPrime',
+              amount: ord.amount,
+              phone: ord.visitor_phone || ord.phone_number,
+              customer_name: ord.customer_name || detectedName,
+              created_at: ord.created_at,
+            });
           } else {
             setHasPaidOrder(false);
           }
@@ -132,6 +161,12 @@ export default function SupportPage() {
           
           if (isAdmin) {
             setHasPaidOrder(true);
+            setUserName('Admin');
+            setLatestOrder({
+              id: 'ADMIN',
+              game_title: 'Msaada wa Mfumo (Admin Support)',
+              customer_name: 'Admin HQ',
+            });
           } else {
             // Check if user has cached verified phone or order
             const cachedPhone = typeof window !== 'undefined' ? localStorage.getItem('cpcg_user_phone') : null;
@@ -142,13 +177,24 @@ export default function SupportPage() {
 
               const { data: cachedPaidOrders } = await supabase
                 .from('orders')
-                .select('id')
+                .select('*')
                 .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
                 .in('status', ['paid', 'completed', 'approved'])
+                .order('created_at', { ascending: false })
                 .limit(1);
 
               if (cachedPaidOrders && cachedPaidOrders.length > 0) {
+                const ord = cachedPaidOrders[0];
                 setHasPaidOrder(true);
+                setLatestOrder({
+                  id: ord.id,
+                  order_number: ord.order_number,
+                  game_title: ord.game_title || ord.post_title || ord.title || 'Game ya ChidyPrime',
+                  amount: ord.amount,
+                  phone: ord.visitor_phone || ord.phone_number || clean,
+                  customer_name: ord.customer_name || 'Mteja Rasmi',
+                  created_at: ord.created_at,
+                });
               } else {
                 setHasPaidOrder(false);
               }
@@ -192,14 +238,25 @@ export default function SupportPage() {
 
       const { data, error } = await supabase
         .from('orders')
-        .select('id, status')
+        .select('*')
         .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
         .in('status', ['paid', 'completed', 'approved'])
+        .order('created_at', { ascending: false })
         .limit(1);
 
       if (!error && data && data.length > 0) {
+        const ord = data[0];
         setPhoneVerifiedStatus('found');
         setHasPaidOrder(true);
+        setLatestOrder({
+          id: ord.id,
+          order_number: ord.order_number,
+          game_title: ord.game_title || ord.post_title || ord.title || 'Game ya ChidyPrime',
+          amount: ord.amount,
+          phone: ord.visitor_phone || ord.phone_number || clean,
+          customer_name: ord.customer_name || 'Mteja Rasmi',
+          created_at: ord.created_at,
+        });
         if (typeof window !== 'undefined') {
           localStorage.setItem('cpcg_user_phone', clean);
         }
@@ -215,8 +272,27 @@ export default function SupportPage() {
   };
 
   const whatsappCleanNumber = config.whatsapp_number ? config.whatsapp_number.replace(/\D/g, '') : '255655361060';
-  const whatsappUrl = `https://wa.me/${whatsappCleanNumber}?text=${encodeURIComponent(config.whatsapp_message || 'Habari Chidy, nahitaji msaada.')}`;
-  const whatsappDisplay = `+${whatsappCleanNumber.slice(0, 3)} ${whatsappCleanNumber.slice(3, 6)} ${whatsappCleanNumber.slice(6, 9)} ${whatsappCleanNumber.slice(9)}`;
+
+  // Build the rich WhatsApp pre-filled message with all purchase & customer details
+  let dynamicWhatsAppMessage = config.whatsapp_message || 'Habari Chidy, nahitaji msaada kuhusu huduma za Chidy Prime.';
+
+  if (latestOrder) {
+    const gameName = latestOrder.game_title || 'Game ya ChidyPrime';
+    const orderNum = latestOrder.order_number || '';
+    const phone = latestOrder.phone || '';
+    const amountStr = latestOrder.amount !== undefined ? `TZS ${Number(latestOrder.amount).toLocaleString()}` : '';
+    const nameStr = latestOrder.customer_name || userName || '';
+
+    dynamicWhatsAppMessage = `Habari Chidy, nahitaji msaada kuhusu oda yangu:\n\n` +
+      `🎮 Game: ${gameName}\n` +
+      (amountStr ? `💰 Kiasi Kilicholipwa: ${amountStr}\n` : '') +
+      (orderNum ? `🆔 Namba ya Oda: ${orderNum}\n` : '') +
+      (phone ? `📱 Namba ya Mteja: ${phone}\n` : '') +
+      (nameStr ? `👤 Jina la Mteja: ${nameStr}\n` : '') +
+      `\nNahitaji maelekezo ya kupakua au ku-set mchezo wangu.`;
+  }
+
+  const whatsappUrl = `https://wa.me/${whatsappCleanNumber}?text=${encodeURIComponent(dynamicWhatsAppMessage)}`;
 
   const activeVideos = (config.videos || []).filter((v) => v.is_active);
   const activeSocials = (config.social_links || []).filter((s) => s.is_active);
@@ -274,7 +350,7 @@ export default function SupportPage() {
               )}
             </div>
 
-            {/* 📺 VIDEO SECTION (NEW - TUTORIALS) */}
+            {/* 📺 VIDEO SECTION (TUTORIALS) */}
             {activeVideos.length > 0 && (
               <div className="mb-10 text-left space-y-4">
                 <div className="flex items-center gap-2.5 px-1">
@@ -331,7 +407,37 @@ export default function SupportPage() {
               </div>
             )}
 
-            {/* SINGLE PROMINENT WHATSAPP BUTTON (WITH PAID CHECK) */}
+            {/* If Verified & Order Loaded, show Order Badge Preview */}
+            {hasPaidOrder && latestOrder && (
+              <div className="mb-6 p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-left flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-[11px] font-black uppercase text-emerald-300 tracking-wider">
+                      Uhakiki wa Malipo Umekamilika
+                    </span>
+                  </div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Gamepad2 className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{latestOrder.game_title}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-3">
+                    {latestOrder.amount !== undefined && (
+                      <span>Bei: <strong className="text-emerald-400 font-mono">TZS {Number(latestOrder.amount).toLocaleString()}</strong></span>
+                    )}
+                    {latestOrder.order_number && (
+                      <span>Oda #: <strong className="text-slate-300 font-mono">{latestOrder.order_number}</strong></span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-[11px] font-semibold text-emerald-400/90 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
+                  ✓ Taarifa zitatumwa WhatsApp
+                </div>
+              </div>
+            )}
+
+            {/* SINGLE PROMINENT WHATSAPP BUTTON (NO RAW PHONE DISPLAY) */}
             <div className="mb-8">
               <a
                 href={whatsappUrl}
@@ -353,8 +459,11 @@ export default function SupportPage() {
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] sm:text-xs font-bold opacity-80 font-mono tracking-normal lowercase">
-                      {whatsappDisplay} • {hasPaidOrder ? 'Bonyeza kuanza chat' : 'Inahitaji ununuzi wa game'}
+                    {/* Security: No phone number is displayed publicly to prevent unauthorized calls */}
+                    <div className="text-[11px] sm:text-xs font-bold opacity-85 tracking-normal">
+                      {hasPaidOrder 
+                        ? '💬 Msaada wa Moja kwa Moja • Bonyeza Kuanza Chat' 
+                        : '🔒 Msaada Rasmi • Unahitaji Kuwa na Oda Iliyolipwa'}
                     </div>
                   </div>
                   <ExternalLink className="w-5 h-5 ml-1 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -366,14 +475,14 @@ export default function SupportPage() {
                 {checkingOrders ? (
                   <span className="animate-pulse">Inakagua hali ya akaunti yako...</span>
                 ) : hasPaidOrder ? (
-                  <span className="text-emerald-400 font-bold flex items-center justify-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Akaunti imethibitishwa! Unaweza kuanza msaada wa WhatsApp moja kwa moja.
+                  <span className="text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Akaunti imethibitishwa! Taarifa za game lako zimeunganishwa moja kwa moja kwenye ujumbe wa WhatsApp.</span>
                   </span>
                 ) : (
-                  <span className="text-amber-400/90 font-medium flex items-center justify-center gap-1">
-                    <Lock className="w-3.5 h-3.5" />
-                    Msaada wa moja kwa moja ni kwa wateja waliolipia mchezo.
+                  <span className="text-amber-400/90 font-medium flex items-center justify-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Msaada wa WhatsApp unafunguka baada ya kulipia game lolote.</span>
                   </span>
                 )}
               </div>
@@ -537,7 +646,7 @@ export default function SupportPage() {
                       href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline text-emerald-300"
+                      className="underline text-emerald-300 cursor-pointer"
                     >
                       Fungua WhatsApp
                     </a>
