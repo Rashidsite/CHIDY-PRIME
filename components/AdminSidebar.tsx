@@ -20,7 +20,8 @@ import {
   LogOut,
   Trophy,
   Flame,
-  Bot
+  Bot,
+  Headphones
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
@@ -43,6 +44,7 @@ export default function AdminSidebar({
   const links = [
     { href: '/admin/dashboard', label: 'Analytics Dashboard', icon: LayoutDashboard },
     { href: '/admin/assistant', label: '🤖 AI Assistant HQ', icon: Bot },
+    { href: '/admin/support', label: '🎧 Support Desk CMS', icon: Headphones },
     { href: '/admin/trending', label: '🔥 Hot & Trending', icon: Flame },
     { href: '/admin/popup', label: '📢 Game Popup Ads', icon: BellRing },
     { href: '/admin/vikosi', label: '⚽ Vikosi vya eFootball', icon: Trophy },

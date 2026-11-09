@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import BackgroundOverlay from '@/components/BackgroundOverlay';
 import { 
@@ -14,11 +15,38 @@ import {
   Clock, 
   CheckCircle2, 
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Video,
+  AlertTriangle,
+  ShoppingBag,
+  Search,
+  X,
+  Phone,
+  Lock,
+  Check,
+  Share2
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { 
+  DEFAULT_SUPPORT_CONFIG, 
+  SupportConfig, 
+  getYouTubeEmbedUrl 
+} from '@/lib/supportDefaults';
+
+// Icon Map helper for dynamic feature icons
+const iconMap: Record<string, React.ComponentType<any>> = {
+  Zap,
+  Gamepad2,
+  ShieldCheck,
+  MessageCircle,
+  Headphones,
+  Clock,
+  CheckCircle2,
+  Sparkles,
+};
 
 export default function SupportPage() {
+  const [config, setConfig] = useState<SupportConfig>(DEFAULT_SUPPORT_CONFIG);
   const [bgSettings, setBgSettings] = useState<{
     enabled: boolean;
     image_url: string;
@@ -29,34 +57,170 @@ export default function SupportPage() {
     opacity: 0.45,
   });
 
+  const [hasPaidOrder, setHasPaidOrder] = useState<boolean | null>(null);
+  const [checkingOrders, setCheckingOrders] = useState(true);
+  const [showUnpaidModal, setShowUnpaidModal] = useState(false);
+  
+  // Phone verification state for users who paid as guest
+  const [phoneSearch, setPhoneSearch] = useState('');
+  const [phoneVerifying, setPhoneVerifying] = useState(false);
+  const [phoneVerifiedStatus, setPhoneVerifiedStatus] = useState<'idle' | 'found' | 'not_found'>('idle');
+
   const supabase = createClient();
-  const whatsappNumber = '255655361060';
-  const whatsappDisplay = '+255 655 361 060';
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-    'Habari Chidy, nahitaji msaada kuhusu huduma za ChidyPrime x ChidyGaming.'
-  )}`;
 
   useEffect(() => {
-    async function loadBgSettings() {
+    async function loadData() {
+      // 1. Load Background Settings
       try {
-        const { data } = await supabase
+        const { data: bgData } = await supabase
           .from('site_settings')
           .select('value')
           .eq('key', 'custom_background')
           .maybeSingle();
-        if (data?.value) {
+
+        if (bgData?.value) {
           setBgSettings({
-            enabled: data.value.enabled ?? true,
-            image_url: data.value.image_url || '/game_controller_bg.jpg',
-            opacity: data.value.opacity ?? 0.45,
+            enabled: bgData.value.enabled ?? true,
+            image_url: bgData.value.image_url || '/game_controller_bg.jpg',
+            opacity: bgData.value.opacity ?? 0.45,
           });
         }
       } catch (err) {
         console.warn('Background settings load error:', err);
       }
+
+      // 2. Load Support Config
+      try {
+        const { data: supportData } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'support_page_config')
+          .maybeSingle();
+
+        if (supportData?.value) {
+          setConfig({
+            ...DEFAULT_SUPPORT_CONFIG,
+            ...supportData.value,
+          });
+        }
+      } catch (err) {
+        console.warn('Support config load error:', err);
+      }
+
+      // 3. Check User Orders Status
+      try {
+        setCheckingOrders(true);
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          const { data: paidOrders, error } = await supabase
+            .from('orders')
+            .select('id, status')
+            .eq('user_id', session.user.id)
+            .in('status', ['paid', 'completed', 'approved'])
+            .limit(1);
+
+          if (!error && paidOrders && paidOrders.length > 0) {
+            setHasPaidOrder(true);
+          } else {
+            setHasPaidOrder(false);
+          }
+        } else {
+          // Check if admin is logged in locally
+          const isAdmin = typeof window !== 'undefined' && 
+            (localStorage.getItem('cpcg_admin_authenticated') === 'true' || !!localStorage.getItem('cpcg_admin_session'));
+          
+          if (isAdmin) {
+            setHasPaidOrder(true);
+          } else {
+            // Check if user has cached verified phone or order
+            const cachedPhone = typeof window !== 'undefined' ? localStorage.getItem('cpcg_user_phone') : null;
+            if (cachedPhone) {
+              const digits = cachedPhone.replace(/\D/g, '');
+              const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
+              const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+
+              const { data: cachedPaidOrders } = await supabase
+                .from('orders')
+                .select('id')
+                .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
+                .in('status', ['paid', 'completed', 'approved'])
+                .limit(1);
+
+              if (cachedPaidOrders && cachedPaidOrders.length > 0) {
+                setHasPaidOrder(true);
+              } else {
+                setHasPaidOrder(false);
+              }
+            } else {
+              setHasPaidOrder(false);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking paid orders:', err);
+        setHasPaidOrder(false);
+      } finally {
+        setCheckingOrders(false);
+      }
     }
-    loadBgSettings();
-  }, []);
+
+    loadData();
+  }, [supabase]);
+
+  // Handle WhatsApp Click
+  const handleWhatsAppClick = (e: React.MouseEvent) => {
+    // If not verified to have paid orders, prevent navigation and open warning modal
+    if (!hasPaidOrder) {
+      e.preventDefault();
+      setShowUnpaidModal(true);
+    }
+  };
+
+  // Phone lookup verification for guest users
+  const handleVerifyPhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phoneSearch.trim()) return;
+
+    setPhoneVerifying(true);
+    setPhoneVerifiedStatus('idle');
+
+    try {
+      const digits = phoneSearch.replace(/\D/g, '');
+      const clean = digits.startsWith('0') ? '255' + digits.slice(1) : (digits.startsWith('255') ? digits : '255' + digits);
+      const local = clean.startsWith('255') ? '0' + clean.slice(3) : clean;
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, status')
+        .or(`visitor_phone.eq.${clean},visitor_phone.eq.${local},phone_number.eq.${clean},phone_number.eq.${local}`)
+        .in('status', ['paid', 'completed', 'approved'])
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        setPhoneVerifiedStatus('found');
+        setHasPaidOrder(true);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cpcg_user_phone', clean);
+        }
+      } else {
+        setPhoneVerifiedStatus('not_found');
+      }
+    } catch (err) {
+      console.error('Phone verification error:', err);
+      setPhoneVerifiedStatus('not_found');
+    } finally {
+      setPhoneVerifying(false);
+    }
+  };
+
+  const whatsappCleanNumber = config.whatsapp_number ? config.whatsapp_number.replace(/\D/g, '') : '255655361060';
+  const whatsappUrl = `https://wa.me/${whatsappCleanNumber}?text=${encodeURIComponent(config.whatsapp_message || 'Habari Chidy, nahitaji msaada.')}`;
+  const whatsappDisplay = `+${whatsappCleanNumber.slice(0, 3)} ${whatsappCleanNumber.slice(3, 6)} ${whatsappCleanNumber.slice(6, 9)} ${whatsappCleanNumber.slice(9)}`;
+
+  const activeVideos = (config.videos || []).filter((v) => v.is_active);
+  const activeSocials = (config.social_links || []).filter((s) => s.is_active);
+  const activeFeatures = (config.features || []).filter((f) => f.is_active);
 
   return (
     <>
@@ -68,13 +232,13 @@ export default function SupportPage() {
 
       <Navbar />
 
-      <main className="relative z-20 min-h-[calc(100vh-64px)] flex items-center justify-center px-3 sm:px-6 py-6 sm:py-12">
-        <div className="w-full max-w-2xl mx-auto">
+      <main className="relative z-20 min-h-[calc(100vh-64px)] flex items-center justify-center px-3 sm:px-6 py-8 sm:py-14">
+        <div className="w-full max-w-3xl mx-auto">
           {/* Main Card */}
-          <div className="relative rounded-3xl bg-slate-900/90 border border-slate-800/90 shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl overflow-hidden p-6 sm:p-10 text-center">
+          <div className="relative rounded-3xl bg-slate-900/90 border border-slate-800/90 shadow-[0_0_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl overflow-hidden p-6 sm:p-10 text-center">
             
             {/* Top Glow Accent */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-24 bg-emerald-500/15 blur-3xl pointer-events-none rounded-full" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-28 bg-emerald-500/15 blur-3xl pointer-events-none rounded-full" />
 
             {/* Status Header Pill */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm font-black uppercase tracking-wider mb-6">
@@ -94,28 +258,86 @@ export default function SupportPage() {
 
             {/* Title */}
             <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight uppercase mb-2">
-              DAWATI LA MSAADA <span className="text-emerald-400">WHATSAPP</span>
+              {config.page_title}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 font-medium mb-6">
-              <strong className="text-slate-200">ChidyPrime × ChidyGaming</strong> • Official Help Desk
+              <strong className="text-slate-200">{config.page_subtitle}</strong>
             </p>
 
-            {/* Maelezo Machache (Concise friendly explanation) */}
+            {/* Welcome Message Card */}
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-slate-300 text-xs sm:text-sm leading-relaxed text-center sm:text-left space-y-2 mb-8">
-              <p>
-                Karibu sana gamer! Naitwa <strong className="text-white">Chidy</strong>. Kama umekwama kupakua au ku-set mchezo wako, unahitaji msaada kuhusu malipo, au unataka kuulizia game lolote, wasiliana nami moja kwa moja kupitia WhatsApp.
-              </p>
-              <p className="text-emerald-400 font-semibold text-xs sm:text-sm">
-                💬 Nitazungumza nawe moja kwa moja WhatsApp kukusaidia papo hapo bila chenga!
-              </p>
+              <p>{config.welcome_text}</p>
+              {config.welcome_highlight && (
+                <p className="text-emerald-400 font-bold text-xs sm:text-sm">
+                  {config.welcome_highlight}
+                </p>
+              )}
             </div>
 
-            {/* SINGLE PROMINENT WHATSAPP BUTTON */}
+            {/* 📺 VIDEO SECTION (NEW - TUTORIALS) */}
+            {activeVideos.length > 0 && (
+              <div className="mb-10 text-left space-y-4">
+                <div className="flex items-center gap-2.5 px-1">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                    <Video className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                      📺 Video za Muongozo (Tutorials)
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      Tazama video hizi kabla ya kuuliza msaada ili upate ufumbuzi wa haraka
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5">
+                  {activeVideos.map((video) => {
+                    const embedUrl = getYouTubeEmbedUrl(video.youtube_url);
+                    return (
+                      <div
+                        key={video.id}
+                        className="rounded-2xl bg-slate-950/70 border border-slate-800/90 overflow-hidden shadow-lg group hover:border-emerald-500/40 transition-colors"
+                      >
+                        <div className="aspect-video w-full bg-black relative">
+                          {embedUrl ? (
+                            <iframe
+                              src={embedUrl}
+                              title={video.title}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs">
+                              Video haipatikani
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4 space-y-1">
+                          <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-tight">
+                            {video.title}
+                          </h4>
+                          {video.description && (
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                              {video.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SINGLE PROMINENT WHATSAPP BUTTON (WITH PAID CHECK) */}
             <div className="mb-8">
               <a
                 href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={handleWhatsAppClick}
+                target={hasPaidOrder ? '_blank' : undefined}
+                rel={hasPaidOrder ? 'noopener noreferrer' : undefined}
                 className="group relative inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 sm:py-5 rounded-2xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 text-slate-950 font-black uppercase text-sm sm:text-base tracking-wider shadow-[0_0_35px_rgba(16,185,129,0.4)] hover:shadow-[0_0_45px_rgba(16,185,129,0.65)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
               >
                 <div className="flex items-center gap-3">
@@ -123,42 +345,84 @@ export default function SupportPage() {
                     <MessageCircle className="w-6 h-6 fill-slate-950" />
                   </div>
                   <div className="text-left">
-                    <div className="leading-tight">WASILIANA NASI WHATSAPP</div>
+                    <div className="leading-tight flex items-center gap-2">
+                      <span>WASILIANA NASI WHATSAPP</span>
+                      {!hasPaidOrder && !checkingOrders && (
+                        <span className="p-0.5 rounded bg-slate-950/30 text-[10px]">
+                          <Lock className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] sm:text-xs font-bold opacity-80 font-mono tracking-normal lowercase">
-                      {whatsappDisplay} • Bonyeza kuanza chat
+                      {whatsappDisplay} • {hasPaidOrder ? 'Bonyeza kuanza chat' : 'Inahitaji ununuzi wa game'}
                     </div>
                   </div>
                   <ExternalLink className="w-5 h-5 ml-1 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                 </div>
               </a>
+
+              {/* Status helper under button */}
+              <div className="mt-3 text-[11px] text-slate-400">
+                {checkingOrders ? (
+                  <span className="animate-pulse">Inakagua hali ya akaunti yako...</span>
+                ) : hasPaidOrder ? (
+                  <span className="text-emerald-400 font-bold flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Akaunti imethibitishwa! Unaweza kuanza msaada wa WhatsApp moja kwa moja.
+                  </span>
+                ) : (
+                  <span className="text-amber-400/90 font-medium flex items-center justify-center gap-1">
+                    <Lock className="w-3.5 h-3.5" />
+                    Msaada wa moja kwa moja ni kwa wateja waliolipia mchezo.
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* SOCIAL MEDIA PILLS */}
+            {activeSocials.length > 0 && (
+              <div className="mb-8 pt-4 border-t border-slate-800/80">
+                <span className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">
+                  Mitandao Yetu Rasmi
+                </span>
+                <div className="flex flex-wrap items-center justify-center gap-2.5">
+                  {activeSocials.map((soc) => (
+                    <a
+                      key={soc.id}
+                      href={soc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition-all shadow-sm"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-blue-400" />
+                      <span>{soc.label}</span>
+                      <ExternalLink className="w-3 h-3 text-slate-500" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Quick Benefits / Assurance */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-800/80 text-left">
-              <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2.5">
-                <Zap className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-[11px] font-bold text-white uppercase">Majibu ya Haraka</h4>
-                  <p className="text-[10px] text-slate-400">Tunajibu meseji yako moja kwa moja bila foleni.</p>
-                </div>
+            {activeFeatures.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-800/80 text-left">
+                {activeFeatures.map((feat) => {
+                  const Icon = iconMap[feat.icon] || Zap;
+                  return (
+                    <div
+                      key={feat.id}
+                      className="p-3.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2.5"
+                    >
+                      <Icon className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-[11px] font-bold text-white uppercase">{feat.title}</h4>
+                        <p className="text-[10px] text-slate-400 leading-normal">{feat.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-
-              <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2.5">
-                <Gamepad2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-[11px] font-bold text-white uppercase">Msaada wa Kuset</h4>
-                  <p className="text-[10px] text-slate-400">Maelekezo rahisi ya kuweka game kwenye simu au PC.</p>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-[11px] font-bold text-white uppercase">Uhakiki wa Malipo</h4>
-                  <p className="text-[10px] text-slate-400">Tuma screenshot ya malipo utatuliwe mara moja.</p>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Back Link */}
             <div className="mt-8 pt-4">
@@ -174,6 +438,123 @@ export default function SupportPage() {
           </div>
         </div>
       </main>
+
+      {/* ⚠️ MODAL: UNPAID USER WARNING & PHONE VERIFICATION */}
+      <AnimatePresence>
+        {showUnpaidModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowUnpaidModal(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
+            />
+
+            {/* Modal Dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-slate-900 border border-amber-500/40 rounded-3xl p-6 sm:p-7 shadow-[0_0_50px_rgba(245,158,11,0.25)] z-10 text-center space-y-5"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowUnpaidModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Warning Icon Avatar */}
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+
+              {/* Title & Message */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                  {config.unpaid_warning_title || '⚠️ LIPIA GAME KWANZA!'}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {config.unpaid_warning_message}
+                </p>
+              </div>
+
+              {/* Action: Go Buy Game */}
+              <div className="space-y-2">
+                <Link
+                  href="/front"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Rudi Kwenye Duka Kununua Game</span>
+                </Link>
+              </div>
+
+              {/* Alternative: Phone Number Verification */}
+              <div className="pt-4 border-t border-slate-800 text-left space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
+                  <Phone className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Ulipia bila kuingia kwenye akaunti?</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Ingiza namba uliyolipia (e.g. 07... au 255...) ili mfumo uhakiki oda yako moja kwa moja:
+                </p>
+
+                <form onSubmit={handleVerifyPhone} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={phoneSearch}
+                    onChange={(e) => setPhoneSearch(e.target.value)}
+                    placeholder="07XXXXXXXX au 255..."
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={phoneVerifying}
+                    className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                  >
+                    {phoneVerifying ? (
+                      <span>...</span>
+                    ) : (
+                      <>
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Hakiki</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {phoneVerifiedStatus === 'found' && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Check className="w-4 h-4" />
+                      <span>Uhakiki Umefaulu! Oda imepatikana.</span>
+                    </div>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-emerald-300"
+                    >
+                      Fungua WhatsApp
+                    </a>
+                  </div>
+                )}
+
+                {phoneVerifiedStatus === 'not_found' && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>Hatukupata oda iliyolipwa kwa namba hii. Tafadhali hakikisha au nunua game kwanza.</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
