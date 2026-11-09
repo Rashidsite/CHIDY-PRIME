@@ -845,24 +845,17 @@ export default function CheckoutModal({
                   Weka PIN Kwenye Simu Yako
                 </h3>
 
-                {/* Network Badges */}
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[9px] font-black border border-rose-500/30">M-PESA</span>
-                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 text-[9px] font-black border border-blue-500/30">TIGO PESA</span>
-                  <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-300 text-[9px] font-black border border-red-500/30">AIRTEL</span>
-                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-black border border-amber-500/30">HALOPESA</span>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-blue-950/40 border border-blue-800/40 text-xs text-blue-200 font-bold leading-relaxed space-y-1.5">
-                  <p className="text-white font-extrabold">
-                    📲 Tafadhali kamilisha malipo kwa kuweka PIN kwenye simu yako (<span className="text-amber-400 font-mono font-black">{phone}</span>)...
-                  </p>
-                  <p className="text-[11px] text-slate-300">
-                    Kiasi: <span className="text-emerald-400 font-black">{formatCurrency(game.price)}</span> | Mtandao: <span className="text-blue-400 font-black">M-Pesa / Tigo Pesa / Airtel / HaloPesa</span>
-                  </p>
-                  <div className="pt-1 text-[11px] text-amber-300/90 font-medium flex items-center justify-center gap-1.5">
-                    <span>⚡ Push inarudiwa hadi mara 4 ukichelewa au ukikosa kuweka PIN.</span>
+                {/* Clean Waiting Message */}
+                <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/30 text-center space-y-1.5">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                    <span className="text-lg font-black text-amber-300 tracking-wider uppercase">
+                      Subiria...
+                    </span>
                   </div>
+                  <p className="text-xs text-slate-200 font-bold">
+                    Weka PIN kwenye simu yako (<span className="text-amber-400 font-mono">{phone}</span>) kukamilisha malipo
+                  </p>
                 </div>
 
                 <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
