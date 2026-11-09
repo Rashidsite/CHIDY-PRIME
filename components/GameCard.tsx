@@ -93,13 +93,70 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
   const router = useRouter();
   const { getButtonClass, animations } = useCMSTheme();
 
-  const isSquad = (game.category || '').toLowerCase().includes('efootball') || 
-                  (game.category || '').toLowerCase().includes('vikosi') || 
-                  (game.title || '').toLowerCase().includes('kikosi');
+  const catLower = (game.category || '').toLowerCase();
+  const titleLower = (game.title || '').toLowerCase();
+
+  const isSquad = catLower.includes('efootball') || 
+                  catLower.includes('vikosi') || 
+                  catLower.includes('kikosi') || 
+                  titleLower.includes('kikosi');
+
+  const isSkin = !isSquad && (
+    catLower.includes('skin') || 
+    catLower.includes('livery') || 
+    catLower.includes('rangi') || 
+    titleLower.includes('skin') ||
+    titleLower.includes('livery')
+  );
+
+  const isAppOrTool = !isSquad && !isSkin && (
+    catLower.includes('tool') || 
+    catLower.includes('app') || 
+    catLower.includes('apk') || 
+    catLower.includes('software') || 
+    catLower.includes('application') ||
+    titleLower.includes('apk') || 
+    titleLower.includes('camscanner') || 
+    titleLower.includes('everything') ||
+    titleLower.includes('.exe') ||
+    titleLower.includes('tool')
+  );
+
+  const isMod = !isSquad && !isSkin && !isAppOrTool && (
+    catLower.includes('mod') || 
+    catLower.includes('bus') || 
+    catLower.includes('map') || 
+    catLower.includes('truck') ||
+    titleLower.includes('mod') ||
+    titleLower.includes('maleo') ||
+    titleLower.includes('ets 2') ||
+    titleLower.includes('ets2')
+  );
+
+  // Dynamic noun for action buttons
+  let itemNoun = 'GAME';
+  let specBadge = 'ANDROID / PC';
+
+  if (isSquad) {
+    itemNoun = 'KIKOSI';
+    specBadge = 'EFOOTBALL';
+  } else if (isSkin) {
+    itemNoun = 'SKIN';
+    specBadge = 'BUS SKIN';
+  } else if (isAppOrTool) {
+    itemNoun = 'APP';
+    specBadge = 'APP / TOOL';
+  } else if (isMod) {
+    itemNoun = 'MOD';
+    specBadge = 'OFFLINE MOD';
+  }
+
+  const viewButtonText = `TAZAMA ${itemNoun}`;
 
   const isFree = !isSquad && game.price === 0 && (game.category?.toLowerCase().includes('free') || game.title?.toLowerCase().includes('free'));
   const isTopRated = (game.rating || 0) >= 4.9;
-  const label = isSquad ? 'KIKOSI' : getLabel(game.category);
+  const label = itemNoun;
+  const downloadButtonText = isFree ? `DOWNLOAD ${itemNoun}` : `PAKUA ${itemNoun}`;
   const rawDuration = isSquad ? '7 Days' : (game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration);
   const durationLabel = isSquad ? '⚽ EFOOTBALL SQUAD' : formatPlanDuration(rawDuration, isFree);
 
@@ -257,52 +314,50 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
           </Link>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 gap-2">
+        {/* Footer Area: Specs Row + Action Button */}
+        <div className="space-y-2 pt-2 border-t border-slate-800/80">
           {showUnlocked ? (
-            <>
-              <div className="min-w-0">
-                <span className="text-[10px] font-black text-emerald-400 tracking-wide uppercase flex items-center gap-1">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-black text-emerald-400 tracking-wide uppercase">
+                <span className="flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                  <span>{isFree ? 'FREE DOWNLOAD' : 'TAYARI IPO WAZI'}</span>
+                  <span>{isFree ? 'BURE KABISA' : 'TAYARI IPO WAZI'}</span>
                 </span>
+                <span className="text-[9px] text-slate-400 font-bold">{specBadge}</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleCardClick}
-                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 min-h-[42px] flex items-center justify-center gap-1.5 text-[11px] ${getButtonClass('download')} cursor-pointer touch-manipulation whitespace-nowrap active:scale-[0.96]`}
+                className={`w-full py-1.5 sm:py-2 min-h-[34px] rounded-xl flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${getButtonClass('download')} cursor-pointer touch-manipulation active:scale-[0.97]`}
               >
-                <Download className="w-3.5 h-3.5" />
-                <span className="relative z-10 font-black">{isFree ? 'DOWNLOAD' : 'PAKUA GAME'}</span>
+                <Download className="w-3 h-3" />
+                <span className="relative z-10">{downloadButtonText}</span>
               </button>
-            </>
+            </div>
           ) : (
-            <>
-              {/* Sifa za Haraka (Gaming Spec & Trust Badges) */}
-              <div className="flex flex-col gap-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25 text-[9px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
-                    <span className="truncate max-w-[85px] sm:max-w-[110px]">
-                      {isSquad ? 'EFOOTBALL' : (game.category?.toLowerCase().includes('mod') || game.category?.toLowerCase().includes('bus') ? 'OFFLINE MOD' : 'ANDROID / PC')}
-                    </span>
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-0.5">
-                    <ShieldCheck className="w-2.5 h-2.5 shrink-0" />
-                    <span>TESTED</span>
-                  </span>
-                </div>
+            <div className="space-y-1.5">
+              {/* Badges Row */}
+              <div className="flex items-center justify-between gap-1">
+                <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25 text-[9px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
+                  <span className="truncate">{specBadge}</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-0.5 shrink-0">
+                  <ShieldCheck className="w-2.5 h-2.5 shrink-0" />
+                  <span>TESTED</span>
+                </span>
               </div>
 
-              {/* Batan ya Nje: TAZAMA GAME inayofungua ndani bila kuonyesha Nunua nje */}
+              {/* Action Button: Sleek, compact pill with exact category noun */}
               <Link
                 href={`/games/${game.id}`}
-                className="px-3 sm:px-3.5 py-2 sm:py-2.5 min-h-[42px] rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 border border-blue-400/30 transition-all active:scale-[0.96] shrink-0 touch-manipulation group/btn"
+                className="w-full py-1.5 sm:py-2 min-h-[34px] rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 shadow-md shadow-blue-600/20 border border-blue-400/30 transition-all active:scale-[0.97] touch-manipulation group/btn"
               >
-                <span className="relative z-10">{isSquad ? 'TAZAMA KIKOSI' : 'TAZAMA GAME'}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-blue-200 group-hover/btn:translate-x-0.5 transition-transform" />
+                <span className="relative z-10">{viewButtonText}</span>
+                <ArrowRight className="w-3 h-3 text-blue-200 group-hover/btn:translate-x-0.5 transition-transform" />
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>
