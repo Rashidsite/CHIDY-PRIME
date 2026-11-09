@@ -496,9 +496,9 @@ export default function GameDetailPage() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    {squad.download_links.map((dl, idx) => (
-                      isUnlocked(gameId) ? (
+                  {isUnlocked(gameId) ? (
+                    <div className="space-y-2">
+                      {squad.download_links.map((dl, idx) => (
                         <a
                           key={idx}
                           href={dl.url}
@@ -514,22 +514,26 @@ export default function GameDetailPage() {
                           </div>
                           <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
                         </a>
-                      ) : (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-slate-300 text-xs"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-500">📁</span>
-                            <span className="font-semibold">{dl.name || `Kikosi Data #${idx + 1}`}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-gradient-to-r from-slate-900/90 via-blue-950/20 to-slate-900/90 border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
+                            <span className="text-sm">📁</span>
                           </div>
-                          <span className="text-[10px] font-bold text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                            🔒 Baada ya Kulipia
-                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-white truncate">{squad.title} - Complete Package</p>
+                            <p className="text-[10px] text-slate-400">Inajumuisha faili na maelekezo yote ({squad.download_links.length} files)</p>
+                          </div>
                         </div>
-                      )
-                    ))}
-                  </div>
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-wider shrink-0">
+                          🔒 Limefungwa
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -762,40 +766,8 @@ export default function GameDetailPage() {
               </h1>
             </div>
 
-            {/* Game Specifications Grid */}
-            <div className="grid grid-cols-2 gap-2.5 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Jukwaa (Platform):</span>
-                <p className="font-black text-blue-400 flex items-center gap-1">
-                  <Smartphone className="w-3 h-3 text-blue-400" />
-                  <span>{game.category?.toLowerCase().includes('pc') ? 'PC / Windows' : 'Android / iOS'}</span>
-                </p>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Hali ya Mchezo:</span>
-                <p className="font-black text-emerald-400 flex items-center gap-1">
-                  <span>📶 Offline (Bila Data)</span>
-                </p>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Usalama wa Faili:</span>
-                <p className="font-black text-purple-400 flex items-center gap-1">
-                  <span>🛡️ 100% Virus-Free</span>
-                </p>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Upakuaji:</span>
-                <p className="font-black text-amber-400 flex items-center gap-1">
-                  <span>⚡ Papo Hapo (Direct)</span>
-                </p>
-              </div>
-            </div>
-
-            {/* Price & Primary Action Button */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/30 space-y-4">
+            {/* Price & Primary Action Button - Appears immediately after Game Title */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/30 space-y-4 shadow-lg shadow-blue-900/10">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-blue-300 block mb-0.5 tracking-wider">
@@ -836,7 +808,39 @@ export default function GameDetailPage() {
               )}
             </div>
 
-            {/* THE KEY ATTRACTION: Faili Zilizomo Kwenye Game Hili (Locked vs Unlocked Downloads) */}
+            {/* Game Specifications Grid */}
+            <div className="grid grid-cols-2 gap-2.5 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Jukwaa (Platform):</span>
+                <p className="font-black text-blue-400 flex items-center gap-1">
+                  <Smartphone className="w-3 h-3 text-blue-400" />
+                  <span>{game.category?.toLowerCase().includes('pc') ? 'PC / Windows' : 'Android / iOS'}</span>
+                </p>
+              </div>
+
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Hali ya Mchezo:</span>
+                <p className="font-black text-emerald-400 flex items-center gap-1">
+                  <span>📶 Offline (Bila Data)</span>
+                </p>
+              </div>
+
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Usalama wa Faili:</span>
+                <p className="font-black text-purple-400 flex items-center gap-1">
+                  <span>🛡️ 100% Virus-Free</span>
+                </p>
+              </div>
+
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Upakuaji:</span>
+                <p className="font-black text-amber-400 flex items-center gap-1">
+                  <span>⚡ Papo Hapo (Direct)</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Faili Zilizomo Kwenye Game Hili (Locked Single Package vs Unlocked Sequence) */}
             {game.download_links && game.download_links.length > 0 && (
               <div className="p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
@@ -849,15 +853,16 @@ export default function GameDetailPage() {
                       Tayari Ziko Wazi
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[9px] font-black uppercase border border-amber-500/30 flex items-center gap-1">
-                      <span>🔒 Zimefungwa</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[9px] font-black uppercase border border-amber-500/30 flex items-center gap-1">
+                      <span>🔒 Limefungwa</span>
                     </span>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  {game.download_links.map((dl: any, idx: number) => (
-                    isUnlocked(gameId) ? (
+                {isUnlocked(gameId) ? (
+                  /* UNLOCKED: Shows individual download links in their ordered sequence */
+                  <div className="space-y-2">
+                    {game.download_links.map((dl: any, idx: number) => (
                       <a
                         key={idx}
                         href={dl.url}
@@ -869,26 +874,58 @@ export default function GameDetailPage() {
                           <div className="w-7 h-7 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
                             <Download className="w-3.5 h-3.5" />
                           </div>
-                          <span className="text-xs font-bold">{dl.name || `Pakua Faili #${idx + 1}`}</span>
+                          <div>
+                            <span className="text-xs font-bold block">{dl.name || `Pakua Faili #${idx + 1}`}</span>
+                            <span className="text-[10px] text-slate-400">Bofya kupakua moja kwa moja</span>
+                          </div>
                         </div>
                         <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
                       </a>
-                    ) : (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-slate-300 text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-500">📁</span>
-                          <span className="font-semibold">{dl.name || `Game Data #${idx + 1}`}</span>
+                    ))}
+                  </div>
+                ) : (
+                  /* LOCKED: Shows as ONE single locked package / file */
+                  <div 
+                    onClick={() => {
+                      if (game?.direct_payment_url && game.direct_payment_url.trim()) {
+                        window.open(game.direct_payment_url.trim(), '_blank');
+                        return;
+                      }
+                      setCheckoutOpen(true);
+                    }}
+                    className="p-3.5 rounded-xl bg-gradient-to-r from-slate-900/90 via-blue-950/20 to-slate-900/90 border border-slate-800 hover:border-blue-500/50 transition-all cursor-pointer group space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
+                          <span className="text-sm">📁</span>
                         </div>
-                        <span className="text-[10px] font-bold text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                          🔒 Baada ya Kulipia
-                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
+                            {game.title} - Complete Game Package
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            Inajumuisha faili zote ({game.download_links.length} files: APK, OBB, Mods & Data)
+                          </p>
+                        </div>
                       </div>
-                    )
-                  ))}
-                </div>
+
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-wider shrink-0 flex items-center gap-1">
+                        <span>🔒 Limefungwa</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px]">
+                      <span className="text-slate-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        <span>Lipia Tsh {isFree ? '0' : Number(game.price || 0).toLocaleString()} kufungua faili zote mara moja</span>
+                      </span>
+                      <span className="text-blue-400 font-bold group-hover:underline">
+                        Lipia Sasa ➔
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
