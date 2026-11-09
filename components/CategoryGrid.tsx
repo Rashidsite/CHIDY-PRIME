@@ -89,18 +89,18 @@ const CategoryRow = React.memo(function CategoryRow({
       style={{ contentVisibility: 'auto', containIntrinsicSize: '0 340px' }}
     >
       {/* Category Header Bar */}
-      <div className="flex items-center justify-between p-3 sm:p-4 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-md">
+      <div className="flex items-center justify-between px-3 py-2 sm:p-4 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-md">
         {/* Left: Icon + Title + Count */}
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div
-            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
               isSquad ? 'bg-gradient-to-tr from-blue-600 to-indigo-600' : 'bg-blue-600'
             }`}
           >
             {isSquad ? <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
           </div>
           <div className="min-w-0">
-            <h2 className="text-xs sm:text-base font-black text-white tracking-tight uppercase leading-tight truncate">
+            <h2 className="text-xs sm:text-base font-black text-white tracking-tight uppercase leading-snug truncate">
               {catName}
             </h2>
             <p className="text-[10px] sm:text-xs text-blue-400 font-bold mt-0.5 truncate">
@@ -176,7 +176,7 @@ const CategoryRow = React.memo(function CategoryRow({
         {displayGames.map((game, idx) => (
           <div 
             key={game?.id || idx} 
-            className="game-card-item w-[250px] sm:w-[275px] shrink-0"
+            className="game-card-item w-[205px] sm:w-[260px] shrink-0"
             style={{ contain: 'layout style paint' }}
           >
             <GameCard

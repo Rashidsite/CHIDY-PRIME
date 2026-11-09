@@ -1038,53 +1038,53 @@ export default function FrontHubPage() {
           <HorizontalCarouselSkeleton />
         ) : (
           trendingConfig.enabled && trendingGames.length > 0 && (
-            <section className="w-full space-y-6">
+            <section className="w-full space-y-4 sm:space-y-6">
               <div 
-                className="flex items-center justify-between p-4 border border-slate-800 rounded-2xl bg-slate-900 shadow-lg"
+                className="flex items-center justify-between px-3 py-2 sm:p-4 border border-slate-800/90 rounded-2xl bg-slate-900/90 shadow-md"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                   <div 
-                    className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm shrink-0"
                   >
-                    <Flame className="w-6 h-6 text-white fill-white animate-pulse" />
+                    <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white animate-pulse" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h2 
-                      className="text-base sm:text-xl font-black text-white tracking-tight uppercase leading-none"
+                      className="text-xs sm:text-base font-black text-white tracking-tight uppercase leading-snug truncate"
                     >
                       {trendingConfig.title || '🔥 Hot & Trending Games'}
                     </h2>
                     <p 
-                      className="text-xs text-blue-400 font-bold mt-1.5"
+                      className="text-[10px] sm:text-xs text-blue-400 font-bold mt-0.5 truncate"
                     >
                       {trendingConfig.subtitle || 'Michezo inayopendwa zaidi sasa hivi'}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-1.5 shrink-0 ml-2">
                   <button
                     onClick={() => scrollCarousel('left')}
                     disabled={!canScrollLeft}
-                    className={`min-w-[44px] min-h-[44px] rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+                    className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
                       canScrollLeft
-                        ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer'
-                        : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'
+                        ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer active:scale-95'
+                        : 'text-slate-600 opacity-20 pointer-events-none cursor-not-allowed'
                     }`}
                     aria-label="Scroll left"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => scrollCarousel('right')}
                     disabled={!canScrollRight}
-                    className={`min-w-[44px] min-h-[44px] rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
+                    className={`w-8 h-8 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center transition-all shadow-sm ${
                       canScrollRight
-                        ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer'
-                        : 'text-slate-600 opacity-30 pointer-events-none cursor-not-allowed'
+                        ? 'text-blue-400 hover:bg-blue-600 hover:text-white cursor-pointer active:scale-95'
+                        : 'text-slate-600 opacity-20 pointer-events-none cursor-not-allowed'
                     }`}
                     aria-label="Scroll right"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -1093,7 +1093,7 @@ export default function FrontHubPage() {
               <div
                 ref={carouselRef}
                 onScroll={updateScrollBoundaries}
-                className="category-slider-track flex gap-3.5 sm:gap-4 overflow-x-auto py-1 px-0.5 no-scrollbar scroll-smooth"
+                className="category-slider-track flex gap-3 sm:gap-4 overflow-x-auto py-1 px-0.5 no-scrollbar scroll-smooth"
                 style={{
                   WebkitOverflowScrolling: 'touch',
                   scrollBehavior: 'smooth',
@@ -1101,7 +1101,7 @@ export default function FrontHubPage() {
                 }}
               >
                 {(trendingGames ?? []).map((game, idx) => (
-                  <div key={game?.id || idx} className="game-card-item w-[260px] sm:w-[280px] shrink-0 snap-start">
+                  <div key={game?.id || idx} className="game-card-item w-[205px] sm:w-[260px] shrink-0 snap-start">
                     <GameCard
                       game={game}
                       onBuyNow={handleBuyNow}

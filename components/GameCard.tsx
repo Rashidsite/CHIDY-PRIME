@@ -248,21 +248,16 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
         </div>
       </div>
 
-      <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-2.5 bg-[#0F172A]">
+      <div className="p-2.5 sm:p-3 flex flex-col flex-1 justify-between gap-2 bg-[#0F172A]">
         <div>
           <Link href={`/games/${game.id}`} className="block group/link touch-manipulation">
             <h3 className="text-xs sm:text-sm font-black text-white group-hover/link:text-blue-400 transition-colors line-clamp-1 tracking-tight leading-snug">
               {game.title}
             </h3>
           </Link>
-          {game.description && (
-            <p className="text-[10px] sm:text-[11px] text-slate-200 line-clamp-2 mt-1 leading-relaxed font-normal">
-              {game.description}
-            </p>
-          )}
         </div>
 
-        <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 gap-2">
           {showUnlocked ? (
             <>
               <div className="min-w-0">
