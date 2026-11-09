@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import ScreenshotGallery from '@/components/ScreenshotGallery';
-import CheckoutModal from '@/components/CheckoutModal';
+import CheckoutModal, { playCelebrationSound } from '@/components/CheckoutModal';
 import SquadImageLightbox from '@/components/SquadImageLightbox';
 import { 
   Star, 
@@ -56,6 +56,26 @@ export default function GameDetailPage() {
   const [isPortrait, setIsPortrait] = useState<boolean>(false);
   const [squadCoverAspect, setSquadCoverAspect] = useState<number | null>(null);
   const [isPortraitSquad, setIsPortraitSquad] = useState<boolean>(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  useEffect(() => {
+    const handleUnlocked = (e: any) => {
+      const targetId = e?.detail?.game_id || e?.detail?.productId || e?.detail?.product_id;
+      if (!targetId || String(targetId) === String(gameId)) {
+        setShowCelebration(true);
+        playCelebrationSound();
+        setTimeout(() => setShowCelebration(false), 6000);
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cpcg_order_unlocked', handleUnlocked);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('cpcg_order_unlocked', handleUnlocked);
+      }
+    };
+  }, [gameId]);
 
   const supabase = useMemo(() => createClient(), []);
   const { isUnlocked, refresh: refreshAccess } = useProductAccess();
@@ -593,7 +613,26 @@ export default function GameDetailPage() {
             }}
           />
         )}
-      </>
+        {/* Floating Celebration Bubbles & Sparkles (Viputo vya Shangwe) */}
+      {showCelebration && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+          {Array.from({ length: 32 }).map((_, i) => (
+            <span
+              key={i}
+              className="absolute celebration-bubble"
+              style={{
+                left: `${(i * 11) % 95}%`,
+                animationDelay: `${(i * 0.1)}s`,
+                animationDuration: `${2.5 + (i % 5) * 0.35}s`,
+                fontSize: `${20 + (i % 4) * 8}px`,
+              }}
+            >
+              {['🎈', '✨', '🎉', '🎊', '⭐', '💎', '🟢', '🟡', '🔥', '🥳'][i % 10]}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
     );
   }
 
@@ -920,6 +959,25 @@ export default function GameDetailPage() {
             refreshAccess();
           }}
         />
+      )}
+      {/* Floating Celebration Bubbles & Sparkles (Viputo vya Shangwe) */}
+      {showCelebration && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+          {Array.from({ length: 32 }).map((_, i) => (
+            <span
+              key={i}
+              className="absolute celebration-bubble"
+              style={{
+                left: `${(i * 11) % 95}%`,
+                animationDelay: `${(i * 0.1)}s`,
+                animationDuration: `${2.5 + (i % 5) * 0.35}s`,
+                fontSize: `${20 + (i % 4) * 8}px`,
+              }}
+            >
+              {['🎈', '✨', '🎉', '🎊', '⭐', '💎', '🟢', '🟡', '🔥', '🥳'][i % 10]}
+            </span>
+          ))}
+        </div>
       )}
     </>
   );

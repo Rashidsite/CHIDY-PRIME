@@ -50,6 +50,56 @@ function getProductLabel(category: string): 'GAME' | 'MOD' | 'VIDEO' {
 
 const COUNTDOWN_INITIAL_SECONDS = 60;
 
+export function playCelebrationSound() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    // Melodic celebration chime: C5 (523.25) -> E5 (659.25) -> G5 (783.99) -> C6 (1046.50)
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.11);
+
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.11);
+      gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + i * 0.11 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.11 + 0.65);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime + i * 0.11);
+      osc.stop(ctx.currentTime + i * 0.11 + 0.7);
+    });
+
+    // Extra sparkling overtone
+    setTimeout(() => {
+      try {
+        const sparkle = ctx.createOscillator();
+        const sGain = ctx.createGain();
+        sparkle.type = 'sine';
+        sparkle.frequency.setValueAtTime(1318.51, ctx.currentTime);
+        sGain.gain.setValueAtTime(0.18, ctx.currentTime);
+        sGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        sparkle.connect(sGain);
+        sGain.connect(ctx.destination);
+        sparkle.start();
+        sparkle.stop(ctx.currentTime + 0.55);
+      } catch (_) {}
+    }, 380);
+  } catch (e) {
+    console.warn('Audio celebration error:', e);
+  }
+}
+
 export default function CheckoutModal({
   isOpen,
   onClose,
@@ -422,6 +472,7 @@ export default function CheckoutModal({
       }
     } catch (e) {}
 
+    playCelebrationSound();
     setStep('STEP_3_SUCCESS');
   };
 
@@ -926,7 +977,24 @@ export default function CheckoutModal({
 
           {/* STEP 3: SUCCESS RECEIPT */}
           {step === 'STEP_3_SUCCESS' && (
-            <div className="space-y-6">
+            <div className="space-y-6 relative">
+              {/* Floating Celebration Bubbles & Sparkles (Viputo vya Shangwe) */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+                {Array.from({ length: 28 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="absolute celebration-bubble"
+                    style={{
+                      left: `${(i * 13) % 94}%`,
+                      animationDelay: `${(i * 0.12)}s`,
+                      animationDuration: `${2.4 + (i % 5) * 0.35}s`,
+                      fontSize: `${18 + (i % 4) * 8}px`,
+                    }}
+                  >
+                    {['🎈', '✨', '🎉', '🎊', '⭐', '💎', '🟢', '🟡', '🔥', '🥳'][i % 10]}
+                  </span>
+                ))}
+              </div>
               <div className="text-center space-y-3 pt-2">
                 <motion.div
                   initial={{ scale: 0, rotate: -25 }}
@@ -1032,37 +1100,20 @@ export default function CheckoutModal({
                 )}
               </div>
 
-              <div className="space-y-2.5">
-                <span className="text-[10px] font-black uppercase text-slate-400 block text-left tracking-widest pl-1">
-                  Viunganishi vya Kupakua ({directLinks.length || 1})
-                </span>
+              {/* Primary Action Button: Close and Proceed to Unlocked Downloads on Page */}
+              <div className="pt-2 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={resetAndClose}
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer touch-manipulation hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Download className="w-5 h-5 text-white" />
+                  <span>PAKUA MAFAILI YA GAME SASA ➔</span>
+                </button>
 
-                {directLinks.length > 0 ? (
-                  directLinks.map((link, idx) => (
-                    <a
-                      key={idx}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-600/20 cursor-pointer touch-manipulation hover:scale-[1.01]"
-                    >
-                      <span className="flex items-center gap-2.5 truncate">
-                        <Download className="w-4 h-4 shrink-0" />
-                        <span>{link.label}</span>
-                      </span>
-                      <ExternalLink className="w-4 h-4 shrink-0" />
-                    </a>
-                  ))
-                ) : (
-                  <button
-                    type="button"
-                    onClick={resetAndClose}
-                    className="w-full py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
-                  >
-                    <span>PAKUA GAME SASA ➔</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
+                <p className="text-[11px] text-slate-400 font-medium text-center">
+                  Faili zote zimefunguliwa tayari kwenye ukurasa wa game!
+                </p>
               </div>
 
               <button
@@ -1070,7 +1121,7 @@ export default function CheckoutModal({
                 onClick={resetAndClose}
                 className="w-full py-3.5 px-4 rounded-2xl bg-[#111827] border border-slate-800 text-slate-300 text-xs font-bold hover:text-white transition-colors cursor-pointer touch-manipulation"
               >
-                Kamilisha (Done)
+                Funga Risiti (Done)
               </button>
             </div>
           )}

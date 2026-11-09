@@ -385,6 +385,36 @@ body {
   height: 100%;
 }
 
+/* ═════════════════════════════════════════════════════════════════════
+   CELEBRATION BUBBLES & PARTICLES (VIPUTO VYA SHANGWE)
+   ═════════════════════════════════════════════════════════════════════ */
+@keyframes celebrationFloatUp {
+  0% {
+    transform: translateY(110%) scale(0.3) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(80%) scale(1.15) rotate(25deg);
+  }
+  80% {
+    opacity: 0.95;
+    transform: translateY(-80%) scale(1) rotate(160deg);
+  }
+  100% {
+    transform: translateY(-130%) scale(0.7) rotate(260deg);
+    opacity: 0;
+  }
+}
+
+.celebration-bubble {
+  bottom: -20px;
+  animation: celebrationFloatUp 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6));
+}
+
+
 
 
 
