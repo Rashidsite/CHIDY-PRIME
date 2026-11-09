@@ -96,11 +96,13 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
   const catLower = (game.category || '').toLowerCase();
   const titleLower = (game.title || '').toLowerCase();
 
+  // 1. Efootball Squads / Vikosi
   const isSquad = catLower.includes('efootball') || 
                   catLower.includes('vikosi') || 
                   catLower.includes('kikosi') || 
                   titleLower.includes('kikosi');
 
+  // 2. Bus / Vehicle Skins (Livery)
   const isSkin = !isSquad && (
     catLower.includes('skin') || 
     catLower.includes('livery') || 
@@ -109,29 +111,32 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
     titleLower.includes('livery')
   );
 
-  const isAppOrTool = !isSquad && !isSkin && (
-    catLower.includes('tool') || 
-    catLower.includes('app') || 
-    catLower.includes('apk') || 
-    catLower.includes('software') || 
-    catLower.includes('application') ||
-    titleLower.includes('apk') || 
-    titleLower.includes('camscanner') || 
-    titleLower.includes('everything') ||
-    titleLower.includes('.exe') ||
-    titleLower.includes('tool')
-  );
+  // 3. Apps, Utilities & Tools (Games Tools, Software, CamScanner, Everything, Emulators)
+  // Strict: Must be in a tool category OR be a specific utility app (never match normal games or mod apk games)
+  const isToolCategory = catLower.includes('tool') || 
+                         catLower.includes('software') || 
+                         catLower.includes('program') ||
+                         (catLower.includes('app') && !catLower.includes('game'));
 
-  const isMod = !isSquad && !isSkin && !isAppOrTool && (
-    catLower.includes('mod') || 
-    catLower.includes('bus') || 
-    catLower.includes('map') || 
-    catLower.includes('truck') ||
-    titleLower.includes('mod') ||
-    titleLower.includes('maleo') ||
-    titleLower.includes('ets 2') ||
-    titleLower.includes('ets2')
-  );
+  const isUtilityAppTitle = titleLower.includes('camscanner') || 
+                            titleLower.includes('everything-') || 
+                            titleLower.startsWith('everything') ||
+                            titleLower.includes('zarchiver') || 
+                            titleLower.includes('winrar') ||
+                            titleLower.endsWith('.exe');
+
+  const isAppOrTool = !isSquad && !isSkin && (isToolCategory || isUtilityAppTitle);
+
+  // 4. Vehicle / Map Mods (Maleo bus mods, truck mods, map mods)
+  const isModCategory = catLower.includes('maleo') || 
+                        catLower.includes('bus mod') || 
+                        catLower.includes('bus mode') ||
+                        catLower.includes('truck mod') || 
+                        catLower.includes('map mod');
+
+  const isModTitle = (titleLower.includes('maleo') || titleLower.includes('ets') || titleLower.includes('bus mod') || titleLower.includes('truck mod') || titleLower.includes('map mod')) && !catLower.includes('game');
+
+  const isMod = !isSquad && !isSkin && !isAppOrTool && (isModCategory || isModTitle);
 
   // Dynamic noun for action buttons
   let itemNoun = 'GAME';

@@ -77,7 +77,14 @@ export default function GameMediaThumbnail({
   }, [coverImage, screenshots]);
 
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [fallbackSrc, setFallbackSrc] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    setFallbackSrc(null);
+  }, [coverImage]);
+
+  const activeSrc = fallbackSrc || allImages[0];
 
   // Check if video should be rendered
   const cleanVideoUrl = (videoUrl || '').trim();
@@ -212,17 +219,18 @@ export default function GameMediaThumbnail({
         {/* Ambient blurred backdrop so portrait/tall images seamlessly fill 16:9 cards without harsh empty spaces */}
         <div
           className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 scale-125 pointer-events-none"
-          style={{ backgroundImage: `url(${allImages[0]})` }}
+          style={{ backgroundImage: `url(${activeSrc})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-[#0F172A]/40 opacity-70 pointer-events-none" />
         <Image
-          src={allImages[0]}
+          src={activeSrc}
           alt={title}
           fill
           quality={85}
           placeholder="blur"
           blurDataURL={BLUR_DATA_URL}
           sizes={sizes}
+          onError={() => setFallbackSrc('https://images.unsplash.com/photo-1550745165-9bc0b252726f')}
           className="object-contain object-center select-none group-hover:scale-[1.03] transition-transform duration-500 ease-out z-[1]"
           priority={priority}
           draggable={false}
@@ -236,13 +244,14 @@ export default function GameMediaThumbnail({
   return (
     <div className={`relative w-full h-full overflow-hidden bg-slate-900 ${className}`}>
       <Image
-        src={allImages[0]}
+        src={activeSrc}
         alt={title}
         fill
         quality={80}
         placeholder="blur"
         blurDataURL={BLUR_DATA_URL}
         sizes={sizes}
+        onError={() => setFallbackSrc('https://images.unsplash.com/photo-1550745165-9bc0b252726f')}
         className={`${objectFitClass} select-none group-hover:scale-[1.03] transition-transform duration-500 ease-out`}
         priority={priority}
         draggable={false}
