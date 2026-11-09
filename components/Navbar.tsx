@@ -223,12 +223,23 @@ export default function Navbar({ onSearchChange, games = [], onOpenSearchModal }
               {/* 1. Drawer Header */}
               <div className="flex items-center justify-between pb-5 border-b border-slate-800">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md">
-                    <Gamepad2 className="w-5 h-5" />
+                  <div className="relative w-10 h-10 rounded-2xl p-[1.5px] bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-500 brand-logo-glow shrink-0">
+                    <div className="w-full h-full rounded-[14px] bg-[#070a14] flex items-center justify-center">
+                      <Gamepad2 className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
+                    </div>
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tight">CHIDYPRIME <span className="text-blue-400">feat</span> CHIDYGAMING</h3>
-                    <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Digital Gaming & Mod Store</p>
+                    <div className="flex items-center gap-1.5 leading-none">
+                      <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center">
+                        CHIDY<span className="brand-text-shimmer">PRIME</span>
+                      </h3>
+                      <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-500/15 text-cyan-300 border border-cyan-500/30">
+                        GAMING
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                      Digital Store • Mods TZ 🇹🇿
+                    </p>
                   </div>
                 </div>
 
@@ -387,21 +398,39 @@ export default function Navbar({ onSearchChange, games = [], onOpenSearchModal }
     <header className="sticky top-0 z-40 w-full bg-slate-950/95 backdrop-blur-md border-b border-slate-800 transition-all shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Brand Logo */}
-        <Link href="/front" className="flex items-center gap-3 group shrink-0 pointer-events-auto">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md group-hover:bg-blue-500 transition-all">
-            <Gamepad2 className="w-5 h-5" />
+        {/* Brand Logo - Animated Laser & Shimmer (Wazo la 3) */}
+        <Link href="/front" className="flex items-center gap-2.5 sm:gap-3 group shrink-0 pointer-events-auto">
+          {/* Animated Glowing Laser Icon Badge */}
+          <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl p-[1.5px] bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-500 brand-logo-glow transition-transform duration-300 group-hover:scale-105 shrink-0">
+            <div className="w-full h-full rounded-[14px] bg-[#070a14] flex items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <Gamepad2 className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.7)] group-hover:text-white transition-colors" />
+            </div>
+            {/* Live Indicator Dot */}
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-slate-950" />
+            </span>
           </div>
 
           <div className="flex flex-col">
+            {/* Title Line with Shimmer */}
             <div className="flex items-center gap-1.5 leading-none">
-              <span className="text-base font-black tracking-tight text-white uppercase">chidy<span className="text-blue-500">prime</span></span>
-              <span className="text-[10px] font-bold text-blue-400">×</span>
-              <span className="text-base font-black tracking-tight text-white uppercase">chidygaming</span>
+              <span className="text-base sm:text-lg font-black tracking-tight text-white uppercase flex items-center">
+                CHIDY<span className="brand-text-shimmer">PRIME</span>
+              </span>
+              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-blue-500/15 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.15)]">
+                GAMING
+              </span>
             </div>
-            <span className="text-[10px] text-blue-400 font-bold tracking-wider uppercase mt-0.5">
-              Digital Gaming & Mod Store
-            </span>
+            {/* Tagline */}
+            <div className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase flex items-center gap-1.5 mt-1">
+              <span>Digital Store</span>
+              <span className="text-cyan-500">•</span>
+              <span className="text-cyan-400 font-bold flex items-center gap-1">
+                Mods TZ 🇹🇿
+              </span>
+            </div>
           </div>
         </Link>
 

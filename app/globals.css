@@ -280,4 +280,49 @@ body {
   -webkit-backface-visibility: hidden;
 }
 
+/* ═════════════════════════════════════════════════════════════════════
+   BRAND HEADER: ANIMATED LASER & SHIMMER EFFECTS (WAZO LA 3)
+   ═════════════════════════════════════════════════════════════════════ */
+@keyframes brandShimmerEffect {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.brand-text-shimmer {
+  background: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #38bdf8 25%,
+    #ffffff 50%,
+    #818cf8 75%,
+    #ffffff 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: brandShimmerEffect 5s linear infinite;
+}
+
+@keyframes brandLaserBorder {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(6, 182, 212, 0.45), 0 0 24px rgba(59, 130, 246, 0.25);
+    border-color: rgba(34, 211, 238, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.75), 0 0 38px rgba(6, 182, 212, 0.45);
+    border-color: rgba(147, 197, 253, 0.95);
+  }
+}
+
+.brand-logo-glow {
+  animation: brandLaserBorder 2.8s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+
 
