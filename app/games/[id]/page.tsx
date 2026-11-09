@@ -34,6 +34,13 @@ import { useProductAccess } from '@/hooks/useProductAccess';
 import { parseSquadData, EFootballSquad, generateWhatsAppLink } from '@/lib/efootball-squads';
 import { useCMSTheme } from '@/components/CMSThemeProvider';
 
+function getYouTubeEmbedId(url?: string): string | null {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const match = (url || '').match(regExp);
+  return match && match[1] ? match[1] : null;
+}
+
 export default function GameDetailPage() {
   const params = useParams();
   const { getButtonClass } = useCMSTheme();
@@ -195,6 +202,16 @@ export default function GameDetailPage() {
             );
           }
 
+          let gameVideoUrl = (postData.youtube_url || postData.video_url || '').trim();
+          if (!gameVideoUrl && Array.isArray(postData.links)) {
+            const vLink = postData.links.find((l: any) => {
+              if (!l) return false;
+              const u = typeof l === 'string' ? l : (l.url || l.link || '');
+              return u.includes('youtube.com') || u.includes('youtu.be') || u.endsWith('.mp4') || l.type === 'video' || String(l.name || '').toUpperCase() === 'VIDEO_TRAILER';
+            });
+            if (vLink) gameVideoUrl = (typeof vLink === 'string' ? vLink : (vLink.url || vLink.link || '')).trim();
+          }
+
           setGame({
             id: postData.id,
             title: postData.title || 'Untitled Game',
@@ -204,6 +221,8 @@ export default function GameDetailPage() {
             rating: Number(postData.rating) || 4.8,
             category: postData.category || 'MALEO BUS MODE TZ',
             screenshots: rawScreenshots.length > 0 ? rawScreenshots : [rawCover],
+            video_url: gameVideoUrl,
+            youtube_url: gameVideoUrl,
             download_url: postData.links?.[0]?.url || postData.download_url || '',
             download_links: cleanDownloads,
             access_duration: dur || 'Lifetime',
@@ -820,6 +839,48 @@ export default function GameDetailPage() {
                 )}
               </div>
             )}
+
+            {/* 🎬 Gameplay Trailer & Demo Video Box (Trela ya Game) */}
+            {game.video_url ? (
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span>🎬 Trela & Video ya Game (Gameplay Preview)</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[9px] font-black uppercase border border-rose-500/30 flex items-center gap-1">
+                    <span>HD Video</span>
+                  </span>
+                </div>
+
+                <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-slate-800 shadow-inner">
+                  {getYouTubeEmbedId(game.video_url) ? (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${getYouTubeEmbedId(game.video_url)}?rel=0&modestbranding=1&playsinline=1`}
+                      title={`${game.title} Trailer`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full border-0"
+                    />
+                  ) : (
+                    <video
+                      src={game.video_url}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      poster={game.cover_image}
+                      className="w-full h-full object-cover"
+                    >
+                      Kifaa chako hakiauni video hii moja kwa moja.
+                    </video>
+                  )}
+                </div>
+
+                <p className="text-[10px] text-slate-400 text-center font-medium">
+                  Tazama video fupi ya mchezo huu uone uhalisia na muundo wake kabla ya kupakua.
+                </p>
+              </div>
+            ) : null}
 
             {/* Guarantees & Safe Download */}
             <div className="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
