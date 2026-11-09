@@ -324,5 +324,67 @@ body {
   will-change: box-shadow, border-color;
 }
 
+/* ═════════════════════════════════════════════════════════════════════
+   ROTATING YELLOW & RED NEON BORDER (VIBOX VYA LINK)
+   ═════════════════════════════════════════════════════════════════════ */
+@keyframes rotateBorderSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animated-border-yellow-red {
+  position: relative;
+  border-radius: 0.875rem;
+  padding: 2px;
+  overflow: hidden;
+  background: transparent;
+  display: block;
+  text-decoration: none;
+  isolation: isolate;
+  box-shadow: 0 0 14px rgba(234, 179, 8, 0.35), 0 0 22px rgba(239, 68, 68, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
+}
+
+.animated-border-yellow-red:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.6), 0 0 32px rgba(239, 68, 68, 0.45);
+}
+
+.animated-border-yellow-red::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    #ef4444 0%,
+    #eab308 25%,
+    #ef4444 50%,
+    #facc15 75%,
+    #ef4444 100%
+  );
+  animation: rotateBorderSpin 3s linear infinite;
+  z-index: -1;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.animated-border-yellow-red-inner {
+  position: relative;
+  z-index: 1;
+  background: #090f1e;
+  border-radius: calc(0.875rem - 2px);
+  width: 100%;
+  height: 100%;
+}
+
+
 
 

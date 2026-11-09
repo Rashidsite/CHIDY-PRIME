@@ -468,40 +468,53 @@ export default function GameDetailPage() {
                   </div>
 
                   {isUnlocked(gameId) ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {squad.download_links.map((dl, idx) => (
                         <a
                           key={idx}
                           href={dl.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-400 text-white transition-all group"
+                          className="animated-border-yellow-red group"
                         >
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                              <Download className="w-3.5 h-3.5" />
+                          <div className="animated-border-yellow-red-inner flex items-center justify-between p-3 gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
+                                <Download className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold block truncate text-white">{dl.name || `Download File #${idx + 1}`}</span>
+                                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                                  <CheckCircle2 className="w-2.5 h-2.5" />
+                                  <span>Tayari Kupakuliwa</span>
+                                </span>
+                              </div>
                             </div>
-                            <span className="text-xs font-bold">{dl.name || `Download File #${idx + 1}`}</span>
+                            <span className="px-3 py-1.5 rounded-lg bg-emerald-600 group-hover:bg-emerald-500 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-md shadow-emerald-600/25 shrink-0 transition-colors">
+                              <span>PAKUA</span>
+                              <ArrowUpRight className="w-3.5 h-3.5" />
+                            </span>
                           </div>
-                          <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
                         </a>
                       ))}
                     </div>
                   ) : (
-                    <div className="p-3.5 rounded-xl bg-gradient-to-r from-slate-900/90 via-blue-950/20 to-slate-900/90 border border-slate-800 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
-                            <span className="text-sm">📁</span>
+                    <div className="animated-border-yellow-red">
+                      <div className="animated-border-yellow-red-inner p-3.5 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
+                              <span className="text-sm">📁</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-white truncate">{squad.title} - Complete Package</p>
+                              <p className="text-[10px] text-slate-400">Inajumuisha faili na maelekezo yote ({squad.download_links.length} files)</p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-black text-white truncate">{squad.title} - Complete Package</p>
-                            <p className="text-[10px] text-slate-400">Inajumuisha faili na maelekezo yote ({squad.download_links.length} files)</p>
-                          </div>
+                          <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-wider shrink-0">
+                            🔒 Limefungwa
+                          </span>
                         </div>
-                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-wider shrink-0">
-                          🔒 Limefungwa
-                        </span>
                       </div>
                     </div>
                   )}
@@ -729,37 +742,39 @@ export default function GameDetailPage() {
                 </div>
 
                 {isUnlocked(gameId) ? (
-                  /* UNLOCKED: Shows individual download links in their ordered sequence */
-                  <div className="space-y-2">
+                  /* UNLOCKED: Shows individual download links in their ordered sequence with rotating yellow-red neon border */
+                  <div className="space-y-3">
                     {game.download_links.map((dl: any, idx: number) => (
                       <a
                         key={idx}
                         href={dl.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-emerald-400 text-white transition-all group gap-2"
+                        className="animated-border-yellow-red group"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
-                            <Download className="w-4 h-4" />
+                        <div className="animated-border-yellow-red-inner flex items-center justify-between p-3 gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
+                              <Download className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold block truncate text-white">{dl.name || `Pakua Faili #${idx + 1}`}</span>
+                              <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                                <CheckCircle2 className="w-2.5 h-2.5" />
+                                <span>Tayari Kupakuliwa</span>
+                              </span>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold block truncate">{dl.name || `Pakua Faili #${idx + 1}`}</span>
-                            <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                              <CheckCircle2 className="w-2.5 h-2.5" />
-                              <span>Tayari Kupakuliwa</span>
-                            </span>
-                          </div>
+                          <span className="px-3 py-1.5 rounded-lg bg-emerald-600 group-hover:bg-emerald-500 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-md shadow-emerald-600/25 shrink-0 transition-colors">
+                            <span>PAKUA</span>
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </span>
                         </div>
-                        <span className="px-3 py-1.5 rounded-lg bg-emerald-600 group-hover:bg-emerald-500 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-md shadow-emerald-600/25 shrink-0 transition-colors">
-                          <span>PAKUA</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </span>
                       </a>
                     ))}
                   </div>
                 ) : (
-                  /* LOCKED: Shows as ONE single locked package / file */
+                  /* LOCKED: Shows as ONE single locked package / file with rotating yellow-red neon border */
                   <div 
                     onClick={() => {
                       if (game?.direct_payment_url && game.direct_payment_url.trim()) {
@@ -768,36 +783,38 @@ export default function GameDetailPage() {
                       }
                       setCheckoutOpen(true);
                     }}
-                    className="p-3.5 rounded-xl bg-gradient-to-r from-slate-900/90 via-blue-950/20 to-slate-900/90 border border-slate-800 hover:border-blue-500/50 transition-all cursor-pointer group space-y-2.5"
+                    className="animated-border-yellow-red cursor-pointer group"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
-                          <span className="text-sm">📁</span>
+                    <div className="animated-border-yellow-red-inner p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
+                            <span className="text-sm">📁</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-white group-hover:text-yellow-300 transition-colors truncate">
+                              {game.title} - Complete Game Package
+                            </p>
+                            <p className="text-[10px] text-slate-400">
+                              Inajumuisha faili zote ({game.download_links.length} files: APK, OBB, Mods & Data)
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
-                            {game.title} - Complete Game Package
-                          </p>
-                          <p className="text-[10px] text-slate-400">
-                            Inajumuisha faili zote ({game.download_links.length} files: APK, OBB, Mods & Data)
-                          </p>
-                        </div>
+
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-wider shrink-0 flex items-center gap-1">
+                          <span>🔒 Limefungwa</span>
+                        </span>
                       </div>
 
-                      <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-wider shrink-0 flex items-center gap-1">
-                        <span>🔒 Limefungwa</span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px]">
-                      <span className="text-slate-400 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                        <span>Lipia Tsh {isFree ? '0' : Number(game.price || 0).toLocaleString()} kufungua faili zote mara moja</span>
-                      </span>
-                      <span className="text-blue-400 font-bold group-hover:underline">
-                        Lipia Sasa ➔
-                      </span>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px]">
+                        <span className="text-slate-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span>Lipia Tsh {isFree ? '0' : Number(game.price || 0).toLocaleString()} kufungua faili zote mara moja</span>
+                        </span>
+                        <span className="text-amber-400 font-bold group-hover:underline">
+                          Lipia Sasa ➔
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
