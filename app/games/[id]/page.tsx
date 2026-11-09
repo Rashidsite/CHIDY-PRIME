@@ -750,38 +750,6 @@ export default function GameDetailPage() {
               )}
             </div>
 
-            {/* Game Specifications Grid */}
-            <div className="grid grid-cols-2 gap-2.5 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Jukwaa (Platform):</span>
-                <p className="font-black text-blue-400 flex items-center gap-1">
-                  <Smartphone className="w-3 h-3 text-blue-400" />
-                  <span>{game.category?.toLowerCase().includes('pc') ? 'PC / Windows' : 'Android / iOS'}</span>
-                </p>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Hali ya Mchezo:</span>
-                <p className="font-black text-emerald-400 flex items-center gap-1">
-                  <span>📶 Offline (Bila Data)</span>
-                </p>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Usalama wa Faili:</span>
-                <p className="font-black text-purple-400 flex items-center gap-1">
-                  <span>🛡️ 100% Virus-Free</span>
-                </p>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Upakuaji:</span>
-                <p className="font-black text-amber-400 flex items-center gap-1">
-                  <span>⚡ Papo Hapo (Direct)</span>
-                </p>
-              </div>
-            </div>
-
             {/* Faili Zilizomo Kwenye Game Hili (Locked Single Package vs Unlocked Sequence) */}
             {game.download_links && game.download_links.length > 0 && (
               <div className="p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
@@ -810,18 +778,24 @@ export default function GameDetailPage() {
                         href={dl.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-400 text-white transition-all group"
+                        className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-emerald-400 text-white transition-all group gap-2"
                       >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                            <Download className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
+                            <Download className="w-4 h-4" />
                           </div>
-                          <div>
-                            <span className="text-xs font-bold block">{dl.name || `Pakua Faili #${idx + 1}`}</span>
-                            <span className="text-[10px] text-slate-400">Bofya kupakua moja kwa moja</span>
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold block truncate">{dl.name || `Pakua Faili #${idx + 1}`}</span>
+                            <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                              <CheckCircle2 className="w-2.5 h-2.5" />
+                              <span>Tayari Kupakuliwa</span>
+                            </span>
                           </div>
                         </div>
-                        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                        <span className="px-3 py-1.5 rounded-lg bg-emerald-600 group-hover:bg-emerald-500 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-md shadow-emerald-600/25 shrink-0 transition-colors">
+                          <span>PAKUA</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </span>
                       </a>
                     ))}
                   </div>
