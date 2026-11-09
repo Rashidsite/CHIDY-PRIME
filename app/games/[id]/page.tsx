@@ -526,47 +526,6 @@ export default function GameDetailPage() {
             </div>
           </div>
 
-          {/* Description & Handover Instructions Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-            
-            {/* Squad Description */}
-            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 space-y-3">
-              <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-blue-400" />
-                <span>Maelezo ya Kikosi & Wachezaji</span>
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-line leading-relaxed">
-                {squad.description || 'Kikosi hiki kiko tayari. Wachezaji wote wamepandishwa viwango (Max Trained) na mfumo wa uchezaji umewekwa kikamilifu kwa ajili ya mechi za mtandaoni na division.'}
-              </p>
-            </div>
-
-            {/* Handover Steps */}
-            <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 space-y-3">
-              <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-400" />
-                <span>Hatua za Kupokea Kikosi Baada ya Kulipia</span>
-              </h3>
-              
-              <div className="space-y-2.5 text-xs text-slate-300">
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">1</span>
-                  <span>Bofya kitufe cha <strong>&quot;Nunua Kikosi&quot;</strong> hapo juu ili kuwasiliana au kulipia.</span>
-                </div>
-
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">2</span>
-                  <span>Tuma uthibitisho wa malipo kwa Admin kupitia WhatsApp.</span>
-                </div>
-
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">3</span>
-                  <span>Admin atakupatia taarifa za kuingia (Konami ID) na kukuongoza kubadili email na password yako mara moja.</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
         </main>
 
         {/* Fullscreen Uncropped Lightbox Zoom */}
@@ -858,52 +817,6 @@ export default function GameDetailPage() {
               <div className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-purple-400 shrink-0" />
                 <span>Ufikiaji wa faili na link za kudownload unafunguka mara moja baada ya malipo.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Description & Installation Instructions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          
-          {/* Game Description */}
-          <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 space-y-3">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-blue-400" />
-              <span>Maelezo ya Game & Vipengele</span>
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-line leading-relaxed">
-              {game.description || 'Game hili limetengenezwa kwa umakini mkubwa likiwa na mods za Tanzania, graphics za hali ya juu na limeboreshwa kucheza bila kukwama.'}
-            </p>
-          </div>
-
-          {/* Installation Steps */}
-          <div className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 space-y-3">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-400" />
-              <span>Hatua Rahisi za Kupakua na Ku-Install</span>
-            </h3>
-            <div className="space-y-3 text-xs text-slate-300">
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                <span className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-black flex items-center justify-center shrink-0">1</span>
-                <div>
-                  <strong className="text-white block font-bold">Lipa kwa Simu:</strong>
-                  <span>Bonyeza kitufe cha <strong>"BONYEZA HAPA KUNUNUA GAME"</strong> hapo juu na weka namba yako ya simu kulipia kwa M-Pesa, Tigo, Airtel au Halopesa.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                <span className="w-6 h-6 rounded-full bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs font-black flex items-center justify-center shrink-0">2</span>
-                <div>
-                  <strong className="text-white block font-bold">Fungua Faili Zilizofungwa:</strong>
-                  <span>Malipo yakikamilika, orodha ya faili hapo juu itafunguka mara moja na unaweza kubonyeza <strong>"Pakua Faili"</strong>.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                <span className="w-6 h-6 rounded-full bg-purple-600/20 text-purple-400 border border-purple-500/30 text-xs font-black flex items-center justify-center shrink-0">3</span>
-                <div>
-                  <strong className="text-white block font-bold">Anza Kucheza:</strong>
-                  <span>Extract au install mafaili uliyopakua kwenye simu au PC yako kulingana na maelekezo, kisha furahia game!</span>
-                </div>
               </div>
             </div>
           </div>
