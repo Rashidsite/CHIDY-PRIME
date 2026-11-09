@@ -310,35 +310,6 @@ export default function GameDetailPage() {
                   }}
                   className="object-contain transition-transform duration-500 group-hover:scale-[1.02]"
                 />
-
-                {/* Overlaid Badges */}
-                <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 pointer-events-none">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-3 py-1.5 rounded-xl bg-blue-600/90 backdrop-blur-md text-white text-xs font-black uppercase tracking-wider border border-blue-400/40 shadow-lg flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                      <span>STRENGTH {squad.team_strength}</span>
-                    </span>
-                    <span className="px-3 py-1.5 rounded-xl bg-indigo-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider border border-indigo-400/40 shadow-md">
-                      ⚽ EFOOTBALL SQUAD
-                    </span>
-                  </div>
-
-                  <span
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider backdrop-blur-md border shadow-lg ${
-                      squad.is_sold
-                        ? 'bg-rose-500/90 text-white border-rose-400/40'
-                        : 'bg-emerald-500/90 text-white border-emerald-400/40'
-                    }`}
-                  >
-                    {squad.is_sold ? 'SOLD OUT' : 'INAPATIKANA SASA'}
-                  </span>
-                </div>
-
-                {/* Bottom Zoom Prompt */}
-                <div className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-slate-950/85 backdrop-blur-md text-[10px] font-black text-blue-300 border border-blue-500/40 uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                  <ZoomIn className="w-3.5 h-3.5" />
-                  <span>Bofya Kukuza Picha (Full HD Zoom)</span>
-                </div>
               </div>
 
               {/* Extra Screenshots Thumbnail Row */}
@@ -710,35 +681,6 @@ export default function GameDetailPage() {
                 }}
                 className="object-contain relative z-10 transition-transform duration-500 group-hover:scale-[1.02]"
               />
-
-              {/* Overlaid Badges */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 pointer-events-none z-20">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-3 py-1.5 rounded-xl bg-blue-600/90 backdrop-blur-md text-white text-xs font-black uppercase tracking-wider border border-blue-400/40 shadow-lg flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                    <span>{game.category}</span>
-                  </span>
-                  <span className="px-3 py-1.5 rounded-xl bg-indigo-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider border border-indigo-400/40 shadow-md">
-                    🎮 FULL VERSION
-                  </span>
-                </div>
-
-                <span
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider backdrop-blur-md border shadow-lg ${
-                    isUnlocked(gameId)
-                      ? 'bg-emerald-500/90 text-white border-emerald-400/40'
-                      : 'bg-blue-600/90 text-white border-blue-400/40'
-                  }`}
-                >
-                  {isUnlocked(gameId) ? 'IMEFUNGULIWA' : 'INAPATIKANA SASA'}
-                </span>
-              </div>
-
-              {/* Tap to Zoom indicator */}
-              <div className="absolute bottom-4 right-4 z-20 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700/60 text-slate-300 text-xs font-bold flex items-center gap-1.5 opacity-85 group-hover:opacity-100 transition-opacity backdrop-blur-md">
-                <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
-                <span>BOFYA KUKUZA PICHA (FULL HD ZOOM)</span>
-              </div>
             </div>
           </div>
 
