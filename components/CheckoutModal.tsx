@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -107,6 +108,7 @@ export default function CheckoutModal({
   isUnlocked = false,
   onSuccess,
 }: CheckoutModalProps) {
+  const router = useRouter();
   // ── Form State ──
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -304,6 +306,23 @@ export default function CheckoutModal({
     setError(null);
     setCountdown(COUNTDOWN_INITIAL_SECONDS);
     setStep('STEP_1_FORM');
+  };
+
+  const handleProceedToGame = () => {
+    const targetGameId = game?.id;
+    resetAndClose();
+    if (targetGameId) {
+      if (typeof window !== 'undefined') {
+        if (window.location.pathname === `/games/${targetGameId}`) {
+          const dlSection = document.getElementById('download-links-section') || document.querySelector('.animated-border-yellow-red');
+          if (dlSection) {
+            dlSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+        }
+      }
+      router.push(`/games/${targetGameId}`);
+    }
   };
 
   // Auto-Repush mechanism: sends up to 4 pushes if customer hasn't paid yet
@@ -1104,7 +1123,7 @@ export default function CheckoutModal({
               <div className="pt-2 space-y-2.5">
                 <button
                   type="button"
-                  onClick={resetAndClose}
+                  onClick={handleProceedToGame}
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer touch-manipulation hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Download className="w-5 h-5 text-white" />

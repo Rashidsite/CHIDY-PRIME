@@ -390,27 +390,29 @@ body {
    ═════════════════════════════════════════════════════════════════════ */
 @keyframes celebrationFloatUp {
   0% {
-    transform: translateY(110%) scale(0.3) rotate(0deg);
+    transform: translateY(60px) scale(0.3) rotate(0deg);
     opacity: 0;
   }
   15% {
     opacity: 1;
-    transform: translateY(80%) scale(1.15) rotate(25deg);
+    transform: translateY(-20px) scale(1.1) rotate(20deg);
   }
-  80% {
+  75% {
     opacity: 0.95;
-    transform: translateY(-80%) scale(1) rotate(160deg);
+    transform: translateY(-380px) scale(0.95) rotate(160deg);
   }
   100% {
-    transform: translateY(-130%) scale(0.7) rotate(260deg);
+    transform: translateY(-600px) scale(0.6) rotate(260deg);
     opacity: 0;
   }
 }
 
 .celebration-bubble {
-  bottom: -20px;
-  animation: celebrationFloatUp 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  bottom: -40px;
+  animation: celebrationFloatUp 3.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
   will-change: transform, opacity;
+  pointer-events: none;
+  user-select: none;
   filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6));
 }
 

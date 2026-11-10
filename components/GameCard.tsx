@@ -161,7 +161,7 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
   const isFree = !isSquad && game.price === 0 && (game.category?.toLowerCase().includes('free') || game.title?.toLowerCase().includes('free'));
   const isTopRated = (game.rating || 0) >= 4.9;
   const label = itemNoun;
-  const downloadButtonText = isFree ? `DOWNLOAD ${itemNoun}` : `PAKUA ${itemNoun}`;
+  const downloadButtonText = 'DOWNLOAD GAME';
   const rawDuration = isSquad ? '7 Days' : (game.access_duration || game.license_duration || (game as any).plan_duration || (game as any).duration_days || (game as any).duration);
   const durationLabel = isSquad ? '⚽ EFOOTBALL SQUAD' : formatPlanDuration(rawDuration, isFree);
 
@@ -239,11 +239,14 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // If game is unlocked, always take customer directly into the game details page with full downloads
+    if (showUnlocked) {
+      router.push(`/games/${game.id}`);
+      return;
+    }
+
     if (isSquad) {
-      if (showUnlocked) {
-        router.push(`/games/${game.id}`);
-        return;
-      }
       const parsedSquad = parseSquadData(game);
       if (parsedSquad.payment_mode === 'direct' && parsedSquad.redirect_url) {
         if (typeof window !== 'undefined') {

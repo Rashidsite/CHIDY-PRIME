@@ -758,10 +758,19 @@ export default function GameDetailPage() {
 
               {/* Primary Buy Button or Unlocked / Download Action */}
               {isUnlocked(gameId) ? (
-                <div className="w-full min-h-[48px] py-3.5 px-4 rounded-2xl bg-emerald-600 text-white text-xs sm:text-sm font-black uppercase tracking-wider text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span>GAME LIMEFUNGULIWA (UNLOCKED)</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const dlSection = document.getElementById('download-links-section') || document.querySelector('.animated-border-yellow-red');
+                    if (dlSection) {
+                      dlSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }}
+                  className="w-full min-h-[48px] py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-black uppercase tracking-wider text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer active:scale-[0.98]"
+                >
+                  <Download className="w-4 h-4 text-white" />
+                  <span>DOWNLOAD GAME</span>
+                </button>
               ) : (
                 <button
                   type="button"
@@ -782,7 +791,7 @@ export default function GameDetailPage() {
 
             {/* Faili Zilizomo Kwenye Game Hili (Locked Single Package vs Unlocked Sequence) */}
             {game.download_links && game.download_links.length > 0 && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+              <div id="download-links-section" className="p-4 sm:p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
                     <Download className="w-4 h-4 text-blue-400" />
