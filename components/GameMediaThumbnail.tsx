@@ -8,6 +8,7 @@ export interface GameMediaThumbnailProps {
   coverImage: string;
   screenshots?: string[];
   videoUrl?: string;
+  thumbnailVideoUrl?: string;
   thumbnailType?: 'image' | 'slideshow' | 'video' | 'auto';
   thumbnailFit?: 'contain' | 'cover' | 'top' | string;
   title?: string;
@@ -53,7 +54,8 @@ export default function GameMediaThumbnail({
   coverImage,
   screenshots = [],
   videoUrl = '',
-  thumbnailType = 'auto',
+  thumbnailVideoUrl = '',
+  thumbnailType = 'image',
   thumbnailFit = 'cover',
   title = 'Game',
   className = '',
@@ -86,15 +88,21 @@ export default function GameMediaThumbnail({
 
   const activeSrc = fallbackSrc || allImages[0];
 
-  // Check if video should be rendered
-  const cleanVideoUrl = (videoUrl || '').trim();
+  // Resolve active thumbnail video URL:
+  // Explicit thumbnail video takes priority; if type is explicitly 'video', allow fallback to videoUrl
+  const cleanVideoUrl = (
+    thumbnailVideoUrl || 
+    (thumbnailType === 'video' ? videoUrl : '') || 
+    (thumbnailType === 'auto' && thumbnailVideoUrl ? thumbnailVideoUrl : '')
+  ).trim();
+
   const ytId = getYouTubeId(cleanVideoUrl);
   const vimeoId = getVimeoId(cleanVideoUrl);
   const hasDirectVideo = isDirectVideoUrl(cleanVideoUrl);
 
   const isVideoMode =
-    thumbnailType === 'video' ||
-    (thumbnailType === 'auto' && Boolean(ytId || vimeoId || hasDirectVideo || cleanVideoUrl));
+    (thumbnailType === 'video' || (thumbnailType === 'auto' && Boolean(thumbnailVideoUrl))) &&
+    Boolean(cleanVideoUrl);
 
   // Multi-image slideshow effect (when not in video mode and multiple images exist)
   const isSlideshowMode = !isVideoMode && allImages.length > 1;

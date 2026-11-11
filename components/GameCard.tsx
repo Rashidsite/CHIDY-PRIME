@@ -20,6 +20,7 @@ export interface GameProduct {
   screenshots?: string[];
   video_url?: string;
   youtube_url?: string;
+  thumbnail_video_url?: string;
   thumbnail_type?: 'image' | 'slideshow' | 'video' | 'auto';
   price: number;
   rating?: number;
@@ -284,15 +285,31 @@ const GameCard = React.memo(function GameCard({ game, onBuyNow, index = 0, isUnl
         onClick={() => router.push(`/games/${game.id}`)}
         className="relative aspect-[16/9] aspect-card-16-9 w-full overflow-hidden bg-slate-900 shrink-0 cursor-pointer touch-manipulation"
       >
-        <GameMediaThumbnail
-          coverImage={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
-          screenshots={game.screenshots}
-          videoUrl={game.video_url || game.youtube_url}
-          thumbnailType={game.thumbnail_type === 'video' || game.thumbnail_type === 'slideshow' ? game.thumbnail_type : 'image'}
-          thumbnailFit={game.thumbnail_fit || (game as any).thumbnailFit || 'cover'}
-          title={game.title}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+        {(() => {
+          const thumbVideo =
+            game.thumbnail_video_url ||
+            (Array.isArray((game as any).links)
+              ? (game as any).links.find((l: any) => l && (l.name === 'THUMBNAIL_VIDEO_URL' || l.name === 'THUMBNAIL_VIDEO'))?.url
+              : '') ||
+            (game.thumbnail_type === 'video' ? (game.video_url || game.youtube_url) : '');
+
+          const isVideoChoice = game.thumbnail_type === 'video' && Boolean(thumbVideo);
+          const isSlideshowChoice = game.thumbnail_type === 'slideshow';
+          const effectiveType = isVideoChoice ? 'video' : isSlideshowChoice ? 'slideshow' : 'image';
+
+          return (
+            <GameMediaThumbnail
+              coverImage={game.cover_image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
+              screenshots={game.screenshots}
+              videoUrl={thumbVideo}
+              thumbnailVideoUrl={thumbVideo}
+              thumbnailType={effectiveType}
+              thumbnailFit={game.thumbnail_fit || (game as any).thumbnailFit || 'cover'}
+              title={game.title}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          );
+        })()}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/10 to-transparent opacity-90 pointer-events-none" />
 
         <div className="absolute top-3 right-3 flex items-center justify-end z-10 gap-1.5 pointer-events-none">

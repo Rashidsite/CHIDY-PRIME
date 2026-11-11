@@ -67,6 +67,9 @@ export async function GET() {
 
         let directPaymentUrl = p.direct_payment_url || '';
         let thumbnailFit = p.thumbnail_fit || 'cover';
+        let thumbnailVideoUrl = p.thumbnail_video_url || '';
+        let thumbnailType = p.thumbnail_type || 'image';
+        let rawVideoUrl = p.youtube_url || p.video_url || '';
         let cleanLinks: any[] = [];
         if (Array.isArray(p.links)) {
           p.links.forEach((l: any) => {
@@ -74,10 +77,30 @@ export async function GET() {
               if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
             } else if (l && l.name === 'THUMBNAIL_FIT') {
               if (!p.thumbnail_fit && (l.value || l.url)) thumbnailFit = l.value || l.url;
+            } else if (l && (l.name === 'THUMBNAIL_VIDEO_URL' || l.name === 'THUMBNAIL_VIDEO')) {
+              if (!thumbnailVideoUrl && l.url) thumbnailVideoUrl = l.url;
+            } else if (l && l.name === 'THUMBNAIL_TYPE') {
+              if (l.url || l.value) thumbnailType = l.url || l.value;
             } else if (l && l.url) {
               cleanLinks.push(l);
             }
           });
+        }
+
+        let rawCover = p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
+        let rawScreenshots: string[] = [];
+        if (typeof rawCover === 'string' && rawCover.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(rawCover);
+            rawCover = parsed.image || parsed.cover || rawCover;
+            if (Array.isArray(parsed.screenshots)) rawScreenshots = parsed.screenshots;
+            if (parsed.video) rawVideoUrl = parsed.video;
+            if (parsed.thumbnail_video) thumbnailVideoUrl = parsed.thumbnail_video;
+            if (parsed.thumbnail_type) thumbnailType = parsed.thumbnail_type;
+          } catch (e) {}
+        }
+        if (Array.isArray(p.screenshots)) {
+          rawScreenshots = p.screenshots;
         }
 
         merged.push({
@@ -86,8 +109,13 @@ export async function GET() {
           price: Number(p.price || 0),
           category: p.category || 'PC Games',
           description: p.description || '',
-          cover_image: p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
-          image_url: p.image_url || p.cover_image,
+          cover_image: rawCover,
+          image_url: rawCover,
+          screenshots: rawScreenshots,
+          video_url: rawVideoUrl,
+          youtube_url: rawVideoUrl,
+          thumbnail_video_url: thumbnailVideoUrl,
+          thumbnail_type: thumbnailType,
           rating: Number(p.rating || 4.8),
           status: p.status || 'published',
           is_active: p.is_active !== false,

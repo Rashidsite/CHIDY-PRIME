@@ -57,16 +57,23 @@ export async function GET() {
 
     if (postsData && Array.isArray(postsData)) {
       postsData.forEach((p) => {
-        // Normalize links & extract direct_payment_url & thumbnail_fit
+        // Normalize links & extract direct_payment_url & thumbnail_fit & thumbnail_video_url
         let linksList: { name: string; url: string }[] = [];
         let directPaymentUrl = p.direct_payment_url || '';
         let thumbnailFit = p.thumbnail_fit || 'cover';
+        let thumbnailVideoUrl = p.thumbnail_video_url || '';
+        let thumbnailType: 'image' | 'slideshow' | 'video' | 'auto' = p.thumbnail_type || 'image';
+
         if (Array.isArray(p.links)) {
           p.links.forEach((l: any) => {
             if (l && (l.name === 'DIRECT_PAYMENT_URL' || l.name === 'PAYMENT_REDIRECT' || l.type === 'direct_payment')) {
               if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
             } else if (l && l.name === 'THUMBNAIL_FIT') {
               if (l.value || l.url) thumbnailFit = l.value || l.url;
+            } else if (l && (l.name === 'THUMBNAIL_VIDEO_URL' || l.name === 'THUMBNAIL_VIDEO')) {
+              if (!thumbnailVideoUrl && l.url) thumbnailVideoUrl = l.url;
+            } else if (l && l.name === 'THUMBNAIL_TYPE') {
+              if (l.url || l.value) thumbnailType = (l.url || l.value) as any;
             } else if (l && l.url) {
               linksList.push({
                 name: l.name || l.label || 'Download File',
@@ -81,7 +88,6 @@ export async function GET() {
         let rawCover = p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
         let rawScreenshots: string[] = [];
         let rawVideoUrl = p.youtube_url || p.video_url || '';
-        let thumbnailType: 'image' | 'slideshow' | 'video' | 'auto' = p.thumbnail_type || (rawVideoUrl ? 'video' : 'auto');
 
         if (typeof rawCover === 'string' && rawCover.trim().startsWith('{')) {
           try {
@@ -89,6 +95,7 @@ export async function GET() {
             rawCover = parsedMedia.image || parsedMedia.cover || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
             if (Array.isArray(parsedMedia.screenshots)) rawScreenshots = parsedMedia.screenshots;
             if (parsedMedia.video) rawVideoUrl = parsedMedia.video;
+            if (parsedMedia.thumbnail_video) thumbnailVideoUrl = parsedMedia.thumbnail_video;
             if (parsedMedia.thumbnail_type) thumbnailType = parsedMedia.thumbnail_type;
           } catch (e) {}
         }
@@ -115,6 +122,7 @@ export async function GET() {
           image_url: rawCover,
           screenshots: rawScreenshots,
           thumbnail_type: thumbnailType,
+          thumbnail_video_url: thumbnailVideoUrl,
           price: Number(p.price || 0),
           rating: Number(p.rating || 4.8),
           category: p.category || 'MALEO BUS MODE TZ',
@@ -154,8 +162,9 @@ export async function POST(request: Request) {
     const status = body.status || 'published';
     const imageUrl = body.cover_image?.trim() || body.image_url?.trim() || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
     const youtubeUrl = body.video_url?.trim() || body.youtube_url?.trim() || '';
+    const thumbnailVideoUrl = body.thumbnail_video_url?.trim() || '';
     const screenshots = Array.isArray(body.screenshots) ? body.screenshots.filter((s: any) => typeof s === 'string' && s.trim()) : [];
-    const thumbnailType = body.thumbnail_type || (youtubeUrl ? 'video' : screenshots.length > 0 ? 'slideshow' : 'image');
+    const thumbnailType = body.thumbnail_type || (thumbnailVideoUrl ? 'video' : 'image');
     
     const directPaymentUrl = body.direct_payment_url?.trim() || '';
     const thumbnailFit = body.thumbnail_fit || 'cover';
@@ -173,6 +182,14 @@ export async function POST(request: Request) {
       links = [{ name: 'Download File', url: body.download_url.trim() }];
     }
 
+    if (thumbnailVideoUrl) {
+      links.push({ name: 'THUMBNAIL_VIDEO_URL', url: thumbnailVideoUrl });
+    }
+
+    if (thumbnailType) {
+      links.push({ name: 'THUMBNAIL_TYPE', url: thumbnailType, value: thumbnailType });
+    }
+
     if (directPaymentUrl) {
       links.push({ name: 'DIRECT_PAYMENT_URL', url: directPaymentUrl });
     }
@@ -184,12 +201,13 @@ export async function POST(request: Request) {
     const durationDays = parseDurationDays(body.access_duration || body.license_duration);
     const isNewFeed = body.is_new_feed !== undefined ? Boolean(body.is_new_feed) : false;
 
-    // Pack screenshots into image_url JSON if present
-    const finalImageUrl = screenshots.length > 0
+    // Pack media into image_url JSON if screenshots, thumbnail_video or video present
+    const finalImageUrl = (screenshots.length > 0 || thumbnailVideoUrl || thumbnailType === 'video')
       ? JSON.stringify({
           image: imageUrl,
           screenshots,
           video: youtubeUrl,
+          thumbnail_video: thumbnailVideoUrl,
           thumbnail_type: thumbnailType,
         })
       : imageUrl;
@@ -203,6 +221,8 @@ export async function POST(request: Request) {
       image_url: finalImageUrl,
       rating,
       youtube_url: youtubeUrl,
+      thumbnail_video_url: thumbnailVideoUrl,
+      thumbnail_type: thumbnailType,
       links,
       status,
       duration_days: durationDays,
@@ -325,6 +345,12 @@ export async function PUT(request: Request) {
     if (updates.video_url !== undefined || updates.youtube_url !== undefined) {
       postPayload.youtube_url = (updates.video_url || updates.youtube_url).trim();
     }
+    if (updates.thumbnail_video_url !== undefined) {
+      postPayload.thumbnail_video_url = updates.thumbnail_video_url.trim();
+    }
+    if (updates.thumbnail_type !== undefined) {
+      postPayload.thumbnail_type = updates.thumbnail_type;
+    }
     if (updates.access_duration !== undefined || updates.license_duration !== undefined) {
       postPayload.duration_days = parseDurationDays(updates.access_duration || updates.license_duration);
     }
@@ -335,19 +361,22 @@ export async function PUT(request: Request) {
     const screens = hasScreenshots
       ? updates.screenshots.filter((s: any) => typeof s === 'string' && s.trim())
       : [];
+    const thumbVid = updates.thumbnail_video_url !== undefined ? updates.thumbnail_video_url.trim() : undefined;
+    const thumbType = updates.thumbnail_type !== undefined ? updates.thumbnail_type : undefined;
 
-    if (screens.length > 0) {
+    if (screens.length > 0 || thumbVid || thumbType === 'video') {
       postPayload.image_url = JSON.stringify({
         image: coverImg || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg',
         screenshots: screens,
         video: postPayload.youtube_url || updates.video_url || '',
-        thumbnail_type: updates.thumbnail_type || (postPayload.youtube_url ? 'video' : 'slideshow'),
+        thumbnail_video: thumbVid || '',
+        thumbnail_type: thumbType || (thumbVid ? 'video' : 'image'),
       });
     } else if (coverImg) {
       postPayload.image_url = coverImg;
     }
 
-    // Process links array and direct_payment_url / thumbnail_fit
+    // Process links array and direct_payment_url / thumbnail_fit / thumbnail_video_url / thumbnail_type
     const directPaymentUrl = updates.direct_payment_url !== undefined ? updates.direct_payment_url.trim() : undefined;
     const thumbnailFit = updates.thumbnail_fit !== undefined ? updates.thumbnail_fit : undefined;
 
@@ -363,7 +392,7 @@ export async function PUT(request: Request) {
       targetLinks = [{ name: 'Download File', url: updates.download_url.trim() }];
     }
 
-    if (targetLinks !== null || directPaymentUrl !== undefined || thumbnailFit !== undefined) {
+    if (targetLinks !== null || directPaymentUrl !== undefined || thumbnailFit !== undefined || thumbVid !== undefined || thumbType !== undefined) {
       let finalLinks: any[] = [];
       if (targetLinks !== null) {
         finalLinks = [...targetLinks];
@@ -374,6 +403,20 @@ export async function PUT(request: Request) {
             finalLinks = [...currentPost.links];
           }
         } catch {}
+      }
+
+      if (thumbVid !== undefined) {
+        finalLinks = finalLinks.filter((l: any) => l && l.name !== 'THUMBNAIL_VIDEO_URL' && l.name !== 'THUMBNAIL_VIDEO');
+        if (thumbVid) {
+          finalLinks.push({ name: 'THUMBNAIL_VIDEO_URL', url: thumbVid });
+        }
+      }
+
+      if (thumbType !== undefined) {
+        finalLinks = finalLinks.filter((l: any) => l && l.name !== 'THUMBNAIL_TYPE');
+        if (thumbType) {
+          finalLinks.push({ name: 'THUMBNAIL_TYPE', url: thumbType, value: thumbType });
+        }
       }
 
       if (directPaymentUrl !== undefined) {

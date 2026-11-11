@@ -432,7 +432,8 @@ export default function FrontHubPage() {
           let rawCover = p.image_url || p.cover_image || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
           let rawScreenshots: string[] = [];
           let rawVideoUrl = p.youtube_url || p.video_url || '';
-          let thumbnailType: 'image' | 'slideshow' | 'video' | 'auto' = p.thumbnail_type || (rawVideoUrl ? 'video' : 'auto');
+          let thumbnailVideoUrl = p.thumbnail_video_url || '';
+          let thumbnailType: 'image' | 'slideshow' | 'video' | 'auto' = p.thumbnail_type || 'image';
 
           // Resilient parsing if JSON was stored in image_url or screenshots
           if (typeof rawCover === 'string' && rawCover.trim().startsWith('{')) {
@@ -441,6 +442,7 @@ export default function FrontHubPage() {
               rawCover = parsedMedia.image || parsedMedia.cover || 'https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg';
               if (Array.isArray(parsedMedia.screenshots)) rawScreenshots = parsedMedia.screenshots;
               if (parsedMedia.video) rawVideoUrl = parsedMedia.video;
+              if (parsedMedia.thumbnail_video) thumbnailVideoUrl = parsedMedia.thumbnail_video;
               if (parsedMedia.thumbnail_type) thumbnailType = parsedMedia.thumbnail_type;
             } catch (e) {}
           }
@@ -466,6 +468,10 @@ export default function FrontHubPage() {
                 if (!directPaymentUrl && l.url) directPaymentUrl = l.url;
               } else if (l && l.name === 'THUMBNAIL_FIT') {
                 if (!p.thumbnail_fit && (l.value || l.url)) thumbnailFit = l.value || l.url;
+              } else if (l && (l.name === 'THUMBNAIL_VIDEO_URL' || l.name === 'THUMBNAIL_VIDEO')) {
+                if (!thumbnailVideoUrl && l.url) thumbnailVideoUrl = l.url;
+              } else if (l && l.name === 'THUMBNAIL_TYPE') {
+                if (l.url || l.value) thumbnailType = (l.url || l.value) as any;
               } else if (l && l.url) {
                 cleanLinks.push(l);
               }
@@ -480,6 +486,7 @@ export default function FrontHubPage() {
             screenshots: rawScreenshots,
             video_url: rawVideoUrl,
             youtube_url: rawVideoUrl,
+            thumbnail_video_url: thumbnailVideoUrl,
             thumbnail_type: thumbnailType,
             thumbnail_fit: thumbnailFit,
             price: Number(p.price || 0),

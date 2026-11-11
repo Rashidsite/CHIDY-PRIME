@@ -62,7 +62,8 @@ export default function AdminGamesPage() {
   // Form State - Tab 2 Media & Multi-Links
   const [coverImage, setCoverImage] = useState('');
   const [screenshots, setScreenshots] = useState<string[]>([]);
-  const [thumbnailType, setThumbnailType] = useState<'image' | 'slideshow' | 'video' | 'auto'>('auto');
+  const [thumbnailType, setThumbnailType] = useState<'image' | 'slideshow' | 'video' | 'auto'>('image');
+  const [thumbnailVideoUrl, setThumbnailVideoUrl] = useState('');
   const [downloadLinks, setDownloadLinks] = useState<DownloadLinkItem[]>([
     { name: 'Download Game APK', url: '' },
   ]);
@@ -166,7 +167,8 @@ export default function AdminGamesPage() {
     setIsNewFeed(false);
     setCoverImage('https://i.ibb.co/NgsBS6n3/1477df4acfe4.jpg');
     setScreenshots([]);
-    setThumbnailType('auto');
+    setThumbnailType('image');
+    setThumbnailVideoUrl('');
     setDownloadLinks([
       { name: 'Download Game / Mod', url: '' },
     ]);
@@ -196,7 +198,8 @@ export default function AdminGamesPage() {
     let rawCover = game.cover_image || game.image_url || '';
     let rawScreenshots: string[] = [];
     let rawVideo = game.youtube_url || game.video_url || '';
-    let rawThumbType: 'image' | 'slideshow' | 'video' | 'auto' = game.thumbnail_type || 'auto';
+    let rawThumbVideo = game.thumbnail_video_url || '';
+    let rawThumbType: 'image' | 'slideshow' | 'video' | 'auto' = game.thumbnail_type || (game.thumbnail_video_url ? 'video' : 'image');
 
     if (typeof rawCover === 'string' && rawCover.trim().startsWith('{')) {
       try {
@@ -204,6 +207,7 @@ export default function AdminGamesPage() {
         rawCover = parsedMedia.image || parsedMedia.cover || rawCover;
         if (Array.isArray(parsedMedia.screenshots)) rawScreenshots = parsedMedia.screenshots;
         if (parsedMedia.video) rawVideo = parsedMedia.video;
+        if (parsedMedia.thumbnail_video) rawThumbVideo = parsedMedia.thumbnail_video;
         if (parsedMedia.thumbnail_type) rawThumbType = parsedMedia.thumbnail_type;
       } catch (e) {}
     }
@@ -220,9 +224,17 @@ export default function AdminGamesPage() {
       }
     }
 
+    if (Array.isArray(game.links)) {
+      const tvLink = game.links.find((l: any) => l && (l.name === 'THUMBNAIL_VIDEO_URL' || l.name === 'THUMBNAIL_VIDEO'));
+      if (tvLink?.url) rawThumbVideo = tvLink.url;
+      const ttLink = game.links.find((l: any) => l && l.name === 'THUMBNAIL_TYPE');
+      if (ttLink?.url) rawThumbType = ttLink.url as any;
+    }
+
     setCoverImage(rawCover);
     setScreenshots(rawScreenshots);
-    setThumbnailType(rawThumbType);
+    setThumbnailType(rawThumbType === 'video' ? 'video' : rawThumbType === 'slideshow' ? 'slideshow' : 'image');
+    setThumbnailVideoUrl(rawThumbVideo);
 
     // Parse links
     let parsedLinks: DownloadLinkItem[] = [];
@@ -383,6 +395,13 @@ export default function AdminGamesPage() {
           url: l.url.trim(),
         }));
 
+      if (thumbnailVideoUrl.trim()) {
+        cleanLinks.push({ name: 'THUMBNAIL_VIDEO_URL', url: thumbnailVideoUrl.trim() });
+      }
+      if (thumbnailType) {
+        cleanLinks.push({ name: 'THUMBNAIL_TYPE', url: thumbnailType, value: thumbnailType });
+      }
+
       const cleanScreenshots = screenshots.filter((s) => s && s.trim());
 
       const payload: Record<string, any> = {
@@ -398,6 +417,7 @@ export default function AdminGamesPage() {
         image_url: coverImage.trim(),
         screenshots: cleanScreenshots,
         thumbnail_type: thumbnailType,
+        thumbnail_video_url: thumbnailVideoUrl.trim(),
         download_url: cleanLinks[0]?.url || '',
         links: cleanLinks,
         video_url: videoUrl.trim(),
@@ -724,15 +744,25 @@ export default function AdminGamesPage() {
                     <tr key={g.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-3">
                         <div className="relative w-14 h-9 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
-                          <GameMediaThumbnail
-                            coverImage={g.cover_image || g.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
-                            screenshots={g.screenshots}
-                            videoUrl={g.video_url || g.youtube_url}
-                            thumbnailType={g.thumbnail_type || 'auto'}
-                            thumbnailFit={g.thumbnail_fit || 'cover'}
-                            title={g.title}
-                            sizes="60px"
-                          />
+                          {(() => {
+                            const thumbVid = g.thumbnail_video_url || 
+                              (Array.isArray(g.links) ? g.links.find((l: any) => l && (l.name === 'THUMBNAIL_VIDEO_URL' || l.name === 'THUMBNAIL_VIDEO'))?.url : '') ||
+                              (g.thumbnail_type === 'video' ? (g.video_url || g.youtube_url) : '');
+                            const isVid = g.thumbnail_type === 'video' && Boolean(thumbVid);
+                            const isSlide = g.thumbnail_type === 'slideshow';
+                            return (
+                              <GameMediaThumbnail
+                                coverImage={g.cover_image || g.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
+                                screenshots={g.screenshots}
+                                videoUrl={thumbVid}
+                                thumbnailVideoUrl={thumbVid}
+                                thumbnailType={isVid ? 'video' : isSlide ? 'slideshow' : 'image'}
+                                thumbnailFit={g.thumbnail_fit || 'cover'}
+                                title={g.title}
+                                sizes="60px"
+                              />
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="py-3 font-bold text-white max-w-xs pr-3">
@@ -1117,7 +1147,7 @@ export default function AdminGamesPage() {
                         <span>Live Thumbnail & Moving Media Preview</span>
                       </label>
                       <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
-                        {videoUrl ? '🎬 Video Mode' : screenshots.filter(Boolean).length > 0 ? `🖼️ ${screenshots.filter(Boolean).length + 1} Slides` : '🖼️ 1 Image'}
+                        {thumbnailType === 'video' && thumbnailVideoUrl ? '🎬 Video Thumbnail' : screenshots.filter(Boolean).length > 0 ? `🖼️ ${screenshots.filter(Boolean).length + 1} Slides` : '🖼️ 1 Image'}
                       </span>
                     </div>
 
@@ -1125,8 +1155,9 @@ export default function AdminGamesPage() {
                       <GameMediaThumbnail
                         coverImage={coverImage || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f'}
                         screenshots={screenshots.filter(Boolean)}
-                        videoUrl={videoUrl}
-                        thumbnailType={thumbnailType}
+                        videoUrl={thumbnailVideoUrl}
+                        thumbnailVideoUrl={thumbnailVideoUrl}
+                        thumbnailType={thumbnailType === 'video' && thumbnailVideoUrl ? 'video' : thumbnailType === 'slideshow' ? 'slideshow' : 'image'}
                         thumbnailFit={thumbnailFit}
                         title={title || 'Product Preview'}
                         sizes="450px"
@@ -1138,22 +1169,99 @@ export default function AdminGamesPage() {
                     </div>
                   </div>
 
-                  {/* Thumbnail Display Mode */}
-                  <div>
-                    <label className="block font-black uppercase text-slate-300 mb-1.5 tracking-wider text-[11px] flex items-center gap-1.5">
-                      <Film className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Thumbnail Display Mode (Aina ya Muonekano wa Bango)</span>
-                    </label>
-                    <select
-                      value={thumbnailType}
-                      onChange={(e) => setThumbnailType(e.target.value as any)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-bold text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
-                    >
-                      <option value="auto">⚡ Auto-Detect (Inajichagulia kulingana na Video au Picha)</option>
-                      <option value="slideshow">🖼️ Multi-Image Slideshow (Picha 2+ zinazobadilika zenyewe)</option>
-                      <option value="video">🎬 Live Video Moving Poster (Video inayoplay yenyewe bila controls)</option>
-                      <option value="image">🖼️ Picha Moja Pekee (Single Poster Art)</option>
-                    </select>
+                  {/* ── CHAGUA AINA YA THUMBNAIL YA NJE (PICHA AU VIDEO) ── */}
+                  <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-black uppercase text-white tracking-wider text-xs flex items-center gap-1.5">
+                        <Film className="w-4 h-4 text-blue-400" />
+                        <span>Chagua Aina ya Thumbnail ya Nje (Kadi za Storefront &amp; Magemu)</span>
+                      </label>
+                      <span className="text-[9px] font-bold text-blue-400 uppercase bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                        {thumbnailType === 'video' ? '🎬 Video Imechaguliwa' : thumbnailType === 'slideshow' ? '🔄 Slideshow' : '🖼️ Picha Imechaguliwa'}
+                      </span>
+                    </div>
+
+                    {/* Selector Buttons */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setThumbnailType('image')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                          thumbnailType === 'image' || (!thumbnailType || thumbnailType === 'auto')
+                            ? 'bg-blue-600/20 border-blue-500 ring-2 ring-blue-500/30 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-black text-xs">
+                          <span>🖼️</span>
+                          <span>Picha ya Bango</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-tight">
+                          Thumbnail itakuwa picha tulivu (ImgBB Cover Art)
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setThumbnailType('video')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                          thumbnailType === 'video'
+                            ? 'bg-rose-600/20 border-rose-500 ring-2 ring-rose-500/30 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-black text-xs text-rose-300">
+                          <span>🎬</span>
+                          <span>Video ya Thumbnail</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-tight">
+                          Thumbnail itacheza video moja kwa moja nje kwenye kadi
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setThumbnailType('slideshow')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 col-span-2 sm:col-span-1 ${
+                          thumbnailType === 'slideshow'
+                            ? 'bg-emerald-600/20 border-emerald-500 ring-2 ring-emerald-500/30 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-black text-xs text-emerald-300">
+                          <span>🔄</span>
+                          <span>Slideshow</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-tight">
+                          Picha zinabadilika zenyewe (Slideshow)
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Video Link Input for Thumbnail if Video Selected */}
+                    {thumbnailType === 'video' && (
+                      <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-2 animate-in fade-in">
+                        <label className="block font-black uppercase text-rose-300 tracking-wider text-[11px] flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Video className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Link ya Video ya Thumbnail (Kadi za Nje) *</span>
+                          </span>
+                          <span className="text-[9px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full">
+                            Inacheza Kwenye Bango Nje
+                          </span>
+                        </label>
+                        <input
+                          type="url"
+                          placeholder="Paste direct MP4 video link au YouTube Shorts ya bango la nje..."
+                          value={thumbnailVideoUrl}
+                          onChange={(e) => setThumbnailVideoUrl(e.target.value)}
+                          className="w-full bg-slate-950 border border-rose-500/50 rounded-xl px-4 py-2 text-white font-mono text-xs focus:outline-none focus:border-rose-400"
+                        />
+                        <p className="text-[10px] text-slate-400">
+                          ⚡ <strong>Mfano:</strong> Link ya faili la moja kwa moja la <code className="text-rose-300 bg-black/40 px-1 py-0.5 rounded">.mp4</code> au YouTube Shorts. Video hii itacheza kimya kimya (auto-loop) nje kwenye kadi za store!
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* 1. Cover Art Input */}
@@ -1355,29 +1463,29 @@ export default function AdminGamesPage() {
                     )}
                   </div>
 
-                  {/* 3. Video / Demo Link */}
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  {/* 3. Video ya Ndani (Baada ya Kulibonyeza kwa Ndani) */}
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-blue-900/50 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="font-black uppercase text-white tracking-wider text-xs flex items-center gap-1.5">
-                        <Video className="w-4 h-4 text-rose-400" />
-                        <span>Trela ya Game / YouTube Video Link</span>
+                        <Video className="w-4 h-4 text-blue-400" />
+                        <span>🎬 Link ya Video ya Kucheza Ndani (Gameplay Trailer / Preview)</span>
                       </label>
-                      <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[9px] font-black uppercase border border-rose-500/30">
-                        Inaonekana Chini ya Links
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[9px] font-black uppercase border border-blue-500/30 flex items-center gap-1">
+                        <span>Itaonekana Baada ya Kulibonyeza kwa Ndani</span>
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Weka link ya video kutoka YouTube (k.m. <code className="text-rose-300 bg-rose-950/40 px-1 py-0.5 rounded">https://www.youtube.com/watch?v=...</code> au Shorts) au link ya <code className="text-blue-300 bg-blue-950/40 px-1 py-0.5 rounded">.mp4</code>. Video hii itatokea kwenye box la trela chini ya faili za kupakua ili kuwavutia wateja kuona jinsi game lilivyo!
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Weka link ya video kutoka YouTube (k.m. Gameplay video, Trailer, au Tutorial) au faili la <code className="text-blue-300 bg-blue-950/60 px-1 py-0.5 rounded">.mp4</code>. Video hii <strong className="text-white">ITAONEKANA NDANI YA UKURASA WA GAME</strong> baada ya mteja kulibonyeza (chini ya vitufe vya kupakua). <u>Haitaharibu wala kuingiliana na bango/thumbnail la nje</u>!
                     </p>
 
                     <div className="relative">
                       <input
                         type="url"
-                        placeholder="Paste YouTube link au MP4 video link hapa..."
+                        placeholder="Paste YouTube link au MP4 video itakayocheza ndani baada ya mteja kulibonyeza..."
                         value={videoUrl}
                         onChange={(e) => setVideoUrl(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 hover:border-slate-600 focus:border-rose-500 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none transition-colors"
+                        className="w-full bg-slate-900 border border-blue-700/60 hover:border-blue-500 focus:border-blue-400 rounded-xl px-4 py-2.5 text-white font-mono text-xs focus:outline-none transition-colors"
                       />
                     </div>
 
@@ -1385,7 +1493,7 @@ export default function AdminGamesPage() {
                       <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
                         <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                          <span>Link ya Video Imewekwa Tayari!</span>
+                          <span>Link ya Video ya Ndani Imewekwa Tayari!</span>
                         </span>
                         <button
                           type="button"

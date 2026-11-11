@@ -288,15 +288,30 @@ export default function CategoryGamesDrawer({
                       >
                         {/* Media Thumbnail */}
                         <div className="relative w-full sm:w-36 aspect-[16/10] sm:aspect-square rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-800">
-                          <GameMediaThumbnail
-                            coverImage={game.cover_image}
-                            screenshots={game.screenshots}
-                            videoUrl={game.video_url || game.youtube_url}
-                            thumbnailType={game.thumbnail_type || 'auto'}
-                            thumbnailFit={game.thumbnail_fit || (game as any).thumbnailFit || 'cover'}
-                            title={game.title}
-                            sizes="(max-width: 640px) 100vw, 150px"
-                          />
+                          {(() => {
+                            const thumbVideo =
+                              (game as any).thumbnail_video_url ||
+                              (Array.isArray((game as any).links)
+                                ? (game as any).links.find((l: any) => l && (l.name === 'THUMBNAIL_VIDEO_URL' || l.name === 'THUMBNAIL_VIDEO'))?.url
+                                : '') ||
+                              (game.thumbnail_type === 'video' ? (game.video_url || (game as any).youtube_url) : '');
+                            const isVideoChoice = game.thumbnail_type === 'video' && Boolean(thumbVideo);
+                            const isSlideshowChoice = game.thumbnail_type === 'slideshow';
+                            const effectiveType = isVideoChoice ? 'video' : isSlideshowChoice ? 'slideshow' : 'image';
+
+                            return (
+                              <GameMediaThumbnail
+                                coverImage={game.cover_image}
+                                screenshots={game.screenshots}
+                                videoUrl={thumbVideo}
+                                thumbnailVideoUrl={thumbVideo}
+                                thumbnailType={effectiveType}
+                                thumbnailFit={game.thumbnail_fit || (game as any).thumbnailFit || 'cover'}
+                                title={game.title}
+                                sizes="(max-width: 640px) 100vw, 150px"
+                              />
+                            );
+                          })()}
                         </div>
 
                         {/* Detail Info */}
